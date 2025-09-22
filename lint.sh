@@ -49,7 +49,7 @@ if command_exists go; then
         print_status "Installing golangci-lint..."
         if command_exists curl; then
             # Use go install to build with current Go version for compatibility
-            go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
+            go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
         else
             print_warning "curl not found, please install golangci-lint manually"
             print_status "Visit: https://golangci-lint.run/usage/install/"
