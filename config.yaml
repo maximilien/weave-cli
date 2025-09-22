@@ -1,0 +1,31 @@
+# Database Configuration
+database:
+  # Vector Database settings
+  vector_db:
+    type: "${VECTOR_DB_TYPE:-weaviate-cloud}"  # Options: weaviate-cloud, weaviate-local, mock
+    
+    # Weaviate Cloud configuration
+    weaviate_cloud:
+      url: "${WEAVIATE_URL}"
+      api_key: "${WEAVIATE_API_KEY}"
+      collection_name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
+      collection_name_test: "${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}"
+      
+    # Weaviate Local configuration
+    weaviate_local:
+      url: "http://localhost:8080"
+      collection_name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
+      collection_name_test: "${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}"
+      
+    # Mock Vector Database configuration (for development/testing)
+    mock:
+      enabled: true
+      simulate_embeddings: true
+      embedding_dimension: 384
+      collections:
+        - name: "WeaveDocs"
+          type: "text"
+          description: "Mock text documents collection"
+        - name: "WeaveImages" 
+          type: "image"
+          description: "Mock image documents collection"
