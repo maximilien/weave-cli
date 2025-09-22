@@ -32,6 +32,10 @@ print_header() {
     echo -e "${BLUE}[TEST]${NC} $1"
 }
 
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
 print_help() {
     echo -e "${BLUE}Weave CLI Test Suite${NC}"
     echo ""

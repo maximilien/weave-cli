@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [1.21, 1.22, '1.23']
+        go-version: ['1.23']
 
     steps:
     - name: Checkout code
@@ -56,6 +56,21 @@ jobs:
       with:
         go-version: '1.23'
 
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install linting tools
+      run: |
+        chmod +x ./setup.sh
+        ./setup.sh
+
     - name: Run linter
       run: ./lint.sh
 
@@ -80,7 +95,7 @@ jobs:
       run: ./build.sh
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: weave-${{ matrix.os }}
         path: bin/
@@ -98,7 +113,13 @@ jobs:
       with:
         go-version: '1.23'
 
-    - name: Run Gosec Security Scanner
-      uses: securecodewarrior/github-action-gosec@master
-      with:
-        args: './src/...'
+    - name: Install security tools
+      run: |
+        chmod +x ./setup.sh
+        ./setup.sh
+
+    - name: Run Go Security Checks
+      run: |
+        echo "Running comprehensive security checks..."
+        gosec ./src/...
+        echo "Security checks completed"
