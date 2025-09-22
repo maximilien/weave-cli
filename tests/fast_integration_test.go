@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -114,6 +115,11 @@ func TestFastWeaviateIntegration(t *testing.T) {
 	// Skip if no Weaviate configuration
 	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
 		t.Skip("Skipping Weaviate integration tests - missing WEAVIATE_URL or WEAVIATE_API_KEY")
+	}
+	
+	// Skip if URL is invalid (contains double protocol)
+	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
+		t.Skip("Skipping Weaviate integration tests - invalid URL format")
 	}
 
 	cfg := &config.WeaviateCloudConfig{
