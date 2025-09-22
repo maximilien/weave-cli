@@ -103,7 +103,13 @@ fi
 print_header "Installing gosec..."
 if ! command_exists gosec; then
     print_status "Installing gosec..."
-    go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+    if [ "$CI_ENV" = "true" ]; then
+        # In CI, try alternative installation method
+        print_status "Using alternative gosec installation for CI..."
+        curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+    else
+        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+    fi
     print_success "gosec installed successfully!"
 else
     print_success "gosec is already installed"
