@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 

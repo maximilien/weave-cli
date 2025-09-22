@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
