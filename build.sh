@@ -3,7 +3,7 @@
 # Load environment variables from .env file
 set -a
 if [ -f .env ]; then
-    # shellcheck source=.env
+    # shellcheck disable=SC1091
     . .env
 fi
 set +a

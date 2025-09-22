@@ -2,7 +2,10 @@
 
 # Load environment variables from .env file
 set -a
-[ -f .env ] && . .env
+if [ -f .env ]; then
+    # shellcheck disable=SC1091
+    . .env
+fi
 set +a
 
 # Weave CLI Test Suite
@@ -275,10 +278,6 @@ EOF
     print_success "Integration test structure created!"
 }
 
-# Helper function for success messages
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
 
 # Run unit tests if requested
 if [ "$RUN_UNIT_TESTS" = true ]; then
