@@ -246,6 +246,8 @@ print_header "Checking PATH configuration..."
 GOPATH=$(go env GOPATH)
 if [[ ":$PATH:" != *":$GOPATH/bin:"* ]]; then
     print_warning "GOPATH/bin is not in your PATH"
+    print_status "Adding GOPATH/bin to PATH for this session..."
+    export PATH="$PATH:$GOPATH/bin"
     print_status "Add this to your shell profile (.bashrc, .zshrc, etc.):"
     echo "export PATH=\$PATH:$GOPATH/bin"
     echo ""

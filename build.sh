@@ -2,7 +2,10 @@
 
 # Load environment variables from .env file
 set -a
-[ -f .env ] && . .env
+if [ -f .env ]; then
+    # shellcheck source=.env
+    . .env
+fi
 set +a
 
 # Weave CLI Build Script
@@ -104,7 +107,7 @@ build_cli() {
     
     print_status "✅ CLI built successfully!"
     print_status "   • Binary: bin/weave"
-    print_status "   • Size: $(ls -lh bin/weave | awk '{print $5}')"
+    print_status "   • Size: $(stat -f%z bin/weave 2>/dev/null | numfmt --to=iec || echo "unknown")"
 }
 
 # Function to clean build artifacts
@@ -148,7 +151,7 @@ CLI Build:
 $(if [ -f "bin/weave" ]; then
     echo "  Status: Built"
     echo "  Go Version: $(go version 2>/dev/null || echo "unknown")"
-    echo "  Binary: bin/weave ($(ls -lh bin/weave 2>/dev/null | awk '{print $5}' || echo "unknown"))"
+    echo "  Binary: bin/weave ($(stat -f%z bin/weave 2>/dev/null | numfmt --to=iec || echo "unknown"))"
 else
     echo "  Status: Not built"
 fi)

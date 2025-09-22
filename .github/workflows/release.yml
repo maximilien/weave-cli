@@ -65,7 +65,8 @@ jobs:
 
             ### Installation
 
-            Download the appropriate binary for your platform and make it executable:
+            Download the appropriate binary for your platform and make it
+            executable:
 
             ```bash
             # Linux/macOS
