@@ -82,7 +82,7 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 
 // ListDocuments returns a list of documents in a collection
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.RLock()
@@ -103,7 +103,7 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 
 // GetDocument retrieves a specific document by ID
 func (c *Client) GetDocument(ctx context.Context, collectionName, documentID string) (*Document, error) {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.RLock()
@@ -125,7 +125,7 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 
 // DeleteDocument deletes a specific document by ID
 func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID string) error {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.Lock()
