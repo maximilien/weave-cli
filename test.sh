@@ -241,98 +241,98 @@ run_coverage_tests() {
     fi
 }
 
-# Function to create basic integration tests
-create_integration_tests() {
-    print_status "Creating basic integration test structure..."
-    
-    # Create tests directory structure
-    mkdir -p tests/{config,weaviate,mock,cmd}
-    
-    # Create basic config test
-    cat > tests/config/config_test.go << 'EOF'
-package config_test
-
-import (
-	"testing"
-	"github.com/maximilien/weave-cli/src/internal/config"
-)
-
-func TestLoadConfig(t *testing.T) {
-	// Test loading config with default files
-	cfg, err := config.LoadConfig("", "")
-	if err != nil {
-		t.Logf("Config loading failed (expected if no config files): %v", err)
-		return
-	}
-	
-	if cfg == nil {
-		t.Error("Config should not be nil")
-	}
-}
-
-func TestInterpolateEnvVars(t *testing.T) {
-	// Test environment variable interpolation
-	testCases := []struct {
-		input    string
-		expected string
-	}{
-		{"${TEST_VAR:-default}", "default"},
-		{"simple string", "simple string"},
-		{"${TEST_VAR}", ""},
-	}
-	
-	for _, tc := range testCases {
-		result := config.InterpolateString(tc.input)
-		if result != tc.expected {
-			t.Errorf("Expected %s, got %s", tc.expected, result)
-		}
-	}
-}
-EOF
-
-    # Create basic mock test
-    cat > tests/mock/client_test.go << 'EOF'
-package mock_test
-
-import (
-	"context"
-	"testing"
-	"github.com/maximilien/weave-cli/src/internal/config"
-	"github.com/maximilien/weave-cli/src/internal/mock"
-)
-
-func TestMockClient(t *testing.T) {
-	cfg := &config.MockConfig{
-		Enabled:            true,
-		SimulateEmbeddings: true,
-		EmbeddingDimension: 384,
-		Collections: []config.MockCollection{
-			{Name: "test", Type: "text", Description: "Test collection"},
-		},
-	}
-	
-	client := mock.NewClient(cfg)
-	
-	// Test health check
-	ctx := context.Background()
-	if err := client.Health(ctx); err != nil {
-		t.Errorf("Health check failed: %v", err)
-	}
-	
-	// Test listing collections
-	collections, err := client.ListCollections(ctx)
-	if err != nil {
-		t.Errorf("Failed to list collections: %v", err)
-	}
-	
-	if len(collections) != 1 {
-		t.Errorf("Expected 1 collection, got %d", len(collections))
-	}
-}
-EOF
-
-    print_success "Integration test structure created!"
-}
+# Function to create basic integration tests (currently unused)
+# create_integration_tests() {
+#     print_status "Creating basic integration test structure..."
+#     
+#     # Create tests directory structure
+#     mkdir -p tests/{config,weaviate,mock,cmd}
+#     
+#     # Create basic config test
+#     cat > tests/config/config_test.go << 'EOF'
+# package config_test
+# 
+# import (
+# 	"testing"
+# 	"github.com/maximilien/weave-cli/src/internal/config"
+# )
+# 
+# func TestLoadConfig(t *testing.T) {
+# 	// Test loading config with default files
+# 	cfg, err := config.LoadConfig("", "")
+# 	if err != nil {
+# 		t.Logf("Config loading failed (expected if no config files): %v", err)
+# 		return
+# 	}
+# 	
+# 	if cfg == nil {
+# 		t.Error("Config should not be nil")
+# 	}
+# }
+# 
+# func TestInterpolateEnvVars(t *testing.T) {
+# 	// Test environment variable interpolation
+# 	testCases := []struct {
+# 		input    string
+# 		expected string
+# 	}{
+# 		{"${TEST_VAR:-default}", "default"},
+# 		{"simple string", "simple string"},
+# 		{"${TEST_VAR}", ""},
+# 	}
+# 	
+# 	for _, tc := range testCases {
+# 		result := config.InterpolateString(tc.input)
+# 		if result != tc.expected {
+# 			t.Errorf("Expected %s, got %s", tc.expected, result)
+# 		}
+# 	}
+# }
+# EOF
+# 
+#     # Create basic mock test
+#     cat > tests/mock/client_test.go << 'EOF'
+# package mock_test
+# 
+# import (
+# 	"context"
+# 	"testing"
+# 	"github.com/maximilien/weave-cli/src/internal/config"
+# 	"github.com/maximilien/weave-cli/src/internal/mock"
+# )
+# 
+# func TestMockClient(t *testing.T) {
+# 	cfg := &config.MockConfig{
+# 		Enabled:            true,
+# 		SimulateEmbeddings: true,
+# 		EmbeddingDimension: 384,
+# 		Collections: []config.MockCollection{
+# 			{Name: "test", Type: "text", Description: "Test collection"},
+# 		},
+# 	}
+# 	
+# 	client := mock.NewClient(cfg)
+# 	
+# 	// Test health check
+# 	ctx := context.Background()
+# 	if err := client.Health(ctx); err != nil {
+# 		t.Errorf("Health check failed: %v", err)
+# 	}
+# 	
+# 	// Test listing collections
+# 	collections, err := client.ListCollections(ctx)
+# 	if err != nil {
+# 		t.Errorf("Failed to list collections: %v", err)
+# 	}
+# 	
+# 	if len(collections) != 1 {
+# 		t.Errorf("Expected 1 collection, got %d", len(collections))
+# 	}
+# }
+# EOF
+# 
+#     print_success "Integration test structure created!"
+# }
 
 
 # Run tests based on command
