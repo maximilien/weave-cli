@@ -78,7 +78,8 @@ print_header "Installing golangci-lint..."
 if ! command_exists golangci-lint; then
     print_status "Installing golangci-lint..."
     if command_exists curl; then
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(go env GOPATH)/bin" v1.61.0
+        # Use go install to build with current Go version for compatibility
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.61.0
         print_success "golangci-lint installed successfully!"
     else
         print_error "curl not found, please install golangci-lint manually"
