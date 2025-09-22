@@ -48,7 +48,7 @@ if command_exists go; then
     if ! command_exists golangci-lint; then
         print_status "Installing golangci-lint..."
         if command_exists curl; then
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(go env GOPATH)/bin" v1.54.2
         else
             print_warning "curl not found, please install golangci-lint manually"
             print_status "Visit: https://golangci-lint.run/usage/install/"
@@ -115,7 +115,7 @@ fi
 # JSON linting
 echo "📄 Checking JSON files..."
 if find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*" | grep -q .; then
-    for json_file in $(find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*"); do
+    find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*" -print0 | while IFS= read -r -d '' json_file; do
         if ! python3 -m json.tool "$json_file" >/dev/null 2>&1; then
             print_error "Invalid JSON found in $json_file"
             exit 1
@@ -164,7 +164,7 @@ fi
 echo "🐚 Checking shell scripts..."
 if find . -name "*.sh" | grep -q .; then
     if command_exists shellcheck; then
-        for sh_file in $(find . -name "*.sh"); do
+        find . -name "*.sh" -print0 | while IFS= read -r -d '' sh_file; do
             if shellcheck "$sh_file"; then
                 print_success "Shell script $sh_file passed!"
             else

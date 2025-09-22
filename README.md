@@ -1,6 +1,9 @@
 # Weave CLI
 
-A command-line tool for managing Weaviate vector databases, written in Go. This tool provides a fast and easy way to manage content in text and image collections of configured vector databases, independently of specific applications.
+A command-line tool for managing Weaviate vector databases, written in Go.
+This tool provides a fast and easy way to manage content in text and image
+collections of configured vector databases, independently of specific
+applications.
 
 ## Features
 
@@ -8,7 +11,8 @@ A command-line tool for managing Weaviate vector databases, written in Go. This 
 - 🏠 **Weaviate Local Support** - Connect to local Weaviate instances  
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, view, and delete collections
-- 📄 **Document Management** - List, show, and delete individual documents (shows document IDs and basic info)
+- 📄 **Document Management** - List, show, and delete individual documents
+  (shows document IDs and basic info)
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
 - ⚡ **Fast & Lightweight** - Single binary deployment
@@ -44,7 +48,8 @@ Weave CLI uses two configuration files:
 database:
   # Vector Database settings
   vector_db:
-    type: "${VECTOR_DB_TYPE:-weaviate-cloud}"  # Options: weaviate-cloud, weaviate-local, mock
+    type: "${VECTOR_DB_TYPE:-weaviate-cloud}"  # Options: weaviate-cloud,
+      # weaviate-local, mock
     
     # Weaviate Cloud configuration
     weaviate_cloud:
@@ -123,7 +128,8 @@ weave collection delete-all
 
 ### Command Structure
 
-Weave follows a consistent command pattern: `weave noun verb [arguments] [flags]`
+Weave follows a consistent command pattern:
+`weave noun verb [arguments] [flags]`
 
 - **config** - Configuration management
   - `weave config show` - Show current configuration
@@ -139,8 +145,10 @@ Weave follows a consistent command pattern: `weave noun verb [arguments] [flags]
 - **document** - Document management
   - `weave document list COLLECTION_NAME` - List documents in collection
   - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show specific document
-  - `weave document delete COLLECTION_NAME DOCUMENT_ID` - Delete specific document
-  - `weave document delete-all COLLECTION_NAME` - Delete all documents in collection
+  - `weave document delete COLLECTION_NAME DOCUMENT_ID` - Delete specific
+    document
+  - `weave document delete-all COLLECTION_NAME` - Delete all documents in
+    collection
 
 ### Command Aliases
 
@@ -198,7 +206,7 @@ weave document list --help
 
 ### Project Structure
 
-```
+```text
 weave-cli/
 ├── src/                    # Source code
 │   ├── cmd/               # CLI commands
@@ -284,7 +292,8 @@ golangci-lint run ./src/...
 
 ## Safety Features
 
-- ⚠️ **Confirmation Prompts** - All destructive operations require confirmation
+- ⚠️ **Confirmation Prompts** - All destructive operations require
+  confirmation
 - 🔒 **API Key Masking** - API keys are never displayed in plain text
 - 🛡️ **Error Handling** - Comprehensive error handling and reporting
 - 📝 **Logging** - Detailed logging for debugging
@@ -301,10 +310,12 @@ golangci-lint run ./src/...
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the
+[LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
 - Built with [Cobra](https://github.com/spf13/cobra) CLI framework
-- Uses [Weaviate Go Client](https://github.com/weaviate/weaviate-go-client) for database operations
+- Uses [Weaviate Go Client](https://github.com/weaviate/weaviate-go-client) for
+  database operations
 - Inspired by RAGme.io's tools/vdb.sh script

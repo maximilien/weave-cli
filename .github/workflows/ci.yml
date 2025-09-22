@@ -1,10 +1,11 @@
+---
 name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
 
 jobs:
   test:
@@ -15,64 +16,64 @@ jobs:
         go-version: ['1.24']
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
 
-    - name: Cache Go modules
-      uses: actions/cache@v3
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
-    - name: Download dependencies
-      run: go mod download
+      - name: Download dependencies
+        run: go mod download
 
-    - name: Verify dependencies
-      run: go mod verify
+      - name: Verify dependencies
+        run: go mod verify
 
-    - name: Run tests
-      run: ./test.sh unit
+      - name: Run tests
+        run: ./test.sh unit
 
-    - name: Run integration tests
-      run: ./test.sh integration
+      - name: Run integration tests
+        run: ./test.sh integration
 
   lint:
     name: Lint
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
-    - name: Install linting tools
-      run: |
-        chmod +x ./setup.sh
-        ./setup.sh
+      - name: Install linting tools
+        run: |
+          chmod +x ./setup.sh
+          ./setup.sh
 
-    - name: Run linter
-      run: ./lint.sh
+      - name: Run linter
+        run: ./lint.sh
 
   build:
     name: Build
@@ -80,55 +81,55 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.23']
+        go-version: ['1.24']
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: ${{ matrix.go-version }}
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
 
-    - name: Build
-      run: ./build.sh
+      - name: Build
+        run: ./build.sh
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: weave-${{ matrix.os }}
-        path: bin/
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weave-${{ matrix.os }}
+          path: bin/
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.24'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
 
-    - name: Install security tools
-      run: |
-        chmod +x ./setup.sh
-        ./setup.sh
+      - name: Install security tools
+        run: |
+          chmod +x ./setup.sh
+          ./setup.sh
 
-    - name: Run Go Security Checks
-      run: |
-        echo "Running comprehensive security checks..."
-        govulncheck ./src/...
-        echo "Vulnerability checks completed"
-        
-        # Run gosec if available (optional)
-        if command -v gosec >/dev/null 2>&1; then
-          echo "Running additional security checks with gosec..."
-          gosec ./src/...
-        else
-          echo "gosec not available, skipping additional security checks"
-        fi
-        echo "Security checks completed"
+      - name: Run Go Security Checks
+        run: |
+          echo "Running comprehensive security checks..."
+          govulncheck ./src/...
+          echo "Vulnerability checks completed"
+
+          # Run gosec if available (optional)
+          if command -v gosec >/dev/null 2>&1; then
+            echo "Running additional security checks with gosec..."
+            gosec ./src/...
+          else
+            echo "gosec not available, skipping additional security checks"
+          fi
+          echo "Security checks completed"

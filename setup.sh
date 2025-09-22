@@ -78,7 +78,7 @@ print_header "Installing golangci-lint..."
 if ! command_exists golangci-lint; then
     print_status "Installing golangci-lint..."
     if command_exists curl; then
-        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
+        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(go env GOPATH)/bin" v1.54.2
         print_success "golangci-lint installed successfully!"
     else
         print_error "curl not found, please install golangci-lint manually"
@@ -118,7 +118,7 @@ if ! command_exists gosec; then
     
     # Try the install script method (most reliable)
     print_status "Using install script method..."
-    if curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin; then
+    if curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b "$(go env GOPATH)/bin"; then
         print_success "gosec installed via install script!"
     else
         print_warning "gosec installation failed - skipping (govulncheck provides security coverage)"

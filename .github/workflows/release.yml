@@ -1,3 +1,4 @@
+---
 name: Release
 
 on:
@@ -11,71 +12,76 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.23'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
 
-    - name: Build for multiple platforms
-      run: |
-        # Create build directory
-        mkdir -p dist
-        
-        # Build for different platforms
-        GOOS=linux GOARCH=amd64 go build -o dist/weave-linux-amd64 ./src/main.go
-        GOOS=linux GOARCH=arm64 go build -o dist/weave-linux-arm64 ./src/main.go
-        GOOS=darwin GOARCH=amd64 go build -o dist/weave-darwin-amd64 ./src/main.go
-        GOOS=darwin GOARCH=arm64 go build -o dist/weave-darwin-arm64 ./src/main.go
-        GOOS=windows GOARCH=amd64 go build -o dist/weave-windows-amd64.exe ./src/main.go
-        
-        # Make binaries executable
-        chmod +x dist/weave-*
+      - name: Build for multiple platforms
+        run: |
+          # Create build directory
+          mkdir -p dist
 
-    - name: Create checksums
-      run: |
-        cd dist
-        sha256sum * > checksums.txt
+          # Build for different platforms
+          GOOS=linux GOARCH=amd64 go build -o dist/weave-linux-amd64 \
+            ./src/main.go
+          GOOS=linux GOARCH=arm64 go build -o dist/weave-linux-arm64 \
+            ./src/main.go
+          GOOS=darwin GOARCH=amd64 go build -o dist/weave-darwin-amd64 \
+            ./src/main.go
+          GOOS=darwin GOARCH=arm64 go build -o dist/weave-darwin-arm64 \
+            ./src/main.go
+          GOOS=windows GOARCH=amd64 go build -o dist/weave-windows-amd64.exe \
+            ./src/main.go
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          dist/*
-        body: |
-          ## Weave CLI ${{ github.ref_name }}
-          
-          ### Downloads
-          
-          - **Linux AMD64**: `weave-linux-amd64`
-          - **Linux ARM64**: `weave-linux-arm64`
-          - **macOS AMD64**: `weave-darwin-amd64`
-          - **macOS ARM64**: `weave-darwin-arm64`
-          - **Windows AMD64**: `weave-windows-amd64.exe`
-          
-          ### Installation
-          
-          Download the appropriate binary for your platform and make it executable:
-          
-          ```bash
-          # Linux/macOS
-          chmod +x weave-linux-amd64
-          ./weave-linux-amd64 --help
-          
-          # Windows
-          weave-windows-amd64.exe --help
-          ```
-          
-          ### Verification
-          
-          Verify the integrity of the downloaded binary:
-          
-          ```bash
-          sha256sum -c checksums.txt
-          ```
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Make binaries executable
+          chmod +x dist/weave-*
+
+      - name: Create checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*
+          body: |
+            ## Weave CLI ${{ github.ref_name }}
+
+            ### Downloads
+
+            - **Linux AMD64**: `weave-linux-amd64`
+            - **Linux ARM64**: `weave-linux-arm64`
+            - **macOS AMD64**: `weave-darwin-amd64`
+            - **macOS ARM64**: `weave-darwin-arm64`
+            - **Windows AMD64**: `weave-windows-amd64.exe`
+
+            ### Installation
+
+            Download the appropriate binary for your platform and make it executable:
+
+            ```bash
+            # Linux/macOS
+            chmod +x weave-linux-amd64
+            ./weave-linux-amd64 --help
+
+            # Windows
+            weave-windows-amd64.exe --help
+            ```
+
+            ### Verification
+
+            Verify the integrity of the downloaded binary:
+
+            ```bash
+            sha256sum -c checksums.txt
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
