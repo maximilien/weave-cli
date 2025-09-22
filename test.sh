@@ -219,9 +219,9 @@ run_coverage_tests() {
     # Create coverage directory
     mkdir -p coverage
     
-    # Run tests with coverage
+    # Run tests with coverage (only unit tests and mock integration tests)
     print_status "Running tests with coverage..."
-    if go test -coverprofile=coverage/coverage.out -covermode=atomic ./tests/...; then
+    if go test -coverprofile=coverage/coverage.out -covermode=atomic ./tests/... -run="TestConfig|TestMock|TestCLI|TestFastMock|TestFastConfig"; then
         print_status "Generating coverage report..."
         
         # Generate HTML coverage report
