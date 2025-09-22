@@ -42,8 +42,7 @@ jobs:
         run: ./test.sh unit
 
       - name: Run extended unit tests
-        run: go test -v -timeout=30s ./tests/... \
-          -run="TestConfig|TestMock|TestWeaviateClient"
+        run: go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"
 
       - name: Run integration tests (mock only)
         run: go test -v -timeout=10s ./tests/... -run="TestMock"
