@@ -55,13 +55,19 @@ jobs:
         run: |
           if [ -n "$WEAVIATE_URL" ] && [ -n "$WEAVIATE_API_KEY" ]; then
             echo "Running Weaviate integration tests..."
+            echo "WEAVIATE_URL: $WEAVIATE_URL"
             go test -v -timeout=30s ./tests/... -run="TestWeaviate"
           else
             echo "Skipping Weaviate integration tests - no credentials provided"
           fi
 
       - name: Run coverage tests
-        run: ./test.sh coverage
+        run: |
+          # Unset Weaviate environment variables for coverage tests to avoid integration test failures
+          unset WEAVIATE_URL
+          unset WEAVIATE_API_KEY
+          unset WEAVIATE_COLLECTION_TEST
+          ./test.sh coverage
 
   fast-integration:
     name: Fast Integration Tests
