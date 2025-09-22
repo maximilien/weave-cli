@@ -9,17 +9,18 @@ import (
 
 // createWeaviateClient creates a Weaviate client based on the configuration
 func createWeaviateClient(cfg interface{}) (*weaviate.Client, error) {
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
+	if cloudConfig, ok := cfg.(*config.WeaviateCloudConfig); ok {
 		return weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
+			URL:    cloudConfig.URL,
+			APIKey: cloudConfig.APIKey,
 		})
-	case *config.WeaviateLocalConfig:
-		return weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	default:
-		return nil, fmt.Errorf("unsupported configuration type: %T", cfg)
 	}
+
+	if localConfig, ok := cfg.(*config.WeaviateLocalConfig); ok {
+		return weaviate.NewClient(&weaviate.Config{
+			URL: localConfig.URL,
+		})
+	}
+
+	return nil, fmt.Errorf("unsupported configuration type: %T", cfg)
 }
