@@ -40,7 +40,7 @@ func NewClient(config *config.MockConfig) *Client {
 
 // Health checks the health of the mock database
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	// Simulate a quick health check
@@ -50,7 +50,7 @@ func (c *Client) Health(ctx context.Context) error {
 
 // ListCollections returns a list of all collections
 func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.RLock()
@@ -66,7 +66,7 @@ func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
 
 // DeleteCollection deletes all objects from a collection
 func (c *Client) DeleteCollection(ctx context.Context, collectionName string) error {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.Lock()

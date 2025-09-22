@@ -368,6 +368,10 @@ func deleteAllMockCollections(ctx context.Context, cfg *config.MockConfig) {
 func confirmAction(message string) bool {
 	fmt.Printf("%s (y/N): ", message)
 	var response string
-	fmt.Scanln(&response)
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		// If there's an error reading input, default to "no"
+		return false
+	}
 	return response == "y" || response == "Y" || response == "yes" || response == "Yes"
 }

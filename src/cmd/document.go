@@ -289,7 +289,7 @@ func listWeaviateDocuments(ctx context.Context, cfg interface{}, collectionName 
 			}
 		}
 
-		if doc.Metadata != nil && len(doc.Metadata) > 0 {
+		if len(doc.Metadata) > 0 {
 			// Check if there's any metadata beyond the ID
 			hasNonIdMetadata := false
 			for key := range doc.Metadata {
@@ -347,7 +347,7 @@ func listMockDocuments(ctx context.Context, cfg *config.MockConfig, collectionNa
 			}
 		}
 
-		if doc.Metadata != nil && len(doc.Metadata) > 0 {
+		if len(doc.Metadata) > 0 {
 			// Check if there's any metadata beyond the ID
 			hasNonIdMetadata := false
 			for key := range doc.Metadata {
@@ -403,7 +403,7 @@ func showWeaviateDocument(ctx context.Context, cfg interface{}, collectionName, 
 	}
 	fmt.Println()
 
-	if document.Metadata != nil && len(document.Metadata) > 0 {
+	if len(document.Metadata) > 0 {
 		fmt.Printf("Metadata:\n")
 		for key, value := range document.Metadata {
 			// Show raw value as string, even if it's JSON, truncated by lines
@@ -439,7 +439,7 @@ func showMockDocument(ctx context.Context, cfg *config.MockConfig, collectionNam
 	}
 	fmt.Println()
 
-	if document.Metadata != nil && len(document.Metadata) > 0 {
+	if len(document.Metadata) > 0 {
 		fmt.Printf("Metadata:\n")
 		for key, value := range document.Metadata {
 			// Show raw value as string, even if it's JSON, truncated by lines
@@ -546,14 +546,6 @@ func deleteAllMockDocuments(ctx context.Context, cfg *config.MockConfig, collect
 	}
 
 	printSuccess(fmt.Sprintf("Successfully deleted %d out of %d documents from collection '%s'", deletedCount, len(documents), collectionName))
-}
-
-// truncateString truncates a string to the specified length
-func truncateString(s string, maxLen int) string {
-	if len(s) <= maxLen {
-		return s
-	}
-	return s[:maxLen] + "..."
 }
 
 // truncateStringByLines truncates a string to the specified number of lines

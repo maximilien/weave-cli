@@ -77,9 +77,7 @@ func LoadConfig(configFile, envFile string) (*Config, error) {
 		}
 	} else {
 		// Try to load .env from current directory
-		if err := godotenv.Load(); err != nil {
-			// .env file is optional, so we continue without it
-		}
+		_ = godotenv.Load() // .env file is optional, so we continue without it
 	}
 
 	// Set up viper
