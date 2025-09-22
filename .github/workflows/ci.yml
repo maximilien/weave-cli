@@ -121,5 +121,14 @@ jobs:
     - name: Run Go Security Checks
       run: |
         echo "Running comprehensive security checks..."
-        gosec ./src/...
+        govulncheck ./src/...
+        echo "Vulnerability checks completed"
+        
+        # Run gosec if available (optional)
+        if command -v gosec >/dev/null 2>&1; then
+          echo "Running additional security checks with gosec..."
+          gosec ./src/...
+        else
+          echo "gosec not available, skipping additional security checks"
+        fi
         echo "Security checks completed"

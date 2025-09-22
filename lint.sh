@@ -182,6 +182,19 @@ fi
 
 # Security checks
 echo "🔒 Running security checks..."
+if command_exists govulncheck; then
+    print_status "Running govulncheck vulnerability scanner..."
+    if govulncheck ./src/...; then
+        print_success "Vulnerability scan passed!"
+    else
+        print_warning "Vulnerabilities found"
+    fi
+else
+    print_warning "govulncheck not found, skipping vulnerability checks"
+    print_status "Install govulncheck: go install golang.org/x/vuln/cmd/govulncheck@latest"
+fi
+
+# Additional security checks with gosec if available
 if command_exists gosec; then
     print_status "Running gosec security scanner..."
     if gosec ./src/...; then
@@ -190,7 +203,7 @@ if command_exists gosec; then
         print_warning "Security issues found"
     fi
 else
-    print_warning "gosec not found, skipping security checks"
+    print_warning "gosec not found, skipping additional security checks"
     print_status "Install gosec: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest"
 fi
 

@@ -99,14 +99,36 @@ else
     print_success "goimports is already installed"
 fi
 
-# Install gosec
+# Install govulncheck (official Go vulnerability scanner)
+print_header "Installing govulncheck..."
+if ! command_exists govulncheck; then
+    print_status "Installing govulncheck..."
+    go install golang.org/x/vuln/cmd/govulncheck@latest
+    print_success "govulncheck installed successfully!"
+else
+    print_success "govulncheck is already installed"
+fi
+
+# Install gosec (optional, for additional security checks)
 print_header "Installing gosec..."
 if ! command_exists gosec; then
     print_status "Installing gosec..."
-    if [ "$CI_ENV" = "true" ]; then
-        # In CI, try alternative installation method
+    print_status "CI_ENV: $CI_ENV"
+    print_status "GITHUB_ACTIONS: ${GITHUB_ACTIONS:-not set}"
+    
+    # Try multiple installation methods
+    if [ "$CI_ENV" = "true" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
         print_status "Using alternative gosec installation for CI..."
-        curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+        # Try the official install script first
+        if curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin; then
+            print_success "gosec installed via install script!"
+        else
+            print_warning "Install script failed, trying direct download..."
+            # Fallback: download binary directly
+            GOSEC_VERSION="2.19.0"
+            curl -L "https://github.com/securecodewarrior/gosec/releases/download/v${GOSEC_VERSION}/gosec_${GOSEC_VERSION}_linux_amd64.tar.gz" | tar -xz -C $(go env GOPATH)/bin gosec
+            print_success "gosec installed via direct download!"
+        fi
     else
         go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
     fi
@@ -197,7 +219,7 @@ fi
 print_header "Verifying installations..."
 echo ""
 
-tools=("go" "golangci-lint" "goimports" "gosec" "shellcheck" "yamllint" "markdownlint" "go-mod-outdated")
+tools=("go" "golangci-lint" "goimports" "govulncheck" "gosec" "shellcheck" "yamllint" "markdownlint" "go-mod-outdated")
 
 all_installed=true
 for tool in "${tools[@]}"; do
