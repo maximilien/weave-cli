@@ -172,20 +172,7 @@ func testCollectionAccess(ctx context.Context, cfg *config.Config) {
 }
 
 func testWeaviateCollectionAccess(ctx context.Context, cfg interface{}) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client for collection test: %v", err))

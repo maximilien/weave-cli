@@ -9,7 +9,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"github.com/spf13/cobra"
 )
 
@@ -185,20 +184,7 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 }
 
 func listWeaviateCollections(ctx context.Context, cfg interface{}) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -289,20 +275,7 @@ func listMockCollections(ctx context.Context, cfg *config.MockConfig) {
 }
 
 func deleteWeaviateCollection(ctx context.Context, cfg interface{}, collectionName string) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -331,20 +304,7 @@ func deleteMockCollection(ctx context.Context, cfg *config.MockConfig, collectio
 }
 
 func deleteAllWeaviateCollections(ctx context.Context, cfg interface{}) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))

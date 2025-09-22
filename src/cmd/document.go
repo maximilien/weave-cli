@@ -9,7 +9,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"github.com/spf13/cobra"
 )
 
@@ -254,20 +253,7 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 }
 
 func listWeaviateDocuments(ctx context.Context, cfg interface{}, collectionName string, limit int, showLong bool, shortLines int) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -388,20 +374,7 @@ func listMockDocuments(ctx context.Context, cfg *config.MockConfig, collectionNa
 }
 
 func showWeaviateDocument(ctx context.Context, cfg interface{}, collectionName, documentID string, showLong bool, shortLines int) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -478,20 +451,7 @@ func showMockDocument(ctx context.Context, cfg *config.MockConfig, collectionNam
 }
 
 func deleteWeaviateDocument(ctx context.Context, cfg interface{}, collectionName, documentID string) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -520,20 +480,7 @@ func deleteMockDocument(ctx context.Context, cfg *config.MockConfig, collectionN
 }
 
 func deleteAllWeaviateDocuments(ctx context.Context, cfg interface{}, collectionName string) {
-	var client *weaviate.Client
-	var err error
-
-	switch c := cfg.(type) {
-	case *config.WeaviateCloudConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL:    c.URL,
-			APIKey: c.APIKey,
-		})
-	case *config.WeaviateLocalConfig:
-		client, err = weaviate.NewClient(&weaviate.Config{
-			URL: c.URL,
-		})
-	}
+	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
