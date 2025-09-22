@@ -149,7 +149,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 
 // AddDocument adds a document to a collection (for testing purposes)
 func (c *Client) AddDocument(ctx context.Context, collectionName string, doc Document) error {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.Lock()
@@ -165,7 +165,7 @@ func (c *Client) AddDocument(ctx context.Context, collectionName string, doc Doc
 
 // GetCollectionStats returns statistics about a collection
 func (c *Client) GetCollectionStats(ctx context.Context, collectionName string) (map[string]interface{}, error) {
-	ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
 	c.mutex.RLock()
