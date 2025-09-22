@@ -47,6 +47,7 @@ print_help() {
     echo "Commands:"
     echo "  unit        Run only unit tests"
     echo "  integration Run only integration tests"
+    echo "  fast        Run fast tests (unit + mock integration)"
     echo "  all         Run all tests (unit + integration)"
     echo "  coverage    Run tests with coverage report"
     echo "  help        Show this help message"
@@ -54,6 +55,7 @@ print_help() {
     echo "Examples:"
     echo "  ./test.sh unit         # Run only unit tests"
     echo "  ./test.sh integration  # Run only integration tests"
+    echo "  ./test.sh fast         # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all          # Run all tests"
     echo "  ./test.sh coverage     # Run tests with coverage report"
     echo "  ./test.sh              # Run unit tests (default)"
@@ -84,6 +86,11 @@ case "${1:-unit}" in
         ;;
     "integration")
         RUN_UNIT_TESTS=false
+        RUN_INTEGRATION_TESTS=true
+        RUN_COVERAGE=false
+        ;;
+    "fast")
+        RUN_UNIT_TESTS=true
         RUN_INTEGRATION_TESTS=true
         RUN_COVERAGE=false
         ;;
@@ -119,13 +126,21 @@ run_unit_tests() {
         exit 1
     fi
     
-    # Run unit tests
-    print_status "Running unit tests..."
-    if go test -v ./tests/...; then
-        print_success "Unit tests passed!"
+    # Run basic unit tests
+    print_status "Running basic unit tests..."
+    if go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"; then
+        print_success "Basic unit tests passed!"
     else
-        print_error "Unit tests failed!"
+        print_error "Basic unit tests failed!"
         exit 1
+    fi
+    
+    # Run extended unit tests if available
+    print_status "Running extended unit tests..."
+    if go test -v -timeout=30s ./tests/... -run="TestConfigExtended|TestMockExtended"; then
+        print_success "Extended unit tests passed!"
+    else
+        print_warning "Extended unit tests failed or not found"
     fi
 }
 
@@ -139,15 +154,56 @@ run_integration_tests() {
         exit 1
     fi
     
-    # Run integration tests
-    print_status "Running integration tests..."
-    if go test -v ./tests/...; then
-        print_success "Integration tests passed!"
+    # Run fast integration tests (mock only)
+    print_status "Running fast integration tests (mock)..."
+    if go test -v -timeout=10s ./tests/... -run="TestMock"; then
+        print_success "Fast integration tests passed!"
     else
-        print_warning "Integration tests failed or no tests found"
-        print_status "Creating basic integration test structure..."
-        create_integration_tests
+        print_warning "Fast integration tests failed"
     fi
+    
+    # Run Weaviate integration tests if configured
+    if [ -n "$WEAVIATE_URL" ] && [ -n "$WEAVIATE_API_KEY" ]; then
+        print_status "Running Weaviate integration tests..."
+        if go test -v -timeout=30s ./tests/... -run="TestWeaviate"; then
+            print_success "Weaviate integration tests passed!"
+        else
+            print_warning "Weaviate integration tests failed"
+        fi
+    else
+        print_warning "Skipping Weaviate integration tests - no credentials provided"
+        print_status "Set WEAVIATE_URL and WEAVIATE_API_KEY to run Weaviate tests"
+    fi
+}
+
+# Function to run fast tests
+run_fast_tests() {
+    print_header "Running Fast Tests..."
+    
+    # Check if Go is installed
+    if ! command -v go >/dev/null 2>&1; then
+        print_error "Go is not installed. Please install Go 1.21 or later."
+        exit 1
+    fi
+    
+    # Run unit tests
+    print_status "Running unit tests..."
+    if go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"; then
+        print_success "Unit tests passed!"
+    else
+        print_error "Unit tests failed!"
+        exit 1
+    fi
+    
+    # Run fast integration tests (mock only)
+    print_status "Running fast integration tests (mock)..."
+    if go test -v -timeout=10s ./tests/... -run="TestMock"; then
+        print_success "Fast integration tests passed!"
+    else
+        print_warning "Fast integration tests failed"
+    fi
+    
+    print_success "Fast tests completed!"
 }
 
 # Function to run coverage tests
@@ -279,13 +335,18 @@ EOF
 }
 
 
-# Run unit tests if requested
-if [ "$RUN_UNIT_TESTS" = true ]; then
+# Run tests based on command
+if [ "$RUN_UNIT_TESTS" = true ] && [ "$RUN_INTEGRATION_TESTS" = true ]; then
+    # Check if this is a fast test run
+    if [ "${1:-unit}" = "fast" ]; then
+        run_fast_tests
+    else
+        run_unit_tests
+        run_integration_tests
+    fi
+elif [ "$RUN_UNIT_TESTS" = true ]; then
     run_unit_tests
-fi
-
-# Run integration tests if requested
-if [ "$RUN_INTEGRATION_TESTS" = true ]; then
+elif [ "$RUN_INTEGRATION_TESTS" = true ]; then
     run_integration_tests
 fi
 

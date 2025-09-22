@@ -38,11 +38,98 @@ jobs:
       - name: Verify dependencies
         run: go mod verify
 
-      - name: Run tests
+      - name: Run unit tests
         run: ./test.sh unit
 
-      - name: Run integration tests
-        run: ./test.sh integration
+      - name: Run extended unit tests
+        run: go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"
+
+      - name: Run integration tests (mock only)
+        run: go test -v -timeout=10s ./tests/... -run="TestMock"
+
+      - name: Run integration tests (with Weaviate if configured)
+        env:
+          WEAVIATE_URL: ${{ secrets.WEAVIATE_URL }}
+          WEAVIATE_API_KEY: ${{ secrets.WEAVIATE_API_KEY }}
+          WEAVIATE_COLLECTION_TEST: ${{ secrets.WEAVIATE_COLLECTION_TEST }}
+        run: |
+          if [ -n "$WEAVIATE_URL" ] && [ -n "$WEAVIATE_API_KEY" ]; then
+            echo "Running Weaviate integration tests..."
+            go test -v -timeout=30s ./tests/... -run="TestWeaviate"
+          else
+            echo "Skipping Weaviate integration tests - no credentials provided"
+          fi
+
+      - name: Run coverage tests
+        run: ./test.sh coverage
+
+  fast-integration:
+    name: Fast Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run fast integration tests
+        run: |
+          echo "Running fast integration tests..."
+          go test -v -timeout=15s ./tests/... -run="TestMock|TestConfig|TestWeaviateClient" -short
+          echo "Fast integration tests completed"
+
+  integration:
+    name: Full Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run full integration tests
+        env:
+          WEAVIATE_URL: ${{ secrets.WEAVIATE_URL }}
+          WEAVIATE_API_KEY: ${{ secrets.WEAVIATE_API_KEY }}
+          WEAVIATE_COLLECTION_TEST: ${{ secrets.WEAVIATE_COLLECTION_TEST }}
+        run: |
+          echo "Running full integration tests..."
+          ./test.sh integration
+          echo "Full integration tests completed"
 
   lint:
     name: Lint
