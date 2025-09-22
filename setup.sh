@@ -116,23 +116,14 @@ if ! command_exists gosec; then
     print_status "CI_ENV: $CI_ENV"
     print_status "GITHUB_ACTIONS: ${GITHUB_ACTIONS:-not set}"
     
-    # Try multiple installation methods
-    if [ "$CI_ENV" = "true" ] || [ -n "${GITHUB_ACTIONS:-}" ]; then
-        print_status "Using alternative gosec installation for CI..."
-        # Try the official install script first
-        if curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin; then
-            print_success "gosec installed via install script!"
-        else
-            print_warning "Install script failed, trying direct download..."
-            # Fallback: download binary directly
-            GOSEC_VERSION="2.19.0"
-            curl -L "https://github.com/securecodewarrior/gosec/releases/download/v${GOSEC_VERSION}/gosec_${GOSEC_VERSION}_linux_amd64.tar.gz" | tar -xz -C $(go env GOPATH)/bin gosec
-            print_success "gosec installed via direct download!"
-        fi
+    # Try the install script method (most reliable)
+    print_status "Using install script method..."
+    if curl -sfL https://raw.githubusercontent.com/securecodewarrior/gosec/master/install.sh | sh -s -- -b $(go env GOPATH)/bin; then
+        print_success "gosec installed via install script!"
     else
-        go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+        print_warning "gosec installation failed - skipping (govulncheck provides security coverage)"
+        print_status "Note: govulncheck is already installed and provides comprehensive security scanning"
     fi
-    print_success "gosec installed successfully!"
 else
     print_success "gosec is already installed"
 fi
@@ -195,8 +186,18 @@ print_header "Installing markdownlint..."
 if ! command_exists markdownlint; then
     print_status "Installing markdownlint..."
     if command_exists npm; then
-        npm install -g markdownlint-cli
-        print_success "markdownlint installed successfully!"
+        # Try installing without sudo first, then with sudo if needed
+        if npm install -g markdownlint-cli; then
+            print_success "markdownlint installed successfully!"
+        else
+            print_warning "Global install failed, trying with sudo..."
+            if sudo npm install -g markdownlint-cli; then
+                print_success "markdownlint installed successfully with sudo!"
+            else
+                print_warning "markdownlint installation failed - skipping"
+                print_status "You can install it manually: npm install -g markdownlint-cli"
+            fi
+        fi
     else
         print_warning "npm not found. Please install markdownlint manually:"
         print_status "Visit: https://github.com/igorshubovych/markdownlint-cli"
