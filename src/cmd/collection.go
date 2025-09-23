@@ -24,14 +24,17 @@ This command provides subcommands to list, view, and delete collections.`,
 
 // collectionListCmd represents the collection list command
 var collectionListCmd = &cobra.Command{
-	Use:   "list",
+	Use:   "list [database-name]",
 	Short: "List all collections",
 	Long: `List all collections in the configured vector database.
 
 This command shows:
 - Collection names
 - Document counts (if available)
-- Collection metadata (if available)`,
+- Collection metadata (if available)
+
+If no database name is provided, it uses the default database.
+Use 'weave config list' to see all available databases.`,
 	Run: runCollectionList,
 }
 
@@ -76,24 +79,43 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// If a specific database name is provided, use that database
+	var dbConfig *config.VectorDBConfig
+	var dbName string
+	if len(args) > 0 {
+		dbName = args[0]
+		dbConfig, err = cfg.GetDatabase(dbName)
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get database '%s': %v", dbName, err))
+			os.Exit(1)
+		}
+	} else {
+		// Use default database
+		dbName = "default"
+		dbConfig, err = cfg.GetDefaultDatabase()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get default database: %v", err))
+			os.Exit(1)
+		}
+	}
+
 	printHeader("Vector Database Collections")
 	fmt.Println()
 
-	dbType := cfg.Database.VectorDB.Type
-	color.New(color.FgCyan, color.Bold).Printf("Listing collections in %s database...\n", dbType)
+	color.New(color.FgCyan, color.Bold).Printf("Listing collections in %s database (%s)...\n", dbName, dbConfig.Type)
 	fmt.Println()
 
 	ctx := context.Background()
 
-	switch dbType {
+	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		listWeaviateCollections(ctx, &cfg.Database.VectorDB.WeaviateCloud)
+		listWeaviateCollections(ctx, dbConfig)
 	case config.VectorDBTypeLocal:
-		listWeaviateCollections(ctx, &cfg.Database.VectorDB.WeaviateLocal)
+		listWeaviateCollections(ctx, dbConfig)
 	case config.VectorDBTypeMock:
-		listMockCollections(ctx, &cfg.Database.VectorDB.Mock)
+		listMockCollections(ctx, dbConfig)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbType))
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
@@ -122,21 +144,27 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	dbType := cfg.Database.VectorDB.Type
-	color.New(color.FgCyan, color.Bold).Printf("Deleting collection '%s' in %s database...\n", collectionName, dbType)
+	// Get default database (for now, we'll use default for delete operations)
+	dbConfig, err := cfg.GetDefaultDatabase()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		os.Exit(1)
+	}
+
+	color.New(color.FgCyan, color.Bold).Printf("Deleting collection '%s' in %s database...\n", collectionName, dbConfig.Type)
 	fmt.Println()
 
 	ctx := context.Background()
 
-	switch dbType {
+	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		deleteWeaviateCollection(ctx, &cfg.Database.VectorDB.WeaviateCloud, collectionName)
+		deleteWeaviateCollection(ctx, dbConfig, collectionName)
 	case config.VectorDBTypeLocal:
-		deleteWeaviateCollection(ctx, &cfg.Database.VectorDB.WeaviateLocal, collectionName)
+		deleteWeaviateCollection(ctx, dbConfig, collectionName)
 	case config.VectorDBTypeMock:
-		deleteMockCollection(ctx, &cfg.Database.VectorDB.Mock, collectionName)
+		deleteMockCollection(ctx, dbConfig, collectionName)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbType))
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
@@ -164,26 +192,32 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	dbType := cfg.Database.VectorDB.Type
-	color.New(color.FgCyan, color.Bold).Printf("Deleting all collections in %s database...\n", dbType)
+	// Get default database (for now, we'll use default for delete operations)
+	dbConfig, err := cfg.GetDefaultDatabase()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		os.Exit(1)
+	}
+
+	color.New(color.FgCyan, color.Bold).Printf("Deleting all collections in %s database...\n", dbConfig.Type)
 	fmt.Println()
 
 	ctx := context.Background()
 
-	switch dbType {
+	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		deleteAllWeaviateCollections(ctx, &cfg.Database.VectorDB.WeaviateCloud)
+		deleteAllWeaviateCollections(ctx, dbConfig)
 	case config.VectorDBTypeLocal:
-		deleteAllWeaviateCollections(ctx, &cfg.Database.VectorDB.WeaviateLocal)
+		deleteAllWeaviateCollections(ctx, dbConfig)
 	case config.VectorDBTypeMock:
-		deleteAllMockCollections(ctx, &cfg.Database.VectorDB.Mock)
+		deleteAllMockCollections(ctx, dbConfig)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbType))
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
 
-func listWeaviateCollections(ctx context.Context, cfg interface{}) {
+func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -227,8 +261,24 @@ func listWeaviateCollections(ctx context.Context, cfg interface{}) {
 	}
 }
 
-func listMockCollections(ctx context.Context, cfg *config.MockConfig) {
-	client := mock.NewClient(cfg)
+func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection{
+			Name:        col.Name,
+			Type:        col.Type,
+			Description: col.Description,
+		}
+	}
+
+	client := mock.NewClient(mockConfig)
 
 	// List collections
 	collections, err := client.ListCollections(ctx)
@@ -274,7 +324,7 @@ func listMockCollections(ctx context.Context, cfg *config.MockConfig) {
 	}
 }
 
-func deleteWeaviateCollection(ctx context.Context, cfg interface{}, collectionName string) {
+func deleteWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -291,8 +341,24 @@ func deleteWeaviateCollection(ctx context.Context, cfg interface{}, collectionNa
 	printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
 }
 
-func deleteMockCollection(ctx context.Context, cfg *config.MockConfig, collectionName string) {
-	client := mock.NewClient(cfg)
+func deleteMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection{
+			Name:        col.Name,
+			Type:        col.Type,
+			Description: col.Description,
+		}
+	}
+
+	client := mock.NewClient(mockConfig)
 
 	// Delete the collection
 	if err := client.DeleteCollection(ctx, collectionName); err != nil {
@@ -303,7 +369,7 @@ func deleteMockCollection(ctx context.Context, cfg *config.MockConfig, collectio
 	printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
 }
 
-func deleteAllWeaviateCollections(ctx context.Context, cfg interface{}) {
+func deleteAllWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -336,8 +402,24 @@ func deleteAllWeaviateCollections(ctx context.Context, cfg interface{}) {
 	printSuccess("All collections deleted successfully!")
 }
 
-func deleteAllMockCollections(ctx context.Context, cfg *config.MockConfig) {
-	client := mock.NewClient(cfg)
+func deleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection{
+			Name:        col.Name,
+			Type:        col.Type,
+			Description: col.Description,
+		}
+	}
+
+	client := mock.NewClient(mockConfig)
 
 	// List collections first
 	collections, err := client.ListCollections(ctx)

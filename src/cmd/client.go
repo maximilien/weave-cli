@@ -8,19 +8,18 @@ import (
 )
 
 // createWeaviateClient creates a Weaviate client based on the configuration
-func createWeaviateClient(cfg interface{}) (*weaviate.Client, error) {
-	if cloudConfig, ok := cfg.(*config.WeaviateCloudConfig); ok {
+func createWeaviateClient(cfg *config.VectorDBConfig) (*weaviate.Client, error) {
+	switch cfg.Type {
+	case config.VectorDBTypeCloud:
 		return weaviate.NewClient(&weaviate.Config{
-			URL:    cloudConfig.URL,
-			APIKey: cloudConfig.APIKey,
+			URL:    cfg.URL,
+			APIKey: cfg.APIKey,
 		})
-	}
-
-	if localConfig, ok := cfg.(*config.WeaviateLocalConfig); ok {
+	case config.VectorDBTypeLocal:
 		return weaviate.NewClient(&weaviate.Config{
-			URL: localConfig.URL,
+			URL: cfg.URL,
 		})
+	default:
+		return nil, fmt.Errorf("unsupported configuration type: %s", cfg.Type)
 	}
-
-	return nil, fmt.Errorf("unsupported configuration type: %T", cfg)
 }

@@ -1,26 +1,35 @@
 ---
-# Database Configuration
-database:
-  # Vector Database settings
-  vector_db:
-    type: "${VECTOR_DB_TYPE:-weaviate-cloud}"  # Options:
-    # weaviate-cloud, weaviate-local, mock
+# Databases Configuration
+databases:
+  # Default vector database to use 
+  default: "${VECTOR_DB_TYPE:-weaviate-cloud}"
 
+  # Vector Databases settings
+  vector_databases:
     # Weaviate Cloud configuration
-    weaviate_cloud:
+    - name: "weaviate-cloud"
+      type: "weaviate-cloud"
       url: "${WEAVIATE_URL}"
       api_key: "${WEAVIATE_API_KEY}"
-      collection_name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
-      collection_name_test: "${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}"
+      collections:
+        - name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
+          type: "text"
+        - name: "${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}"
+          type: "image"
 
     # Weaviate Local configuration
-    weaviate_local:
+    - name: "weaviate-local"
+      type: "weaviate-local"
       url: "http://localhost:8080"
-      collection_name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
-      collection_name_test: "${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}"
+      collections:
+        - name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
+          type: "text"
+        - name: "${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}"
+          type: "image"
 
     # Mock Vector Database configuration (for development/testing)
-    mock:
+    - name: "mock"
+      type: "mock"
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 384
@@ -31,3 +40,15 @@ database:
         - name: "WeaveImages"
           type: "image"
           description: "Mock image documents collection"
+    
+  # Additional databases can be added here
+  # production:
+  #   type: "weaviate-cloud"
+  #   weaviate_cloud:
+  #     url: "${PROD_WEAVIATE_URL}"
+  #     api_key: "${PROD_WEAVIATE_API_KEY}"
+  #
+  # staging:
+  #   type: "weaviate-local"
+  #   weaviate_local:
+  #     url: "http://staging-weaviate:8080"

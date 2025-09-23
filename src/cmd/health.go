@@ -25,15 +25,18 @@ This command provides subcommands to check database health and connectivity.`,
 
 // healthCheckCmd represents the health check command
 var healthCheckCmd = &cobra.Command{
-	Use:   "check",
-	Short: "Check health of VDB connections",
+	Use:   "check [database-name]",
+	Short: "Check health of database connections",
 	Long: `Check the health of the configured vector database connections.
 
 This command:
-- Attempts to connect to the configured VDB
+- Attempts to connect to the configured database (or all databases)
 - Verifies API keys and authentication
 - Tests collection access
-- Reports connection status and any issues`,
+- Reports connection status and any issues
+
+If no database name is provided, it checks the default database.
+Use 'weave config list' to see all available databases.`,
 	Run: runHealthCheck,
 }
 
@@ -53,28 +56,51 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader("Vector Database Health Check")
-	fmt.Println()
-
-	dbType := cfg.Database.VectorDB.Type
-	color.New(color.FgCyan, color.Bold).Printf("Checking %s database...\n", dbType)
-	fmt.Println()
-
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	// If a specific database name is provided, check only that database
+	if len(args) > 0 {
+		dbName := args[0]
+		dbConfig, err := cfg.GetDatabase(dbName)
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get database '%s': %v", dbName, err))
+			os.Exit(1)
+		}
+
+		printHeader(fmt.Sprintf("Database Health Check: %s", dbName))
+		fmt.Println()
+		checkSingleDatabase(ctx, dbName, dbConfig)
+	} else {
+		// Check default database
+		dbConfig, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get default database: %v", err))
+			os.Exit(1)
+		}
+
+		printHeader("Default Database Health Check")
+		fmt.Println()
+		checkSingleDatabase(ctx, "default", dbConfig)
+	}
+}
+
+func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.VectorDBConfig) {
+	color.New(color.FgCyan, color.Bold).Printf("Checking %s database...\n", dbConfig.Type)
+	fmt.Println()
 
 	var healthStatus bool
 	var healthMessage string
 
-	switch dbType {
+	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		healthStatus, healthMessage = checkWeaviateCloudHealth(ctx, &cfg.Database.VectorDB.WeaviateCloud)
+		healthStatus, healthMessage = checkWeaviateCloudHealth(ctx, dbConfig)
 	case config.VectorDBTypeLocal:
-		healthStatus, healthMessage = checkWeaviateLocalHealth(ctx, &cfg.Database.VectorDB.WeaviateLocal)
+		healthStatus, healthMessage = checkWeaviateLocalHealth(ctx, dbConfig)
 	case config.VectorDBTypeMock:
-		healthStatus, healthMessage = checkMockHealth(ctx, &cfg.Database.VectorDB.Mock)
+		healthStatus, healthMessage = checkMockHealth(ctx, dbConfig)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbType))
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 
@@ -92,10 +118,10 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 	// Test collection access
 	fmt.Println()
 	printHeader("Collection Access Test")
-	testCollectionAccess(ctx, cfg)
+	testCollectionAccessForDatabase(ctx, dbConfig)
 }
 
-func checkWeaviateCloudHealth(ctx context.Context, cfg *config.WeaviateCloudConfig) (bool, string) {
+func checkWeaviateCloudHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, string) {
 	if cfg.URL == "" {
 		return false, "Weaviate Cloud URL is not configured"
 	}
@@ -121,7 +147,7 @@ func checkWeaviateCloudHealth(ctx context.Context, cfg *config.WeaviateCloudConf
 	return true, fmt.Sprintf("Successfully connected to Weaviate Cloud at %s", cfg.URL)
 }
 
-func checkWeaviateLocalHealth(ctx context.Context, cfg *config.WeaviateLocalConfig) (bool, string) {
+func checkWeaviateLocalHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, string) {
 	if cfg.URL == "" {
 		return false, "Weaviate Local URL is not configured"
 	}
@@ -142,13 +168,28 @@ func checkWeaviateLocalHealth(ctx context.Context, cfg *config.WeaviateLocalConf
 	return true, fmt.Sprintf("Successfully connected to Weaviate Local at %s", cfg.URL)
 }
 
-func checkMockHealth(ctx context.Context, cfg *config.MockConfig) (bool, string) {
+func checkMockHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, string) {
 	if !cfg.Enabled {
 		return false, "Mock database is not enabled"
 	}
 
-	// Create mock client
-	client := mock.NewClient(cfg)
+	// Create mock client - we need to convert to the old MockConfig structure
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection{
+			Name:        col.Name,
+			Type:        col.Type,
+			Description: col.Description,
+		}
+	}
+
+	client := mock.NewClient(mockConfig)
 
 	// Test connection
 	if err := client.Health(ctx); err != nil {
@@ -158,20 +199,18 @@ func checkMockHealth(ctx context.Context, cfg *config.MockConfig) (bool, string)
 	return true, "Mock database is working correctly"
 }
 
-func testCollectionAccess(ctx context.Context, cfg *config.Config) {
-	dbType := cfg.Database.VectorDB.Type
-
-	switch dbType {
+func testCollectionAccessForDatabase(ctx context.Context, dbConfig *config.VectorDBConfig) {
+	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		testWeaviateCollectionAccess(ctx, &cfg.Database.VectorDB.WeaviateCloud)
+		testWeaviateCollectionAccess(ctx, dbConfig)
 	case config.VectorDBTypeLocal:
-		testWeaviateCollectionAccess(ctx, &cfg.Database.VectorDB.WeaviateLocal)
+		testWeaviateCollectionAccess(ctx, dbConfig)
 	case config.VectorDBTypeMock:
-		testMockCollectionAccess(ctx, &cfg.Database.VectorDB.Mock)
+		testMockCollectionAccess(ctx, dbConfig)
 	}
 }
 
-func testWeaviateCollectionAccess(ctx context.Context, cfg interface{}) {
+func testWeaviateCollectionAccess(ctx context.Context, cfg *config.VectorDBConfig) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -198,8 +237,24 @@ func testWeaviateCollectionAccess(ctx context.Context, cfg interface{}) {
 	}
 }
 
-func testMockCollectionAccess(ctx context.Context, cfg *config.MockConfig) {
-	client := mock.NewClient(cfg)
+func testMockCollectionAccess(ctx context.Context, cfg *config.VectorDBConfig) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection{
+			Name:        col.Name,
+			Type:        col.Type,
+			Description: col.Description,
+		}
+	}
+
+	client := mock.NewClient(mockConfig)
 
 	// List collections
 	collections, err := client.ListCollections(ctx)

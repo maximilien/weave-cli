@@ -20,29 +20,21 @@ const (
 	VectorDBTypeMock  VectorDBType = "mock"
 )
 
-// WeaviateCloudConfig holds Weaviate Cloud configuration
-type WeaviateCloudConfig struct {
-	URL                string `yaml:"url"`
-	APIKey             string `yaml:"api_key"`
-	CollectionName     string `yaml:"collection_name"`
-	CollectionNameTest string `yaml:"collection_name_test"`
+// Collection represents a collection configuration
+type Collection struct {
+	Name        string `yaml:"name"`
+	Type        string `yaml:"type"`
+	Description string `yaml:"description,omitempty"`
 }
 
-// WeaviateLocalConfig holds Weaviate Local configuration
-type WeaviateLocalConfig struct {
-	URL                string `yaml:"url"`
-	CollectionName     string `yaml:"collection_name"`
-	CollectionNameTest string `yaml:"collection_name_test"`
-}
-
-// MockCollection represents a mock collection
+// MockCollection represents a mock collection (for backward compatibility)
 type MockCollection struct {
 	Name        string `yaml:"name"`
 	Type        string `yaml:"type"`
 	Description string `yaml:"description"`
 }
 
-// MockConfig holds mock database configuration
+// MockConfig holds mock database configuration (for backward compatibility)
 type MockConfig struct {
 	Enabled            bool             `yaml:"enabled"`
 	SimulateEmbeddings bool             `yaml:"simulate_embeddings"`
@@ -52,20 +44,25 @@ type MockConfig struct {
 
 // VectorDBConfig holds vector database configuration
 type VectorDBConfig struct {
-	Type          VectorDBType        `yaml:"type"`
-	WeaviateCloud WeaviateCloudConfig `yaml:"weaviate_cloud"`
-	WeaviateLocal WeaviateLocalConfig `yaml:"weaviate_local"`
-	Mock          MockConfig          `yaml:"mock"`
+	Name        string       `yaml:"name"`
+	Type        VectorDBType `yaml:"type"`
+	URL         string       `yaml:"url,omitempty"`
+	APIKey      string       `yaml:"api_key,omitempty"`
+	Enabled     bool         `yaml:"enabled,omitempty"`
+	SimulateEmbeddings bool `yaml:"simulate_embeddings,omitempty"`
+	EmbeddingDimension int  `yaml:"embedding_dimension,omitempty"`
+	Collections []Collection `yaml:"collections"`
 }
 
-// DatabaseConfig holds database configuration
-type DatabaseConfig struct {
-	VectorDB VectorDBConfig `yaml:"vector_db"`
+// DatabasesConfig holds multiple databases configuration
+type DatabasesConfig struct {
+	Default         string           `yaml:"default"`
+	VectorDatabases []VectorDBConfig `yaml:"vector_databases"`
 }
 
 // Config holds the complete application configuration
 type Config struct {
-	Database DatabaseConfig `yaml:"database"`
+	Databases DatabasesConfig `yaml:"databases"`
 }
 
 // LoadConfig loads configuration from files and environment variables
@@ -209,4 +206,71 @@ func GetEnvFile() string {
 	}
 
 	return ""
+}
+
+// GetDefaultDatabase returns the default vector database configuration
+func (c *Config) GetDefaultDatabase() (*VectorDBConfig, error) {
+	if len(c.Databases.VectorDatabases) == 0 {
+		return nil, fmt.Errorf("no vector databases configured")
+	}
+
+	// Get the default database name
+	defaultName := c.Databases.Default
+	if defaultName == "" {
+		// If no default specified, use the first database
+		return &c.Databases.VectorDatabases[0], nil
+	}
+
+	// Find the database with the default name
+	for i := range c.Databases.VectorDatabases {
+		if c.Databases.VectorDatabases[i].Name == defaultName {
+			return &c.Databases.VectorDatabases[i], nil
+		}
+	}
+
+	// If default not found, return the first one
+	return &c.Databases.VectorDatabases[0], nil
+}
+
+// GetDatabase returns a specific vector database configuration by name
+func (c *Config) GetDatabase(name string) (*VectorDBConfig, error) {
+	if len(c.Databases.VectorDatabases) == 0 {
+		return nil, fmt.Errorf("no vector databases configured")
+	}
+
+	for i := range c.Databases.VectorDatabases {
+		if c.Databases.VectorDatabases[i].Name == name {
+			return &c.Databases.VectorDatabases[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("database '%s' not found", name)
+}
+
+// ListDatabases returns a list of all configured database names
+func (c *Config) ListDatabases() []string {
+	if len(c.Databases.VectorDatabases) == 0 {
+		return []string{}
+	}
+
+	names := make([]string, len(c.Databases.VectorDatabases))
+	for i, db := range c.Databases.VectorDatabases {
+		names[i] = db.Name
+	}
+
+	return names
+}
+
+// GetDatabaseNames returns a map of database names to their types
+func (c *Config) GetDatabaseNames() map[string]VectorDBType {
+	if len(c.Databases.VectorDatabases) == 0 {
+		return map[string]VectorDBType{}
+	}
+
+	names := make(map[string]VectorDBType)
+	for _, db := range c.Databases.VectorDatabases {
+		names[db.Name] = db.Type
+	}
+
+	return names
 }
