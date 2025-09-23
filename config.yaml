@@ -1,7 +1,7 @@
 ---
 # Databases Configuration
 databases:
-  # Default vector database to use 
+  # Default vector database to use
   default: "${VECTOR_DB_TYPE:-weaviate-cloud}"
 
   # Vector Databases settings
@@ -40,7 +40,7 @@ databases:
         - name: "WeaveImages"
           type: "image"
           description: "Mock image documents collection"
-    
+
   # Additional databases can be added here
   # production:
   #   type: "weaviate-cloud"

@@ -182,11 +182,7 @@ func checkMockHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, str
 	}
 
 	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection{
-			Name:        col.Name,
-			Type:        col.Type,
-			Description: col.Description,
-		}
+		mockConfig.Collections[i] = config.MockCollection(col)
 	}
 
 	client := mock.NewClient(mockConfig)
@@ -247,11 +243,7 @@ func testMockCollectionAccess(ctx context.Context, cfg *config.VectorDBConfig) {
 	}
 
 	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection{
-			Name:        col.Name,
-			Type:        col.Type,
-			Description: col.Description,
-		}
+		mockConfig.Collections[i] = config.MockCollection(col)
 	}
 
 	client := mock.NewClient(mockConfig)

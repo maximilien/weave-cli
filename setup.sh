@@ -168,15 +168,48 @@ fi
 print_header "Installing yamllint..."
 if ! command_exists yamllint; then
     print_status "Installing yamllint..."
-    if command_exists pip3; then
-        pip3 install yamllint
-        print_success "yamllint installed successfully!"
+    
+    # Try different installation methods
+    if command_exists brew; then
+        print_status "Trying Homebrew installation..."
+        if brew install yamllint; then
+            print_success "yamllint installed successfully via Homebrew!"
+        else
+            print_warning "Homebrew installation failed, trying pipx..."
+            if command_exists pipx; then
+                pipx install yamllint
+                print_success "yamllint installed successfully via pipx!"
+            else
+                print_warning "pipx not found, trying pip with --user flag..."
+                if command_exists pip3; then
+                    pip3 install --user yamllint
+                    print_success "yamllint installed successfully via pip3 --user!"
+                elif command_exists pip; then
+                    pip install --user yamllint
+                    print_success "yamllint installed successfully via pip --user!"
+                else
+                    print_warning "pip not found. Please install yamllint manually:"
+                    print_status "Visit: https://yamllint.readthedocs.io/en/stable/quickstart.html"
+                    print_status "Or install via Homebrew: brew install yamllint"
+                fi
+            fi
+        fi
+    elif command_exists pipx; then
+        print_status "Using pipx installation..."
+        pipx install yamllint
+        print_success "yamllint installed successfully via pipx!"
+    elif command_exists pip3; then
+        print_status "Using pip3 with --user flag..."
+        pip3 install --user yamllint
+        print_success "yamllint installed successfully via pip3 --user!"
     elif command_exists pip; then
-        pip install yamllint
-        print_success "yamllint installed successfully!"
+        print_status "Using pip with --user flag..."
+        pip install --user yamllint
+        print_success "yamllint installed successfully via pip --user!"
     else
-        print_warning "pip not found. Please install yamllint manually:"
+        print_warning "No suitable package manager found. Please install yamllint manually:"
         print_status "Visit: https://yamllint.readthedocs.io/en/stable/quickstart.html"
+        print_status "Or install via Homebrew: brew install yamllint"
     fi
 else
     print_success "yamllint is already installed"

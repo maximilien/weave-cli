@@ -271,11 +271,7 @@ func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	}
 
 	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection{
-			Name:        col.Name,
-			Type:        col.Type,
-			Description: col.Description,
-		}
+		mockConfig.Collections[i] = config.MockCollection(col)
 	}
 
 	client := mock.NewClient(mockConfig)
@@ -351,11 +347,7 @@ func deleteMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 	}
 
 	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection{
-			Name:        col.Name,
-			Type:        col.Type,
-			Description: col.Description,
-		}
+		mockConfig.Collections[i] = config.MockCollection(col)
 	}
 
 	client := mock.NewClient(mockConfig)
@@ -412,11 +404,7 @@ func deleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	}
 
 	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection{
-			Name:        col.Name,
-			Type:        col.Type,
-			Description: col.Description,
-		}
+		mockConfig.Collections[i] = config.MockCollection(col)
 	}
 
 	client := mock.NewClient(mockConfig)
