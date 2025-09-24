@@ -12,14 +12,16 @@ applications.
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, view, and delete collections
 - 📄 **Document Management** - List, show, and delete individual documents
-  (shows document IDs and basic info)
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
+- 📋 **Virtual Document View** - Aggregate chunked documents by original file
+- 🎯 **Smart Truncation** - Intelligent content truncation with `--no-truncate` option
+- 🌈 **Color Control** - `--no-color` flag for terminal compatibility
 - ⚡ **Fast & Lightweight** - Single binary deployment
 
-## Installation
+## Quick Start
 
-### Build from Source
+### Installation
 
 ```bash
 # Clone the repository
@@ -32,104 +34,56 @@ cd weave-cli
 # The binary will be available at bin/weave
 ```
 
-### Prerequisites
+### Configuration
 
-- Go 1.21 or later
-- Access to a Weaviate instance (cloud or local)
+1. **Set up your environment variables**:
+   ```bash
+   export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
+   export WEAVIATE_API_KEY="your-api-key"
+   export VECTOR_DB_TYPE="weaviate-cloud"
+   ```
 
-## Configuration
+2. **Test your connection**:
+   ```bash
+   ./bin/weave health check
+   ```
 
-Weave CLI uses two configuration files:
+3. **List your collections**:
+   ```bash
+   ./bin/weave collection list
+   ```
 
-### config.yaml
-
-```yaml
-# Database Configuration
-database:
-  # Vector Database settings
-  vector_db:
-    type: "${VECTOR_DB_TYPE:-weaviate-cloud}"  # Options: weaviate-cloud,
-      # weaviate-local, mock
-    
-    # Weaviate Cloud configuration
-    weaviate_cloud:
-      url: "${WEAVIATE_URL}"
-      api_key: "${WEAVIATE_API_KEY}"
-      collection_name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
-      collection_name_test: "${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}"
-      
-    # Weaviate Local configuration
-    weaviate_local:
-      url: "http://localhost:8080"
-      collection_name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
-      collection_name_test: "${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}"
-      
-    # Mock Vector Database configuration (for development/testing)
-    mock:
-      enabled: true
-      simulate_embeddings: true
-      embedding_dimension: 384
-      collections:
-        - name: "WeaveDocs"
-          type: "text"
-          description: "Mock text documents collection"
-        - name: "WeaveImages" 
-          type: "image"
-          description: "Mock image documents collection"
-```
-
-### .env
-
-```bash
-# Vector Database Configuration  
-VECTOR_DB_TYPE="weaviate-cloud"
-WEAVIATE_COLLECTION="WeaveDocs"
-WEAVIATE_COLLECTION_TEST="WeaveDocs_test"
-
-WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
-WEAVIATE_API_KEY="your-api-key"
-```
-
-## Usage
-
-### Basic Commands
+### Basic Usage
 
 ```bash
 # Show help
-weave help
+weave --help
 
-# Show currently configured VDB
-weave config show
-
-# Check health of VDB connections
+# Check database health
 weave health check
 
-# List all collections
+# List collections
 weave collection list
 
-# List documents in a collection (shows document IDs)
+# List documents in a collection
 weave document list MyCollection
 
-# Show a specific document
-weave document show MyCollection document-id
+# Virtual document view (aggregate chunks by original file)
+weave document list MyCollection --virtual
 
-# Delete a specific document
-weave document delete MyCollection document-id
+# Show all data without truncation
+weave document list MyCollection --no-truncate
 
-# Delete all documents in a collection (⚠️ DESTRUCTIVE)
-weave document delete-all MyCollection
-
-# Delete a specific collection
-weave collection delete MyCollection
-
-# Delete all collections (⚠️ DESTRUCTIVE)
-weave collection delete-all
+# Disable colored output (useful for scripts)
+weave document list MyCollection --no-color
 ```
 
-### Command Structure
+## Command Structure
 
 Weave follows a consistent command pattern:
 `weave noun verb [arguments] [flags]`
+
+### Available Commands
 
 - **config** - Configuration management
   - `weave config show` - Show current configuration
@@ -139,16 +93,16 @@ Weave follows a consistent command pattern:
 
 - **collection** - Collection management
   - `weave collection list` - List all collections
+  - `weave collection list --virtual` - Show collections with virtual structure summary
   - `weave collection delete COLLECTION_NAME` - Delete a specific collection
   - `weave collection delete-all` - Delete all collections
 
 - **document** - Document management
   - `weave document list COLLECTION_NAME` - List documents in collection
+  - `weave document list COLLECTION_NAME --virtual` - Virtual document view
   - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show specific document
-  - `weave document delete COLLECTION_NAME DOCUMENT_ID` - Delete specific
-    document
-  - `weave document delete-all COLLECTION_NAME` - Delete all documents in
-    collection
+  - `weave document delete COLLECTION_NAME DOCUMENT_ID` - Delete specific document
+  - `weave document delete-all COLLECTION_NAME` - Delete all documents in collection
 
 ### Command Aliases
 
@@ -158,51 +112,70 @@ For convenience, shorter aliases are available:
 # Collection commands
 weave col list          # Same as: weave collection list
 weave cols list         # Same as: weave collection list
-weave col delete MyCol  # Same as: weave collection delete MyCol
 
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
-weave doc show MyCol ID # Same as: weave document show MyCol ID
 ```
 
-### Enhanced Document Display
+## Global Flags
+
+- `--no-color` - Disable colored output (useful for scripts/logs)
+- `--no-truncate` - Show all data without truncation
+- `--verbose` - Provide detailed output for debugging
+- `--quiet` - Minimal output for scripts
+
+## Virtual Document View
+
+The `--virtual` flag provides an intelligent view of your documents by aggregating chunked content back into original documents:
 
 ```bash
-# Show only first 5 lines of content and metadata
-weave doc list MyCollection --short 5
+$ weave document list MyCollection --virtual
 
-# Show full content and metadata
-weave doc show MyCollection ID --long
+✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from 6 total documents):
 
-# Limit number of documents shown
-weave doc list MyCollection --limit 20
+1. 📄 Document: research_paper.pdf
+   📝 Chunks: 3/3
+   📋 Metadata: 
+     original_filename: research_paper.pdf
+   📝 Chunk Details: 
+     1. ID: chunk-1
+        Content: Introduction to machine learning concepts...
+     2. ID: chunk-2  
+        Content: Deep learning architectures and applications...
 ```
 
-### Advanced Usage
+## Database Support
 
-```bash
-# Use custom config and env files
-weave config show --config /path/to/config.yaml --env /path/to/.env
+- **Weaviate Cloud** - Full support with API key authentication
+- **Weaviate Local** - Support for local instances (no auth required)
+- **Mock Database** - Built-in mock database for testing and development
 
-# Verbose output
-weave health check --verbose
+## Prerequisites
 
-# Quiet output
-weave collection list --quiet
+- Go 1.21 or later
+- Access to a Weaviate instance (cloud or local)
 
-# Show full document content
-weave document list MyCollection --long
+## Documentation
 
-# Limit number of documents shown
-weave document list MyCollection --limit 5
+For comprehensive documentation, examples, and advanced usage:
 
-# Get help for specific commands
-weave collection --help
-weave document list --help
-```
+📖 **[Complete User Guide](docs/USER_GUIDE.md)** - Detailed usage instructions, configuration examples, troubleshooting, and more.
 
 ## Development
+
+### Building
+
+```bash
+# Build everything
+./build.sh
+
+# Run tests
+./test.sh
+
+# Run linter
+./lint.sh
+```
 
 ### Project Structure
 
@@ -215,88 +188,11 @@ weave-cli/
 │   │   ├── weaviate/     # Weaviate client
 │   │   └── mock/         # Mock database client
 │   └── main.go           # Main entry point
+├── docs/                   # Documentation
 ├── tests/                 # Test files
 ├── bin/                   # Built binaries
-├── build.sh              # Build script
-├── test.sh               # Test script
-├── lint.sh               # Lint script
-├── config.yaml           # Configuration file
-├── .env                  # Environment variables
 └── README.md             # This file
 ```
-
-### Building
-
-```bash
-# Build everything
-./build.sh
-
-# Clean build artifacts
-./build.sh clean
-
-# Build only (skip tests)
-go build -o bin/weave ./src/main.go
-```
-
-### Testing
-
-```bash
-# Run all tests
-./test.sh
-
-# Run only unit tests
-./test.sh unit
-
-# Run only integration tests
-./test.sh integration
-
-# Run tests with coverage
-./test.sh coverage
-
-# Run Go tests directly
-go test ./tests/...
-```
-
-### Linting
-
-```bash
-# Run all linters
-./lint.sh
-
-# Run Go linter directly
-golangci-lint run ./src/...
-```
-
-## Database Support
-
-### Weaviate Cloud
-
-- Full support for Weaviate Cloud instances
-- API key authentication
-- HTTPS connections
-- All CRUD operations
-
-### Weaviate Local
-
-- Support for local Weaviate instances
-- No authentication required
-- HTTP connections
-- All CRUD operations
-
-### Mock Database
-
-- Built-in mock database for testing
-- Simulates Weaviate behavior
-- No external dependencies
-- Perfect for development and testing
-
-## Safety Features
-
-- ⚠️ **Confirmation Prompts** - All destructive operations require
-  confirmation
-- 🔒 **API Key Masking** - API keys are never displayed in plain text
-- 🛡️ **Error Handling** - Comprehensive error handling and reporting
-- 📝 **Logging** - Detailed logging for debugging
 
 ## Contributing
 
@@ -316,6 +212,5 @@ This project is licensed under the MIT License - see the
 ## Acknowledgments
 
 - Built with [Cobra](https://github.com/spf13/cobra) CLI framework
-- Uses [Weaviate Go Client](https://github.com/weaviate/weaviate-go-client) for
-  database operations
+- Uses [Weaviate Go Client](https://github.com/weaviate/weaviate-go-client) for database operations
 - Inspired by RAGme.io's tools/vdb.sh script

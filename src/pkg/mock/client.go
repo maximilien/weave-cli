@@ -36,6 +36,9 @@ func NewClient(config *config.MockConfig) *Client {
 		client.collections[collection.Name] = []Document{}
 	}
 
+	// Add some test data for demonstration
+	client.addTestData()
+
 	return client
 }
 
@@ -287,4 +290,97 @@ func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName stri
 	}
 
 	return matchingDocuments, nil
+}
+
+// addTestData adds sample documents for demonstration purposes
+func (c *Client) addTestData() {
+	// Add test documents to WeaveDocs collection
+	if _, exists := c.collections["WeaveDocs"]; exists {
+		testDocs := []Document{
+			{
+				ID:      "doc1-chunk1",
+				Content: "This is the first chunk of a document about machine learning. It covers the basics of supervised learning algorithms.",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "ml_guide.pdf", "is_chunked": true, "chunk_index": 0, "total_chunks": 3}`,
+				},
+			},
+			{
+				ID:      "doc1-chunk2",
+				Content: "This is the second chunk discussing neural networks and deep learning architectures including CNNs and RNNs.",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "ml_guide.pdf", "is_chunked": true, "chunk_index": 1, "total_chunks": 3}`,
+				},
+			},
+			{
+				ID:      "doc1-chunk3",
+				Content: "This is the final chunk covering practical applications, examples, and best practices for machine learning projects.",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "ml_guide.pdf", "is_chunked": true, "chunk_index": 2, "total_chunks": 3}`,
+				},
+			},
+			{
+				ID: "doc2-single",
+				Content: `This is a single document without chunks. It contains information about data preprocessing techniques and feature engineering.
+
+Data preprocessing is a crucial step in the machine learning pipeline. It involves cleaning, transforming, and organizing raw data into a format that is suitable for analysis and modeling.
+
+Key steps in data preprocessing include:
+1. Data cleaning - removing or correcting errors, inconsistencies, and missing values
+2. Data transformation - converting data into appropriate formats
+3. Feature selection - choosing relevant features for the model
+4. Feature scaling - normalizing or standardizing features
+5. Data splitting - dividing data into training, validation, and test sets
+
+Proper data preprocessing can significantly improve model performance and reduce overfitting. It's important to understand the domain and the specific requirements of your machine learning task when applying these techniques.`,
+				Metadata: map[string]interface{}{
+					"author": "Test Author",
+					"topic":  "Data Preprocessing",
+					"year":   "2024",
+				},
+			},
+			{
+				ID:      "doc3-chunk1",
+				Content: "First chunk of another document about data science methodologies and statistical analysis techniques.",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "data_science.pdf", "is_chunked": true, "chunk_index": 0, "total_chunks": 2}`,
+				},
+			},
+			{
+				ID:      "doc3-chunk2",
+				Content: "Second chunk covering data analysis techniques, visualization methods, and reporting best practices.",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "data_science.pdf", "is_chunked": true, "chunk_index": 1, "total_chunks": 2}`,
+				},
+			},
+		}
+		c.collections["WeaveDocs"] = testDocs
+	}
+
+	// Add test images to WeaveImages collection
+	if _, exists := c.collections["WeaveImages"]; exists {
+		testImages := []Document{
+			{
+				ID:      "img1-page1",
+				Content: "Image extracted from page 1 of document.pdf",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "document.pdf", "page_number": 1, "image_type": "chart"}`,
+				},
+			},
+			{
+				ID:      "img1-page2",
+				Content: "Image extracted from page 2 of document.pdf",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "document.pdf", "page_number": 2, "image_type": "diagram"}`,
+				},
+			},
+			{
+				ID:      "img2-single",
+				Content: "Standalone image from presentation.pptx",
+				Metadata: map[string]interface{}{
+					"metadata": `{"original_filename": "presentation.pptx", "slide_number": 5, "image_type": "screenshot"}`,
+				},
+			},
+		}
+		c.collections["WeaveImages"] = testImages
+	}
 }

@@ -10,8 +10,10 @@ import (
 )
 
 var (
-	cfgFile string
-	envFile string
+	cfgFile    string
+	envFile    string
+	noColor    bool
+	noTruncate bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,13 +48,15 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig, initColor)
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&envFile, "env", "", "env file (default is ./.env)")
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "quiet output (minimal messages)")
+	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colored output")
+	rootCmd.PersistentFlags().BoolVar(&noTruncate, "no-truncate", false, "show all data without truncation")
 
 	// Add version flag
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
@@ -107,4 +111,172 @@ func printError(message string) {
 // printInfo prints a colored info message
 func printInfo(message string) {
 	color.New(color.FgCyan).Printf("ℹ️  %s\n", message)
+}
+
+// initColor initializes color settings based on the no-color flag
+func initColor() {
+	if noColor {
+		color.NoColor = true
+	}
+}
+
+// Styled output functions for virtual structure display
+
+// printStyledKey prints a styled key (dimmed)
+func printStyledKey(key string) {
+	if noColor {
+		fmt.Printf("%s", key)
+	} else {
+		color.New(color.FgWhite, color.Faint).Printf("%s", key)
+	}
+}
+
+// printStyledValue prints a styled value (normal color)
+func printStyledValue(value string) {
+	if noColor {
+		fmt.Printf("%s", value)
+	} else {
+		color.New(color.FgWhite).Printf("%s", value)
+	}
+}
+
+// printStyledValueDimmed prints a styled value (dimmed color)
+func printStyledValueDimmed(value string) {
+	if noColor {
+		fmt.Printf("%s", value)
+	} else {
+		color.New(color.FgWhite, color.Faint).Printf("%s", value)
+	}
+}
+
+// printStyledID prints a styled ID (highlighted)
+func printStyledID(id string) {
+	if noColor {
+		fmt.Printf("%s", id)
+	} else {
+		color.New(color.FgYellow, color.Bold).Printf("%s", id)
+	}
+}
+
+// printStyledFilename prints a styled filename (highlighted)
+func printStyledFilename(filename string) {
+	if noColor {
+		fmt.Printf("%s", filename)
+	} else {
+		color.New(color.FgCyan, color.Bold).Printf("%s", filename)
+	}
+}
+
+// printStyledNumber prints a styled number (highlighted)
+func printStyledNumber(num int) {
+	if noColor {
+		fmt.Printf("%d", num)
+	} else {
+		color.New(color.FgGreen, color.Bold).Printf("%d", num)
+	}
+}
+
+// printStyledEmoji prints an emoji (only if colors are enabled)
+func printStyledEmoji(emoji string) {
+	if !noColor {
+		fmt.Printf("%s", emoji)
+	}
+}
+
+// printStyledKeyValue prints a key-value pair with proper styling
+func printStyledKeyValue(key, value string) {
+	printStyledKey(key)
+	fmt.Printf(": ")
+	printStyledValue(value)
+}
+
+// printStyledKeyValueWithEmoji prints a key-value pair with emoji and styling
+func printStyledKeyValueWithEmoji(key, value, emoji string) {
+	printStyledEmoji(emoji)
+	fmt.Printf(" ")
+	printStyledKey(key)
+	fmt.Printf(": ")
+	printStyledValue(value)
+}
+
+// printStyledKeyNumber prints a key-number pair with proper styling
+func printStyledKeyNumber(key string, num int) {
+	printStyledKey(key)
+	fmt.Printf(": ")
+	printStyledNumber(num)
+}
+
+// printStyledKeyNumberWithEmoji prints a key-number pair with emoji and styling
+func printStyledKeyNumberWithEmoji(key string, num int, emoji string) {
+	printStyledEmoji(emoji)
+	fmt.Printf(" ")
+	printStyledKey(key)
+	fmt.Printf(": ")
+	printStyledNumber(num)
+}
+
+// printStyledKeyValueDimmed prints a key-value pair with dimmed value styling
+func printStyledKeyValueDimmed(key, value string) {
+	printStyledKey(key)
+	fmt.Printf(": ")
+	printStyledValueDimmed(value)
+}
+
+// printStyledKeyValueDimmedWithEmoji prints a key-value pair with emoji and dimmed value styling
+func printStyledKeyValueDimmedWithEmoji(key, value, emoji string) {
+	printStyledEmoji(emoji)
+	fmt.Printf(" ")
+	printStyledKey(key)
+	fmt.Printf(": ")
+	printStyledValueDimmed(value)
+}
+
+// printStyledHighlight prints highlighted text (bright color)
+func printStyledHighlight(text string) {
+	if noColor {
+		fmt.Printf("%s", text)
+	} else {
+		color.New(color.FgHiWhite, color.Bold).Printf("%s", text)
+	}
+}
+
+// printStyledKeyProminent prints a prominent key (normal color, not dimmed)
+func printStyledKeyProminent(key string) {
+	if noColor {
+		fmt.Printf("%s", key)
+	} else {
+		color.New(color.FgWhite).Printf("%s", key)
+	}
+}
+
+// printStyledKeyValueProminent prints a key-value pair with prominent key styling
+func printStyledKeyValueProminent(key, value string) {
+	printStyledKeyProminent(key)
+	fmt.Printf(": ")
+	printStyledValue(value)
+}
+
+// printStyledKeyValueProminentWithEmoji prints a key-value pair with emoji and prominent key styling
+func printStyledKeyValueProminentWithEmoji(key, value, emoji string) {
+	printStyledEmoji(emoji)
+	fmt.Printf(" ")
+	printStyledKeyProminent(key)
+	fmt.Printf(": ")
+	printStyledValue(value)
+}
+
+// printStyledKeyNumberProminent prints a key-number pair with prominent key styling
+func printStyledKeyNumberProminent(key string, num int) {
+	printStyledKeyProminent(key)
+	fmt.Printf(": ")
+	printStyledNumber(num)
+}
+
+// printStyledKeyNumberProminentWithEmoji prints a key-number pair with emoji and prominent key styling
+func printStyledKeyNumberProminentWithEmoji(key string, num int, emoji string) {
+	printStyledEmoji(emoji)
+	fmt.Printf(" ")
+	printStyledKeyProminent(key)
+	fmt.Printf(": ")
+	printStyledNumber(num)
 }

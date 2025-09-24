@@ -961,54 +961,81 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 	fmt.Println()
 
 	for i, vdoc := range virtualDocs {
-		color.New(color.FgGreen).Printf("%d. Document: %s\n", i+1, vdoc.OriginalFilename)
+		fmt.Printf("%d. ", i+1)
+		printStyledEmoji("📄")
+		fmt.Printf(" Document: ")
+		printStyledFilename(vdoc.OriginalFilename)
+		fmt.Println()
 
 		// Determine if this is an image collection
 		isImageCollection := isImageVirtualDocument(vdoc)
 
+		fmt.Printf("   ")
 		if vdoc.TotalChunks > 0 {
-			fmt.Printf("   Chunks: %d/%d\n", len(vdoc.Chunks), vdoc.TotalChunks)
+			printStyledKeyNumberProminentWithEmoji("Chunks", len(vdoc.Chunks), "📝")
+			fmt.Printf("/")
+			printStyledNumber(vdoc.TotalChunks)
+			fmt.Println()
 		} else if isImageCollection {
-			fmt.Printf("   Images: %d\n", len(vdoc.Chunks))
+			printStyledKeyNumberProminentWithEmoji("Images", len(vdoc.Chunks), "🖼️")
+			fmt.Println()
 		} else {
-			fmt.Printf("   Type: Single document (no chunks)\n")
+			printStyledKeyValueProminentWithEmoji("Type", "Single document (no chunks)", "📄")
+			fmt.Println()
 		}
 
 		// Show metadata from the first chunk or document
 		if len(vdoc.Metadata) > 0 {
-			fmt.Printf("   Metadata:\n")
+			fmt.Printf("   ")
+			printStyledKeyValueProminentWithEmoji("Metadata", "", "📋")
+			fmt.Println()
 			for key, value := range vdoc.Metadata {
 				if key != "id" && key != "chunk_index" && key != "total_chunks" && key != "is_chunked" {
 					// Truncate value based on shortLines directive
 					valueStr := fmt.Sprintf("%v", value)
 					truncatedValue := smartTruncate(valueStr, key, shortLines)
-					fmt.Printf("     %s: %s\n", key, truncatedValue)
+					fmt.Printf("     ")
+					printStyledKeyValueDimmed(key, truncatedValue)
+					fmt.Println()
 				}
 			}
 		}
 
 		// Show details if there are items
 		if len(vdoc.Chunks) > 0 {
+			fmt.Printf("   ")
 			if isImageCollection {
-				fmt.Printf("   Stack Details:\n")
+				printStyledKeyValueProminentWithEmoji("Stack Details", "", "🗂️")
 			} else {
-				fmt.Printf("   Chunk Details:\n")
+				printStyledKeyValueProminentWithEmoji("Chunk Details", "", "📝")
 			}
+			fmt.Println()
 
 			for j, chunk := range vdoc.Chunks {
-				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
+				fmt.Printf("     %d. ", j+1)
+				printStyledKeyProminent("ID")
+				fmt.Printf(": ")
+				printStyledID(chunk.ID)
 				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
-					fmt.Printf(" (chunk %v)", chunkIndex)
+					fmt.Printf(" (")
+					printStyledKeyProminent("chunk")
+					fmt.Printf(" ")
+					printStyledNumber(int(chunkIndex.(float64)))
+					fmt.Printf(")")
 				}
 				fmt.Println()
 
 				if chunk.Content != fmt.Sprintf("Document ID: %s", chunk.ID) {
+					fmt.Printf("        ")
+					printStyledKeyProminent("Content")
+					fmt.Printf(": ")
 					if showLong {
-						fmt.Printf("        Content: %s\n", chunk.Content)
+						printStyledValueDimmed(chunk.Content)
 					} else {
 						preview := smartTruncate(chunk.Content, "content", shortLines)
-						fmt.Printf("        Content: %s\n", preview)
+						printStyledValueDimmed(preview)
 					}
+					fmt.Println()
 				}
 			}
 		}
@@ -1198,53 +1225,80 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 	fmt.Println()
 
 	for i, vdoc := range virtualDocs {
-		color.New(color.FgGreen).Printf("%d. Document: %s\n", i+1, vdoc.OriginalFilename)
+		fmt.Printf("%d. ", i+1)
+		printStyledEmoji("📄")
+		fmt.Printf(" Document: ")
+		printStyledFilename(vdoc.OriginalFilename)
+		fmt.Println()
 
 		// Determine if this is an image collection
 		isImageCollection := isMockImageVirtualDocument(vdoc)
 
+		fmt.Printf("   ")
 		if vdoc.TotalChunks > 0 {
-			fmt.Printf("   Chunks: %d/%d\n", len(vdoc.Chunks), vdoc.TotalChunks)
+			printStyledKeyNumberProminentWithEmoji("Chunks", len(vdoc.Chunks), "📝")
+			fmt.Printf("/")
+			printStyledNumber(vdoc.TotalChunks)
+			fmt.Println()
 		} else if isImageCollection {
-			fmt.Printf("   Images: %d\n", len(vdoc.Chunks))
+			printStyledKeyNumberProminentWithEmoji("Images", len(vdoc.Chunks), "🖼️")
+			fmt.Println()
 		} else {
-			fmt.Printf("   Type: Single document (no chunks)\n")
+			printStyledKeyValueProminentWithEmoji("Type", "Single document (no chunks)", "📄")
+			fmt.Println()
 		}
 
 		// Show metadata from the first chunk or document
 		if len(vdoc.Metadata) > 0 {
-			fmt.Printf("   Metadata:\n")
+			fmt.Printf("   ")
+			printStyledKeyValueProminentWithEmoji("Metadata", "", "📋")
+			fmt.Println()
 			for key, value := range vdoc.Metadata {
 				if key != "id" && key != "chunk_index" && key != "total_chunks" && key != "is_chunked" {
 					// Truncate value based on shortLines directive
 					valueStr := fmt.Sprintf("%v", value)
 					truncatedValue := smartTruncate(valueStr, key, shortLines)
-					fmt.Printf("     %s: %s\n", key, truncatedValue)
+					fmt.Printf("     ")
+					printStyledKeyValueDimmed(key, truncatedValue)
+					fmt.Println()
 				}
 			}
 		}
 
 		// Show details if there are items
 		if len(vdoc.Chunks) > 0 {
+			fmt.Printf("   ")
 			if isImageCollection {
-				fmt.Printf("   Stack Details:\n")
+				printStyledKeyValueProminentWithEmoji("Stack Details", "", "🗂️")
 			} else {
-				fmt.Printf("   Chunk Details:\n")
+				printStyledKeyValueProminentWithEmoji("Chunk Details", "", "📝")
 			}
+			fmt.Println()
 			for j, chunk := range vdoc.Chunks {
-				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
+				fmt.Printf("     %d. ", j+1)
+				printStyledKeyProminent("ID")
+				fmt.Printf(": ")
+				printStyledID(chunk.ID)
 				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
-					fmt.Printf(" (chunk %v)", chunkIndex)
+					fmt.Printf(" (")
+					printStyledKeyProminent("chunk")
+					fmt.Printf(" ")
+					printStyledNumber(int(chunkIndex.(float64)))
+					fmt.Printf(")")
 				}
 				fmt.Println()
 
 				if chunk.Content != fmt.Sprintf("Document ID: %s", chunk.ID) {
+					fmt.Printf("        ")
+					printStyledKeyProminent("Content")
+					fmt.Printf(": ")
 					if showLong {
-						fmt.Printf("        Content: %s\n", chunk.Content)
+						printStyledValueDimmed(chunk.Content)
 					} else {
 						preview := smartTruncate(chunk.Content, "content", shortLines)
-						fmt.Printf("        Content: %s\n", preview)
+						printStyledValueDimmed(preview)
 					}
+					fmt.Println()
 				}
 			}
 		}
@@ -1402,6 +1456,11 @@ func getMockImageGroupKey(doc mock.Document) string {
 
 // truncateStringByLines truncates a string to the specified number of lines
 func truncateStringByLines(s string, maxLines int) string {
+	// If --no-truncate flag is set, return content as-is
+	if noTruncate {
+		return s
+	}
+
 	lines := strings.Split(s, "\n")
 	if len(lines) <= maxLines {
 		return s
@@ -1415,6 +1474,11 @@ func truncateStringByLines(s string, maxLines int) string {
 
 // truncateBase64Content truncates base64 content to a reasonable length
 func truncateBase64Content(s string, maxChars int) string {
+	// If --no-truncate flag is set, return content as-is
+	if noTruncate {
+		return s
+	}
+
 	if len(s) <= maxChars {
 		return s
 	}
@@ -1469,6 +1533,11 @@ func isBase64Content(content string) bool {
 
 // smartTruncate intelligently truncates content based on its type
 func smartTruncate(content string, fieldName string, maxLines int) string {
+	// If --no-truncate flag is set, return content as-is
+	if noTruncate {
+		return content
+	}
+
 	// Special handling for metadata field - preserve JSON structure
 	if fieldName == "metadata" {
 		return truncateJSONMetadata(content, maxLines)
@@ -1486,6 +1555,11 @@ func smartTruncate(content string, fieldName string, maxLines int) string {
 
 // truncateJSONMetadata truncates JSON metadata while preserving structure
 func truncateJSONMetadata(jsonStr string, maxLines int) string {
+	// If --no-truncate flag is set, return content as-is
+	if noTruncate {
+		return jsonStr
+	}
+
 	// Try to parse the JSON to preserve structure
 	var metadataObj map[string]interface{}
 	if err := json.Unmarshal([]byte(jsonStr), &metadataObj); err != nil {

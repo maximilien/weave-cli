@@ -805,20 +805,20 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 // CollectionVirtualSummary represents the virtual structure summary of a collection
 type CollectionVirtualSummary struct {
-	TotalDocuments    int
-	VirtualDocuments  int
-	TotalChunks       int
-	TotalImages       int
-	ImageStacks       int
-	ChunkedDocuments  int
-	StandaloneImages  int
+	TotalDocuments   int
+	VirtualDocuments int
+	TotalChunks      int
+	TotalImages      int
+	ImageStacks      int
+	ChunkedDocuments int
+	StandaloneImages int
 }
 
 // showCollectionVirtualSummary shows virtual structure summary for a collection
 func showCollectionVirtualSummary(ctx context.Context, client interface{}, collectionName string) {
 	// Get all documents from the collection
 	var documents []interface{}
-	
+
 	// Handle different client types
 	switch c := client.(type) {
 	case *weaviate.WeaveClient:
@@ -832,34 +832,56 @@ func showCollectionVirtualSummary(ctx context.Context, client interface{}, colle
 			documents = append(documents, doc)
 		}
 	default:
-		fmt.Printf("   Virtual Summary: Unable to analyze\n")
+		fmt.Printf("   ")
+		printStyledKeyValueWithEmoji("Virtual Summary", "Unable to analyze", "📊")
+		fmt.Println()
 		return
 	}
-	
+
 	if len(documents) == 0 {
-		fmt.Printf("   Virtual Summary: No documents\n")
+		fmt.Printf("   ")
+		printStyledKeyValueWithEmoji("Virtual Summary", "No documents", "📊")
+		fmt.Println()
 		return
 	}
-	
+
 	// Analyze the collection
 	summary := analyzeCollectionVirtualStructure(documents)
-	
+
 	// Display the summary
-	fmt.Printf("   Virtual Summary:\n")
-	fmt.Printf("     Total Documents: %d\n", summary.TotalDocuments)
-	fmt.Printf("     Virtual Documents: %d\n", summary.VirtualDocuments)
-	
+	fmt.Printf("   ")
+	printStyledKeyValueWithEmoji("Virtual Summary", "", "📊")
+	fmt.Println()
+	fmt.Printf("     ")
+	printStyledKeyNumberProminent("Total Documents", summary.TotalDocuments)
+	fmt.Println()
+	fmt.Printf("     ")
+	printStyledKeyNumberProminent("Virtual Documents", summary.VirtualDocuments)
+	fmt.Println()
+
 	if summary.ChunkedDocuments > 0 {
-		fmt.Printf("     Chunked Documents: %d (%d chunks)\n", summary.ChunkedDocuments, summary.TotalChunks)
+		fmt.Printf("     ")
+		printStyledKeyProminent("Chunked Documents")
+		fmt.Printf(": ")
+		printStyledNumber(summary.ChunkedDocuments)
+		fmt.Printf(" (")
+		printStyledNumber(summary.TotalChunks)
+		fmt.Printf(" chunks)\n")
 	}
-	
+
 	if summary.TotalImages > 0 {
-		fmt.Printf("     Images: %d\n", summary.TotalImages)
+		fmt.Printf("     ")
+		printStyledKeyNumberProminentWithEmoji("Images", summary.TotalImages, "🖼️")
+		fmt.Println()
 		if summary.ImageStacks > 0 {
-			fmt.Printf("     Image Stacks: %d\n", summary.ImageStacks)
+			fmt.Printf("     ")
+			printStyledKeyNumberProminentWithEmoji("Image Stacks", summary.ImageStacks, "🗂️")
+			fmt.Println()
 		}
 		if summary.StandaloneImages > 0 {
-			fmt.Printf("     Standalone Images: %d\n", summary.StandaloneImages)
+			fmt.Printf("     ")
+			printStyledKeyNumberProminentWithEmoji("Standalone Images", summary.StandaloneImages, "🖼️")
+			fmt.Println()
 		}
 	}
 }
@@ -869,10 +891,10 @@ func analyzeCollectionVirtualStructure(documents []interface{}) CollectionVirtua
 	summary := CollectionVirtualSummary{
 		TotalDocuments: len(documents),
 	}
-	
-	docMap := make(map[string]bool) // Track unique virtual documents
+
+	docMap := make(map[string]bool)   // Track unique virtual documents
 	imageMap := make(map[string]bool) // Track unique image sources
-	
+
 	for _, docInterface := range documents {
 		// Convert to the appropriate document type
 		if doc, ok := docInterface.(weaviate.Document); ok {
@@ -892,13 +914,13 @@ func analyzeCollectionVirtualStructure(documents []interface{}) CollectionVirtua
 					}
 				}
 			}
-			
+
 			// Check if this is an image
 			if isImageDocument(doc) {
 				summary.TotalImages++
 				groupKey := getImageGroupKey(doc)
 				imageMap[groupKey] = true
-				
+
 				// Check if it's a standalone image or from a document
 				if strings.Contains(groupKey, ".pdf") {
 					summary.ImageStacks++
@@ -911,10 +933,10 @@ func analyzeCollectionVirtualStructure(documents []interface{}) CollectionVirtua
 			}
 		}
 	}
-	
+
 	summary.VirtualDocuments = len(docMap) + len(imageMap)
 	summary.ChunkedDocuments = len(docMap)
-	
+
 	return summary
 }
 
@@ -926,30 +948,30 @@ func showMockCollectionVirtualSummary(ctx context.Context, client *mock.Client, 
 		fmt.Printf("   Virtual Summary: Unable to analyze\n")
 		return
 	}
-	
+
 	if len(documents) == 0 {
 		fmt.Printf("   Virtual Summary: No documents\n")
 		return
 	}
-	
+
 	// Convert to interface{} slice
 	var docs []interface{}
 	for _, doc := range documents {
 		docs = append(docs, doc)
 	}
-	
+
 	// Analyze the collection
 	summary := analyzeMockCollectionVirtualStructure(docs)
-	
+
 	// Display the summary
 	fmt.Printf("   Virtual Summary:\n")
 	fmt.Printf("     Total Documents: %d\n", summary.TotalDocuments)
 	fmt.Printf("     Virtual Documents: %d\n", summary.VirtualDocuments)
-	
+
 	if summary.ChunkedDocuments > 0 {
 		fmt.Printf("     Chunked Documents: %d (%d chunks)\n", summary.ChunkedDocuments, summary.TotalChunks)
 	}
-	
+
 	if summary.TotalImages > 0 {
 		fmt.Printf("     Images: %d\n", summary.TotalImages)
 		if summary.ImageStacks > 0 {
@@ -966,10 +988,10 @@ func analyzeMockCollectionVirtualStructure(documents []interface{}) CollectionVi
 	summary := CollectionVirtualSummary{
 		TotalDocuments: len(documents),
 	}
-	
-	docMap := make(map[string]bool) // Track unique virtual documents
+
+	docMap := make(map[string]bool)   // Track unique virtual documents
 	imageMap := make(map[string]bool) // Track unique image sources
-	
+
 	for _, docInterface := range documents {
 		// Convert to the appropriate document type
 		if doc, ok := docInterface.(mock.Document); ok {
@@ -989,13 +1011,13 @@ func analyzeMockCollectionVirtualStructure(documents []interface{}) CollectionVi
 					}
 				}
 			}
-			
+
 			// Check if this is an image
 			if isMockImageDocument(doc) {
 				summary.TotalImages++
 				groupKey := getMockImageGroupKey(doc)
 				imageMap[groupKey] = true
-				
+
 				// Check if it's a standalone image or from a document
 				if strings.Contains(groupKey, ".pdf") {
 					summary.ImageStacks++
@@ -1008,10 +1030,10 @@ func analyzeMockCollectionVirtualStructure(documents []interface{}) CollectionVi
 			}
 		}
 	}
-	
+
 	summary.VirtualDocuments = len(docMap) + len(imageMap)
 	summary.ChunkedDocuments = len(docMap)
-	
+
 	return summary
 }
 
@@ -1021,7 +1043,7 @@ func isMockImageDocument(doc mock.Document) bool {
 	if _, hasImage := doc.Metadata["image"]; hasImage {
 		return true
 	}
-	
+
 	// Check metadata for image-related fields
 	if metadata, ok := doc.Metadata["metadata"]; ok {
 		if metadataStr, ok := metadata.(string); ok {
@@ -1036,7 +1058,7 @@ func isMockImageDocument(doc mock.Document) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 
@@ -1046,7 +1068,7 @@ func isImageDocument(doc weaviate.Document) bool {
 	if _, hasImage := doc.Metadata["image"]; hasImage {
 		return true
 	}
-	
+
 	// Check metadata for image-related fields
 	if metadata, ok := doc.Metadata["metadata"]; ok {
 		if metadataStr, ok := metadata.(string); ok {
@@ -1061,7 +1083,7 @@ func isImageDocument(doc weaviate.Document) bool {
 			}
 		}
 	}
-	
+
 	return false
 }
 
