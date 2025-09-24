@@ -478,7 +478,7 @@ func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 		for key, value := range document.Metadata {
 			// Truncate value based on shortLines directive
 			valueStr := fmt.Sprintf("%v", value)
-			truncatedValue := truncateStringByLines(valueStr, shortLines)
+			truncatedValue := smartTruncate(valueStr, key, shortLines)
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
 	}
@@ -526,7 +526,7 @@ func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 		for key, value := range document.Metadata {
 			// Truncate value based on shortLines directive
 			valueStr := fmt.Sprintf("%v", value)
-			truncatedValue := truncateStringByLines(valueStr, shortLines)
+			truncatedValue := smartTruncate(valueStr, key, shortLines)
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
 	}
@@ -579,7 +579,7 @@ func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBCo
 			for key, value := range document.Metadata {
 				// Truncate value based on shortLines directive
 				valueStr := fmt.Sprintf("%v", value)
-				truncatedValue := truncateStringByLines(valueStr, shortLines)
+				truncatedValue := smartTruncate(valueStr, key, shortLines)
 				fmt.Printf("  %s: %s\n", key, truncatedValue)
 			}
 		}
@@ -642,7 +642,7 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 			for key, value := range document.Metadata {
 				// Truncate value based on shortLines directive
 				valueStr := fmt.Sprintf("%v", value)
-				truncatedValue := truncateStringByLines(valueStr, shortLines)
+				truncatedValue := smartTruncate(valueStr, key, shortLines)
 				fmt.Printf("  %s: %s\n", key, truncatedValue)
 			}
 		}
@@ -932,8 +932,8 @@ func displayRegularDocuments(documents []weaviate.Document, collectionName strin
 			if showLong {
 				fmt.Printf("   Content: %s\n", doc.Content)
 			} else {
-				// Use shortLines to limit content by lines instead of characters
-				preview := truncateStringByLines(doc.Content, shortLines)
+				// Use smartTruncate to handle base64 content appropriately
+				preview := smartTruncate(doc.Content, "content", shortLines)
 				fmt.Printf("   Content: %s\n", preview)
 			}
 		}
@@ -942,9 +942,9 @@ func displayRegularDocuments(documents []weaviate.Document, collectionName strin
 			fmt.Printf("   Metadata:\n")
 			for key, value := range doc.Metadata {
 				if key != "id" { // Skip ID since it's already shown
-					// Truncate value based on shortLines directive
+					// Use smartTruncate to handle base64 content appropriately
 					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					truncatedValue := smartTruncate(valueStr, key, shortLines)
 					fmt.Printf("     %s: %s\n", key, truncatedValue)
 				}
 			}
@@ -976,7 +976,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 				if key != "id" && key != "chunk_index" && key != "total_chunks" && key != "is_chunked" {
 					// Truncate value based on shortLines directive
 					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					truncatedValue := smartTruncate(valueStr, key, shortLines)
 					fmt.Printf("     %s: %s\n", key, truncatedValue)
 				}
 			}
@@ -996,7 +996,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 					if showLong {
 						fmt.Printf("        Content: %s\n", chunk.Content)
 					} else {
-						preview := truncateStringByLines(chunk.Content, shortLines)
+						preview := smartTruncate(chunk.Content, "content", shortLines)
 						fmt.Printf("        Content: %s\n", preview)
 					}
 				}
@@ -1091,7 +1091,7 @@ func displayRegularMockDocuments(documents []mock.Document, collectionName strin
 				fmt.Printf("   Content: %s\n", doc.Content)
 			} else {
 				// Use shortLines to limit content by lines instead of characters
-				preview := truncateStringByLines(doc.Content, shortLines)
+				preview := smartTruncate(doc.Content, "content", shortLines)
 				fmt.Printf("   Content: %s\n", preview)
 			}
 		}
@@ -1102,7 +1102,7 @@ func displayRegularMockDocuments(documents []mock.Document, collectionName strin
 				if key != "id" { // Skip ID since it's already shown
 					// Truncate value based on shortLines directive
 					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					truncatedValue := smartTruncate(valueStr, key, shortLines)
 					fmt.Printf("     %s: %s\n", key, truncatedValue)
 				}
 			}
@@ -1134,7 +1134,7 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 				if key != "id" && key != "chunk_index" && key != "total_chunks" && key != "is_chunked" {
 					// Truncate value based on shortLines directive
 					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					truncatedValue := smartTruncate(valueStr, key, shortLines)
 					fmt.Printf("     %s: %s\n", key, truncatedValue)
 				}
 			}
@@ -1154,7 +1154,7 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 					if showLong {
 						fmt.Printf("        Content: %s\n", chunk.Content)
 					} else {
-						preview := truncateStringByLines(chunk.Content, shortLines)
+						preview := smartTruncate(chunk.Content, "content", shortLines)
 						fmt.Printf("        Content: %s\n", preview)
 					}
 				}
@@ -1254,4 +1254,70 @@ func truncateStringByLines(s string, maxLines int) string {
 	truncated := strings.Join(lines[:maxLines], "\n")
 	remainingLines := len(lines) - maxLines
 	return truncated + fmt.Sprintf("\n... (truncated, %d more lines)", remainingLines)
+}
+
+// truncateBase64Content truncates base64 content to a reasonable length
+func truncateBase64Content(s string, maxChars int) string {
+	if len(s) <= maxChars {
+		return s
+	}
+	
+	// For base64 content, show first part and indicate truncation
+	truncated := s[:maxChars]
+	return truncated + fmt.Sprintf("... (truncated, %d more characters)", len(s)-maxChars)
+}
+
+// isBase64Field checks if a field name suggests it contains base64 data
+func isBase64Field(fieldName string) bool {
+	base64Fields := []string{
+		"image", "base64_data", "data", "content", "payload", 
+		"attachment", "file_data", "binary_data", "encoded_data",
+	}
+	
+	fieldNameLower := strings.ToLower(fieldName)
+	for _, field := range base64Fields {
+		if strings.Contains(fieldNameLower, field) {
+			return true
+		}
+	}
+	return false
+}
+
+// isBase64Content checks if content looks like base64 data
+func isBase64Content(content string) bool {
+	// Base64 content is typically very long and contains only base64 characters
+	if len(content) < 100 {
+		return false
+	}
+	
+	// Check if it starts with data: URL format
+	if strings.HasPrefix(content, "data:") {
+		return true
+	}
+	
+	// Check if it's mostly base64 characters (A-Z, a-z, 0-9, +, /, =)
+	base64Chars := 0
+	for _, char := range content {
+		if (char >= 'A' && char <= 'Z') || 
+		   (char >= 'a' && char <= 'z') || 
+		   (char >= '0' && char <= '9') || 
+		   char == '+' || char == '/' || char == '=' {
+			base64Chars++
+		}
+	}
+	
+	// If more than 90% of characters are base64, consider it base64 content
+	return float64(base64Chars)/float64(len(content)) > 0.9
+}
+
+// smartTruncate intelligently truncates content based on its type
+func smartTruncate(content string, fieldName string, maxLines int) string {
+	// Check if this looks like base64 content
+	if isBase64Field(fieldName) || isBase64Content(content) {
+		// For base64 content, limit to a reasonable number of characters
+		return truncateBase64Content(content, 200)
+	}
+	
+	// For regular content, use line-based truncation
+	return truncateStringByLines(content, maxLines)
 }
