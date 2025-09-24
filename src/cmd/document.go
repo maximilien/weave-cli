@@ -427,8 +427,15 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 		return
 	}
 
+	// For virtual mode, we need all documents to properly aggregate them
+	// For regular mode, we can use the provided limit
+	queryLimit := limit
+	if virtual {
+		queryLimit = 10000 // High limit to get all documents for proper aggregation
+	}
+
 	// List documents
-	documents, err := client.ListDocuments(ctx, collectionName, limit)
+	documents, err := client.ListDocuments(ctx, collectionName, queryLimit)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to list documents: %v", err))
 		return
@@ -461,8 +468,15 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 
 	client := mock.NewClient(mockConfig)
 
+	// For virtual mode, we need all documents to properly aggregate them
+	// For regular mode, we can use the provided limit
+	queryLimit := limit
+	if virtual {
+		queryLimit = 10000 // High limit to get all documents for proper aggregation
+	}
+
 	// List documents
-	documents, err := client.ListDocuments(ctx, collectionName, limit)
+	documents, err := client.ListDocuments(ctx, collectionName, queryLimit)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to list documents: %v", err))
 		return
