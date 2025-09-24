@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
+	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"github.com/spf13/cobra"
 )
 
@@ -111,6 +114,7 @@ func init() {
 	documentListCmd.Flags().IntP("limit", "l", 50, "Maximum number of documents to show")
 	documentListCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	documentListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
+	documentListCmd.Flags().BoolP("virtual", "w", false, "Show documents in virtual structure (aggregate chunks by original document)")
 
 	documentShowCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	documentShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
@@ -126,6 +130,7 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	limit, _ := cmd.Flags().GetInt("limit")
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
+	virtual, _ := cmd.Flags().GetBool("virtual")
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -151,11 +156,11 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines)
+		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual)
 	case config.VectorDBTypeLocal:
-		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines)
+		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual)
 	case config.VectorDBTypeMock:
-		listMockDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines)
+		listMockDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -377,7 +382,7 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	}
 }
 
-func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int) {
+func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -397,39 +402,14 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 		return
 	}
 
-	printSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
-	fmt.Println()
-
-	for i, doc := range documents {
-		color.New(color.FgGreen).Printf("%d. ID: %s\n", i+1, doc.ID)
-
-		// Only show content if it's not just the redundant "Document ID: [ID]"
-		if doc.Content != fmt.Sprintf("Document ID: %s", doc.ID) {
-			if showLong {
-				fmt.Printf("   Content: %s\n", doc.Content)
-			} else {
-				// Use shortLines to limit content by lines instead of characters
-				preview := truncateStringByLines(doc.Content, shortLines)
-				fmt.Printf("   Content: %s\n", preview)
-			}
-		}
-
-		if len(doc.Metadata) > 0 {
-			fmt.Printf("   Metadata:\n")
-			for key, value := range doc.Metadata {
-				if key != "id" { // Skip ID since it's already shown
-					// Truncate value based on shortLines directive
-					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := truncateStringByLines(valueStr, shortLines)
-					fmt.Printf("     %s: %s\n", key, truncatedValue)
-				}
-			}
-		}
-		fmt.Println()
+	if virtual {
+		displayVirtualDocuments(documents, collectionName, showLong, shortLines)
+	} else {
+		displayRegularDocuments(documents, collectionName, showLong, shortLines)
 	}
 }
 
-func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int) {
+func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -456,35 +436,10 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 		return
 	}
 
-	printSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
-	fmt.Println()
-
-	for i, doc := range documents {
-		color.New(color.FgGreen).Printf("%d. ID: %s\n", i+1, doc.ID)
-
-		// Only show content if it's not just the redundant "Document ID: [ID]"
-		if doc.Content != fmt.Sprintf("Document ID: %s", doc.ID) {
-			if showLong {
-				fmt.Printf("   Content: %s\n", doc.Content)
-			} else {
-				// Use shortLines to limit content by lines instead of characters
-				preview := truncateStringByLines(doc.Content, shortLines)
-				fmt.Printf("   Content: %s\n", preview)
-			}
-		}
-
-		if len(doc.Metadata) > 0 {
-			fmt.Printf("   Metadata:\n")
-			for key, value := range doc.Metadata {
-				if key != "id" { // Skip ID since it's already shown
-					// Truncate value based on shortLines directive
-					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := truncateStringByLines(valueStr, shortLines)
-					fmt.Printf("     %s: %s\n", key, truncatedValue)
-				}
-			}
-		}
-		fmt.Println()
+	if virtual {
+		displayVirtualMockDocuments(documents, collectionName, showLong, shortLines)
+	} else {
+		displayRegularMockDocuments(documents, collectionName, showLong, shortLines)
 	}
 }
 
@@ -954,6 +909,338 @@ func countMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collect
 	}
 
 	return len(documents), nil
+}
+
+// VirtualDocument represents a document with its chunks aggregated
+type VirtualDocument struct {
+	OriginalFilename string
+	TotalChunks      int
+	Chunks           []weaviate.Document
+	Metadata         map[string]interface{}
+}
+
+// displayRegularDocuments shows documents in the traditional format
+func displayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
+	printSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
+	fmt.Println()
+
+	for i, doc := range documents {
+		color.New(color.FgGreen).Printf("%d. ID: %s\n", i+1, doc.ID)
+
+		// Only show content if it's not just the redundant "Document ID: [ID]"
+		if doc.Content != fmt.Sprintf("Document ID: %s", doc.ID) {
+			if showLong {
+				fmt.Printf("   Content: %s\n", doc.Content)
+			} else {
+				// Use shortLines to limit content by lines instead of characters
+				preview := truncateStringByLines(doc.Content, shortLines)
+				fmt.Printf("   Content: %s\n", preview)
+			}
+		}
+
+		if len(doc.Metadata) > 0 {
+			fmt.Printf("   Metadata:\n")
+			for key, value := range doc.Metadata {
+				if key != "id" { // Skip ID since it's already shown
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					fmt.Printf("     %s: %s\n", key, truncatedValue)
+				}
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// displayVirtualDocuments shows documents aggregated by their original document
+func displayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
+	virtualDocs := aggregateDocumentsByOriginal(documents)
+
+	printSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
+	fmt.Println()
+
+	for i, vdoc := range virtualDocs {
+		color.New(color.FgGreen).Printf("%d. Document: %s\n", i+1, vdoc.OriginalFilename)
+
+		if vdoc.TotalChunks > 0 {
+			fmt.Printf("   Chunks: %d/%d\n", len(vdoc.Chunks), vdoc.TotalChunks)
+		} else {
+			fmt.Printf("   Type: Single document (no chunks)\n")
+		}
+
+		// Show metadata from the first chunk or document
+		if len(vdoc.Metadata) > 0 {
+			fmt.Printf("   Metadata:\n")
+			for key, value := range vdoc.Metadata {
+				if key != "id" && key != "chunk_index" && key != "total_chunks" && key != "is_chunked" {
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					fmt.Printf("     %s: %s\n", key, truncatedValue)
+				}
+			}
+		}
+
+		// Show chunk details if there are chunks
+		if len(vdoc.Chunks) > 0 {
+			fmt.Printf("   Chunk Details:\n")
+			for j, chunk := range vdoc.Chunks {
+				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
+				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
+					fmt.Printf(" (chunk %v)", chunkIndex)
+				}
+				fmt.Println()
+
+				if chunk.Content != fmt.Sprintf("Document ID: %s", chunk.ID) {
+					if showLong {
+						fmt.Printf("        Content: %s\n", chunk.Content)
+					} else {
+						preview := truncateStringByLines(chunk.Content, shortLines)
+						fmt.Printf("        Content: %s\n", preview)
+					}
+				}
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// aggregateDocumentsByOriginal groups documents by their original filename
+func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocument {
+	docMap := make(map[string]*VirtualDocument)
+
+	for _, doc := range documents {
+		// Check if this is a chunked document
+		if metadata, ok := doc.Metadata["metadata"]; ok {
+			if metadataStr, ok := metadata.(string); ok {
+				// Parse the JSON metadata to extract original filename
+				var metadataObj map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+					if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+						if isChunked, ok := metadataObj["is_chunked"].(bool); ok && isChunked {
+							// This is a chunk
+							if vdoc, exists := docMap[originalFilename]; exists {
+								vdoc.Chunks = append(vdoc.Chunks, doc)
+							} else {
+								totalChunks := 0
+								if tc, ok := metadataObj["total_chunks"].(float64); ok {
+									totalChunks = int(tc)
+								}
+								docMap[originalFilename] = &VirtualDocument{
+									OriginalFilename: originalFilename,
+									TotalChunks:      totalChunks,
+									Chunks:           []weaviate.Document{doc},
+									Metadata:         metadataObj,
+								}
+							}
+							continue
+						}
+					}
+				}
+			}
+		}
+
+		// This is not a chunked document, treat as single document
+		// Try to get filename from other metadata fields
+		filename := "Unknown Document"
+		if url, ok := doc.Metadata["url"].(string); ok {
+			filename = url
+		} else if text, ok := doc.Metadata["text"].(string); ok && len(text) > 50 {
+			filename = text[:50] + "..."
+		}
+
+		if vdoc, exists := docMap[filename]; exists {
+			// Add as a single document (not chunked)
+			vdoc.Chunks = append(vdoc.Chunks, doc)
+		} else {
+			docMap[filename] = &VirtualDocument{
+				OriginalFilename: filename,
+				TotalChunks:      0,
+				Chunks:           []weaviate.Document{doc},
+				Metadata:         doc.Metadata,
+			}
+		}
+	}
+
+	// Convert map to slice
+	var virtualDocs []VirtualDocument
+	for _, vdoc := range docMap {
+		virtualDocs = append(virtualDocs, *vdoc)
+	}
+
+	// Sort by original filename for consistent output
+	sort.Slice(virtualDocs, func(i, j int) bool {
+		return virtualDocs[i].OriginalFilename < virtualDocs[j].OriginalFilename
+	})
+
+	return virtualDocs
+}
+
+// displayRegularMockDocuments shows mock documents in the traditional format
+func displayRegularMockDocuments(documents []mock.Document, collectionName string, showLong bool, shortLines int) {
+	printSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
+	fmt.Println()
+
+	for i, doc := range documents {
+		color.New(color.FgGreen).Printf("%d. ID: %s\n", i+1, doc.ID)
+
+		// Only show content if it's not just the redundant "Document ID: [ID]"
+		if doc.Content != fmt.Sprintf("Document ID: %s", doc.ID) {
+			if showLong {
+				fmt.Printf("   Content: %s\n", doc.Content)
+			} else {
+				// Use shortLines to limit content by lines instead of characters
+				preview := truncateStringByLines(doc.Content, shortLines)
+				fmt.Printf("   Content: %s\n", preview)
+			}
+		}
+
+		if len(doc.Metadata) > 0 {
+			fmt.Printf("   Metadata:\n")
+			for key, value := range doc.Metadata {
+				if key != "id" { // Skip ID since it's already shown
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					fmt.Printf("     %s: %s\n", key, truncatedValue)
+				}
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// displayVirtualMockDocuments shows mock documents aggregated by their original document
+func displayVirtualMockDocuments(documents []mock.Document, collectionName string, showLong bool, shortLines int) {
+	virtualDocs := aggregateMockDocumentsByOriginal(documents)
+
+	printSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
+	fmt.Println()
+
+	for i, vdoc := range virtualDocs {
+		color.New(color.FgGreen).Printf("%d. Document: %s\n", i+1, vdoc.OriginalFilename)
+
+		if vdoc.TotalChunks > 0 {
+			fmt.Printf("   Chunks: %d/%d\n", len(vdoc.Chunks), vdoc.TotalChunks)
+		} else {
+			fmt.Printf("   Type: Single document (no chunks)\n")
+		}
+
+		// Show metadata from the first chunk or document
+		if len(vdoc.Metadata) > 0 {
+			fmt.Printf("   Metadata:\n")
+			for key, value := range vdoc.Metadata {
+				if key != "id" && key != "chunk_index" && key != "total_chunks" && key != "is_chunked" {
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					fmt.Printf("     %s: %s\n", key, truncatedValue)
+				}
+			}
+		}
+
+		// Show chunk details if there are chunks
+		if len(vdoc.Chunks) > 0 {
+			fmt.Printf("   Chunk Details:\n")
+			for j, chunk := range vdoc.Chunks {
+				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
+				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
+					fmt.Printf(" (chunk %v)", chunkIndex)
+				}
+				fmt.Println()
+
+				if chunk.Content != fmt.Sprintf("Document ID: %s", chunk.ID) {
+					if showLong {
+						fmt.Printf("        Content: %s\n", chunk.Content)
+					} else {
+						preview := truncateStringByLines(chunk.Content, shortLines)
+						fmt.Printf("        Content: %s\n", preview)
+					}
+				}
+			}
+		}
+		fmt.Println()
+	}
+}
+
+// MockVirtualDocument represents a mock document with its chunks aggregated
+type MockVirtualDocument struct {
+	OriginalFilename string
+	TotalChunks      int
+	Chunks           []mock.Document
+	Metadata         map[string]interface{}
+}
+
+// aggregateMockDocumentsByOriginal groups mock documents by their original filename
+func aggregateMockDocumentsByOriginal(documents []mock.Document) []MockVirtualDocument {
+	docMap := make(map[string]*MockVirtualDocument)
+
+	for _, doc := range documents {
+		// Check if this is a chunked document
+		if metadata, ok := doc.Metadata["metadata"]; ok {
+			if metadataStr, ok := metadata.(string); ok {
+				// Parse the JSON metadata to extract original filename
+				var metadataObj map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+					if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+						if isChunked, ok := metadataObj["is_chunked"].(bool); ok && isChunked {
+							// This is a chunk
+							if vdoc, exists := docMap[originalFilename]; exists {
+								vdoc.Chunks = append(vdoc.Chunks, doc)
+							} else {
+								totalChunks := 0
+								if tc, ok := metadataObj["total_chunks"].(float64); ok {
+									totalChunks = int(tc)
+								}
+								docMap[originalFilename] = &MockVirtualDocument{
+									OriginalFilename: originalFilename,
+									TotalChunks:      totalChunks,
+									Chunks:           []mock.Document{doc},
+									Metadata:         metadataObj,
+								}
+							}
+							continue
+						}
+					}
+				}
+			}
+		}
+
+		// This is not a chunked document, treat as single document
+		// Try to get filename from other metadata fields
+		filename := "Unknown Document"
+		if url, ok := doc.Metadata["url"].(string); ok {
+			filename = url
+		} else if text, ok := doc.Metadata["text"].(string); ok && len(text) > 50 {
+			filename = text[:50] + "..."
+		}
+
+		if vdoc, exists := docMap[filename]; exists {
+			// Add as a single document (not chunked)
+			vdoc.Chunks = append(vdoc.Chunks, doc)
+		} else {
+			docMap[filename] = &MockVirtualDocument{
+				OriginalFilename: filename,
+				TotalChunks:      0,
+				Chunks:           []mock.Document{doc},
+				Metadata:         doc.Metadata,
+			}
+		}
+	}
+
+	// Convert map to slice
+	var virtualDocs []MockVirtualDocument
+	for _, vdoc := range docMap {
+		virtualDocs = append(virtualDocs, *vdoc)
+	}
+
+	// Sort by original filename for consistent output
+	sort.Slice(virtualDocs, func(i, j int) bool {
+		return virtualDocs[i].OriginalFilename < virtualDocs[j].OriginalFilename
+	})
+
+	return virtualDocs
 }
 
 // truncateStringByLines truncates a string to the specified number of lines
