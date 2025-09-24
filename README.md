@@ -125,9 +125,27 @@ weave docs list MyCol   # Same as: weave document list MyCol
 - `--verbose` - Provide detailed output for debugging
 - `--quiet` - Minimal output for scripts
 
-## Virtual Document View
+## Document Display
 
-The `--virtual` flag provides an intelligent view of your documents by aggregating chunked content back into original documents:
+Both regular and virtual document views feature consistent visual styling for better readability:
+
+### Regular Document View
+
+```bash
+$ weave document list MyCollection
+
+✅ Found 6 documents in collection 'MyCollection':
+
+1. 📄 ID: doc1-chunk1
+   Content: This is the first chunk of a document about machine learning...
+   📋 Metadata: 
+     metadata: {"original_filename": "ml_guide.pdf", "is_chunked": true...}
+     author: Test Author
+```
+
+### Virtual Document View
+
+The `--virtual` flag provides an intelligent view by aggregating chunked content back into original documents:
 
 ```bash
 $ weave document list MyCollection --virtual
@@ -144,6 +162,14 @@ $ weave document list MyCollection --virtual
      2. ID: chunk-2  
         Content: Deep learning architectures and applications...
 ```
+
+### Visual Styling
+
+Both views feature consistent visual hierarchy:
+- **Top-level keys** (ID, Chunks, Images, Content) are prominent
+- **Metadata keys** are dimmed for better hierarchy
+- **Important values** (IDs, filenames, numbers) are highlighted
+- **Emojis** provide visual structure (disabled with `--no-color`)
 
 ## Database Support
 

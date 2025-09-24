@@ -224,11 +224,33 @@ weave docs list MyCol   # Same as: weave document list MyCol
 weave doc show MyCol ID # Same as: weave document show MyCol ID
 ```
 
-## Virtual Document View
+## Document Display
 
-The `--virtual` flag provides an intelligent view of your documents by aggregating chunked content back into original documents.
+Both regular and virtual document views feature consistent visual styling for better readability and user experience.
 
-### Features
+### Regular Document View
+
+The standard document listing shows individual documents with enhanced styling:
+
+```bash
+# Basic document listing with improved styling
+weave document list MyCollection
+
+# Example output:
+✅ Found 6 documents in collection 'MyCollection':
+
+1. 📄 ID: doc1-chunk1
+   Content: This is the first chunk of a document about machine learning...
+   📋 Metadata: 
+     metadata: {"original_filename": "ml_guide.pdf", "is_chunked": true...}
+     author: Test Author
+```
+
+### Virtual Document View
+
+The `--virtual` flag provides an intelligent view by aggregating chunked content back into original documents.
+
+#### Features
 
 - **📄 Document Aggregation** - Groups chunks by original filename
 - **📊 Smart Statistics** - Shows chunk counts and document structure
