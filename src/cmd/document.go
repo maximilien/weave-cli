@@ -415,24 +415,13 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 		}
 
 		if len(doc.Metadata) > 0 {
-			// Check if there's any metadata beyond the ID
-			hasNonIdMetadata := false
-			for key := range doc.Metadata {
-				if key != "id" {
-					hasNonIdMetadata = true
-					break
-				}
-			}
-
-			if hasNonIdMetadata {
-				fmt.Printf("   Metadata:\n")
-				for key, value := range doc.Metadata {
-					if key != "id" { // Skip ID since it's already shown
-						// First truncate by character length, then by lines
-						valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
-						truncatedValue := truncateStringByLines(valueStr, shortLines)
-						fmt.Printf("     %s: %s\n", key, truncatedValue)
-					}
+			fmt.Printf("   Metadata:\n")
+			for key, value := range doc.Metadata {
+				if key != "id" { // Skip ID since it's already shown
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					fmt.Printf("     %s: %s\n", key, truncatedValue)
 				}
 			}
 		}
@@ -485,24 +474,13 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 		}
 
 		if len(doc.Metadata) > 0 {
-			// Check if there's any metadata beyond the ID
-			hasNonIdMetadata := false
-			for key := range doc.Metadata {
-				if key != "id" {
-					hasNonIdMetadata = true
-					break
-				}
-			}
-
-			if hasNonIdMetadata {
-				fmt.Printf("   Metadata:\n")
-				for key, value := range doc.Metadata {
-					if key != "id" { // Skip ID since it's already shown
-						// First truncate by character length, then by lines
-						valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
-						truncatedValue := truncateStringByLines(valueStr, shortLines)
-						fmt.Printf("     %s: %s\n", key, truncatedValue)
-					}
+			fmt.Printf("   Metadata:\n")
+			for key, value := range doc.Metadata {
+				if key != "id" { // Skip ID since it's already shown
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := truncateStringByLines(valueStr, shortLines)
+					fmt.Printf("     %s: %s\n", key, truncatedValue)
 				}
 			}
 		}
@@ -543,8 +521,8 @@ func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 	if len(document.Metadata) > 0 {
 		fmt.Printf("Metadata:\n")
 		for key, value := range document.Metadata {
-			// First truncate by character length, then by lines
-			valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
+			// Truncate value based on shortLines directive
+			valueStr := fmt.Sprintf("%v", value)
 			truncatedValue := truncateStringByLines(valueStr, shortLines)
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
@@ -591,8 +569,8 @@ func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 	if len(document.Metadata) > 0 {
 		fmt.Printf("Metadata:\n")
 		for key, value := range document.Metadata {
-			// First truncate by character length, then by lines
-			valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
+			// Truncate value based on shortLines directive
+			valueStr := fmt.Sprintf("%v", value)
 			truncatedValue := truncateStringByLines(valueStr, shortLines)
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
@@ -644,7 +622,7 @@ func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBCo
 		if len(document.Metadata) > 0 {
 			fmt.Printf("Metadata:\n")
 			for key, value := range document.Metadata {
-				// Show raw value as string, even if it's JSON, truncated by lines
+				// Truncate value based on shortLines directive
 				valueStr := fmt.Sprintf("%v", value)
 				truncatedValue := truncateStringByLines(valueStr, shortLines)
 				fmt.Printf("  %s: %s\n", key, truncatedValue)
@@ -707,7 +685,7 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 		if len(document.Metadata) > 0 {
 			fmt.Printf("Metadata:\n")
 			for key, value := range document.Metadata {
-				// Show raw value as string, even if it's JSON, truncated by lines
+				// Truncate value based on shortLines directive
 				valueStr := fmt.Sprintf("%v", value)
 				truncatedValue := truncateStringByLines(valueStr, shortLines)
 				fmt.Printf("  %s: %s\n", key, truncatedValue)
