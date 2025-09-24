@@ -1009,7 +1009,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 // aggregateDocumentsByOriginal groups documents by their original filename
 func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocument {
 	docMap := make(map[string]*VirtualDocument)
-
+	
 	for _, doc := range documents {
 		// Check if this is a chunked document
 		if metadata, ok := doc.Metadata["metadata"]; ok {
@@ -1040,41 +1040,86 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 				}
 			}
 		}
-
-		// This is not a chunked document, treat as single document
-		// Try to get filename from other metadata fields
-		filename := "Unknown Document"
-		if url, ok := doc.Metadata["url"].(string); ok {
-			filename = url
-		} else if text, ok := doc.Metadata["text"].(string); ok && len(text) > 50 {
-			filename = text[:50] + "..."
-		}
-
-		if vdoc, exists := docMap[filename]; exists {
-			// Add as a single document (not chunked)
+		
+		// Check if this is an image extracted from a PDF
+		groupKey := getImageGroupKey(doc)
+		
+		if vdoc, exists := docMap[groupKey]; exists {
+			// Add to existing group
 			vdoc.Chunks = append(vdoc.Chunks, doc)
 		} else {
-			docMap[filename] = &VirtualDocument{
-				OriginalFilename: filename,
-				TotalChunks:      0,
+			// Create new group
+			docMap[groupKey] = &VirtualDocument{
+				OriginalFilename: groupKey,
+				TotalChunks:      0, // Images are not chunks
 				Chunks:           []weaviate.Document{doc},
 				Metadata:         doc.Metadata,
 			}
 		}
 	}
-
+	
 	// Convert map to slice
 	var virtualDocs []VirtualDocument
 	for _, vdoc := range docMap {
 		virtualDocs = append(virtualDocs, *vdoc)
 	}
-
+	
 	// Sort by original filename for consistent output
 	sort.Slice(virtualDocs, func(i, j int) bool {
 		return virtualDocs[i].OriginalFilename < virtualDocs[j].OriginalFilename
 	})
-
+	
 	return virtualDocs
+}
+
+// getImageGroupKey determines the grouping key for an image document
+func getImageGroupKey(doc weaviate.Document) string {
+	// Check if this is an image extracted from a PDF
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				// Check for PDF filename
+				if pdfFilename, ok := metadataObj["pdf_filename"].(string); ok {
+					return pdfFilename
+				}
+			}
+		}
+	}
+	
+	// Check URL for PDF source
+	if url, ok := doc.Metadata["url"].(string); ok {
+		if strings.HasPrefix(url, "pdf://") {
+			// Extract PDF name from URL like "pdf://ragme-io.pdf/page_4/image_1"
+			parts := strings.Split(url, "/")
+			if len(parts) >= 2 {
+				return parts[1] // Return "ragme-io.pdf"
+			}
+		}
+	}
+	
+	// Check filename for PDF source
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if strings.Contains(filename, ".pdf_") {
+			// Extract PDF name from filename like "ragme-io.pdf_page_4_image_1.png"
+			parts := strings.Split(filename, ".pdf_")
+			if len(parts) >= 1 {
+				return parts[0] + ".pdf"
+			}
+		}
+	}
+	
+	// For standalone images, use the URL or filename as the key
+	if url, ok := doc.Metadata["url"].(string); ok {
+		return url
+	}
+	
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		return filename
+	}
+	
+	// Fallback
+	return "Unknown Image"
 }
 
 // displayRegularMockDocuments shows mock documents in the traditional format
@@ -1175,7 +1220,7 @@ type MockVirtualDocument struct {
 // aggregateMockDocumentsByOriginal groups mock documents by their original filename
 func aggregateMockDocumentsByOriginal(documents []mock.Document) []MockVirtualDocument {
 	docMap := make(map[string]*MockVirtualDocument)
-
+	
 	for _, doc := range documents {
 		// Check if this is a chunked document
 		if metadata, ok := doc.Metadata["metadata"]; ok {
@@ -1206,41 +1251,86 @@ func aggregateMockDocumentsByOriginal(documents []mock.Document) []MockVirtualDo
 				}
 			}
 		}
-
-		// This is not a chunked document, treat as single document
-		// Try to get filename from other metadata fields
-		filename := "Unknown Document"
-		if url, ok := doc.Metadata["url"].(string); ok {
-			filename = url
-		} else if text, ok := doc.Metadata["text"].(string); ok && len(text) > 50 {
-			filename = text[:50] + "..."
-		}
-
-		if vdoc, exists := docMap[filename]; exists {
-			// Add as a single document (not chunked)
+		
+		// Check if this is an image extracted from a PDF
+		groupKey := getMockImageGroupKey(doc)
+		
+		if vdoc, exists := docMap[groupKey]; exists {
+			// Add to existing group
 			vdoc.Chunks = append(vdoc.Chunks, doc)
 		} else {
-			docMap[filename] = &MockVirtualDocument{
-				OriginalFilename: filename,
-				TotalChunks:      0,
+			// Create new group
+			docMap[groupKey] = &MockVirtualDocument{
+				OriginalFilename: groupKey,
+				TotalChunks:      0, // Images are not chunks
 				Chunks:           []mock.Document{doc},
 				Metadata:         doc.Metadata,
 			}
 		}
 	}
-
+	
 	// Convert map to slice
 	var virtualDocs []MockVirtualDocument
 	for _, vdoc := range docMap {
 		virtualDocs = append(virtualDocs, *vdoc)
 	}
-
+	
 	// Sort by original filename for consistent output
 	sort.Slice(virtualDocs, func(i, j int) bool {
 		return virtualDocs[i].OriginalFilename < virtualDocs[j].OriginalFilename
 	})
-
+	
 	return virtualDocs
+}
+
+// getMockImageGroupKey determines the grouping key for a mock image document
+func getMockImageGroupKey(doc mock.Document) string {
+	// Check if this is an image extracted from a PDF
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				// Check for PDF filename
+				if pdfFilename, ok := metadataObj["pdf_filename"].(string); ok {
+					return pdfFilename
+				}
+			}
+		}
+	}
+	
+	// Check URL for PDF source
+	if url, ok := doc.Metadata["url"].(string); ok {
+		if strings.HasPrefix(url, "pdf://") {
+			// Extract PDF name from URL like "pdf://ragme-io.pdf/page_4/image_1"
+			parts := strings.Split(url, "/")
+			if len(parts) >= 2 {
+				return parts[1] // Return "ragme-io.pdf"
+			}
+		}
+	}
+	
+	// Check filename for PDF source
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if strings.Contains(filename, ".pdf_") {
+			// Extract PDF name from filename like "ragme-io.pdf_page_4_image_1.png"
+			parts := strings.Split(filename, ".pdf_")
+			if len(parts) >= 1 {
+				return parts[0] + ".pdf"
+			}
+		}
+	}
+	
+	// For standalone images, use the URL or filename as the key
+	if url, ok := doc.Metadata["url"].(string); ok {
+		return url
+	}
+	
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		return filename
+	}
+	
+	// Fallback
+	return "Unknown Image"
 }
 
 // truncateStringByLines truncates a string to the specified number of lines
@@ -1316,13 +1406,13 @@ func smartTruncate(content string, fieldName string, maxLines int) string {
 	if fieldName == "metadata" {
 		return truncateJSONMetadata(content, maxLines)
 	}
-	
+
 	// Check if this looks like base64 content
 	if isBase64Field(fieldName) || isBase64Content(content) {
 		// For base64 content, limit to a reasonable number of characters
 		return truncateBase64Content(content, 200)
 	}
-	
+
 	// For regular content, use line-based truncation
 	return truncateStringByLines(content, maxLines)
 }
@@ -1335,12 +1425,12 @@ func truncateJSONMetadata(jsonStr string, maxLines int) string {
 		// If it's not valid JSON, fall back to regular truncation
 		return truncateStringByLines(jsonStr, maxLines)
 	}
-	
+
 	// Create a truncated version of the metadata
 	truncatedObj := make(map[string]interface{})
 	for key, value := range metadataObj {
 		valueStr := fmt.Sprintf("%v", value)
-		
+
 		// Check if this value looks like base64 content
 		if isBase64Content(valueStr) {
 			truncatedObj[key] = truncateBase64Content(valueStr, 200)
@@ -1351,14 +1441,14 @@ func truncateJSONMetadata(jsonStr string, maxLines int) string {
 			truncatedObj[key] = value
 		}
 	}
-	
+
 	// Convert back to JSON string
 	jsonBytes, err := json.MarshalIndent(truncatedObj, "", "  ")
 	if err != nil {
 		// If marshaling fails, fall back to regular truncation
 		return truncateStringByLines(jsonStr, maxLines)
 	}
-	
+
 	// Apply line-based truncation to the formatted JSON
 	return truncateStringByLines(string(jsonBytes), maxLines)
 }
