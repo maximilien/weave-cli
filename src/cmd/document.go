@@ -956,7 +956,7 @@ func displayRegularDocuments(documents []weaviate.Document, collectionName strin
 // displayVirtualDocuments shows documents aggregated by their original document
 func displayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
 	virtualDocs := aggregateDocumentsByOriginal(documents)
-	
+
 	printSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
 	fmt.Println()
 
@@ -994,14 +994,14 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			} else {
 				fmt.Printf("   Chunk Details:\n")
 			}
-			
+
 			for j, chunk := range vdoc.Chunks {
 				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
 				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
 					fmt.Printf(" (chunk %v)", chunkIndex)
 				}
 				fmt.Println()
-				
+
 				if chunk.Content != fmt.Sprintf("Document ID: %s", chunk.ID) {
 					if showLong {
 						fmt.Printf("        Content: %s\n", chunk.Content)

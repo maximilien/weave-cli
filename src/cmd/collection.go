@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
+	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"github.com/spf13/cobra"
 )
 
@@ -102,6 +105,7 @@ func init() {
 
 	// Add flags
 	collectionListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
+	collectionListCmd.Flags().BoolP("virtual", "w", false, "Show collections with virtual structure summary (chunks, images, stacks)")
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
 }
 
@@ -109,6 +113,7 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
 	limit, _ := cmd.Flags().GetInt("limit")
+	virtual, _ := cmd.Flags().GetBool("virtual")
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -147,11 +152,11 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		listWeaviateCollections(ctx, dbConfig, limit)
+		listWeaviateCollections(ctx, dbConfig, limit, virtual)
 	case config.VectorDBTypeLocal:
-		listWeaviateCollections(ctx, dbConfig, limit)
+		listWeaviateCollections(ctx, dbConfig, limit, virtual)
 	case config.VectorDBTypeMock:
-		listMockCollections(ctx, dbConfig, limit)
+		listMockCollections(ctx, dbConfig, limit, virtual)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -255,7 +260,7 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	}
 }
 
-func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int) {
+func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -292,22 +297,27 @@ func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 	for i, collection := range collections {
 		color.New(color.FgGreen).Printf("%d. %s\n", i+1, collection)
 
-		// Try to get document count (use a reasonable limit for counting)
-		documents, err := client.ListDocuments(ctx, collection, 1000) // Use 1000 as a reasonable limit for counting
-		if err == nil {
-			if len(documents) >= 1000 {
-				fmt.Printf("   Documents: %d+ (showing first 1000)\n", len(documents))
-			} else {
-				fmt.Printf("   Documents: %d\n", len(documents))
-			}
+		if virtual {
+			// Show virtual structure summary
+			showCollectionVirtualSummary(ctx, client, collection)
 		} else {
-			fmt.Printf("   Documents: Unable to count\n")
+			// Show regular document count
+			documents, err := client.ListDocuments(ctx, collection, 1000) // Use 1000 as a reasonable limit for counting
+			if err == nil {
+				if len(documents) >= 1000 {
+					fmt.Printf("   Documents: %d+ (showing first 1000)\n", len(documents))
+				} else {
+					fmt.Printf("   Documents: %d\n", len(documents))
+				}
+			} else {
+				fmt.Printf("   Documents: Unable to count\n")
+			}
 		}
 		fmt.Println()
 	}
 }
 
-func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int) {
+func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -351,16 +361,21 @@ func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 	for i, collection := range collections {
 		color.New(color.FgGreen).Printf("%d. %s\n", i+1, collection)
 
-		// Get document count
-		documents, err := client.ListDocuments(ctx, collection, 1000)
-		if err == nil {
-			if len(documents) >= 1000 {
-				fmt.Printf("   Documents: %d+ (showing first 1000)\n", len(documents))
-			} else {
-				fmt.Printf("   Documents: %d\n", len(documents))
-			}
+		if virtual {
+			// Show virtual structure summary for mock collections
+			showMockCollectionVirtualSummary(ctx, client, collection)
 		} else {
-			fmt.Printf("   Documents: Unable to count\n")
+			// Get document count
+			documents, err := client.ListDocuments(ctx, collection, 1000)
+			if err == nil {
+				if len(documents) >= 1000 {
+					fmt.Printf("   Documents: %d+ (showing first 1000)\n", len(documents))
+				} else {
+					fmt.Printf("   Documents: %d\n", len(documents))
+				}
+			} else {
+				fmt.Printf("   Documents: Unable to count\n")
+			}
 		}
 
 		// Get collection stats
@@ -786,6 +801,268 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 	}
 
 	printSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
+}
+
+// CollectionVirtualSummary represents the virtual structure summary of a collection
+type CollectionVirtualSummary struct {
+	TotalDocuments    int
+	VirtualDocuments  int
+	TotalChunks       int
+	TotalImages       int
+	ImageStacks       int
+	ChunkedDocuments  int
+	StandaloneImages  int
+}
+
+// showCollectionVirtualSummary shows virtual structure summary for a collection
+func showCollectionVirtualSummary(ctx context.Context, client interface{}, collectionName string) {
+	// Get all documents from the collection
+	var documents []interface{}
+	
+	// Handle different client types
+	switch c := client.(type) {
+	case *weaviate.WeaveClient:
+		docs, listErr := c.ListDocuments(ctx, collectionName, 1000)
+		if listErr != nil {
+			fmt.Printf("   Virtual Summary: Unable to analyze\n")
+			return
+		}
+		// Convert to interface{} slice
+		for _, doc := range docs {
+			documents = append(documents, doc)
+		}
+	default:
+		fmt.Printf("   Virtual Summary: Unable to analyze\n")
+		return
+	}
+	
+	if len(documents) == 0 {
+		fmt.Printf("   Virtual Summary: No documents\n")
+		return
+	}
+	
+	// Analyze the collection
+	summary := analyzeCollectionVirtualStructure(documents)
+	
+	// Display the summary
+	fmt.Printf("   Virtual Summary:\n")
+	fmt.Printf("     Total Documents: %d\n", summary.TotalDocuments)
+	fmt.Printf("     Virtual Documents: %d\n", summary.VirtualDocuments)
+	
+	if summary.ChunkedDocuments > 0 {
+		fmt.Printf("     Chunked Documents: %d (%d chunks)\n", summary.ChunkedDocuments, summary.TotalChunks)
+	}
+	
+	if summary.TotalImages > 0 {
+		fmt.Printf("     Images: %d\n", summary.TotalImages)
+		if summary.ImageStacks > 0 {
+			fmt.Printf("     Image Stacks: %d\n", summary.ImageStacks)
+		}
+		if summary.StandaloneImages > 0 {
+			fmt.Printf("     Standalone Images: %d\n", summary.StandaloneImages)
+		}
+	}
+}
+
+// analyzeCollectionVirtualStructure analyzes documents to determine virtual structure
+func analyzeCollectionVirtualStructure(documents []interface{}) CollectionVirtualSummary {
+	summary := CollectionVirtualSummary{
+		TotalDocuments: len(documents),
+	}
+	
+	docMap := make(map[string]bool) // Track unique virtual documents
+	imageMap := make(map[string]bool) // Track unique image sources
+	
+	for _, docInterface := range documents {
+		// Convert to the appropriate document type
+		if doc, ok := docInterface.(weaviate.Document); ok {
+			// Check if this is a chunked document
+			if metadata, ok := doc.Metadata["metadata"]; ok {
+				if metadataStr, ok := metadata.(string); ok {
+					var metadataObj map[string]interface{}
+					if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+						if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+							if isChunked, ok := metadataObj["is_chunked"].(bool); ok && isChunked {
+								// This is a chunk
+								summary.TotalChunks++
+								docMap[originalFilename] = true
+								continue
+							}
+						}
+					}
+				}
+			}
+			
+			// Check if this is an image
+			if isImageDocument(doc) {
+				summary.TotalImages++
+				groupKey := getImageGroupKey(doc)
+				imageMap[groupKey] = true
+				
+				// Check if it's a standalone image or from a document
+				if strings.Contains(groupKey, ".pdf") {
+					summary.ImageStacks++
+				} else {
+					summary.StandaloneImages++
+				}
+			} else {
+				// Regular document
+				docMap[doc.ID] = true
+			}
+		}
+	}
+	
+	summary.VirtualDocuments = len(docMap) + len(imageMap)
+	summary.ChunkedDocuments = len(docMap)
+	
+	return summary
+}
+
+// showMockCollectionVirtualSummary shows virtual structure summary for a mock collection
+func showMockCollectionVirtualSummary(ctx context.Context, client *mock.Client, collectionName string) {
+	// Get all documents from the collection
+	documents, err := client.ListDocuments(ctx, collectionName, 1000)
+	if err != nil {
+		fmt.Printf("   Virtual Summary: Unable to analyze\n")
+		return
+	}
+	
+	if len(documents) == 0 {
+		fmt.Printf("   Virtual Summary: No documents\n")
+		return
+	}
+	
+	// Convert to interface{} slice
+	var docs []interface{}
+	for _, doc := range documents {
+		docs = append(docs, doc)
+	}
+	
+	// Analyze the collection
+	summary := analyzeMockCollectionVirtualStructure(docs)
+	
+	// Display the summary
+	fmt.Printf("   Virtual Summary:\n")
+	fmt.Printf("     Total Documents: %d\n", summary.TotalDocuments)
+	fmt.Printf("     Virtual Documents: %d\n", summary.VirtualDocuments)
+	
+	if summary.ChunkedDocuments > 0 {
+		fmt.Printf("     Chunked Documents: %d (%d chunks)\n", summary.ChunkedDocuments, summary.TotalChunks)
+	}
+	
+	if summary.TotalImages > 0 {
+		fmt.Printf("     Images: %d\n", summary.TotalImages)
+		if summary.ImageStacks > 0 {
+			fmt.Printf("     Image Stacks: %d\n", summary.ImageStacks)
+		}
+		if summary.StandaloneImages > 0 {
+			fmt.Printf("     Standalone Images: %d\n", summary.StandaloneImages)
+		}
+	}
+}
+
+// analyzeMockCollectionVirtualStructure analyzes mock documents to determine virtual structure
+func analyzeMockCollectionVirtualStructure(documents []interface{}) CollectionVirtualSummary {
+	summary := CollectionVirtualSummary{
+		TotalDocuments: len(documents),
+	}
+	
+	docMap := make(map[string]bool) // Track unique virtual documents
+	imageMap := make(map[string]bool) // Track unique image sources
+	
+	for _, docInterface := range documents {
+		// Convert to the appropriate document type
+		if doc, ok := docInterface.(mock.Document); ok {
+			// Check if this is a chunked document
+			if metadata, ok := doc.Metadata["metadata"]; ok {
+				if metadataStr, ok := metadata.(string); ok {
+					var metadataObj map[string]interface{}
+					if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+						if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+							if isChunked, ok := metadataObj["is_chunked"].(bool); ok && isChunked {
+								// This is a chunk
+								summary.TotalChunks++
+								docMap[originalFilename] = true
+								continue
+							}
+						}
+					}
+				}
+			}
+			
+			// Check if this is an image
+			if isMockImageDocument(doc) {
+				summary.TotalImages++
+				groupKey := getMockImageGroupKey(doc)
+				imageMap[groupKey] = true
+				
+				// Check if it's a standalone image or from a document
+				if strings.Contains(groupKey, ".pdf") {
+					summary.ImageStacks++
+				} else {
+					summary.StandaloneImages++
+				}
+			} else {
+				// Regular document
+				docMap[doc.ID] = true
+			}
+		}
+	}
+	
+	summary.VirtualDocuments = len(docMap) + len(imageMap)
+	summary.ChunkedDocuments = len(docMap)
+	
+	return summary
+}
+
+// isMockImageDocument checks if a mock document represents an image
+func isMockImageDocument(doc mock.Document) bool {
+	// Check for image field
+	if _, hasImage := doc.Metadata["image"]; hasImage {
+		return true
+	}
+	
+	// Check metadata for image-related fields
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if _, hasBase64Data := metadataObj["base64_data"]; hasBase64Data {
+					return true
+				}
+				if _, hasClassification := metadataObj["classification"]; hasClassification {
+					return true
+				}
+			}
+		}
+	}
+	
+	return false
+}
+
+// isImageDocument checks if a document represents an image
+func isImageDocument(doc weaviate.Document) bool {
+	// Check for image field
+	if _, hasImage := doc.Metadata["image"]; hasImage {
+		return true
+	}
+	
+	// Check metadata for image-related fields
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if _, hasBase64Data := metadataObj["base64_data"]; hasBase64Data {
+					return true
+				}
+				if _, hasClassification := metadataObj["classification"]; hasClassification {
+					return true
+				}
+			}
+		}
+	}
+	
+	return false
 }
 
 // truncateMetadataValue truncates a metadata value to prevent massive dumps
