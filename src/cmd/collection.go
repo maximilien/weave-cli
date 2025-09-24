@@ -676,7 +676,7 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 
 	printStyledKeyProminent("Database Type")
 	fmt.Printf(": ")
-	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	printStyledValueDimmed(string(cfg.Type))
 	fmt.Println()
 
 	printStyledKeyProminent("Document Count")
@@ -692,7 +692,7 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 	fmt.Println()
 	printStyledKeyProminent("  Vector Database")
 	fmt.Printf(": ")
-	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	printStyledValueDimmed(string(cfg.Type))
 	fmt.Println()
 	printStyledKeyProminent("  URL")
 	fmt.Printf(": ")
@@ -833,7 +833,7 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 	printStyledKeyProminent("Database Type")
 	fmt.Printf(": ")
-	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	printStyledValueDimmed(string(cfg.Type))
 	fmt.Println()
 
 	printStyledKeyProminent("Document Count")
@@ -849,7 +849,7 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 	fmt.Println()
 	printStyledKeyProminent("  Vector Database")
 	fmt.Printf(": ")
-	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	printStyledValueDimmed(string(cfg.Type))
 	fmt.Println()
 	printStyledKeyProminent("  Simulate Embeddings")
 	fmt.Printf(": ")
