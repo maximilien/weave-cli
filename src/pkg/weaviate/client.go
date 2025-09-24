@@ -150,11 +150,28 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 // Note: Currently shows document IDs only. To show actual document content/metadata,
 // we would need to implement dynamic schema discovery for each collection.
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	// Use the basic method that works reliably
+	// For image collections, use simple query to avoid large payload issues
+	if isImageCollection(collectionName) {
+		return c.listDocumentsSimple(ctx, collectionName, limit)
+	}
+	
+	// Use the basic method that works reliably for text collections
 	return c.listDocumentsBasic(ctx, collectionName, limit)
 }
 
-// listDocumentsBasic fetches documents with actual properties
+// isImageCollection checks if a collection name suggests it contains images
+func isImageCollection(collectionName string) bool {
+	imageKeywords := []string{"image", "img", "photo", "picture", "visual"}
+	name := strings.ToLower(collectionName)
+	for _, keyword := range imageKeywords {
+		if strings.Contains(name, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// listDocumentsBasic fetches documents with actual properties (excluding large fields)
 func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, limit int) ([]Document, error) {
 	// First, get the schema to know what fields are available
 	properties, err := c.GetCollectionSchema(ctx, collectionName)
@@ -163,7 +180,14 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 		return c.listDocumentsSimple(ctx, collectionName, limit)
 	}
 
-	// Build a query with the actual properties from the schema
+	// Filter out large fields that cause performance issues
+	excludedFields := map[string]bool{
+		"image":        true, // Base64 image data can be very large
+		"base64_data": true, // Alternative image field name
+		"content":     true, // Large text content
+	}
+
+	// Build a query with the actual properties from the schema (excluding large fields)
 	query := fmt.Sprintf(`
 		{
 			Get {
@@ -173,9 +197,11 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 					}
 	`, collectionName, limit)
 
-	// Add all available properties to the query
+	// Add available properties to the query, excluding large fields
 	for _, prop := range properties {
-		query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+		if !excludedFields[prop] {
+			query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+		}
 	}
 
 	query += `
