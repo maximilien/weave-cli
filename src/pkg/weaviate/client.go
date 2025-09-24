@@ -150,17 +150,17 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 // Note: Currently shows document IDs only. To show actual document content/metadata,
 // we would need to implement dynamic schema discovery for each collection.
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	// For image collections, try optimized query first, then fall back to simple query
-	if isImageCollection(collectionName) {
-		// Try optimized query first
-		documents, err := c.listDocumentsOptimized(ctx, collectionName, limit)
-		if err == nil && len(documents) > 0 {
-			return documents, nil
-		}
-		// If optimized query fails or returns no results, fall back to simple query
-		return c.listDocumentsSimple(ctx, collectionName, limit)
-	}
-	
+	// Temporarily disable image collection optimization to get metadata for virtual aggregation
+	// if isImageCollection(collectionName) {
+	// 	// Try optimized query first
+	// 	documents, err := c.listDocumentsOptimized(ctx, collectionName, limit)
+	// 	if err == nil && len(documents) > 0 {
+	// 		return documents, nil
+	// 	}
+	// 	// If optimized query fails or returns no results, fall back to simple query
+	// 	return c.listDocumentsSimple(ctx, collectionName, limit)
+	// }
+
 	// Use the basic method that works reliably for text collections
 	return c.listDocumentsBasic(ctx, collectionName, limit)
 }

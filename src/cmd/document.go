@@ -447,7 +447,21 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 	}
 
 	if virtual {
-		displayVirtualDocuments(documents, collectionName, showLong, shortLines, summary)
+		// For virtual mode, also get documents from the corresponding image collection
+		// to properly aggregate images with their source documents
+		var allDocuments []weaviate.Document
+		allDocuments = append(allDocuments, documents...)
+
+		// Check if there's a corresponding image collection
+		imageCollectionName := getImageCollectionName(collectionName)
+		if imageCollectionName != "" {
+			imageDocuments, err := client.ListDocuments(ctx, imageCollectionName, queryLimit)
+			if err == nil && len(imageDocuments) > 0 {
+				allDocuments = append(allDocuments, imageDocuments...)
+			}
+		}
+
+		displayVirtualDocuments(allDocuments, collectionName, showLong, shortLines, summary)
 	} else {
 		displayRegularDocuments(documents, collectionName, showLong, shortLines)
 	}
@@ -1215,6 +1229,30 @@ func isImageVirtualDocument(vdoc VirtualDocument) bool {
 		}
 	}
 	return false
+}
+
+// getImageCollectionName returns the corresponding image collection name for a document collection
+func getImageCollectionName(collectionName string) string {
+	// Common patterns for image collections
+	imageSuffixes := []string{"Images", "Image", "images", "image"}
+
+	for _, suffix := range imageSuffixes {
+		if strings.HasSuffix(collectionName, suffix) {
+			return collectionName // Already an image collection
+		}
+	}
+
+	// Try to find corresponding image collection
+	// For example: RagMeDocs -> RagMeImages
+	if strings.HasSuffix(collectionName, "Docs") {
+		return strings.TrimSuffix(collectionName, "Docs") + "Images"
+	}
+	if strings.HasSuffix(collectionName, "docs") {
+		return strings.TrimSuffix(collectionName, "docs") + "images"
+	}
+
+	// Default pattern: add "Images" suffix
+	return collectionName + "Images"
 }
 
 // getImageGroupKey determines the grouping key for an image document

@@ -17,7 +17,7 @@ func TestWeaviateIntegration(t *testing.T) {
 	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
 		t.Skip("Skipping Weaviate integration tests - missing WEAVIATE_URL or WEAVIATE_API_KEY")
 	}
-	
+
 	// Skip if URL is invalid (contains double protocol)
 	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
 		t.Skip("Skipping Weaviate integration tests - invalid URL format")
@@ -56,7 +56,7 @@ func TestWeaviateIntegration(t *testing.T) {
 		// Quick health check with minimal timeout
 		healthCtx, healthCancel := context.WithTimeout(ctx, 2*time.Second)
 		defer healthCancel()
-		
+
 		collections, err := client.ListCollections(healthCtx)
 		if err != nil {
 			t.Errorf("Health check failed: %v", err)
@@ -68,7 +68,7 @@ func TestWeaviateIntegration(t *testing.T) {
 		// Test collection listing with short timeout
 		listCtx, listCancel := context.WithTimeout(ctx, 2*time.Second)
 		defer listCancel()
-		
+
 		collections, err := client.ListCollections(listCtx)
 		if err != nil {
 			t.Errorf("Failed to list collections: %v", err)
@@ -92,7 +92,7 @@ func TestWeaviateIntegration(t *testing.T) {
 		// Test document listing with very small limit for speed
 		docCtx, docCancel := context.WithTimeout(ctx, 2*time.Second)
 		defer docCancel()
-		
+
 		documents, err := client.ListDocuments(docCtx, testCollection, 1) // Only 1 document for speed
 		if err != nil {
 			t.Errorf("Failed to list documents: %v", err)
@@ -105,7 +105,7 @@ func TestWeaviateIntegration(t *testing.T) {
 		if len(documents) > 0 {
 			getCtx, getCancel := context.WithTimeout(ctx, 1*time.Second)
 			defer getCancel()
-			
+
 			docID := documents[0].ID
 			doc, err := client.GetDocument(getCtx, testCollection, docID)
 			if err != nil {
@@ -122,7 +122,7 @@ func TestWeaviateConnectionSpeed(t *testing.T) {
 	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
 		t.Skip("Skipping connection speed tests - missing Weaviate configuration")
 	}
-	
+
 	// Skip if URL is invalid (contains double protocol)
 	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
 		t.Skip("Skipping connection speed tests - invalid URL format")
@@ -176,7 +176,7 @@ func TestWeaviateErrorHandling(t *testing.T) {
 	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
 		t.Skip("Skipping error handling tests - missing Weaviate configuration")
 	}
-	
+
 	// Skip if URL is invalid (contains double protocol)
 	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
 		t.Skip("Skipping error handling tests - invalid URL format")
@@ -229,7 +229,7 @@ func BenchmarkWeaviateOperations(b *testing.B) {
 	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
 		b.Skip("Skipping benchmarks - missing Weaviate configuration")
 	}
-	
+
 	// Skip if URL is invalid (contains double protocol)
 	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
 		b.Skip("Skipping benchmarks - invalid URL format")

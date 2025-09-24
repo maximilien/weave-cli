@@ -475,7 +475,7 @@ func TestCommandAliasExecution(t *testing.T) {
 	t.Run("CollectionListAlias", func(t *testing.T) {
 		// Test collection list with alias
 		var buf bytes.Buffer
-		
+
 		// Create a mock command to test alias resolution
 		cmd := &cobra.Command{
 			Use:     "list",
@@ -484,10 +484,10 @@ func TestCommandAliasExecution(t *testing.T) {
 				fmt.Fprintln(&buf, "Mock collection list command")
 			},
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Execute()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "Mock collection list command") {
 			t.Errorf("Expected mock output, got: %s", output)
@@ -497,7 +497,7 @@ func TestCommandAliasExecution(t *testing.T) {
 	t.Run("CollectionDeleteAlias", func(t *testing.T) {
 		// Test collection delete with alias
 		var buf bytes.Buffer
-		
+
 		cmd := &cobra.Command{
 			Use:     "delete",
 			Aliases: []string{"del", "d"},
@@ -505,10 +505,10 @@ func TestCommandAliasExecution(t *testing.T) {
 				fmt.Fprintln(&buf, "Mock collection delete command")
 			},
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Execute()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "Mock collection delete command") {
 			t.Errorf("Expected mock output, got: %s", output)
@@ -518,7 +518,7 @@ func TestCommandAliasExecution(t *testing.T) {
 	t.Run("CollectionDeleteAllAlias", func(t *testing.T) {
 		// Test collection delete-all with alias
 		var buf bytes.Buffer
-		
+
 		cmd := &cobra.Command{
 			Use:     "delete-all",
 			Aliases: []string{"del-all", "da"},
@@ -526,10 +526,10 @@ func TestCommandAliasExecution(t *testing.T) {
 				fmt.Fprintln(&buf, "Mock collection delete-all command")
 			},
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Execute()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "Mock collection delete-all command") {
 			t.Errorf("Expected mock output, got: %s", output)
@@ -539,7 +539,7 @@ func TestCommandAliasExecution(t *testing.T) {
 	t.Run("DocumentShowAlias", func(t *testing.T) {
 		// Test document show with alias
 		var buf bytes.Buffer
-		
+
 		cmd := &cobra.Command{
 			Use:     "show",
 			Aliases: []string{"s"},
@@ -547,10 +547,10 @@ func TestCommandAliasExecution(t *testing.T) {
 				fmt.Fprintln(&buf, "Mock document show command")
 			},
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Execute()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "Mock document show command") {
 			t.Errorf("Expected mock output, got: %s", output)
@@ -562,16 +562,16 @@ func TestCommandAliasExecution(t *testing.T) {
 func TestAliasHelpText(t *testing.T) {
 	t.Run("CollectionListHelp", func(t *testing.T) {
 		var buf bytes.Buffer
-		
+
 		cmd := &cobra.Command{
 			Use:     "list",
 			Aliases: []string{"ls", "l"},
 			Short:   "List all collections",
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Usage()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "ls") || !strings.Contains(output, "l") {
 			t.Errorf("Expected aliases in help text, got: %s", output)
@@ -580,16 +580,16 @@ func TestAliasHelpText(t *testing.T) {
 
 	t.Run("CollectionDeleteHelp", func(t *testing.T) {
 		var buf bytes.Buffer
-		
+
 		cmd := &cobra.Command{
 			Use:     "delete",
 			Aliases: []string{"del", "d"},
 			Short:   "Delete a specific collection",
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Usage()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "del") || !strings.Contains(output, "d") {
 			t.Errorf("Expected aliases in help text, got: %s", output)
@@ -598,16 +598,16 @@ func TestAliasHelpText(t *testing.T) {
 
 	t.Run("DocumentShowHelp", func(t *testing.T) {
 		var buf bytes.Buffer
-		
+
 		cmd := &cobra.Command{
 			Use:     "show",
 			Aliases: []string{"s"},
 			Short:   "Show a specific document",
 		}
-		
+
 		cmd.SetOutput(&buf)
 		cmd.Usage()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "s") {
 			t.Errorf("Expected alias 's' in help text, got: %s", output)
@@ -629,7 +629,7 @@ func TestDocumentDeleteMetadataFiltering(t *testing.T) {
 				if args[0] != "TestCollection" {
 					t.Errorf("Expected 'TestCollection', got %s", args[0])
 				}
-				
+
 				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 				if len(metadataFilters) != 1 {
 					t.Errorf("Expected 1 metadata filter, got %d", len(metadataFilters))
@@ -639,20 +639,20 @@ func TestDocumentDeleteMetadataFiltering(t *testing.T) {
 				}
 			},
 		}
-		
+
 		// Add the metadata flag
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
-		
+
 		// Set up command arguments
 		cmd.SetArgs([]string{"TestCollection", "--metadata", "filename=test.png"})
-		
+
 		// Execute command
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Delete with Multiple Metadata Filters", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "delete",
@@ -661,7 +661,7 @@ func TestDocumentDeleteMetadataFiltering(t *testing.T) {
 				if len(metadataFilters) != 2 {
 					t.Errorf("Expected 2 metadata filters, got %d", len(metadataFilters))
 				}
-				
+
 				expectedFilters := []string{"filename=test.png", "type=image"}
 				for i, filter := range metadataFilters {
 					if filter != expectedFilters[i] {
@@ -670,16 +670,16 @@ func TestDocumentDeleteMetadataFiltering(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
 		cmd.SetArgs([]string{"TestCollection", "--metadata", "filename=test.png", "--metadata", "type=image"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Delete with Short Flag", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "delete",
@@ -693,10 +693,10 @@ func TestDocumentDeleteMetadataFiltering(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
 		cmd.SetArgs([]string{"TestCollection", "-m", "filename=test.png"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
@@ -718,7 +718,7 @@ func TestDocumentShowMetadataFiltering(t *testing.T) {
 				if args[0] != "TestCollection" {
 					t.Errorf("Expected 'TestCollection', got %s", args[0])
 				}
-				
+
 				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 				if len(metadataFilters) != 1 {
 					t.Errorf("Expected 1 metadata filter, got %d", len(metadataFilters))
@@ -728,20 +728,20 @@ func TestDocumentShowMetadataFiltering(t *testing.T) {
 				}
 			},
 		}
-		
+
 		// Add the metadata flag
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter")
-		
+
 		// Set up command arguments
 		cmd.SetArgs([]string{"TestCollection", "--metadata", "filename=test.png"})
-		
+
 		// Execute command
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Show with Multiple Metadata Filters", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "show",
@@ -758,16 +758,16 @@ func TestDocumentShowMetadataFiltering(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter")
 		cmd.SetArgs([]string{"TestCollection", "--metadata", "filename=test.png", "--metadata", "type=image"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Show with Short Flag", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "show",
@@ -781,16 +781,16 @@ func TestDocumentShowMetadataFiltering(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter")
 		cmd.SetArgs([]string{"TestCollection", "-m", "filename=test.png"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Show with Document ID (no metadata)", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "show",
@@ -804,17 +804,17 @@ func TestDocumentShowMetadataFiltering(t *testing.T) {
 				if args[1] != "doc123" {
 					t.Errorf("Expected 'doc123', got %s", args[1])
 				}
-				
+
 				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 				if len(metadataFilters) != 0 {
 					t.Errorf("Expected 0 metadata filters, got %d", len(metadataFilters))
 				}
 			},
 		}
-		
+
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter")
 		cmd.SetArgs([]string{"TestCollection", "doc123"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
@@ -836,14 +836,14 @@ func TestCollectionCountCommand(t *testing.T) {
 				}
 			},
 		}
-		
+
 		// Test with no arguments
 		cmd.SetArgs([]string{})
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
-		
+
 		// Test with database name argument
 		cmd.SetArgs([]string{"test-db"})
 		err = cmd.Execute()
@@ -851,7 +851,7 @@ func TestCollectionCountCommand(t *testing.T) {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Collection Count Alias", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "count",
@@ -860,7 +860,7 @@ func TestCollectionCountCommand(t *testing.T) {
 				// Mock count function
 			},
 		}
-		
+
 		cmd.SetArgs([]string{})
 		err := cmd.Execute()
 		if err != nil {
@@ -886,7 +886,7 @@ func TestDocumentCountCommand(t *testing.T) {
 				}
 			},
 		}
-		
+
 		// Test with collection name
 		cmd.SetArgs([]string{"TestCollection"})
 		err := cmd.Execute()
@@ -894,7 +894,7 @@ func TestDocumentCountCommand(t *testing.T) {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Count Alias", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "count",
@@ -906,7 +906,7 @@ func TestDocumentCountCommand(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.SetArgs([]string{"TestCollection"})
 		err := cmd.Execute()
 		if err != nil {
@@ -928,29 +928,29 @@ func TestDocumentListMetadataTruncation(t *testing.T) {
 				if args[0] != "TestCollection" {
 					t.Errorf("Expected 'TestCollection', got %s", args[0])
 				}
-				
+
 				shortLines, _ := cmd.Flags().GetInt("short")
 				if shortLines != 1 {
 					t.Errorf("Expected short lines to be 1, got %d", shortLines)
 				}
-				
+
 				limit, _ := cmd.Flags().GetInt("limit")
 				if limit != 5 {
 					t.Errorf("Expected limit to be 5, got %d", limit)
 				}
 			},
 		}
-		
+
 		cmd.Flags().IntP("short", "s", 5, "Show only first N lines of content")
 		cmd.Flags().IntP("limit", "l", 50, "Maximum number of documents to show")
 		cmd.SetArgs([]string{"TestCollection", "--short", "1", "--limit", "5"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document List with Short Flag Alias", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "list",
@@ -961,10 +961,10 @@ func TestDocumentListMetadataTruncation(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().IntP("short", "s", 5, "Show only first N lines of content")
 		cmd.SetArgs([]string{"TestCollection", "-s", "3"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
@@ -989,7 +989,7 @@ func TestCollectionShowCommand(t *testing.T) {
 				}
 			},
 		}
-		
+
 		// Test with collection name
 		cmd.SetArgs([]string{"TestCollection"})
 		err := cmd.Execute()
@@ -997,7 +997,7 @@ func TestCollectionShowCommand(t *testing.T) {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Collection Show Alias", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "show",
@@ -1009,17 +1009,17 @@ func TestCollectionShowCommand(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.SetArgs([]string{"TestCollection"})
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Collection Show with Different Collection Names", func(t *testing.T) {
 		testCases := []string{"MyCollection", "RagMeDocs", "TestCollection", "AnotherCollection"}
-		
+
 		for _, collectionName := range testCases {
 			t.Run(fmt.Sprintf("Collection_%s", collectionName), func(t *testing.T) {
 				cmd := &cobra.Command{
@@ -1034,7 +1034,7 @@ func TestCollectionShowCommand(t *testing.T) {
 						}
 					},
 				}
-				
+
 				cmd.SetArgs([]string{collectionName})
 				err := cmd.Execute()
 				if err != nil {
@@ -1043,7 +1043,7 @@ func TestCollectionShowCommand(t *testing.T) {
 			})
 		}
 	})
-	
+
 	t.Run("Collection Show Help Text", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "show COLLECTION_NAME",
@@ -1058,11 +1058,11 @@ This command displays:
 - Last document date (if available)
 - Collection statistics`,
 		}
-		
+
 		var buf bytes.Buffer
 		cmd.SetOutput(&buf)
 		cmd.Help()
-		
+
 		output := buf.String()
 		if !strings.Contains(output, "Show detailed information about a specific collection") {
 			t.Errorf("Expected 'Show detailed information about a specific collection' in help text, got: %s", output)
@@ -1074,7 +1074,7 @@ This command displays:
 			t.Errorf("Expected 'Document count' in help text, got: %s", output)
 		}
 	})
-	
+
 	t.Run("Collection Show with Short Flag", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "show",
@@ -1087,23 +1087,23 @@ This command displays:
 				if args[0] != "TestCollection" {
 					t.Errorf("Expected 'TestCollection', got %s", args[0])
 				}
-				
+
 				shortLines, _ := cmd.Flags().GetInt("short")
 				if shortLines != 5 {
 					t.Errorf("Expected short lines to be 5, got %d", shortLines)
 				}
 			},
 		}
-		
+
 		cmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata")
 		cmd.SetArgs([]string{"TestCollection", "--short", "5"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Collection Show with Short Flag Alias", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "show",
@@ -1115,16 +1115,16 @@ This command displays:
 				}
 			},
 		}
-		
+
 		cmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata")
 		cmd.SetArgs([]string{"TestCollection", "-s", "3"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Collection Show with Default Short Flag", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use:     "show",
@@ -1136,16 +1136,16 @@ This command displays:
 				}
 			},
 		}
-		
+
 		cmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata")
 		cmd.SetArgs([]string{"TestCollection"}) // No short flag specified
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Collection Show Metadata Value Truncation", func(t *testing.T) {
 		// Test the truncateMetadataValue function behavior
 		testCases := []struct {
@@ -1179,7 +1179,7 @@ This command displays:
 				expected: "map[key1:value1 key2:value2]... (truncated, 0 more characters)",
 			},
 		}
-		
+
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
 				// This would test the truncateMetadataValue function if it were exported
@@ -1207,13 +1207,13 @@ func TestDocumentDeleteVirtualFlag(t *testing.T) {
 				if args[1] != "ragme-io.pdf" {
 					t.Errorf("Expected filename 'ragme-io.pdf', got %s", args[1])
 				}
-				
+
 				// Validate virtual flag
 				virtual, _ := cmd.Flags().GetBool("virtual")
 				if !virtual {
 					t.Error("Expected virtual flag to be true")
 				}
-				
+
 				// Validate metadata filters are not set
 				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 				if len(metadataFilters) != 0 {
@@ -1221,21 +1221,21 @@ func TestDocumentDeleteVirtualFlag(t *testing.T) {
 				}
 			},
 		}
-		
+
 		// Add flags
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
 		cmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
-		
+
 		// Set up command arguments with virtual flag
 		cmd.SetArgs([]string{"RagmeDocs", "ragme-io.pdf", "--virtual"})
-		
+
 		// Execute command
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Delete with Virtual Flag Short Form", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "delete",
@@ -1246,16 +1246,16 @@ func TestDocumentDeleteVirtualFlag(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
 		cmd.SetArgs([]string{"RagmeDocs", "ragme-io.pdf", "-w"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Delete Virtual Flag Validation", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "delete",
@@ -1263,7 +1263,7 @@ func TestDocumentDeleteVirtualFlag(t *testing.T) {
 				// This test validates that virtual flag and metadata filters are mutually exclusive
 				virtual, _ := cmd.Flags().GetBool("virtual")
 				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
-				
+
 				// The validation should prevent both flags from being set
 				// This test just verifies the flags are correctly parsed
 				if virtual && len(metadataFilters) > 0 {
@@ -1273,19 +1273,19 @@ func TestDocumentDeleteVirtualFlag(t *testing.T) {
 				}
 			},
 		}
-		
+
 		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
 		cmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
-		
+
 		// Test with both flags set (should be invalid)
 		cmd.SetArgs([]string{"RagmeDocs", "ragme-io.pdf", "--virtual", "--metadata", "filename=test.pdf"})
-		
+
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
 		}
 	})
-	
+
 	t.Run("Document Delete Virtual Flag Help Text", func(t *testing.T) {
 		cmd := &cobra.Command{
 			Use: "delete",
@@ -1302,7 +1302,7 @@ will be deleted in one operation.
 ⚠️  WARNING: This is a destructive operation that will permanently
 delete the specified documents. Use with caution!`,
 		}
-		
+
 		// Verify the help text includes virtual deletion information
 		if !strings.Contains(cmd.Long, "virtual") {
 			t.Error("Help text should mention virtual deletion")

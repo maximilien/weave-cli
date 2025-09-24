@@ -245,9 +245,9 @@ func TestConfigStructValidation(t *testing.T) {
 
 	t.Run("VectorDBConfig_Local", func(t *testing.T) {
 		cfg := &config.VectorDBConfig{
-			Name:   "test-local",
-			Type:   config.VectorDBTypeLocal,
-			URL:    "http://localhost:8080",
+			Name: "test-local",
+			Type: config.VectorDBTypeLocal,
+			URL:  "http://localhost:8080",
 			Collections: []config.Collection{
 				{Name: "TestCollection", Type: "text"},
 			},

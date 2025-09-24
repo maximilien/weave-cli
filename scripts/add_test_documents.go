@@ -51,10 +51,10 @@ var testDocuments = []struct {
 		ID:      "test-doc-4",
 		Content: "Document with special characters: !@#$%^&*()_+-=[]{}|;':\",./<>? This tests handling of special characters in content.",
 		Metadata: map[string]interface{}{
-			"source":     "weave-cli-test",
-			"type":       "text",
-			"created_at": time.Now().Format(time.RFC3339),
-			"tags":       []string{"test", "special-chars"},
+			"source":      "weave-cli-test",
+			"type":        "text",
+			"created_at":  time.Now().Format(time.RFC3339),
+			"tags":        []string{"test", "special-chars"},
 			"has_special": true,
 		},
 	},
@@ -82,26 +82,49 @@ func main() {
 	var client interface{}
 	var collectionName string
 
-	switch cfg.Database.VectorDB.Type {
+	// Get the default vector database config
+	var vectorDBConfig *config.VectorDBConfig
+	for _, db := range cfg.Databases.VectorDatabases {
+		if db.Name == cfg.Databases.Default {
+			vectorDBConfig = &db
+			break
+		}
+	}
+	
+	if vectorDBConfig == nil {
+		log.Fatal("No default vector database found")
+	}
+
+	switch vectorDBConfig.Type {
 	case config.VectorDBTypeCloud:
 		weaviateClient, err := weaviate.NewClient(&weaviate.Config{
-			URL:    cfg.Database.VectorDB.WeaviateCloud.URL,
-			APIKey: cfg.Database.VectorDB.WeaviateCloud.APIKey,
+			URL:    vectorDBConfig.URL,
+			APIKey: vectorDBConfig.APIKey,
 		})
 		if err != nil {
 			log.Fatalf("Failed to create Weaviate client: %v", err)
 		}
 		client = weaviateClient
-		collectionName = cfg.Database.VectorDB.WeaviateCloud.CollectionNameTest
+		// Use the first collection from the vector database config
+		if len(vectorDBConfig.Collections) > 0 {
+			collectionName = vectorDBConfig.Collections[0].Name
+		} else {
+			collectionName = "TestCollection"
+		}
 	case config.VectorDBTypeLocal:
 		weaviateClient, err := weaviate.NewClient(&weaviate.Config{
-			URL: cfg.Database.VectorDB.WeaviateLocal.URL,
+			URL: vectorDBConfig.URL,
 		})
 		if err != nil {
 			log.Fatalf("Failed to create Weaviate client: %v", err)
 		}
 		client = weaviateClient
-		collectionName = cfg.Database.VectorDB.WeaviateLocal.CollectionNameTest
+		// Use the first collection from the vector database config
+		if len(vectorDBConfig.Collections) > 0 {
+			collectionName = vectorDBConfig.Collections[0].Name
+		} else {
+			collectionName = "TestCollection"
+		}
 	default:
 		log.Fatalf("This script only works with Weaviate (cloud or local), not mock database")
 	}
@@ -139,13 +162,13 @@ func main() {
 	successCount := 0
 	for _, doc := range testDocuments {
 		fmt.Printf("Adding document: %s\n", doc.ID)
-		
+
 		// Note: This is a simplified version. In a real implementation,
 		// you would need to implement the AddDocument method in the weaviate client
 		// For now, we'll just simulate the operation
 		fmt.Printf("  Content: %s...\n", doc.Content[:min(50, len(doc.Content))])
 		fmt.Printf("  Metadata: %+v\n", doc.Metadata)
-		
+
 		successCount++
 	}
 

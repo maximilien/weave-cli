@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"testing"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
+	"testing"
 )
 
 // contains checks if a string slice contains a specific string
@@ -28,25 +28,25 @@ func TestMockClient(t *testing.T) {
 			{Name: "test", Type: "text", Description: "Test collection"},
 		},
 	}
-	
+
 	client := mock.NewClient(cfg)
-	
+
 	// Test health check
 	ctx := context.Background()
 	if err := client.Health(ctx); err != nil {
 		t.Errorf("Health check failed: %v", err)
 	}
-	
+
 	// Test listing collections
 	collections, err := client.ListCollections(ctx)
 	if err != nil {
 		t.Errorf("Failed to list collections: %v", err)
 	}
-	
+
 	if len(collections) != 1 {
 		t.Errorf("Expected 1 collection, got %d", len(collections))
 	}
-	
+
 	if collections[0] != "test" {
 		t.Errorf("Expected collection 'test', got %s", collections[0])
 	}
@@ -61,10 +61,10 @@ func TestMockClientDocumentOperations(t *testing.T) {
 			{Name: "test", Type: "text", Description: "Test collection"},
 		},
 	}
-	
+
 	client := mock.NewClient(cfg)
 	ctx := context.Background()
-	
+
 	// Add a document
 	doc := mock.Document{
 		ID:      "test-doc-1",
@@ -74,46 +74,46 @@ func TestMockClientDocumentOperations(t *testing.T) {
 			"type":   "text",
 		},
 	}
-	
+
 	if err := client.AddDocument(ctx, "test", doc); err != nil {
 		t.Errorf("Failed to add document: %v", err)
 	}
-	
+
 	// List documents
 	documents, err := client.ListDocuments(ctx, "test", 10)
 	if err != nil {
 		t.Errorf("Failed to list documents: %v", err)
 	}
-	
+
 	if len(documents) != 1 {
 		t.Errorf("Expected 1 document, got %d", len(documents))
 	}
-	
+
 	if documents[0].ID != "test-doc-1" {
 		t.Errorf("Expected document ID 'test-doc-1', got %s", documents[0].ID)
 	}
-	
+
 	// Get specific document
 	retrievedDoc, err := client.GetDocument(ctx, "test", "test-doc-1")
 	if err != nil {
 		t.Errorf("Failed to get document: %v", err)
 	}
-	
+
 	if retrievedDoc.ID != "test-doc-1" {
 		t.Errorf("Expected document ID 'test-doc-1', got %s", retrievedDoc.ID)
 	}
-	
+
 	// Delete document
 	if err := client.DeleteDocument(ctx, "test", "test-doc-1"); err != nil {
 		t.Errorf("Failed to delete document: %v", err)
 	}
-	
+
 	// Verify document is deleted
 	documents, err = client.ListDocuments(ctx, "test", 10)
 	if err != nil {
 		t.Errorf("Failed to list documents after deletion: %v", err)
 	}
-	
+
 	if len(documents) != 0 {
 		t.Errorf("Expected 0 documents after deletion, got %d", len(documents))
 	}
@@ -128,10 +128,10 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 			{Name: "test", Type: "text", Description: "Test collection"},
 		},
 	}
-	
+
 	client := mock.NewClient(cfg)
 	ctx := context.Background()
-	
+
 	// Add test documents with metadata
 	testDocs := []mock.Document{
 		{
@@ -144,7 +144,7 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 			},
 		},
 		{
-			ID:      "doc2", 
+			ID:      "doc2",
 			Content: "Content 2",
 			Metadata: map[string]interface{}{
 				"filename": "file2.jpg",
@@ -154,7 +154,7 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 		},
 		{
 			ID:      "doc3",
-			Content: "Content 3", 
+			Content: "Content 3",
 			Metadata: map[string]interface{}{
 				"filename": "file1.png",
 				"type":     "document",
@@ -171,14 +171,14 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Add documents to collection
 	for _, doc := range testDocs {
 		if err := client.AddDocument(ctx, "test", doc); err != nil {
 			t.Errorf("Failed to add document: %v", err)
 		}
 	}
-	
+
 	// Test 1: Delete by single metadata filter
 	deletedCount, err := client.DeleteDocumentsByMetadata(ctx, "test", []string{"filename=file1.png"})
 	if err != nil {
@@ -187,7 +187,7 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 	if deletedCount != 2 {
 		t.Errorf("Expected 2 documents deleted, got %d", deletedCount)
 	}
-	
+
 	// Verify remaining documents
 	documents, err := client.ListDocuments(ctx, "test", 10)
 	if err != nil {
@@ -196,7 +196,7 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 	if len(documents) != 2 {
 		t.Errorf("Expected 2 documents remaining, got %d", len(documents))
 	}
-	
+
 	// Test 2: Delete by multiple metadata filters
 	deletedCount, err = client.DeleteDocumentsByMetadata(ctx, "test", []string{"type=document", "size=1024"})
 	if err != nil {
@@ -205,7 +205,7 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 	if deletedCount != 1 {
 		t.Errorf("Expected 1 document deleted, got %d", deletedCount)
 	}
-	
+
 	// Verify remaining documents
 	documents, err = client.ListDocuments(ctx, "test", 10)
 	if err != nil {
@@ -214,7 +214,7 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 	if len(documents) != 1 {
 		t.Errorf("Expected 1 document remaining, got %d", len(documents))
 	}
-	
+
 	// Test 3: Delete with no matching documents
 	deletedCount, err = client.DeleteDocumentsByMetadata(ctx, "test", []string{"filename=nonexistent.png"})
 	if err != nil {
@@ -223,13 +223,13 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 	if deletedCount != 0 {
 		t.Errorf("Expected 0 documents deleted, got %d", deletedCount)
 	}
-	
+
 	// Test 4: Invalid metadata filter format
 	_, err = client.DeleteDocumentsByMetadata(ctx, "test", []string{"invalid-filter"})
 	if err == nil {
 		t.Error("Expected error for invalid metadata filter format")
 	}
-	
+
 	// Test 5: Non-existent collection
 	_, err = client.DeleteDocumentsByMetadata(ctx, "nonexistent", []string{"filename=test.png"})
 	if err == nil {
@@ -246,13 +246,13 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 			{Name: "VirtualTestCollection", Type: "text", Description: "Test collection for virtual deletion"},
 		},
 	}
-	
+
 	client := mock.NewClient(cfg)
 	ctx := context.Background()
-	
+
 	// Clear the collection first to avoid interference
 	client.DeleteCollection(ctx, "VirtualTestCollection")
-	
+
 	// Add test documents with chunked metadata structure
 	testDocs := []mock.Document{
 		{
@@ -263,7 +263,7 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 			},
 		},
 		{
-			ID:      "ragme-io-chunk-2", 
+			ID:      "ragme-io-chunk-2",
 			Content: "This is the second chunk of ragme-io.pdf",
 			Metadata: map[string]interface{}{
 				"metadata": `{"original_filename": "ragme-io.pdf", "is_chunked": true, "chunk_index": 1, "total_chunks": 3}`,
@@ -271,7 +271,7 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 		},
 		{
 			ID:      "ragme-io-chunk-3",
-			Content: "This is the third chunk of ragme-io.pdf", 
+			Content: "This is the third chunk of ragme-io.pdf",
 			Metadata: map[string]interface{}{
 				"metadata": `{"original_filename": "ragme-io.pdf", "is_chunked": true, "chunk_index": 2, "total_chunks": 3}`,
 			},
@@ -284,14 +284,14 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Add documents to collection
 	for _, doc := range testDocs {
 		if err := client.AddDocument(ctx, "VirtualTestCollection", doc); err != nil {
 			t.Errorf("Failed to add document: %v", err)
 		}
 	}
-	
+
 	// Verify initial state
 	documents, err := client.ListDocuments(ctx, "VirtualTestCollection", 10)
 	if err != nil {
@@ -300,12 +300,12 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 	if len(documents) != 4 {
 		t.Errorf("Expected 4 documents initially, got %d", len(documents))
 	}
-	
+
 	// Test virtual deletion by original filename
 	// This should delete all chunks associated with "ragme-io.pdf"
 	deletedCount := 0
 	expectedRagmeDocs := []string{"ragme-io-chunk-1", "ragme-io-chunk-2", "ragme-io-chunk-3"}
-	
+
 	// First, collect all documents that should be deleted
 	var docsToDelete []string
 	for _, doc := range documents {
@@ -323,7 +323,7 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 			}
 		}
 	}
-	
+
 	// Then delete them
 	for _, docID := range docsToDelete {
 		if err := client.DeleteDocument(ctx, "VirtualTestCollection", docID); err != nil {
@@ -335,12 +335,12 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 			deletedCount++
 		}
 	}
-	
+
 	// Should have deleted 3 documents (3 chunks)
 	if deletedCount != 3 {
 		t.Errorf("Expected 3 documents deleted for ragme-io.pdf, got %d", deletedCount)
 	}
-	
+
 	// Verify remaining documents
 	documents, err = client.ListDocuments(ctx, "VirtualTestCollection", 10)
 	if err != nil {
@@ -349,7 +349,7 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 	if len(documents) != 1 {
 		t.Errorf("Expected 1 document remaining after virtual deletion, got %d", len(documents))
 	}
-	
+
 	// Verify the remaining document is from the other file
 	if documents[0].ID != "other-doc-chunk-1" {
 		t.Errorf("Expected remaining document to be 'other-doc-chunk-1', got %s", documents[0].ID)
@@ -365,10 +365,10 @@ func TestMockClientCollectionOperations(t *testing.T) {
 			{Name: "test", Type: "text", Description: "Test collection"},
 		},
 	}
-	
+
 	client := mock.NewClient(cfg)
 	ctx := context.Background()
-	
+
 	// Add some documents
 	for i := 0; i < 3; i++ {
 		doc := mock.Document{
@@ -378,33 +378,33 @@ func TestMockClientCollectionOperations(t *testing.T) {
 				"index": i,
 			},
 		}
-		
+
 		if err := client.AddDocument(ctx, "test", doc); err != nil {
 			t.Errorf("Failed to add document %d: %v", i, err)
 		}
 	}
-	
+
 	// Test collection stats
 	stats, err := client.GetCollectionStats(ctx, "test")
 	if err != nil {
 		t.Errorf("Failed to get collection stats: %v", err)
 	}
-	
+
 	if stats["document_count"] != 3 {
 		t.Errorf("Expected 3 documents, got %v", stats["document_count"])
 	}
-	
+
 	// Delete collection
 	if err := client.DeleteCollection(ctx, "test"); err != nil {
 		t.Errorf("Failed to delete collection: %v", err)
 	}
-	
+
 	// Verify collection is empty
 	documents, err := client.ListDocuments(ctx, "test", 10)
 	if err != nil {
 		t.Errorf("Failed to list documents after collection deletion: %v", err)
 	}
-	
+
 	if len(documents) != 0 {
 		t.Errorf("Expected 0 documents after collection deletion, got %d", len(documents))
 	}
@@ -419,10 +419,10 @@ func TestMockClientGetDocumentsByMetadata(t *testing.T) {
 			{Name: "test", Type: "text", Description: "Test collection"},
 		},
 	}
-	
+
 	client := mock.NewClient(cfg)
 	ctx := context.Background()
-	
+
 	// Add test documents with metadata
 	testDocs := []mock.Document{
 		{
@@ -450,7 +450,7 @@ func TestMockClientGetDocumentsByMetadata(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Add documents to collection
 	for _, doc := range testDocs {
 		if err := client.AddDocument(ctx, "test", doc); err != nil {

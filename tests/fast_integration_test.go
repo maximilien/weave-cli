@@ -117,7 +117,7 @@ func TestFastWeaviateIntegration(t *testing.T) {
 	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
 		t.Skip("Skipping Weaviate integration tests - missing WEAVIATE_URL or WEAVIATE_API_KEY")
 	}
-	
+
 	// Skip if URL is invalid (contains double protocol)
 	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
 		t.Skip("Skipping Weaviate integration tests - invalid URL format")
@@ -365,7 +365,7 @@ func TestFastMockVirtualDocumentDeletion(t *testing.T) {
 		// This mimics what the deleteWeaviateDocumentsByOriginalFilename function does
 		deletedCount := 0
 		expectedRagmeDocs := []string{"ragme-io-chunk-1", "ragme-io-chunk-2", "ragme-io-chunk-3"}
-		
+
 		// First, collect all documents that should be deleted
 		var docsToDelete []string
 		for _, doc := range documents {
@@ -383,7 +383,7 @@ func TestFastMockVirtualDocumentDeletion(t *testing.T) {
 				}
 			}
 		}
-		
+
 		// Then delete them
 		for _, docID := range docsToDelete {
 			if err := client.DeleteDocument(virtualCtx, "VirtualTestCollection", docID); err != nil {

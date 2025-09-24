@@ -1,9 +1,9 @@
 package tests
 
 import (
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"os"
 	"testing"
-	"github.com/maximilien/weave-cli/src/pkg/config"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -13,11 +13,11 @@ func TestLoadConfig(t *testing.T) {
 		t.Logf("Config loading failed (expected if no config files): %v", err)
 		return
 	}
-	
+
 	if cfg == nil {
 		t.Error("Config should not be nil")
 	}
-	
+
 	// Test that we can get the default database
 	if cfg != nil {
 		defaultDB, err := cfg.GetDefaultDatabase()
@@ -33,7 +33,7 @@ func TestInterpolateEnvVars(t *testing.T) {
 	// Set test environment variable
 	os.Setenv("TEST_VAR", "test_value")
 	defer os.Unsetenv("TEST_VAR")
-	
+
 	testCases := []struct {
 		input    string
 		expected string
@@ -44,7 +44,7 @@ func TestInterpolateEnvVars(t *testing.T) {
 		{"${TEST_VAR}", "test_value"},
 		{"${NONEXISTENT_VAR}", ""},
 	}
-	
+
 	for _, tc := range testCases {
 		result := config.InterpolateString(tc.input)
 		if result != tc.expected {
@@ -58,11 +58,11 @@ func TestVectorDBTypes(t *testing.T) {
 	if config.VectorDBTypeCloud != "weaviate-cloud" {
 		t.Errorf("Expected weaviate-cloud, got %s", config.VectorDBTypeCloud)
 	}
-	
+
 	if config.VectorDBTypeLocal != "weaviate-local" {
 		t.Errorf("Expected weaviate-local, got %s", config.VectorDBTypeLocal)
 	}
-	
+
 	if config.VectorDBTypeMock != "mock" {
 		t.Errorf("Expected mock, got %s", config.VectorDBTypeMock)
 	}
@@ -75,8 +75,8 @@ func TestMultipleDatabases(t *testing.T) {
 			Default: "default",
 			VectorDatabases: []config.VectorDBConfig{
 				{
-					Name: "default",
-					Type: config.VectorDBTypeMock,
+					Name:    "default",
+					Type:    config.VectorDBTypeMock,
 					Enabled: true,
 					Collections: []config.Collection{
 						{Name: "test", Type: "text"},
@@ -85,7 +85,7 @@ func TestMultipleDatabases(t *testing.T) {
 				{
 					Name: "production",
 					Type: config.VectorDBTypeCloud,
-					URL: "https://prod.example.com",
+					URL:  "https://prod.example.com",
 					Collections: []config.Collection{
 						{Name: "prod", Type: "text"},
 					},
@@ -93,7 +93,7 @@ func TestMultipleDatabases(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Test GetDefaultDatabase
 	defaultDB, err := cfg.GetDefaultDatabase()
 	if err != nil {
@@ -102,7 +102,7 @@ func TestMultipleDatabases(t *testing.T) {
 	if defaultDB.Type != config.VectorDBTypeMock {
 		t.Errorf("Expected mock type for default database, got %s", defaultDB.Type)
 	}
-	
+
 	// Test GetDatabase
 	prodDB, err := cfg.GetDatabase("production")
 	if err != nil {
@@ -111,13 +111,13 @@ func TestMultipleDatabases(t *testing.T) {
 	if prodDB.Type != config.VectorDBTypeCloud {
 		t.Errorf("Expected cloud type for production database, got %s", prodDB.Type)
 	}
-	
+
 	// Test ListDatabases
 	databaseNames := cfg.ListDatabases()
 	if len(databaseNames) != 2 {
 		t.Errorf("Expected 2 databases, got %d", len(databaseNames))
 	}
-	
+
 	// Test GetDatabaseNames
 	dbNames := cfg.GetDatabaseNames()
 	if len(dbNames) != 2 {

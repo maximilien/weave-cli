@@ -14,7 +14,7 @@ applications.
 - 📄 **Document Management** - List, show, and delete individual documents
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
-- 📋 **Virtual Document View** - Aggregate chunked documents by original file
+- 📋 **Virtual Document View** - Aggregate chunked documents by original file with cross-collection image support
 - 🎯 **Smart Truncation** - Intelligent content truncation with `--no-truncate` option
 - 🌈 **Color Control** - `--no-color` flag for terminal compatibility
 - ⚡ **Fast & Lightweight** - Single binary deployment
@@ -150,15 +150,17 @@ $ weave document list MyCollection
 ### Virtual Document View
 
 The `--virtual` flag provides an intelligent view by aggregating chunked content
-back into original documents:
+back into original documents. **NEW**: Cross-collection aggregation automatically
+includes images extracted from PDFs:
 
 ```bash
 $ weave document list MyCollection --virtual
 
-✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from 6 total documents):
+✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from 15 total documents):
 
 1. 📄 Document: research_paper.pdf
    📝 Chunks: 3/3
+   🖼️ Images: 2
    📋 Metadata: 
      original_filename: research_paper.pdf
    📝 Chunk Details: 
@@ -166,7 +168,29 @@ $ weave document list MyCollection --virtual
         Content: Introduction to machine learning concepts...
      2. ID: chunk-2  
         Content: Deep learning architectures and applications...
+     3. ID: chunk-3
+        Content: Conclusion and future work...
+   🗂️ Stack Details: 
+     1. ID: image-1 (from page 2)
+     2. ID: image-2 (from page 5)
+
+2. 📄 Document: presentation.pptx
+   🖼️ Images: 5
+   📋 Metadata: 
+     original_filename: presentation.pptx
+   🗂️ Stack Details: 
+     1. ID: slide-1-image
+     2. ID: slide-3-chart
+     3. ID: slide-5-diagram
+     4. ID: slide-7-graph
+     5. ID: slide-9-logo
 ```
+
+**Key Features:**
+- **Cross-collection aggregation**: Automatically finds and includes images from corresponding image collections
+- **Smart grouping**: Images are grouped with their source documents (PDFs, presentations, etc.)
+- **Complete view**: Shows both text chunks and extracted images in one unified view
+- **Collection mapping**: Maps document collections to image collections (e.g., `MyDocs` → `MyImages`)
 
 ### Visual Styling
 

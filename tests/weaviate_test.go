@@ -11,8 +11,8 @@ import (
 
 func TestWeaviateClientCreation(t *testing.T) {
 	testCases := []struct {
-		name     string
-		config   *weaviate.Config
+		name        string
+		config      *weaviate.Config
 		expectError bool
 	}{
 		{
@@ -42,7 +42,7 @@ func TestWeaviateClientCreation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			client, err := weaviate.NewClient(tc.config)
-			
+
 			if tc.expectError {
 				if err == nil {
 					t.Error("Expected error but got nil")
@@ -121,7 +121,7 @@ func TestWeaviateConfigValidation(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			client, err := weaviate.NewClient(tc.config)
-			
+
 			if tc.valid {
 				if err != nil {
 					t.Errorf("Expected valid config, got error: %v", err)
@@ -282,54 +282,54 @@ func TestWeaviateContextHandling(t *testing.T) {
 func TestWeaviateClientDeleteDocumentsByMetadata(t *testing.T) {
 	// This test validates the metadata filtering logic without requiring a real Weaviate instance
 	// It tests the GraphQL query construction and error handling
-	
+
 	testCases := []struct {
-		name           string
+		name            string
 		metadataFilters []string
-		expectError    bool
-		errorContains  string
+		expectError     bool
+		errorContains   string
 	}{
 		{
-			name:           "Single metadata filter",
+			name:            "Single metadata filter",
 			metadataFilters: []string{"filename=test.png"},
-			expectError:    false,
+			expectError:     false,
 		},
 		{
-			name:           "Multiple metadata filters",
+			name:            "Multiple metadata filters",
 			metadataFilters: []string{"filename=test.png", "type=image"},
-			expectError:    false,
+			expectError:     false,
 		},
 		{
-			name:           "Invalid filter format - no equals",
+			name:            "Invalid filter format - no equals",
 			metadataFilters: []string{"invalid-filter"},
-			expectError:    true,
-			errorContains:  "invalid metadata filter format",
+			expectError:     true,
+			errorContains:   "invalid metadata filter format",
 		},
 		{
-			name:           "Invalid filter format - empty key",
+			name:            "Invalid filter format - empty key",
 			metadataFilters: []string{"=value"},
-			expectError:    true,
-			errorContains:  "empty key",
+			expectError:     true,
+			errorContains:   "empty key",
 		},
 		{
-			name:           "Empty metadata filters",
+			name:            "Empty metadata filters",
 			metadataFilters: []string{},
-			expectError:    false,
+			expectError:     false,
 		},
 	}
-	
+
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create a mock client config
 			config := &weaviate.Config{
 				URL: "http://localhost:8080",
 			}
-			
+
 			_, err := weaviate.NewClient(config)
 			if err != nil {
 				t.Fatalf("Failed to create client: %v", err)
 			}
-			
+
 			// Test the metadata filter parsing logic
 			if len(tc.metadataFilters) > 0 {
 				filters := make(map[string]string)
@@ -345,7 +345,7 @@ func TestWeaviateClientDeleteDocumentsByMetadata(t *testing.T) {
 						t.Errorf("Unexpected error parsing filter: %s", filter)
 						return
 					}
-					
+
 					// Check for empty key
 					if parts[0] == "" {
 						if tc.expectError && strings.Contains(tc.errorContains, "empty key") {
@@ -356,10 +356,10 @@ func TestWeaviateClientDeleteDocumentsByMetadata(t *testing.T) {
 							return
 						}
 					}
-					
+
 					filters[parts[0]] = parts[1]
 				}
-				
+
 				// Validate that filters were parsed correctly
 				if tc.expectError {
 					t.Error("Expected error but parsing succeeded")
