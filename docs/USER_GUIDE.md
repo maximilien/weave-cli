@@ -452,6 +452,28 @@ weave config show
 weave config show --verbose
 ```
 
+#### Virtual Document Chunk Count Issues
+
+**Issue**: Virtual document view (`-w` flag) shows incorrect chunk counts when using limit parameter.
+
+**Symptoms**:
+- Commands like `weave docs l MyCollection -w -S -l 10` show wrong chunk counts
+- Example: vectras.pdf shows "1 chunks" instead of "7 chunks"
+
+**Solution**: This issue was fixed in v0.0.6. The virtual document view now correctly retrieves all chunks for proper aggregation, regardless of the limit parameter.
+
+**Verification**:
+```bash
+# Test with your collection
+weave docs l MyCollection -w -S -l 10
+
+# Should show accurate chunk counts in summary
+# Example output:
+# 📋 Summary: 
+#    1. document1.pdf - 10 chunks
+#    2. document2.pdf - 25 chunks
+```
+
 ### Debug Mode
 
 ```bash
