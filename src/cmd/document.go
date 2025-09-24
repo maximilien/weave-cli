@@ -194,7 +194,7 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	}
 
 	if len(metadataFilters) > 0 {
-		printHeader(fmt.Sprintf("Documents matching metadata filters"))
+		printHeader("Documents matching metadata filters")
 		fmt.Printf("Metadata filters: %v\n", metadataFilters)
 	} else {
 		printHeader(fmt.Sprintf("Document Details: %s", documentID))
@@ -276,7 +276,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		fmt.Println()
 
 		// Confirm deletion
-		if !confirmAction(fmt.Sprintf("Are you sure you want to delete documents matching these metadata filters?")) {
+		if !confirmAction("Are you sure you want to delete documents matching these metadata filters?") {
 			printInfo("Operation cancelled by user")
 			return
 		}
@@ -716,18 +716,6 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 	}
 
 	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
-}
-
-// parseMetadataFilters parses metadata filter strings into a map
-func parseMetadataFilters(metadataFilters []string) map[string]string {
-	filters := make(map[string]string)
-	for _, filter := range metadataFilters {
-		parts := strings.SplitN(filter, "=", 2)
-		if len(parts) == 2 {
-			filters[parts[0]] = parts[1]
-		}
-	}
-	return filters
 }
 
 func deleteWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string) {
