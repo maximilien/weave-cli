@@ -956,15 +956,20 @@ func displayRegularDocuments(documents []weaviate.Document, collectionName strin
 // displayVirtualDocuments shows documents aggregated by their original document
 func displayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
 	virtualDocs := aggregateDocumentsByOriginal(documents)
-
+	
 	printSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
 	fmt.Println()
 
 	for i, vdoc := range virtualDocs {
 		color.New(color.FgGreen).Printf("%d. Document: %s\n", i+1, vdoc.OriginalFilename)
 
+		// Determine if this is an image collection
+		isImageCollection := isImageVirtualDocument(vdoc)
+
 		if vdoc.TotalChunks > 0 {
 			fmt.Printf("   Chunks: %d/%d\n", len(vdoc.Chunks), vdoc.TotalChunks)
+		} else if isImageCollection {
+			fmt.Printf("   Images: %d\n", len(vdoc.Chunks))
 		} else {
 			fmt.Printf("   Type: Single document (no chunks)\n")
 		}
@@ -982,16 +987,21 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			}
 		}
 
-		// Show chunk details if there are chunks
+		// Show details if there are items
 		if len(vdoc.Chunks) > 0 {
-			fmt.Printf("   Chunk Details:\n")
+			if isImageCollection {
+				fmt.Printf("   Stack Details:\n")
+			} else {
+				fmt.Printf("   Chunk Details:\n")
+			}
+			
 			for j, chunk := range vdoc.Chunks {
 				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
 				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
 					fmt.Printf(" (chunk %v)", chunkIndex)
 				}
 				fmt.Println()
-
+				
 				if chunk.Content != fmt.Sprintf("Document ID: %s", chunk.ID) {
 					if showLong {
 						fmt.Printf("        Content: %s\n", chunk.Content)
@@ -1009,7 +1019,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 // aggregateDocumentsByOriginal groups documents by their original filename
 func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocument {
 	docMap := make(map[string]*VirtualDocument)
-	
+
 	for _, doc := range documents {
 		// Check if this is a chunked document
 		if metadata, ok := doc.Metadata["metadata"]; ok {
@@ -1040,10 +1050,10 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 				}
 			}
 		}
-		
+
 		// Check if this is an image extracted from a PDF
 		groupKey := getImageGroupKey(doc)
-		
+
 		if vdoc, exists := docMap[groupKey]; exists {
 			// Add to existing group
 			vdoc.Chunks = append(vdoc.Chunks, doc)
@@ -1057,19 +1067,43 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 			}
 		}
 	}
-	
+
 	// Convert map to slice
 	var virtualDocs []VirtualDocument
 	for _, vdoc := range docMap {
 		virtualDocs = append(virtualDocs, *vdoc)
 	}
-	
+
 	// Sort by original filename for consistent output
 	sort.Slice(virtualDocs, func(i, j int) bool {
 		return virtualDocs[i].OriginalFilename < virtualDocs[j].OriginalFilename
 	})
-	
+
 	return virtualDocs
+}
+
+// isImageVirtualDocument checks if a virtual document represents an image collection
+func isImageVirtualDocument(vdoc VirtualDocument) bool {
+	// Check if any of the chunks have image-related metadata
+	for _, chunk := range vdoc.Chunks {
+		if _, hasImage := chunk.Metadata["image"]; hasImage {
+			return true
+		}
+		if metadata, ok := chunk.Metadata["metadata"]; ok {
+			if metadataStr, ok := metadata.(string); ok {
+				var metadataObj map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+					if _, hasBase64Data := metadataObj["base64_data"]; hasBase64Data {
+						return true
+					}
+					if _, hasClassification := metadataObj["classification"]; hasClassification {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 // getImageGroupKey determines the grouping key for an image document
@@ -1086,7 +1120,7 @@ func getImageGroupKey(doc weaviate.Document) string {
 			}
 		}
 	}
-	
+
 	// Check URL for PDF source
 	if url, ok := doc.Metadata["url"].(string); ok {
 		if strings.HasPrefix(url, "pdf://") {
@@ -1097,7 +1131,7 @@ func getImageGroupKey(doc weaviate.Document) string {
 			}
 		}
 	}
-	
+
 	// Check filename for PDF source
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		if strings.Contains(filename, ".pdf_") {
@@ -1108,16 +1142,16 @@ func getImageGroupKey(doc weaviate.Document) string {
 			}
 		}
 	}
-	
+
 	// For standalone images, use the URL or filename as the key
 	if url, ok := doc.Metadata["url"].(string); ok {
 		return url
 	}
-	
+
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		return filename
 	}
-	
+
 	// Fallback
 	return "Unknown Image"
 }
@@ -1166,8 +1200,13 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 	for i, vdoc := range virtualDocs {
 		color.New(color.FgGreen).Printf("%d. Document: %s\n", i+1, vdoc.OriginalFilename)
 
+		// Determine if this is an image collection
+		isImageCollection := isMockImageVirtualDocument(vdoc)
+
 		if vdoc.TotalChunks > 0 {
 			fmt.Printf("   Chunks: %d/%d\n", len(vdoc.Chunks), vdoc.TotalChunks)
+		} else if isImageCollection {
+			fmt.Printf("   Images: %d\n", len(vdoc.Chunks))
 		} else {
 			fmt.Printf("   Type: Single document (no chunks)\n")
 		}
@@ -1185,9 +1224,13 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 			}
 		}
 
-		// Show chunk details if there are chunks
+		// Show details if there are items
 		if len(vdoc.Chunks) > 0 {
-			fmt.Printf("   Chunk Details:\n")
+			if isImageCollection {
+				fmt.Printf("   Stack Details:\n")
+			} else {
+				fmt.Printf("   Chunk Details:\n")
+			}
 			for j, chunk := range vdoc.Chunks {
 				fmt.Printf("     %d. ID: %s", j+1, chunk.ID)
 				if chunkIndex, ok := chunk.Metadata["chunk_index"]; ok {
@@ -1220,7 +1263,7 @@ type MockVirtualDocument struct {
 // aggregateMockDocumentsByOriginal groups mock documents by their original filename
 func aggregateMockDocumentsByOriginal(documents []mock.Document) []MockVirtualDocument {
 	docMap := make(map[string]*MockVirtualDocument)
-	
+
 	for _, doc := range documents {
 		// Check if this is a chunked document
 		if metadata, ok := doc.Metadata["metadata"]; ok {
@@ -1251,10 +1294,10 @@ func aggregateMockDocumentsByOriginal(documents []mock.Document) []MockVirtualDo
 				}
 			}
 		}
-		
+
 		// Check if this is an image extracted from a PDF
 		groupKey := getMockImageGroupKey(doc)
-		
+
 		if vdoc, exists := docMap[groupKey]; exists {
 			// Add to existing group
 			vdoc.Chunks = append(vdoc.Chunks, doc)
@@ -1268,19 +1311,43 @@ func aggregateMockDocumentsByOriginal(documents []mock.Document) []MockVirtualDo
 			}
 		}
 	}
-	
+
 	// Convert map to slice
 	var virtualDocs []MockVirtualDocument
 	for _, vdoc := range docMap {
 		virtualDocs = append(virtualDocs, *vdoc)
 	}
-	
+
 	// Sort by original filename for consistent output
 	sort.Slice(virtualDocs, func(i, j int) bool {
 		return virtualDocs[i].OriginalFilename < virtualDocs[j].OriginalFilename
 	})
-	
+
 	return virtualDocs
+}
+
+// isMockImageVirtualDocument checks if a mock virtual document represents an image collection
+func isMockImageVirtualDocument(vdoc MockVirtualDocument) bool {
+	// Check if any of the chunks have image-related metadata
+	for _, chunk := range vdoc.Chunks {
+		if _, hasImage := chunk.Metadata["image"]; hasImage {
+			return true
+		}
+		if metadata, ok := chunk.Metadata["metadata"]; ok {
+			if metadataStr, ok := metadata.(string); ok {
+				var metadataObj map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+					if _, hasBase64Data := metadataObj["base64_data"]; hasBase64Data {
+						return true
+					}
+					if _, hasClassification := metadataObj["classification"]; hasClassification {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 // getMockImageGroupKey determines the grouping key for a mock image document
@@ -1297,7 +1364,7 @@ func getMockImageGroupKey(doc mock.Document) string {
 			}
 		}
 	}
-	
+
 	// Check URL for PDF source
 	if url, ok := doc.Metadata["url"].(string); ok {
 		if strings.HasPrefix(url, "pdf://") {
@@ -1308,7 +1375,7 @@ func getMockImageGroupKey(doc mock.Document) string {
 			}
 		}
 	}
-	
+
 	// Check filename for PDF source
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		if strings.Contains(filename, ".pdf_") {
@@ -1319,16 +1386,16 @@ func getMockImageGroupKey(doc mock.Document) string {
 			}
 		}
 	}
-	
+
 	// For standalone images, use the URL or filename as the key
 	if url, ok := doc.Metadata["url"].(string); ok {
 		return url
 	}
-	
+
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		return filename
 	}
-	
+
 	// Fallback
 	return "Unknown Image"
 }
