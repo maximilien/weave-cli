@@ -183,13 +183,6 @@ func printStyledEmoji(emoji string) {
 	}
 }
 
-// printStyledKeyValue prints a key-value pair with proper styling
-func printStyledKeyValue(key, value string) {
-	printStyledKey(key)
-	fmt.Printf(": ")
-	printStyledValue(value)
-}
-
 // printStyledKeyValueWithEmoji prints a key-value pair with emoji and styling
 func printStyledKeyValueWithEmoji(key, value, emoji string) {
 	printStyledEmoji(emoji)
@@ -199,45 +192,11 @@ func printStyledKeyValueWithEmoji(key, value, emoji string) {
 	printStyledValue(value)
 }
 
-// printStyledKeyNumber prints a key-number pair with proper styling
-func printStyledKeyNumber(key string, num int) {
-	printStyledKey(key)
-	fmt.Printf(": ")
-	printStyledNumber(num)
-}
-
-// printStyledKeyNumberWithEmoji prints a key-number pair with emoji and styling
-func printStyledKeyNumberWithEmoji(key string, num int, emoji string) {
-	printStyledEmoji(emoji)
-	fmt.Printf(" ")
-	printStyledKey(key)
-	fmt.Printf(": ")
-	printStyledNumber(num)
-}
-
 // printStyledKeyValueDimmed prints a key-value pair with dimmed value styling
 func printStyledKeyValueDimmed(key, value string) {
 	printStyledKey(key)
 	fmt.Printf(": ")
 	printStyledValueDimmed(value)
-}
-
-// printStyledKeyValueDimmedWithEmoji prints a key-value pair with emoji and dimmed value styling
-func printStyledKeyValueDimmedWithEmoji(key, value, emoji string) {
-	printStyledEmoji(emoji)
-	fmt.Printf(" ")
-	printStyledKey(key)
-	fmt.Printf(": ")
-	printStyledValueDimmed(value)
-}
-
-// printStyledHighlight prints highlighted text (bright color)
-func printStyledHighlight(text string) {
-	if noColor {
-		fmt.Printf("%s", text)
-	} else {
-		color.New(color.FgHiWhite, color.Bold).Printf("%s", text)
-	}
 }
 
 // printStyledKeyProminent prints a prominent key (normal color, not dimmed)
@@ -247,13 +206,6 @@ func printStyledKeyProminent(key string) {
 	} else {
 		color.New(color.FgWhite).Printf("%s", key)
 	}
-}
-
-// printStyledKeyValueProminent prints a key-value pair with prominent key styling
-func printStyledKeyValueProminent(key, value string) {
-	printStyledKeyProminent(key)
-	fmt.Printf(": ")
-	printStyledValue(value)
 }
 
 // printStyledKeyValueProminentWithEmoji prints a key-value pair with emoji and prominent key styling
