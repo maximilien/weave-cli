@@ -428,8 +428,8 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 				fmt.Printf("   Metadata:\n")
 				for key, value := range doc.Metadata {
 					if key != "id" { // Skip ID since it's already shown
-						// Show raw value as string, even if it's JSON, truncated by lines
-						valueStr := fmt.Sprintf("%v", value)
+						// First truncate by character length, then by lines
+						valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
 						truncatedValue := truncateStringByLines(valueStr, shortLines)
 						fmt.Printf("     %s: %s\n", key, truncatedValue)
 					}
@@ -498,8 +498,8 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 				fmt.Printf("   Metadata:\n")
 				for key, value := range doc.Metadata {
 					if key != "id" { // Skip ID since it's already shown
-						// Show raw value as string, even if it's JSON, truncated by lines
-						valueStr := fmt.Sprintf("%v", value)
+						// First truncate by character length, then by lines
+						valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
 						truncatedValue := truncateStringByLines(valueStr, shortLines)
 						fmt.Printf("     %s: %s\n", key, truncatedValue)
 					}
@@ -543,8 +543,8 @@ func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 	if len(document.Metadata) > 0 {
 		fmt.Printf("Metadata:\n")
 		for key, value := range document.Metadata {
-			// Show raw value as string, even if it's JSON, truncated by lines
-			valueStr := fmt.Sprintf("%v", value)
+			// First truncate by character length, then by lines
+			valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
 			truncatedValue := truncateStringByLines(valueStr, shortLines)
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
@@ -591,8 +591,8 @@ func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 	if len(document.Metadata) > 0 {
 		fmt.Printf("Metadata:\n")
 		for key, value := range document.Metadata {
-			// Show raw value as string, even if it's JSON, truncated by lines
-			valueStr := fmt.Sprintf("%v", value)
+			// First truncate by character length, then by lines
+			valueStr := truncateMetadataValue(value, 100) // Limit each value to 100 chars
 			truncatedValue := truncateStringByLines(valueStr, shortLines)
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}

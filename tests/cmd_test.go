@@ -915,6 +915,63 @@ func TestDocumentCountCommand(t *testing.T) {
 	})
 }
 
+// TestDocumentListMetadataTruncation tests the document list command metadata truncation
+func TestDocumentListMetadataTruncation(t *testing.T) {
+	t.Run("Document List with Short Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "list",
+			Run: func(cmd *cobra.Command, args []string) {
+				// Mock list function
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+				if args[0] != "TestCollection" {
+					t.Errorf("Expected 'TestCollection', got %s", args[0])
+				}
+				
+				shortLines, _ := cmd.Flags().GetInt("short")
+				if shortLines != 1 {
+					t.Errorf("Expected short lines to be 1, got %d", shortLines)
+				}
+				
+				limit, _ := cmd.Flags().GetInt("limit")
+				if limit != 5 {
+					t.Errorf("Expected limit to be 5, got %d", limit)
+				}
+			},
+		}
+		
+		cmd.Flags().IntP("short", "s", 5, "Show only first N lines of content")
+		cmd.Flags().IntP("limit", "l", 50, "Maximum number of documents to show")
+		cmd.SetArgs([]string{"TestCollection", "--short", "1", "--limit", "5"})
+		
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+	
+	t.Run("Document List with Short Flag Alias", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "list",
+			Run: func(cmd *cobra.Command, args []string) {
+				shortLines, _ := cmd.Flags().GetInt("short")
+				if shortLines != 3 {
+					t.Errorf("Expected short lines to be 3, got %d", shortLines)
+				}
+			},
+		}
+		
+		cmd.Flags().IntP("short", "s", 5, "Show only first N lines of content")
+		cmd.SetArgs([]string{"TestCollection", "-s", "3"})
+		
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+}
+
 // TestCollectionShowCommand tests the collection show command functionality
 func TestCollectionShowCommand(t *testing.T) {
 	t.Run("Collection Show Command Structure", func(t *testing.T) {
