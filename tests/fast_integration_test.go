@@ -122,14 +122,18 @@ func TestFastWeaviateIntegration(t *testing.T) {
 		t.Skip("Skipping Weaviate integration tests - invalid URL format")
 	}
 
-	cfg := &config.WeaviateCloudConfig{
-		URL:                os.Getenv("WEAVIATE_URL"),
-		APIKey:             os.Getenv("WEAVIATE_API_KEY"),
-		CollectionNameTest: os.Getenv("WEAVIATE_COLLECTION_TEST"),
+	cfg := &config.VectorDBConfig{
+		Name:   "test-cloud",
+		Type:   config.VectorDBTypeCloud,
+		URL:    os.Getenv("WEAVIATE_URL"),
+		APIKey: os.Getenv("WEAVIATE_API_KEY"),
+		Collections: []config.Collection{
+			{Name: os.Getenv("WEAVIATE_COLLECTION_TEST"), Type: "text"},
+		},
 	}
 
-	if cfg.CollectionNameTest == "" {
-		cfg.CollectionNameTest = "WeaveCLITest"
+	if cfg.Collections[0].Name == "" {
+		cfg.Collections[0].Name = "WeaveCLITest"
 	}
 
 	client, err := weaviate.NewClient(&weaviate.Config{
@@ -168,14 +172,14 @@ func TestFastWeaviateIntegration(t *testing.T) {
 		// Check if test collection exists
 		collectionExists := false
 		for _, col := range collections {
-			if col == cfg.CollectionNameTest {
+			if col == cfg.Collections[0].Name {
 				collectionExists = true
 				break
 			}
 		}
 
 		if !collectionExists {
-			t.Logf("Test collection %s does not exist, skipping collection tests", cfg.CollectionNameTest)
+			t.Logf("Test collection %s does not exist, skipping collection tests", cfg.Collections[0].Name)
 			return
 		}
 
@@ -183,7 +187,7 @@ func TestFastWeaviateIntegration(t *testing.T) {
 		docCtx, docCancel := context.WithTimeout(ctx, 3*time.Second)
 		defer docCancel()
 
-		documents, err := client.ListDocuments(docCtx, cfg.CollectionNameTest, 1) // Only 1 document for speed
+		documents, err := client.ListDocuments(docCtx, cfg.Collections[0].Name, 1) // Only 1 document for speed
 		if err != nil {
 			t.Errorf("Failed to list documents: %v", err)
 			return
@@ -197,7 +201,7 @@ func TestFastWeaviateIntegration(t *testing.T) {
 			defer getCancel()
 
 			docID := documents[0].ID
-			doc, err := client.GetDocument(getCtx, cfg.CollectionNameTest, docID)
+			doc, err := client.GetDocument(getCtx, cfg.Collections[0].Name, docID)
 			if err != nil {
 				t.Errorf("Failed to get document %s: %v", docID, err)
 			} else {

@@ -18,10 +18,11 @@ func TestConfigLoadConfig(t *testing.T) {
 
 		// Write test config
 		configContent := `
-database:
-  vector_db:
-    type: "mock"
-    mock:
+databases:
+  default: "mock"
+  vector_databases:
+    - name: "mock"
+      type: "mock"
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 384
@@ -53,11 +54,15 @@ WEAVIATE_API_KEY=test-key
 			t.Error("Config should not be nil")
 		}
 
-		if cfg.Database.VectorDB.Type != config.VectorDBTypeMock {
-			t.Errorf("Expected mock type, got %s", cfg.Database.VectorDB.Type)
+		// Test default database
+		defaultDB, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			t.Errorf("Failed to get default database: %v", err)
 		}
-
-		if !cfg.Database.VectorDB.Mock.Enabled {
+		if defaultDB.Type != config.VectorDBTypeMock {
+			t.Errorf("Expected mock type, got %s", defaultDB.Type)
+		}
+		if !defaultDB.Enabled {
 			t.Error("Mock should be enabled")
 		}
 	})
@@ -206,12 +211,23 @@ func TestConfigVectorDBTypes(t *testing.T) {
 }
 
 func TestConfigStructValidation(t *testing.T) {
-	t.Run("WeaviateCloudConfig", func(t *testing.T) {
-		cfg := &config.WeaviateCloudConfig{
-			URL:                "https://test.weaviate.cloud",
-			APIKey:             "test-key",
-			CollectionName:     "TestCollection",
-			CollectionNameTest: "TestCollection_test",
+	t.Run("VectorDBConfig_Cloud", func(t *testing.T) {
+		cfg := &config.VectorDBConfig{
+			Name:   "test-cloud",
+			Type:   config.VectorDBTypeCloud,
+			URL:    "https://test.weaviate.cloud",
+			APIKey: "test-key",
+			Collections: []config.Collection{
+				{Name: "TestCollection", Type: "text"},
+			},
+		}
+
+		if cfg.Name == "" {
+			t.Error("Name should not be empty")
+		}
+
+		if cfg.Type != config.VectorDBTypeCloud {
+			t.Error("Type should be cloud")
 		}
 
 		if cfg.URL == "" {
@@ -222,32 +238,35 @@ func TestConfigStructValidation(t *testing.T) {
 			t.Error("APIKey should not be empty")
 		}
 
-		if cfg.CollectionName == "" {
-			t.Error("CollectionName should not be empty")
-		}
-
-		if cfg.CollectionNameTest == "" {
-			t.Error("CollectionNameTest should not be empty")
+		if len(cfg.Collections) == 0 {
+			t.Error("Collections should not be empty")
 		}
 	})
 
-	t.Run("WeaviateLocalConfig", func(t *testing.T) {
-		cfg := &config.WeaviateLocalConfig{
-			URL:                "http://localhost:8080",
-			CollectionName:     "TestCollection",
-			CollectionNameTest: "TestCollection_test",
+	t.Run("VectorDBConfig_Local", func(t *testing.T) {
+		cfg := &config.VectorDBConfig{
+			Name:   "test-local",
+			Type:   config.VectorDBTypeLocal,
+			URL:    "http://localhost:8080",
+			Collections: []config.Collection{
+				{Name: "TestCollection", Type: "text"},
+			},
+		}
+
+		if cfg.Name == "" {
+			t.Error("Name should not be empty")
+		}
+
+		if cfg.Type != config.VectorDBTypeLocal {
+			t.Error("Type should be local")
 		}
 
 		if cfg.URL == "" {
 			t.Error("URL should not be empty")
 		}
 
-		if cfg.CollectionName == "" {
-			t.Error("CollectionName should not be empty")
-		}
-
-		if cfg.CollectionNameTest == "" {
-			t.Error("CollectionNameTest should not be empty")
+		if len(cfg.Collections) == 0 {
+			t.Error("Collections should not be empty")
 		}
 	})
 
@@ -331,10 +350,11 @@ func TestConfigEdgeCases(t *testing.T) {
 		configFile := filepath.Join(tempDir, "special-config.yaml")
 
 		specialContent := `
-database:
-  vector_db:
-    type: "mock"
-    mock:
+databases:
+  default: "mock"
+  vector_databases:
+    - name: "mock"
+      type: "mock"
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 384
@@ -356,11 +376,15 @@ database:
 			t.Error("Config should not be nil")
 		}
 
-		if len(cfg.Database.VectorDB.Mock.Collections) == 0 {
+		defaultDB, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			t.Errorf("Failed to get default database: %v", err)
+		}
+		if len(defaultDB.Collections) == 0 {
 			t.Error("Collections should not be empty")
 		}
 
-		collection := cfg.Database.VectorDB.Mock.Collections[0]
+		collection := defaultDB.Collections[0]
 		if collection.Name != "Test-Collection_123" {
 			t.Errorf("Expected special collection name, got %s", collection.Name)
 		}
@@ -371,10 +395,11 @@ database:
 		configFile := filepath.Join(tempDir, "large-config.yaml")
 
 		largeContent := `
-database:
-  vector_db:
-    type: "mock"
-    mock:
+databases:
+  default: "mock"
+  vector_databases:
+    - name: "mock"
+      type: "mock"
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 4096
@@ -398,8 +423,12 @@ database:
 			return
 		}
 
-		if cfg.Database.VectorDB.Mock.EmbeddingDimension != 4096 {
-			t.Errorf("Expected embedding dimension 4096, got %d", cfg.Database.VectorDB.Mock.EmbeddingDimension)
+		defaultDB, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			t.Errorf("Failed to get default database: %v", err)
+		}
+		if defaultDB.EmbeddingDimension != 4096 {
+			t.Errorf("Expected embedding dimension 4096, got %d", defaultDB.EmbeddingDimension)
 		}
 	})
 }

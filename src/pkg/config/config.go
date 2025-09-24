@@ -44,14 +44,14 @@ type MockConfig struct {
 
 // VectorDBConfig holds vector database configuration
 type VectorDBConfig struct {
-	Name        string       `yaml:"name"`
-	Type        VectorDBType `yaml:"type"`
-	URL         string       `yaml:"url,omitempty"`
-	APIKey      string       `yaml:"api_key,omitempty"`
-	Enabled     bool         `yaml:"enabled,omitempty"`
-	SimulateEmbeddings bool `yaml:"simulate_embeddings,omitempty"`
-	EmbeddingDimension int  `yaml:"embedding_dimension,omitempty"`
-	Collections []Collection `yaml:"collections"`
+	Name               string       `yaml:"name"`
+	Type               VectorDBType `yaml:"type"`
+	URL                string       `yaml:"url,omitempty"`
+	APIKey             string       `yaml:"api_key,omitempty"`
+	Enabled            bool         `yaml:"enabled,omitempty"`
+	SimulateEmbeddings bool         `yaml:"simulate_embeddings,omitempty"`
+	EmbeddingDimension int          `yaml:"embedding_dimension,omitempty"`
+	Collections        []Collection `yaml:"collections"`
 }
 
 // DatabasesConfig holds multiple databases configuration

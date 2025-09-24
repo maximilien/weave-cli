@@ -24,16 +24,18 @@ func TestWeaviateIntegration(t *testing.T) {
 	}
 
 	// Create test configuration
-	cfg := &config.WeaviateCloudConfig{
-		URL:                os.Getenv("WEAVIATE_URL"),
-		APIKey:             os.Getenv("WEAVIATE_API_KEY"),
-		CollectionName:     os.Getenv("WEAVIATE_COLLECTION_TEST"),
-		CollectionNameTest: os.Getenv("WEAVIATE_COLLECTION_TEST"),
+	cfg := &config.VectorDBConfig{
+		Name:   "test-cloud",
+		Type:   config.VectorDBTypeCloud,
+		URL:    os.Getenv("WEAVIATE_URL"),
+		APIKey: os.Getenv("WEAVIATE_API_KEY"),
+		Collections: []config.Collection{
+			{Name: os.Getenv("WEAVIATE_COLLECTION_TEST"), Type: "text"},
+		},
 	}
 
-	if cfg.CollectionName == "" {
-		cfg.CollectionName = "WeaveCLITest"
-		cfg.CollectionNameTest = "WeaveCLITest"
+	if cfg.Collections[0].Name == "" {
+		cfg.Collections[0].Name = "WeaveCLITest"
 	}
 
 	client, err := weaviate.NewClient(&weaviate.Config{
@@ -48,7 +50,7 @@ func TestWeaviateIntegration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	testCollection := cfg.CollectionNameTest
+	testCollection := cfg.Collections[0].Name
 
 	t.Run("FastHealthCheck", func(t *testing.T) {
 		// Quick health check with minimal timeout
@@ -126,14 +128,18 @@ func TestWeaviateConnectionSpeed(t *testing.T) {
 		t.Skip("Skipping connection speed tests - invalid URL format")
 	}
 
-	cfg := &config.WeaviateCloudConfig{
-		URL:                os.Getenv("WEAVIATE_URL"),
-		APIKey:             os.Getenv("WEAVIATE_API_KEY"),
-		CollectionNameTest: os.Getenv("WEAVIATE_COLLECTION_TEST"),
+	cfg := &config.VectorDBConfig{
+		Name:   "test-cloud",
+		Type:   config.VectorDBTypeCloud,
+		URL:    os.Getenv("WEAVIATE_URL"),
+		APIKey: os.Getenv("WEAVIATE_API_KEY"),
+		Collections: []config.Collection{
+			{Name: os.Getenv("WEAVIATE_COLLECTION_TEST"), Type: "text"},
+		},
 	}
 
-	if cfg.CollectionNameTest == "" {
-		cfg.CollectionNameTest = "WeaveCLITest"
+	if cfg.Collections[0].Name == "" {
+		cfg.Collections[0].Name = "WeaveCLITest"
 	}
 
 	client, err := weaviate.NewClient(&weaviate.Config{
@@ -176,14 +182,18 @@ func TestWeaviateErrorHandling(t *testing.T) {
 		t.Skip("Skipping error handling tests - invalid URL format")
 	}
 
-	cfg := &config.WeaviateCloudConfig{
-		URL:                os.Getenv("WEAVIATE_URL"),
-		APIKey:             os.Getenv("WEAVIATE_API_KEY"),
-		CollectionNameTest: os.Getenv("WEAVIATE_COLLECTION_TEST"),
+	cfg := &config.VectorDBConfig{
+		Name:   "test-cloud",
+		Type:   config.VectorDBTypeCloud,
+		URL:    os.Getenv("WEAVIATE_URL"),
+		APIKey: os.Getenv("WEAVIATE_API_KEY"),
+		Collections: []config.Collection{
+			{Name: os.Getenv("WEAVIATE_COLLECTION_TEST"), Type: "text"},
+		},
 	}
 
-	if cfg.CollectionNameTest == "" {
-		cfg.CollectionNameTest = "WeaveCLITest"
+	if cfg.Collections[0].Name == "" {
+		cfg.Collections[0].Name = "WeaveCLITest"
 	}
 
 	client, err := weaviate.NewClient(&weaviate.Config{
@@ -206,7 +216,7 @@ func TestWeaviateErrorHandling(t *testing.T) {
 	}
 
 	// Test non-existent document
-	_, err = client.GetDocument(ctx, cfg.CollectionNameTest, "non-existent-doc-id")
+	_, err = client.GetDocument(ctx, cfg.Collections[0].Name, "non-existent-doc-id")
 	if err == nil {
 		t.Error("Expected error for non-existent document, got nil")
 	} else {
@@ -225,14 +235,18 @@ func BenchmarkWeaviateOperations(b *testing.B) {
 		b.Skip("Skipping benchmarks - invalid URL format")
 	}
 
-	cfg := &config.WeaviateCloudConfig{
-		URL:                os.Getenv("WEAVIATE_URL"),
-		APIKey:             os.Getenv("WEAVIATE_API_KEY"),
-		CollectionNameTest: os.Getenv("WEAVIATE_COLLECTION_TEST"),
+	cfg := &config.VectorDBConfig{
+		Name:   "test-cloud",
+		Type:   config.VectorDBTypeCloud,
+		URL:    os.Getenv("WEAVIATE_URL"),
+		APIKey: os.Getenv("WEAVIATE_API_KEY"),
+		Collections: []config.Collection{
+			{Name: os.Getenv("WEAVIATE_COLLECTION_TEST"), Type: "text"},
+		},
 	}
 
-	if cfg.CollectionNameTest == "" {
-		cfg.CollectionNameTest = "WeaveCLITest"
+	if cfg.Collections[0].Name == "" {
+		cfg.Collections[0].Name = "WeaveCLITest"
 	}
 
 	client, err := weaviate.NewClient(&weaviate.Config{
@@ -256,7 +270,7 @@ func BenchmarkWeaviateOperations(b *testing.B) {
 
 	b.Run("ListDocuments", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, err := client.ListDocuments(ctx, cfg.CollectionNameTest, 5)
+			_, err := client.ListDocuments(ctx, cfg.Collections[0].Name, 5)
 			if err != nil {
 				b.Errorf("ListDocuments failed: %v", err)
 			}
