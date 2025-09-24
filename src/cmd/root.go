@@ -35,7 +35,7 @@ This tool provides commands following a consistent pattern:
 
 The tool uses ./config.yaml and ./.env files by default, or you can specify
 custom locations with --config and --env flags.`,
-	Version: "1.0.0",
+	Version: "0.0.5",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
