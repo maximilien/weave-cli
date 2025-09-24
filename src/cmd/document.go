@@ -925,27 +925,41 @@ func displayRegularDocuments(documents []weaviate.Document, collectionName strin
 	fmt.Println()
 
 	for i, doc := range documents {
-		color.New(color.FgGreen).Printf("%d. ID: %s\n", i+1, doc.ID)
+		fmt.Printf("%d. ", i+1)
+		printStyledEmoji("📄")
+		fmt.Printf(" ")
+		printStyledKeyProminent("ID")
+		fmt.Printf(": ")
+		printStyledID(doc.ID)
+		fmt.Println()
 
 		// Only show content if it's not just the redundant "Document ID: [ID]"
 		if doc.Content != fmt.Sprintf("Document ID: %s", doc.ID) {
+			fmt.Printf("   ")
+			printStyledKeyProminent("Content")
+			fmt.Printf(": ")
 			if showLong {
-				fmt.Printf("   Content: %s\n", doc.Content)
+				printStyledValue(doc.Content)
 			} else {
 				// Use smartTruncate to handle base64 content appropriately
 				preview := smartTruncate(doc.Content, "content", shortLines)
-				fmt.Printf("   Content: %s\n", preview)
+				printStyledValue(preview)
 			}
+			fmt.Println()
 		}
 
 		if len(doc.Metadata) > 0 {
-			fmt.Printf("   Metadata:\n")
+			fmt.Printf("   ")
+			printStyledKeyValueProminentWithEmoji("Metadata", "", "📋")
+			fmt.Println()
 			for key, value := range doc.Metadata {
 				if key != "id" { // Skip ID since it's already shown
 					// Use smartTruncate to handle base64 content appropriately
 					valueStr := fmt.Sprintf("%v", value)
 					truncatedValue := smartTruncate(valueStr, key, shortLines)
-					fmt.Printf("     %s: %s\n", key, truncatedValue)
+					fmt.Printf("     ")
+					printStyledKeyValueDimmed(key, truncatedValue)
+					fmt.Println()
 				}
 			}
 		}
@@ -1189,27 +1203,41 @@ func displayRegularMockDocuments(documents []mock.Document, collectionName strin
 	fmt.Println()
 
 	for i, doc := range documents {
-		color.New(color.FgGreen).Printf("%d. ID: %s\n", i+1, doc.ID)
+		fmt.Printf("%d. ", i+1)
+		printStyledEmoji("📄")
+		fmt.Printf(" ")
+		printStyledKeyProminent("ID")
+		fmt.Printf(": ")
+		printStyledID(doc.ID)
+		fmt.Println()
 
 		// Only show content if it's not just the redundant "Document ID: [ID]"
 		if doc.Content != fmt.Sprintf("Document ID: %s", doc.ID) {
+			fmt.Printf("   ")
+			printStyledKeyProminent("Content")
+			fmt.Printf(": ")
 			if showLong {
-				fmt.Printf("   Content: %s\n", doc.Content)
+				printStyledValue(doc.Content)
 			} else {
 				// Use shortLines to limit content by lines instead of characters
 				preview := smartTruncate(doc.Content, "content", shortLines)
-				fmt.Printf("   Content: %s\n", preview)
+				printStyledValue(preview)
 			}
+			fmt.Println()
 		}
 
 		if len(doc.Metadata) > 0 {
-			fmt.Printf("   Metadata:\n")
+			fmt.Printf("   ")
+			printStyledKeyValueProminentWithEmoji("Metadata", "", "📋")
+			fmt.Println()
 			for key, value := range doc.Metadata {
 				if key != "id" { // Skip ID since it's already shown
 					// Truncate value based on shortLines directive
 					valueStr := fmt.Sprintf("%v", value)
 					truncatedValue := smartTruncate(valueStr, key, shortLines)
-					fmt.Printf("     %s: %s\n", key, truncatedValue)
+					fmt.Printf("     ")
+					printStyledKeyValueDimmed(key, truncatedValue)
+					fmt.Println()
 				}
 			}
 		}
