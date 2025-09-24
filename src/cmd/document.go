@@ -1261,7 +1261,7 @@ func truncateBase64Content(s string, maxChars int) string {
 	if len(s) <= maxChars {
 		return s
 	}
-	
+
 	// For base64 content, show first part and indicate truncation
 	truncated := s[:maxChars]
 	return truncated + fmt.Sprintf("... (truncated, %d more characters)", len(s)-maxChars)
@@ -1270,10 +1270,10 @@ func truncateBase64Content(s string, maxChars int) string {
 // isBase64Field checks if a field name suggests it contains base64 data
 func isBase64Field(fieldName string) bool {
 	base64Fields := []string{
-		"image", "base64_data", "data", "content", "payload", 
+		"image", "base64_data", "data", "content", "payload",
 		"attachment", "file_data", "binary_data", "encoded_data",
 	}
-	
+
 	fieldNameLower := strings.ToLower(fieldName)
 	for _, field := range base64Fields {
 		if strings.Contains(fieldNameLower, field) {
@@ -1289,29 +1289,34 @@ func isBase64Content(content string) bool {
 	if len(content) < 100 {
 		return false
 	}
-	
+
 	// Check if it starts with data: URL format
 	if strings.HasPrefix(content, "data:") {
 		return true
 	}
-	
+
 	// Check if it's mostly base64 characters (A-Z, a-z, 0-9, +, /, =)
 	base64Chars := 0
 	for _, char := range content {
-		if (char >= 'A' && char <= 'Z') || 
-		   (char >= 'a' && char <= 'z') || 
-		   (char >= '0' && char <= '9') || 
-		   char == '+' || char == '/' || char == '=' {
+		if (char >= 'A' && char <= 'Z') ||
+			(char >= 'a' && char <= 'z') ||
+			(char >= '0' && char <= '9') ||
+			char == '+' || char == '/' || char == '=' {
 			base64Chars++
 		}
 	}
-	
+
 	// If more than 90% of characters are base64, consider it base64 content
 	return float64(base64Chars)/float64(len(content)) > 0.9
 }
 
 // smartTruncate intelligently truncates content based on its type
 func smartTruncate(content string, fieldName string, maxLines int) string {
+	// Special handling for metadata field - preserve JSON structure
+	if fieldName == "metadata" {
+		return truncateJSONMetadata(content, maxLines)
+	}
+	
 	// Check if this looks like base64 content
 	if isBase64Field(fieldName) || isBase64Content(content) {
 		// For base64 content, limit to a reasonable number of characters
@@ -1320,4 +1325,40 @@ func smartTruncate(content string, fieldName string, maxLines int) string {
 	
 	// For regular content, use line-based truncation
 	return truncateStringByLines(content, maxLines)
+}
+
+// truncateJSONMetadata truncates JSON metadata while preserving structure
+func truncateJSONMetadata(jsonStr string, maxLines int) string {
+	// Try to parse the JSON to preserve structure
+	var metadataObj map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &metadataObj); err != nil {
+		// If it's not valid JSON, fall back to regular truncation
+		return truncateStringByLines(jsonStr, maxLines)
+	}
+	
+	// Create a truncated version of the metadata
+	truncatedObj := make(map[string]interface{})
+	for key, value := range metadataObj {
+		valueStr := fmt.Sprintf("%v", value)
+		
+		// Check if this value looks like base64 content
+		if isBase64Content(valueStr) {
+			truncatedObj[key] = truncateBase64Content(valueStr, 200)
+		} else if len(valueStr) > 500 {
+			// For very long non-base64 values, truncate them
+			truncatedObj[key] = truncateStringByLines(valueStr, 3)
+		} else {
+			truncatedObj[key] = value
+		}
+	}
+	
+	// Convert back to JSON string
+	jsonBytes, err := json.MarshalIndent(truncatedObj, "", "  ")
+	if err != nil {
+		// If marshaling fails, fall back to regular truncation
+		return truncateStringByLines(jsonStr, maxLines)
+	}
+	
+	// Apply line-based truncation to the formatted JSON
+	return truncateStringByLines(string(jsonBytes), maxLines)
 }
