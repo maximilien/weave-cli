@@ -24,8 +24,9 @@ This command provides subcommands to list, show, and delete documents.`,
 
 // documentListCmd represents the document list command
 var documentListCmd = &cobra.Command{
-	Use:   "list COLLECTION_NAME",
-	Short: "List documents in a collection",
+	Use:     "list COLLECTION_NAME",
+	Aliases: []string{"ls", "l"},
+	Short:   "List documents in a collection",
 	Long: `List documents in a specific collection.
 
 This command shows:
@@ -39,34 +40,45 @@ This command shows:
 
 // documentShowCmd represents the document show command
 var documentShowCmd = &cobra.Command{
-	Use:   "show COLLECTION_NAME DOCUMENT_ID",
-	Short: "Show a specific document",
-	Long: `Show detailed information about a specific document.
+	Use:     "show COLLECTION_NAME [DOCUMENT_ID]",
+	Aliases: []string{"s"},
+	Short:   "Show documents from a collection",
+	Long: `Show detailed information about documents from a collection.
+
+You can show documents in two ways:
+1. By document ID: weave doc show COLLECTION_NAME DOCUMENT_ID
+2. By metadata filter: weave doc show COLLECTION_NAME --metadata key=value
 
 This command displays:
 - Full document content
 - Complete metadata
 - Document ID and collection information`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.RangeArgs(1, 2),
 	Run:  runDocumentShow,
 }
 
 // documentDeleteCmd represents the document delete command
 var documentDeleteCmd = &cobra.Command{
-	Use:   "delete COLLECTION_NAME DOCUMENT_ID",
-	Short: "Delete a specific document",
-	Long: `Delete a specific document from a collection.
+	Use:     "delete COLLECTION_NAME [DOCUMENT_ID]",
+	Aliases: []string{"del", "d"},
+	Short:   "Delete documents from a collection",
+	Long: `Delete documents from a collection.
+
+You can delete documents in two ways:
+1. By document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
+2. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
 
 ⚠️  WARNING: This is a destructive operation that will permanently
-delete the specified document. Use with caution!`,
-	Args: cobra.ExactArgs(2),
+delete the specified documents. Use with caution!`,
+	Args: cobra.RangeArgs(1, 2),
 	Run:  runDocumentDelete,
 }
 
 // documentDeleteAllCmd represents the document delete-all command
 var documentDeleteAllCmd = &cobra.Command{
-	Use:   "delete-all COLLECTION_NAME",
-	Short: "Delete all documents in a collection",
+	Use:     "delete-all COLLECTION_NAME",
+	Aliases: []string{"del-all", "da"},
+	Short:   "Delete all documents in a collection",
 	Long: `Delete all documents from a specific collection.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
@@ -75,20 +87,36 @@ delete ALL documents in the specified collection. Use with caution!`,
 	Run:  runDocumentDeleteAll,
 }
 
+// documentCountCmd represents the document count command
+var documentCountCmd = &cobra.Command{
+	Use:     "count COLLECTION_NAME",
+	Aliases: []string{"c"},
+	Short:   "Count documents in a collection",
+	Long: `Count the number of documents in a specific collection.
+
+This command returns the total number of documents in the specified collection.`,
+	Args: cobra.ExactArgs(1),
+	Run:  runDocumentCount,
+}
+
 func init() {
 	rootCmd.AddCommand(documentCmd)
 	documentCmd.AddCommand(documentListCmd)
 	documentCmd.AddCommand(documentShowCmd)
+	documentCmd.AddCommand(documentCountCmd)
 	documentCmd.AddCommand(documentDeleteCmd)
 	documentCmd.AddCommand(documentDeleteAllCmd)
 
 	// Add flags
-	documentListCmd.Flags().IntP("limit", "l", 10, "Maximum number of documents to show")
+	documentListCmd.Flags().IntP("limit", "l", 50, "Maximum number of documents to show")
 	documentListCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
-	documentListCmd.Flags().IntP("short", "s", 10, "Show only first N lines of content (default: 10)")
+	documentListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 
 	documentShowCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
-	documentShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of content (default: 10)")
+	documentShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
+	documentShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")
+
+	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 }
 
 func runDocumentList(cmd *cobra.Command, args []string) {
@@ -138,9 +166,25 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
-	documentID := args[1]
+	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
+
+	var documentID string
+	if len(args) > 1 {
+		documentID = args[1]
+	}
+
+	// Validate arguments
+	if len(metadataFilters) == 0 && documentID == "" {
+		printError("Either DOCUMENT_ID or --metadata filter must be provided")
+		os.Exit(1)
+	}
+
+	if len(metadataFilters) > 0 && documentID != "" {
+		printError("Cannot specify both DOCUMENT_ID and --metadata filter")
+		os.Exit(1)
+	}
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -149,7 +193,12 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader(fmt.Sprintf("Document Details: %s", documentID))
+	if len(metadataFilters) > 0 {
+		printHeader(fmt.Sprintf("Documents matching metadata filters"))
+		fmt.Printf("Metadata filters: %v\n", metadataFilters)
+	} else {
+		printHeader(fmt.Sprintf("Document Details: %s", documentID))
+	}
 	fmt.Println()
 
 	// Get default database (for now, we'll use default for document operations)
@@ -159,18 +208,30 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	color.New(color.FgCyan, color.Bold).Printf("Retrieving document from %s database...\n", dbConfig.Type)
+	color.New(color.FgCyan, color.Bold).Printf("Retrieving documents from %s database...\n", dbConfig.Type)
 	fmt.Println()
 
 	ctx := context.Background()
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+		if len(metadataFilters) > 0 {
+			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+		} else {
+			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+		}
 	case config.VectorDBTypeLocal:
-		showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+		if len(metadataFilters) > 0 {
+			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+		} else {
+			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+		}
 	case config.VectorDBTypeMock:
-		showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+		if len(metadataFilters) > 0 {
+			showMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+		} else {
+			showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+		}
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -181,7 +242,23 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
-	documentID := args[1]
+	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
+
+	var documentID string
+	if len(args) > 1 {
+		documentID = args[1]
+	}
+
+	// Validate arguments
+	if len(metadataFilters) == 0 && documentID == "" {
+		printError("Either DOCUMENT_ID or --metadata filter must be provided")
+		os.Exit(1)
+	}
+
+	if len(metadataFilters) > 0 && documentID != "" {
+		printError("Cannot specify both DOCUMENT_ID and --metadata filter")
+		os.Exit(1)
+	}
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -193,13 +270,25 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	printHeader("Delete Document")
 	fmt.Println()
 
-	printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete document '%s' from collection '%s'!", documentID, collectionName))
-	fmt.Println()
+	if len(metadataFilters) > 0 {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete documents matching metadata filters from collection '%s'!", collectionName))
+		fmt.Printf("Metadata filters: %v\n", metadataFilters)
+		fmt.Println()
 
-	// Confirm deletion
-	if !confirmAction(fmt.Sprintf("Are you sure you want to delete document '%s'?", documentID)) {
-		printInfo("Operation cancelled by user")
-		return
+		// Confirm deletion
+		if !confirmAction(fmt.Sprintf("Are you sure you want to delete documents matching these metadata filters?")) {
+			printInfo("Operation cancelled by user")
+			return
+		}
+	} else {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete document '%s' from collection '%s'!", documentID, collectionName))
+		fmt.Println()
+
+		// Confirm deletion
+		if !confirmAction(fmt.Sprintf("Are you sure you want to delete document '%s'?", documentID)) {
+			printInfo("Operation cancelled by user")
+			return
+		}
 	}
 
 	// Get default database (for now, we'll use default for document operations)
@@ -216,11 +305,23 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
+		if len(metadataFilters) > 0 {
+			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
+		} else {
+			deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
+		}
 	case config.VectorDBTypeLocal:
-		deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
+		if len(metadataFilters) > 0 {
+			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
+		} else {
+			deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
+		}
 	case config.VectorDBTypeMock:
-		deleteMockDocument(ctx, dbConfig, collectionName, documentID)
+		if len(metadataFilters) > 0 {
+			deleteMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
+		} else {
+			deleteMockDocument(ctx, dbConfig, collectionName, documentID)
+		}
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -498,6 +599,137 @@ func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 	}
 }
 
+func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int) {
+	client, err := createWeaviateClient(cfg)
+
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Get documents matching the metadata filters
+	documents, err := client.GetDocumentsByMetadata(ctx, collectionName, metadataFilters)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get documents by metadata: %v", err))
+		os.Exit(1)
+	}
+
+	if len(documents) == 0 {
+		printWarning("No documents found matching the metadata filters")
+		return
+	}
+
+	// Show each document
+	for i, document := range documents {
+		if i > 0 {
+			fmt.Println(strings.Repeat("=", 80))
+			fmt.Println()
+		}
+
+		// Display document details
+		color.New(color.FgGreen).Printf("Document ID: %s\n", document.ID)
+		fmt.Printf("Collection: %s\n", collectionName)
+		fmt.Println()
+
+		fmt.Printf("Content:\n")
+		if showLong {
+			fmt.Printf("%s\n", document.Content)
+		} else {
+			// Use shortLines to limit content by lines instead of characters
+			preview := truncateStringByLines(document.Content, shortLines)
+			fmt.Printf("%s\n", preview)
+		}
+		fmt.Println()
+
+		if len(document.Metadata) > 0 {
+			fmt.Printf("Metadata:\n")
+			for key, value := range document.Metadata {
+				// Show raw value as string, even if it's JSON, truncated by lines
+				valueStr := fmt.Sprintf("%v", value)
+				truncatedValue := truncateStringByLines(valueStr, shortLines)
+				fmt.Printf("  %s: %s\n", key, truncatedValue)
+			}
+		}
+	}
+
+	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
+}
+
+func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// Get documents matching the metadata filters
+	documents, err := client.GetDocumentsByMetadata(ctx, collectionName, metadataFilters)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get documents by metadata: %v", err))
+		os.Exit(1)
+	}
+
+	if len(documents) == 0 {
+		printWarning("No documents found matching the metadata filters")
+		return
+	}
+
+	// Show each document
+	for i, document := range documents {
+		if i > 0 {
+			fmt.Println(strings.Repeat("=", 80))
+			fmt.Println()
+		}
+
+		// Display document details
+		color.New(color.FgGreen).Printf("Document ID: %s\n", document.ID)
+		fmt.Printf("Collection: %s\n", collectionName)
+		fmt.Println()
+
+		fmt.Printf("Content:\n")
+		if showLong {
+			fmt.Printf("%s\n", document.Content)
+		} else {
+			// Use shortLines to limit content by lines instead of characters
+			preview := truncateStringByLines(document.Content, shortLines)
+			fmt.Printf("%s\n", preview)
+		}
+		fmt.Println()
+
+		if len(document.Metadata) > 0 {
+			fmt.Printf("Metadata:\n")
+			for key, value := range document.Metadata {
+				// Show raw value as string, even if it's JSON, truncated by lines
+				valueStr := fmt.Sprintf("%v", value)
+				truncatedValue := truncateStringByLines(valueStr, shortLines)
+				fmt.Printf("  %s: %s\n", key, truncatedValue)
+			}
+		}
+	}
+
+	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
+}
+
+// parseMetadataFilters parses metadata filter strings into a map
+func parseMetadataFilters(metadataFilters []string) map[string]string {
+	filters := make(map[string]string)
+	for _, filter := range metadataFilters {
+		parts := strings.SplitN(filter, "=", 2)
+		if len(parts) == 2 {
+			filters[parts[0]] = parts[1]
+		}
+	}
+	return filters
+}
+
 func deleteWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string) {
 	client, err := createWeaviateClient(cfg)
 
@@ -513,6 +745,28 @@ func deleteWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 	}
 
 	printSuccess(fmt.Sprintf("Successfully deleted document '%s' from collection '%s'", documentID, collectionName))
+}
+
+func deleteWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string) {
+	client, err := createWeaviateClient(cfg)
+
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Delete documents by metadata
+	deletedCount, err := client.DeleteDocumentsByMetadata(ctx, collectionName, metadataFilters)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to delete documents by metadata: %v", err))
+		os.Exit(1)
+	}
+
+	if deletedCount == 0 {
+		printWarning("No documents found matching the metadata filters")
+	} else {
+		printSuccess(fmt.Sprintf("Successfully deleted %d documents from collection '%s' matching metadata filters", deletedCount, collectionName))
+	}
 }
 
 func deleteMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string) {
@@ -537,6 +791,35 @@ func deleteMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 	}
 
 	printSuccess(fmt.Sprintf("Successfully deleted document '%s' from collection '%s'", documentID, collectionName))
+}
+
+func deleteMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// Delete documents by metadata
+	deletedCount, err := client.DeleteDocumentsByMetadata(ctx, collectionName, metadataFilters)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to delete documents by metadata: %v", err))
+		os.Exit(1)
+	}
+
+	if deletedCount == 0 {
+		printWarning("No documents found matching the metadata filters")
+	} else {
+		printSuccess(fmt.Sprintf("Successfully deleted %d documents from collection '%s' matching metadata filters", deletedCount, collectionName))
+	}
 }
 
 func deleteAllWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
@@ -618,6 +901,93 @@ func deleteAllMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 	}
 
 	printSuccess(fmt.Sprintf("Successfully deleted %d out of %d documents from collection '%s'", deletedCount, len(documents), collectionName))
+}
+
+func runDocumentCount(cmd *cobra.Command, args []string) {
+	cfgFile, _ := cmd.Flags().GetString("config")
+	envFile, _ := cmd.Flags().GetString("env")
+	collectionName := args[0]
+
+	// Load configuration
+	cfg, err := config.LoadConfig(cfgFile, envFile)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	printHeader(fmt.Sprintf("Document Count: %s", collectionName))
+	fmt.Println()
+
+	// Get default database (for now, we'll use default for document operations)
+	dbConfig, err := cfg.GetDefaultDatabase()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		os.Exit(1)
+	}
+
+	color.New(color.FgCyan, color.Bold).Printf("Counting documents in %s database...\n", dbConfig.Type)
+	fmt.Println()
+
+	ctx := context.Background()
+
+	var count int
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud:
+		count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
+	case config.VectorDBTypeLocal:
+		count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
+	case config.VectorDBTypeMock:
+		count, err = countMockDocuments(ctx, dbConfig, collectionName)
+	default:
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		os.Exit(1)
+	}
+
+	if err != nil {
+		printError(fmt.Sprintf("Failed to count documents: %v", err))
+		os.Exit(1)
+	}
+
+	printSuccess(fmt.Sprintf("Found %d documents in collection '%s'", count, collectionName))
+}
+
+func countWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
+	client, err := createWeaviateClient(cfg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create client: %w", err)
+	}
+
+	// Get documents with a high limit to count them all
+	documents, err := client.ListDocuments(ctx, collectionName, 10000) // High limit to get all documents
+	if err != nil {
+		return 0, fmt.Errorf("failed to list documents: %w", err)
+	}
+
+	return len(documents), nil
+}
+
+func countMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// Get documents with a high limit to count them all
+	documents, err := client.ListDocuments(ctx, collectionName, 10000) // High limit to get all documents
+	if err != nil {
+		return 0, fmt.Errorf("failed to list documents: %w", err)
+	}
+
+	return len(documents), nil
 }
 
 // truncateStringByLines truncates a string to the specified number of lines

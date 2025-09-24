@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -147,6 +148,60 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	return fmt.Errorf("document with ID %s not found in collection %s", documentID, collectionName)
 }
 
+// DeleteDocumentsByMetadata deletes documents matching metadata filters
+func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadataFilters []string) (int, error) {
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	documents, exists := c.collections[collectionName]
+	if !exists {
+		return 0, fmt.Errorf("collection %s does not exist", collectionName)
+	}
+
+	// Parse metadata filters
+	filters := make(map[string]string)
+	for _, filter := range metadataFilters {
+		parts := strings.SplitN(filter, "=", 2)
+		if len(parts) != 2 {
+			return 0, fmt.Errorf("invalid metadata filter format: %s (expected key=value)", filter)
+		}
+		filters[parts[0]] = parts[1]
+	}
+
+	// Find documents matching the filters
+	var matchingIndices []int
+	for i, doc := range documents {
+		matches := true
+		for key, value := range filters {
+			if doc.Metadata == nil {
+				matches = false
+				break
+			}
+			if docValue, exists := doc.Metadata[key]; !exists || fmt.Sprintf("%v", docValue) != value {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			matchingIndices = append(matchingIndices, i)
+		}
+	}
+
+	// Delete matching documents (in reverse order to maintain indices)
+	deletedCount := 0
+	for i := len(matchingIndices) - 1; i >= 0; i-- {
+		idx := matchingIndices[i]
+		c.collections[collectionName] = append(documents[:idx], documents[idx+1:]...)
+		documents = c.collections[collectionName] // Update slice reference
+		deletedCount++
+	}
+
+	return deletedCount, nil
+}
+
 // AddDocument adds a document to a collection (for testing purposes)
 func (c *Client) AddDocument(ctx context.Context, collectionName string, doc Document) error {
 	_, cancel := context.WithTimeout(ctx, 1*time.Second)
@@ -184,4 +239,52 @@ func (c *Client) GetCollectionStats(ctx context.Context, collectionName string) 
 	}
 
 	return stats, nil
+}
+
+// GetDocumentsByMetadata gets documents matching metadata filters
+func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName string, metadataFilters []string) ([]Document, error) {
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	documents, exists := c.collections[collectionName]
+	if !exists {
+		return nil, fmt.Errorf("collection %s does not exist", collectionName)
+	}
+
+	// Parse metadata filters
+	filters := make(map[string]string)
+	for _, filter := range metadataFilters {
+		parts := strings.SplitN(filter, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid metadata filter format: %s (expected key=value)", filter)
+		}
+		filters[parts[0]] = parts[1]
+	}
+
+	// Find documents matching the filters
+	var matchingDocuments []Document
+	for _, doc := range documents {
+		matches := true
+		for key, value := range filters {
+			if doc.Metadata == nil {
+				matches = false
+				break
+			}
+
+			// Check if the metadata contains the key-value pair
+			if doc.Metadata[key] != value {
+				matches = false
+				break
+			}
+		}
+
+		if matches {
+			matchingDocuments = append(matchingDocuments, doc)
+		}
+	}
+
+	return matchingDocuments, nil
 }

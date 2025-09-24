@@ -24,8 +24,9 @@ This command provides subcommands to list, view, and delete collections.`,
 
 // collectionListCmd represents the collection list command
 var collectionListCmd = &cobra.Command{
-	Use:   "list [database-name]",
-	Short: "List all collections",
+	Use:     "list [database-name]",
+	Aliases: []string{"ls", "l"},
+	Short:   "List all collections",
 	Long: `List all collections in the configured vector database.
 
 This command shows:
@@ -40,8 +41,9 @@ Use 'weave config list' to see all available databases.`,
 
 // collectionDeleteCmd represents the collection delete command
 var collectionDeleteCmd = &cobra.Command{
-	Use:   "delete COLLECTION_NAME",
-	Short: "Delete a specific collection",
+	Use:     "delete COLLECTION_NAME",
+	Aliases: []string{"del", "d"},
+	Short:   "Delete a specific collection",
 	Long: `Delete a specific collection from the configured vector database.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
@@ -52,8 +54,9 @@ delete all data in the specified collection. Use with caution!`,
 
 // collectionDeleteAllCmd represents the collection delete-all command
 var collectionDeleteAllCmd = &cobra.Command{
-	Use:   "delete-all",
-	Short: "Delete all collections",
+	Use:     "delete-all",
+	Aliases: []string{"del-all", "da"},
+	Short:   "Delete all collections",
 	Long: `Delete all collections from the configured vector database.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
@@ -61,16 +64,32 @@ delete all data in all collections. Use with caution!`,
 	Run: runCollectionDeleteAll,
 }
 
+// collectionCountCmd represents the collection count command
+var collectionCountCmd = &cobra.Command{
+	Use:     "count [database-name]",
+	Aliases: []string{"c"},
+	Short:   "Count collections",
+	Long: `Count the number of collections in the configured vector database.
+
+This command returns the total number of collections available.`,
+	Run: runCollectionCount,
+}
+
 func init() {
 	rootCmd.AddCommand(collectionCmd)
 	collectionCmd.AddCommand(collectionListCmd)
+	collectionCmd.AddCommand(collectionCountCmd)
 	collectionCmd.AddCommand(collectionDeleteCmd)
 	collectionCmd.AddCommand(collectionDeleteAllCmd)
+
+	// Add flags
+	collectionListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
+	limit, _ := cmd.Flags().GetInt("limit")
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -109,11 +128,11 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		listWeaviateCollections(ctx, dbConfig)
+		listWeaviateCollections(ctx, dbConfig, limit)
 	case config.VectorDBTypeLocal:
-		listWeaviateCollections(ctx, dbConfig)
+		listWeaviateCollections(ctx, dbConfig, limit)
 	case config.VectorDBTypeMock:
-		listMockCollections(ctx, dbConfig)
+		listMockCollections(ctx, dbConfig, limit)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -217,7 +236,7 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	}
 }
 
-func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
+func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -240,7 +259,15 @@ func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	// Sort collections alphabetically
 	sort.Strings(collections)
 
+	// Apply limit if specified
+	if limit > 0 && len(collections) > limit {
+		collections = collections[:limit]
+	}
+
 	printSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
+	if limit > 0 && len(collections) == limit {
+		fmt.Printf("(showing first %d collections)\n", limit)
+	}
 	fmt.Println()
 
 	for i, collection := range collections {
@@ -261,7 +288,7 @@ func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	}
 }
 
-func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
+func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -291,7 +318,15 @@ func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	// Sort collections alphabetically
 	sort.Strings(collections)
 
+	// Apply limit if specified
+	if limit > 0 && len(collections) > limit {
+		collections = collections[:limit]
+	}
+
 	printSuccess(fmt.Sprintf("Found %d mock collections:", len(collections)))
+	if limit > 0 && len(collections) == limit {
+		fmt.Printf("(showing first %d collections)\n", limit)
+	}
 	fmt.Println()
 
 	for i, collection := range collections {
@@ -432,6 +467,104 @@ func deleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	}
 
 	printSuccess("All collections deleted successfully!")
+}
+
+func runCollectionCount(cmd *cobra.Command, args []string) {
+	cfgFile, _ := cmd.Flags().GetString("config")
+	envFile, _ := cmd.Flags().GetString("env")
+
+	var databaseName string
+	if len(args) > 0 {
+		databaseName = args[0]
+	}
+
+	// Load configuration
+	cfg, err := config.LoadConfig(cfgFile, envFile)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	// Get database configuration
+	var dbConfig *config.VectorDBConfig
+	if databaseName != "" {
+		dbConfig, err = cfg.GetDatabase(databaseName)
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get database '%s': %v", databaseName, err))
+			os.Exit(1)
+		}
+	} else {
+		dbConfig, err = cfg.GetDefaultDatabase()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get default database: %v", err))
+			os.Exit(1)
+		}
+	}
+
+	printHeader("Collection Count")
+	fmt.Println()
+
+	color.New(color.FgCyan, color.Bold).Printf("Counting collections in %s database...\n", dbConfig.Type)
+	fmt.Println()
+
+	ctx := context.Background()
+
+	var count int
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud:
+		count, err = countWeaviateCollections(ctx, dbConfig)
+	case config.VectorDBTypeLocal:
+		count, err = countWeaviateCollections(ctx, dbConfig)
+	case config.VectorDBTypeMock:
+		count, err = countMockCollections(ctx, dbConfig)
+	default:
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		os.Exit(1)
+	}
+
+	if err != nil {
+		printError(fmt.Sprintf("Failed to count collections: %v", err))
+		os.Exit(1)
+	}
+
+	printSuccess(fmt.Sprintf("Found %d collections", count))
+}
+
+func countWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) (int, error) {
+	client, err := createWeaviateClient(cfg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create client: %w", err)
+	}
+
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to list collections: %w", err)
+	}
+
+	return len(collections), nil
+}
+
+func countMockCollections(ctx context.Context, cfg *config.VectorDBConfig) (int, error) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to list collections: %w", err)
+	}
+
+	return len(collections), nil
 }
 
 // confirmAction prompts the user for confirmation

@@ -38,8 +38,9 @@ Use 'weave config list' to see all available databases.`,
 
 // configListCmd represents the config list command
 var configListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all configured databases",
+	Use:     "list",
+	Aliases: []string{"ls", "l"},
+	Short:   "List all configured databases",
 	Long: `List all configured vector databases.
 
 This command displays:

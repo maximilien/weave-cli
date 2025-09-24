@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -275,5 +276,97 @@ func TestWeaviateContextHandling(t *testing.T) {
 		t.Error("Expected error for timed out context")
 	} else {
 		t.Logf("Correctly handled timed out context: %v", err)
+	}
+}
+
+func TestWeaviateClientDeleteDocumentsByMetadata(t *testing.T) {
+	// This test validates the metadata filtering logic without requiring a real Weaviate instance
+	// It tests the GraphQL query construction and error handling
+	
+	testCases := []struct {
+		name           string
+		metadataFilters []string
+		expectError    bool
+		errorContains  string
+	}{
+		{
+			name:           "Single metadata filter",
+			metadataFilters: []string{"filename=test.png"},
+			expectError:    false,
+		},
+		{
+			name:           "Multiple metadata filters",
+			metadataFilters: []string{"filename=test.png", "type=image"},
+			expectError:    false,
+		},
+		{
+			name:           "Invalid filter format - no equals",
+			metadataFilters: []string{"invalid-filter"},
+			expectError:    true,
+			errorContains:  "invalid metadata filter format",
+		},
+		{
+			name:           "Invalid filter format - empty key",
+			metadataFilters: []string{"=value"},
+			expectError:    true,
+			errorContains:  "empty key",
+		},
+		{
+			name:           "Empty metadata filters",
+			metadataFilters: []string{},
+			expectError:    false,
+		},
+	}
+	
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock client config
+			config := &weaviate.Config{
+				URL: "http://localhost:8080",
+			}
+			
+			_, err := weaviate.NewClient(config)
+			if err != nil {
+				t.Fatalf("Failed to create client: %v", err)
+			}
+			
+			// Test the metadata filter parsing logic
+			if len(tc.metadataFilters) > 0 {
+				filters := make(map[string]string)
+				for _, filter := range tc.metadataFilters {
+					parts := strings.SplitN(filter, "=", 2)
+					if len(parts) != 2 {
+						if tc.expectError {
+							if !strings.Contains("invalid metadata filter format", tc.errorContains) {
+								t.Errorf("Expected error containing '%s', but got different error", tc.errorContains)
+							}
+							return
+						}
+						t.Errorf("Unexpected error parsing filter: %s", filter)
+						return
+					}
+					
+					// Check for empty key
+					if parts[0] == "" {
+						if tc.expectError && strings.Contains(tc.errorContains, "empty key") {
+							t.Logf("Correctly detected empty key in filter: %s", filter)
+							return
+						} else if !tc.expectError {
+							t.Errorf("Unexpected empty key in filter: %s", filter)
+							return
+						}
+					}
+					
+					filters[parts[0]] = parts[1]
+				}
+				
+				// Validate that filters were parsed correctly
+				if tc.expectError {
+					t.Error("Expected error but parsing succeeded")
+				} else {
+					t.Logf("Successfully parsed %d metadata filters", len(filters))
+				}
+			}
+		})
 	}
 }

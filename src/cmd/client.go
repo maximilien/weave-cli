@@ -7,16 +7,16 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
-// createWeaviateClient creates a Weaviate client based on the configuration
-func createWeaviateClient(cfg *config.VectorDBConfig) (*weaviate.Client, error) {
+// createWeaviateClient creates a Weave client based on the configuration
+func createWeaviateClient(cfg *config.VectorDBConfig) (*weaviate.WeaveClient, error) {
 	switch cfg.Type {
 	case config.VectorDBTypeCloud:
-		return weaviate.NewClient(&weaviate.Config{
+		return weaviate.NewWeaveClient(&weaviate.Config{
 			URL:    cfg.URL,
 			APIKey: cfg.APIKey,
 		})
 	case config.VectorDBTypeLocal:
-		return weaviate.NewClient(&weaviate.Config{
+		return weaviate.NewWeaveClient(&weaviate.Config{
 			URL: cfg.URL,
 		})
 	default:
