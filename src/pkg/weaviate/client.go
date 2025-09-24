@@ -150,8 +150,14 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 // Note: Currently shows document IDs only. To show actual document content/metadata,
 // we would need to implement dynamic schema discovery for each collection.
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	// For image collections, use simple query to avoid large payload issues
+	// For image collections, try optimized query first, then fall back to simple query
 	if isImageCollection(collectionName) {
+		// Try optimized query first
+		documents, err := c.listDocumentsOptimized(ctx, collectionName, limit)
+		if err == nil && len(documents) > 0 {
+			return documents, nil
+		}
+		// If optimized query fails or returns no results, fall back to simple query
 		return c.listDocumentsSimple(ctx, collectionName, limit)
 	}
 	
@@ -171,6 +177,89 @@ func isImageCollection(collectionName string) bool {
 	return false
 }
 
+// listDocumentsOptimized fetches documents with ID and essential fields for virtual aggregation
+func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName string, limit int) ([]Document, error) {
+	// Build a query that includes ID and specific fields needed for virtual document aggregation
+	query := fmt.Sprintf(`
+		{
+			Get {
+				%s(limit: %d) {
+					_additional {
+						id
+					}
+					url
+					filename
+					source_document
+					pdf_filename
+					source_type
+					content_type
+					date_added
+					processed_by
+				}
+			}
+		}
+	`, collectionName, limit)
+
+	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
+	if err != nil {
+		// If the optimized query fails, fall back to simple query
+		return c.listDocumentsSimple(ctx, collectionName, limit)
+	}
+
+	var documents []Document
+	if data, ok := result.Data["Get"].(map[string]interface{}); ok {
+		if collectionData, ok := data[collectionName].([]interface{}); ok {
+			for _, item := range collectionData {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					doc := Document{}
+
+					// Extract ID
+					if additional, ok := itemMap["_additional"].(map[string]interface{}); ok {
+						if id, ok := additional["id"].(string); ok {
+							doc.ID = id
+						}
+					}
+
+					// Extract essential fields for virtual document aggregation
+					doc.Metadata = make(map[string]interface{})
+					doc.Metadata["id"] = doc.ID
+
+					// Add fields that help with virtual document grouping
+					if url, ok := itemMap["url"].(string); ok {
+						doc.Metadata["url"] = url
+					}
+					if filename, ok := itemMap["filename"].(string); ok {
+						doc.Metadata["filename"] = filename
+					}
+					if sourceDocument, ok := itemMap["source_document"].(string); ok {
+						doc.Metadata["source_document"] = sourceDocument
+					}
+					if pdfFilename, ok := itemMap["pdf_filename"].(string); ok {
+						doc.Metadata["pdf_filename"] = pdfFilename
+					}
+					if sourceType, ok := itemMap["source_type"].(string); ok {
+						doc.Metadata["source_type"] = sourceType
+					}
+					if contentType, ok := itemMap["content_type"].(string); ok {
+						doc.Metadata["content_type"] = contentType
+					}
+					if dateAdded, ok := itemMap["date_added"].(string); ok {
+						doc.Metadata["date_added"] = dateAdded
+					}
+					if processedBy, ok := itemMap["processed_by"].(string); ok {
+						doc.Metadata["processed_by"] = processedBy
+					}
+
+					doc.Content = fmt.Sprintf("Document ID: %s", doc.ID)
+					documents = append(documents, doc)
+				}
+			}
+		}
+	}
+
+	return documents, nil
+}
+
 // listDocumentsBasic fetches documents with actual properties (excluding large fields)
 func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, limit int) ([]Document, error) {
 	// First, get the schema to know what fields are available
@@ -182,7 +271,7 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 
 	// Filter out large fields that cause performance issues
 	excludedFields := map[string]bool{
-		"image":        true, // Base64 image data can be very large
+		"image":       true, // Base64 image data can be very large
 		"base64_data": true, // Alternative image field name
 		"content":     true, // Large text content
 	}
