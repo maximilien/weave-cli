@@ -606,6 +606,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 	shortLines, _ := cmd.Flags().GetInt("short")
+	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -631,18 +632,18 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
 	case config.VectorDBTypeLocal:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
 	case config.VectorDBTypeMock:
-		showMockCollection(ctx, dbConfig, collectionName, shortLines)
+		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
 
-func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int) {
+func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool) {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -665,56 +666,120 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 
 	documentCount := len(allDocuments)
 
-	// Display collection information
-	color.New(color.FgGreen).Printf("Collection Name: %s\n", collectionName)
-	fmt.Printf("Database Type: %s\n", cfg.Type)
-	fmt.Printf("Document Count: %d\n", documentCount)
+	// Display collection information with styling
+	printStyledEmoji("📊")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Collection")
+	fmt.Printf(": ")
+	printStyledValueDimmed(collectionName)
+	fmt.Println()
+
+	printStyledKeyProminent("Database Type")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	fmt.Println()
+
+	printStyledKeyProminent("Document Count")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%d", documentCount))
+	fmt.Println()
 	fmt.Println()
 
 	// Show collection properties if available
-	fmt.Printf("Collection Properties:\n")
-	fmt.Printf("  - Vector Database: %s\n", cfg.Type)
-	fmt.Printf("  - URL: %s\n", cfg.URL)
+	printStyledEmoji("🔧")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Collection Properties")
+	fmt.Println()
+	printStyledKeyProminent("  Vector Database")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	fmt.Println()
+	printStyledKeyProminent("  URL")
+	fmt.Printf(": ")
+	printStyledValueDimmed(cfg.URL)
+	fmt.Println()
 	if cfg.APIKey != "" {
-		fmt.Printf("  - API Key: [CONFIGURED]\n")
+		printStyledKeyProminent("  API Key")
+		fmt.Printf(": ")
+		printStyledValueDimmed("[CONFIGURED]")
+		fmt.Println()
 	} else {
-		fmt.Printf("  - API Key: [NOT CONFIGURED]\n")
+		printStyledKeyProminent("  API Key")
+		fmt.Printf(": ")
+		printStyledValueDimmed("[NOT CONFIGURED]")
+		fmt.Println()
 	}
 	fmt.Println()
 
 	if documentCount > 0 {
 		// Get sample document for metadata analysis
 		sampleDoc := allDocuments[0]
-		fmt.Printf("Sample Document Metadata:\n")
+		printStyledEmoji("📋")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Sample Document Metadata")
+		fmt.Println()
 		if len(sampleDoc.Metadata) > 0 {
-			metadataLines := make([]string, 0, len(sampleDoc.Metadata))
+			metadataCount := 0
 			for key, value := range sampleDoc.Metadata {
-				truncatedValue := truncateMetadataValue(value, 100) // Limit each value to 100 chars
-				metadataLines = append(metadataLines, fmt.Sprintf("  - %s: %s", key, truncatedValue))
-			}
+				if metadataCount >= shortLines {
+					remainingFields := len(sampleDoc.Metadata) - shortLines
+					fmt.Printf("... (truncated, %d more metadata fields)\n", remainingFields)
+					break
+				}
 
-			// Apply truncation if needed
-			if len(metadataLines) > shortLines {
-				for i := 0; i < shortLines; i++ {
-					fmt.Println(metadataLines[i])
+				var displayValue string
+				if noTruncate {
+					displayValue = fmt.Sprintf("%v", value)
+				} else {
+					displayValue = truncateMetadataValue(value, 100) // Limit each value to 100 chars
 				}
-				remainingLines := len(metadataLines) - shortLines
-				fmt.Printf("... (truncated, %d more metadata fields)\n", remainingLines)
-			} else {
-				for _, line := range metadataLines {
-					fmt.Println(line)
+
+				// Style the key-value pair directly
+				fmt.Printf("  - ")
+				printStyledKeyProminent(key)
+				fmt.Printf(": ")
+				if key == "id" {
+					printStyledID(displayValue)
+				} else {
+					printStyledValueDimmed(displayValue)
 				}
+				fmt.Println()
+				metadataCount++
 			}
 		} else {
-			fmt.Printf("  - No metadata available\n")
+			printStyledKey("  No metadata available")
+			fmt.Println()
 		}
 		fmt.Println()
+
+		// Show sample content
+		if len(sampleDoc.Content) > 0 {
+			printStyledEmoji("📄")
+			fmt.Printf(" ")
+			printStyledKeyProminent("Sample Document Content")
+			fmt.Println()
+			if noTruncate {
+				fmt.Printf("%s\n", sampleDoc.Content)
+			} else {
+				contentLines := strings.Split(sampleDoc.Content, "\n")
+				maxLines := shortLines
+				if len(contentLines) > maxLines {
+					for i := 0; i < maxLines; i++ {
+						fmt.Printf("%s\n", contentLines[i])
+					}
+					fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
+				} else {
+					fmt.Printf("%s\n", sampleDoc.Content)
+				}
+			}
+			fmt.Println()
+		}
 	}
 
 	printSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
 }
 
-func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int) {
+func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -758,44 +823,82 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 	documentCount := len(documents)
 
-	// Display collection information
-	color.New(color.FgGreen).Printf("Collection Name: %s\n", collectionName)
-	fmt.Printf("Database Type: %s\n", cfg.Type)
-	fmt.Printf("Document Count: %d\n", documentCount)
+	// Display collection information with styling
+	printStyledEmoji("📊")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Collection")
+	fmt.Printf(": ")
+	printStyledValueDimmed(collectionName)
+	fmt.Println()
+
+	printStyledKeyProminent("Database Type")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	fmt.Println()
+
+	printStyledKeyProminent("Document Count")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%d", documentCount))
+	fmt.Println()
 	fmt.Println()
 
 	// Show collection properties
-	fmt.Printf("Collection Properties:\n")
-	fmt.Printf("  - Vector Database: %s\n", cfg.Type)
-	fmt.Printf("  - Simulate Embeddings: %t\n", cfg.SimulateEmbeddings)
-	fmt.Printf("  - Embedding Dimension: %d\n", cfg.EmbeddingDimension)
+	printStyledEmoji("🔧")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Collection Properties")
+	fmt.Println()
+	printStyledKeyProminent("  Vector Database")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%s", cfg.Type))
+	fmt.Println()
+	printStyledKeyProminent("  Simulate Embeddings")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%t", cfg.SimulateEmbeddings))
+	fmt.Println()
+	printStyledKeyProminent("  Embedding Dimension")
+	fmt.Printf(": ")
+	printStyledValueDimmed(fmt.Sprintf("%d", cfg.EmbeddingDimension))
+	fmt.Println()
 	fmt.Println()
 
 	if documentCount > 0 {
 		// Get sample document for metadata analysis
 		sampleDoc := documents[0]
-		fmt.Printf("Sample Document Metadata:\n")
+		printStyledEmoji("📋")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Sample Document Metadata")
+		fmt.Println()
 		if len(sampleDoc.Metadata) > 0 {
-			metadataLines := make([]string, 0, len(sampleDoc.Metadata))
+			metadataCount := 0
 			for key, value := range sampleDoc.Metadata {
-				truncatedValue := truncateMetadataValue(value, 100) // Limit each value to 100 chars
-				metadataLines = append(metadataLines, fmt.Sprintf("  - %s: %s", key, truncatedValue))
-			}
+				if metadataCount >= shortLines {
+					remainingFields := len(sampleDoc.Metadata) - shortLines
+					fmt.Printf("... (truncated, %d more metadata fields)\n", remainingFields)
+					break
+				}
 
-			// Apply truncation if needed
-			if len(metadataLines) > shortLines {
-				for i := 0; i < shortLines; i++ {
-					fmt.Println(metadataLines[i])
+				var displayValue string
+				if noTruncate {
+					displayValue = fmt.Sprintf("%v", value)
+				} else {
+					displayValue = truncateMetadataValue(value, 100) // Limit each value to 100 chars
 				}
-				remainingLines := len(metadataLines) - shortLines
-				fmt.Printf("... (truncated, %d more metadata fields)\n", remainingLines)
-			} else {
-				for _, line := range metadataLines {
-					fmt.Println(line)
+
+				// Style the key-value pair directly
+				fmt.Printf("  - ")
+				printStyledKeyProminent(key)
+				fmt.Printf(": ")
+				if key == "id" {
+					printStyledID(displayValue)
+				} else {
+					printStyledValueDimmed(displayValue)
 				}
+				fmt.Println()
+				metadataCount++
 			}
 		} else {
-			fmt.Printf("  - No metadata available\n")
+			printStyledKey("  No metadata available")
+			fmt.Println()
 		}
 		fmt.Println()
 	}

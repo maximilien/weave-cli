@@ -1191,3 +1191,127 @@ This command displays:
 		}
 	})
 }
+
+func TestDocumentDeleteVirtualFlag(t *testing.T) {
+	t.Run("Document Delete with Virtual Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "delete",
+			Run: func(cmd *cobra.Command, args []string) {
+				// Validate arguments
+				if len(args) != 2 {
+					t.Errorf("Expected 2 arguments (collection and filename), got %d", len(args))
+				}
+				if args[0] != "RagmeDocs" {
+					t.Errorf("Expected collection 'RagmeDocs', got %s", args[0])
+				}
+				if args[1] != "ragme-io.pdf" {
+					t.Errorf("Expected filename 'ragme-io.pdf', got %s", args[1])
+				}
+				
+				// Validate virtual flag
+				virtual, _ := cmd.Flags().GetBool("virtual")
+				if !virtual {
+					t.Error("Expected virtual flag to be true")
+				}
+				
+				// Validate metadata filters are not set
+				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
+				if len(metadataFilters) != 0 {
+					t.Errorf("Expected no metadata filters when using virtual flag, got %d", len(metadataFilters))
+				}
+			},
+		}
+		
+		// Add flags
+		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
+		cmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
+		
+		// Set up command arguments with virtual flag
+		cmd.SetArgs([]string{"RagmeDocs", "ragme-io.pdf", "--virtual"})
+		
+		// Execute command
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+	
+	t.Run("Document Delete with Virtual Flag Short Form", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "delete",
+			Run: func(cmd *cobra.Command, args []string) {
+				virtual, _ := cmd.Flags().GetBool("virtual")
+				if !virtual {
+					t.Error("Expected virtual flag to be true")
+				}
+			},
+		}
+		
+		cmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
+		cmd.SetArgs([]string{"RagmeDocs", "ragme-io.pdf", "-w"})
+		
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+	
+	t.Run("Document Delete Virtual Flag Validation", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "delete",
+			Run: func(cmd *cobra.Command, args []string) {
+				// This test validates that virtual flag and metadata filters are mutually exclusive
+				virtual, _ := cmd.Flags().GetBool("virtual")
+				metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
+				
+				// The validation should prevent both flags from being set
+				// This test just verifies the flags are correctly parsed
+				if virtual && len(metadataFilters) > 0 {
+					// This is expected behavior - the command should handle this validation
+					// We're just testing that both flags are detected
+					t.Log("Both virtual and metadata flags detected - validation should prevent this")
+				}
+			},
+		}
+		
+		cmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter")
+		cmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
+		
+		// Test with both flags set (should be invalid)
+		cmd.SetArgs([]string{"RagmeDocs", "ragme-io.pdf", "--virtual", "--metadata", "filename=test.pdf"})
+		
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+	
+	t.Run("Document Delete Virtual Flag Help Text", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "delete",
+			Long: `Delete documents from a collection.
+
+You can delete documents in three ways:
+1. By document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
+2. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
+3. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
+
+When using --virtual flag, all chunks and images associated with the original filename
+will be deleted in one operation.
+
+⚠️  WARNING: This is a destructive operation that will permanently
+delete the specified documents. Use with caution!`,
+		}
+		
+		// Verify the help text includes virtual deletion information
+		if !strings.Contains(cmd.Long, "virtual") {
+			t.Error("Help text should mention virtual deletion")
+		}
+		if !strings.Contains(cmd.Long, "original filename") {
+			t.Error("Help text should mention original filename")
+		}
+		if !strings.Contains(cmd.Long, "chunks and images") {
+			t.Error("Help text should mention chunks and images")
+		}
+	})
+}

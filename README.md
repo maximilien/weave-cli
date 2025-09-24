@@ -37,6 +37,7 @@ cd weave-cli
 ### Configuration
 
 1. **Set up your environment variables**:
+
    ```bash
    export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
    export WEAVIATE_API_KEY="your-api-key"
@@ -44,11 +45,13 @@ cd weave-cli
    ```
 
 2. **Test your connection**:
+
    ```bash
    ./bin/weave health check
    ```
 
 3. **List your collections**:
+
    ```bash
    ./bin/weave collection list
    ```
@@ -127,7 +130,8 @@ weave docs list MyCol   # Same as: weave document list MyCol
 
 ## Document Display
 
-Both regular and virtual document views feature consistent visual styling for better readability:
+Both regular and virtual document views feature consistent visual styling for
+better readability:
 
 ### Regular Document View
 
@@ -145,7 +149,8 @@ $ weave document list MyCollection
 
 ### Virtual Document View
 
-The `--virtual` flag provides an intelligent view by aggregating chunked content back into original documents:
+The `--virtual` flag provides an intelligent view by aggregating chunked content
+back into original documents:
 
 ```bash
 $ weave document list MyCollection --virtual
@@ -166,6 +171,7 @@ $ weave document list MyCollection --virtual
 ### Visual Styling
 
 Both views feature consistent visual hierarchy:
+
 - **Top-level keys** (ID, Chunks, Images, Content) are prominent
 - **Metadata keys** are dimmed for better hierarchy
 - **Important values** (IDs, filenames, numbers) are highlighted
@@ -186,7 +192,8 @@ Both views feature consistent visual hierarchy:
 
 For comprehensive documentation, examples, and advanced usage:
 
-📖 **[Complete User Guide](docs/USER_GUIDE.md)** - Detailed usage instructions, configuration examples, troubleshooting, and more.
+📖 **[Complete User Guide](docs/USER_GUIDE.md)** - Detailed usage instructions,
+configuration examples, troubleshooting, and more.
 
 ## Development
 

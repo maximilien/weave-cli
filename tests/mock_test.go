@@ -2,11 +2,22 @@ package tests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 )
+
+// contains checks if a string slice contains a specific string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
 
 func TestMockClient(t *testing.T) {
 	cfg := &config.MockConfig{
@@ -223,6 +234,125 @@ func TestMockClientDeleteDocumentsByMetadata(t *testing.T) {
 	_, err = client.DeleteDocumentsByMetadata(ctx, "nonexistent", []string{"filename=test.png"})
 	if err == nil {
 		t.Error("Expected error for non-existent collection")
+	}
+}
+
+func TestMockClientVirtualDocumentDeletion(t *testing.T) {
+	cfg := &config.MockConfig{
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
+		Collections: []config.MockCollection{
+			{Name: "VirtualTestCollection", Type: "text", Description: "Test collection for virtual deletion"},
+		},
+	}
+	
+	client := mock.NewClient(cfg)
+	ctx := context.Background()
+	
+	// Clear the collection first to avoid interference
+	client.DeleteCollection(ctx, "VirtualTestCollection")
+	
+	// Add test documents with chunked metadata structure
+	testDocs := []mock.Document{
+		{
+			ID:      "ragme-io-chunk-1",
+			Content: "This is the first chunk of ragme-io.pdf",
+			Metadata: map[string]interface{}{
+				"metadata": `{"original_filename": "ragme-io.pdf", "is_chunked": true, "chunk_index": 0, "total_chunks": 3}`,
+			},
+		},
+		{
+			ID:      "ragme-io-chunk-2", 
+			Content: "This is the second chunk of ragme-io.pdf",
+			Metadata: map[string]interface{}{
+				"metadata": `{"original_filename": "ragme-io.pdf", "is_chunked": true, "chunk_index": 1, "total_chunks": 3}`,
+			},
+		},
+		{
+			ID:      "ragme-io-chunk-3",
+			Content: "This is the third chunk of ragme-io.pdf", 
+			Metadata: map[string]interface{}{
+				"metadata": `{"original_filename": "ragme-io.pdf", "is_chunked": true, "chunk_index": 2, "total_chunks": 3}`,
+			},
+		},
+		{
+			ID:      "other-doc-chunk-1",
+			Content: "This is a chunk from a different document",
+			Metadata: map[string]interface{}{
+				"metadata": `{"original_filename": "other-doc.pdf", "is_chunked": true, "chunk_index": 0, "total_chunks": 2}`,
+			},
+		},
+	}
+	
+	// Add documents to collection
+	for _, doc := range testDocs {
+		if err := client.AddDocument(ctx, "VirtualTestCollection", doc); err != nil {
+			t.Errorf("Failed to add document: %v", err)
+		}
+	}
+	
+	// Verify initial state
+	documents, err := client.ListDocuments(ctx, "VirtualTestCollection", 10)
+	if err != nil {
+		t.Errorf("Failed to list documents: %v", err)
+	}
+	if len(documents) != 4 {
+		t.Errorf("Expected 4 documents initially, got %d", len(documents))
+	}
+	
+	// Test virtual deletion by original filename
+	// This should delete all chunks associated with "ragme-io.pdf"
+	deletedCount := 0
+	expectedRagmeDocs := []string{"ragme-io-chunk-1", "ragme-io-chunk-2", "ragme-io-chunk-3"}
+	
+	// First, collect all documents that should be deleted
+	var docsToDelete []string
+	for _, doc := range documents {
+		if metadata, ok := doc.Metadata["metadata"]; ok {
+			if metadataStr, ok := metadata.(string); ok {
+				// Parse the JSON metadata to extract original filename
+				var metadataObj map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+					if docOriginalFilename, ok := metadataObj["original_filename"].(string); ok {
+						if docOriginalFilename == "ragme-io.pdf" {
+							docsToDelete = append(docsToDelete, doc.ID)
+						}
+					}
+				}
+			}
+		}
+	}
+	
+	// Then delete them
+	for _, docID := range docsToDelete {
+		if err := client.DeleteDocument(ctx, "VirtualTestCollection", docID); err != nil {
+			// Only log error if the document was expected to exist
+			if contains(expectedRagmeDocs, docID) {
+				t.Errorf("Failed to delete document %s: %v", docID, err)
+			}
+		} else {
+			deletedCount++
+		}
+	}
+	
+	// Should have deleted 3 documents (3 chunks)
+	if deletedCount != 3 {
+		t.Errorf("Expected 3 documents deleted for ragme-io.pdf, got %d", deletedCount)
+	}
+	
+	// Verify remaining documents
+	documents, err = client.ListDocuments(ctx, "VirtualTestCollection", 10)
+	if err != nil {
+		t.Errorf("Failed to list documents after virtual deletion: %v", err)
+	}
+	if len(documents) != 1 {
+		t.Errorf("Expected 1 document remaining after virtual deletion, got %d", len(documents))
+	}
+	
+	// Verify the remaining document is from the other file
+	if documents[0].ID != "other-doc-chunk-1" {
+		t.Errorf("Expected remaining document to be 'other-doc-chunk-1', got %s", documents[0].ID)
 	}
 }
 

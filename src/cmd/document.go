@@ -67,9 +67,13 @@ var documentDeleteCmd = &cobra.Command{
 	Short:   "Delete documents from a collection",
 	Long: `Delete documents from a collection.
 
-You can delete documents in two ways:
+You can delete documents in three ways:
 1. By document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
 2. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
+3. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
+
+When using --virtual flag, all chunks and images associated with the original filename
+will be deleted in one operation.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
 delete the specified documents. Use with caution!`,
@@ -115,12 +119,14 @@ func init() {
 	documentListCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	documentListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	documentListCmd.Flags().BoolP("virtual", "w", false, "Show documents in virtual structure (aggregate chunks by original document)")
+	documentListCmd.Flags().BoolP("summary", "S", false, "Show a clean summary of documents (works with --virtual)")
 
 	documentShowCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	documentShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	documentShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
+	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
 }
 
 func runDocumentList(cmd *cobra.Command, args []string) {
@@ -131,6 +137,16 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
 	virtual, _ := cmd.Flags().GetBool("virtual")
+	summary, _ := cmd.Flags().GetBool("summary")
+
+	// Adjust limit for virtual listings to prevent timeouts
+	// Check if user explicitly set a limit (different from default 50)
+	userSetLimit := cmd.Flags().Changed("limit")
+	if virtual && !userSetLimit {
+		// Use a more conservative default for virtual listings
+		// This prevents connection timeouts with large image collections
+		limit = 20
+	}
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -156,11 +172,11 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual)
+		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
 	case config.VectorDBTypeLocal:
-		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual)
+		listWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
 	case config.VectorDBTypeMock:
-		listMockDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual)
+		listMockDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -248,6 +264,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
+	virtual, _ := cmd.Flags().GetBool("virtual")
 
 	var documentID string
 	if len(args) > 1 {
@@ -260,7 +277,12 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if len(metadataFilters) > 0 && documentID != "" {
+	if virtual && len(metadataFilters) > 0 {
+		printError("Cannot use --virtual flag with --metadata filter")
+		os.Exit(1)
+	}
+
+	if len(metadataFilters) > 0 && documentID != "" && !virtual {
 		printError("Cannot specify both DOCUMENT_ID and --metadata filter")
 		os.Exit(1)
 	}
@@ -282,6 +304,15 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 
 		// Confirm deletion
 		if !confirmAction("Are you sure you want to delete documents matching these metadata filters?") {
+			printInfo("Operation cancelled by user")
+			return
+		}
+	} else if virtual {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete ALL chunks and images associated with original filename '%s' from collection '%s'!", documentID, collectionName))
+		fmt.Println()
+
+		// Confirm deletion
+		if !confirmAction(fmt.Sprintf("Are you sure you want to delete all chunks and images for original filename '%s'?", documentID)) {
 			printInfo("Operation cancelled by user")
 			return
 		}
@@ -312,18 +343,24 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeCloud:
 		if len(metadataFilters) > 0 {
 			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
+		} else if virtual {
+			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentID)
 		} else {
 			deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
 		}
 	case config.VectorDBTypeLocal:
 		if len(metadataFilters) > 0 {
 			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
+		} else if virtual {
+			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentID)
 		} else {
 			deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
 		}
 	case config.VectorDBTypeMock:
 		if len(metadataFilters) > 0 {
 			deleteMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
+		} else if virtual {
+			deleteMockDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentID)
 		} else {
 			deleteMockDocument(ctx, dbConfig, collectionName, documentID)
 		}
@@ -382,7 +419,7 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	}
 }
 
-func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool) {
+func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool, summary bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -403,13 +440,13 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 	}
 
 	if virtual {
-		displayVirtualDocuments(documents, collectionName, showLong, shortLines)
+		displayVirtualDocuments(documents, collectionName, showLong, shortLines, summary)
 	} else {
 		displayRegularDocuments(documents, collectionName, showLong, shortLines)
 	}
 }
 
-func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool) {
+func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool, summary bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -437,7 +474,7 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 	}
 
 	if virtual {
-		displayVirtualMockDocuments(documents, collectionName, showLong, shortLines)
+		displayVirtualMockDocuments(documents, collectionName, showLong, shortLines, summary)
 	} else {
 		displayRegularMockDocuments(documents, collectionName, showLong, shortLines)
 	}
@@ -968,7 +1005,7 @@ func displayRegularDocuments(documents []weaviate.Document, collectionName strin
 }
 
 // displayVirtualDocuments shows documents aggregated by their original document
-func displayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
+func displayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, summary bool) {
 	virtualDocs := aggregateDocumentsByOriginal(documents)
 
 	printSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
@@ -1054,6 +1091,25 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			}
 		}
 		fmt.Println()
+	}
+
+	// Show summary if requested
+	if summary {
+		fmt.Println()
+		printStyledKeyValueProminentWithEmoji("Summary", "", "📋")
+		fmt.Println()
+		for i, vdoc := range virtualDocs {
+			fmt.Printf("   %d. ", i+1)
+			printStyledFilename(vdoc.OriginalFilename)
+			if vdoc.TotalChunks > 0 {
+				fmt.Printf(" - %d chunks", len(vdoc.Chunks))
+			} else if isImageVirtualDocument(vdoc) {
+				fmt.Printf(" - %d images", len(vdoc.Chunks))
+			} else {
+				fmt.Printf(" - Single document")
+			}
+			fmt.Println()
+		}
 	}
 }
 
@@ -1246,7 +1302,7 @@ func displayRegularMockDocuments(documents []mock.Document, collectionName strin
 }
 
 // displayVirtualMockDocuments shows mock documents aggregated by their original document
-func displayVirtualMockDocuments(documents []mock.Document, collectionName string, showLong bool, shortLines int) {
+func displayVirtualMockDocuments(documents []mock.Document, collectionName string, showLong bool, shortLines int, summary bool) {
 	virtualDocs := aggregateMockDocumentsByOriginal(documents)
 
 	printSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
@@ -1331,6 +1387,25 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 			}
 		}
 		fmt.Println()
+	}
+
+	// Show summary if requested
+	if summary {
+		fmt.Println()
+		printStyledKeyValueProminentWithEmoji("Summary", "", "📋")
+		fmt.Println()
+		for i, vdoc := range virtualDocs {
+			fmt.Printf("   %d. ", i+1)
+			printStyledFilename(vdoc.OriginalFilename)
+			if vdoc.TotalChunks > 0 {
+				fmt.Printf(" - %d chunks", len(vdoc.Chunks))
+			} else if isMockImageVirtualDocument(vdoc) {
+				fmt.Printf(" - %d images", len(vdoc.Chunks))
+			} else {
+				fmt.Printf(" - Single document")
+			}
+			fmt.Println()
+		}
 	}
 }
 
@@ -1620,4 +1695,143 @@ func truncateJSONMetadata(jsonStr string, maxLines int) string {
 
 	// Apply line-based truncation to the formatted JSON
 	return truncateStringByLines(string(jsonBytes), maxLines)
+}
+
+// isURL checks if a string is a valid URL
+func isURL(str string) bool {
+	return strings.HasPrefix(str, "http://") || strings.HasPrefix(str, "https://") || strings.HasPrefix(str, "file://") || strings.HasPrefix(str, "pdf://")
+}
+
+// deleteWeaviateDocumentsByOriginalFilename deletes all documents (chunks and images) associated with an original filename
+func deleteWeaviateDocumentsByOriginalFilename(ctx context.Context, cfg *config.VectorDBConfig, collectionName, originalFilename string) {
+	client, err := createWeaviateClient(cfg)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Determine if this is a URL or filename and search accordingly
+	var documents []weaviate.Document
+	if isURL(originalFilename) {
+		// For URLs, search in the url field
+		documents, err = client.GetDocumentsByMetadata(ctx, collectionName, []string{fmt.Sprintf("url=%s", originalFilename)})
+		if err != nil {
+			printError(fmt.Sprintf("Failed to query documents by URL: %v", err))
+			return
+		}
+	} else {
+		// For filenames, first try original_filename field
+		documents, err = client.GetDocumentsByMetadata(ctx, collectionName, []string{fmt.Sprintf("original_filename=%s", originalFilename)})
+		if err != nil {
+			printError(fmt.Sprintf("Failed to query documents by original filename: %v", err))
+			return
+		}
+
+		// If no documents found and this looks like a PDF filename, try searching for PDF images
+		if len(documents) == 0 && strings.HasSuffix(originalFilename, ".pdf") {
+			// Search for PDF images with URLs starting with pdf://filename/
+			documents, err = client.GetDocumentsByMetadata(ctx, collectionName, []string{fmt.Sprintf("url=pdf://%s/", originalFilename)})
+			if err != nil {
+				printError(fmt.Sprintf("Failed to query PDF images by URL pattern: %v", err))
+				return
+			}
+		}
+
+		// If still no documents found, try searching for standalone images by URL
+		// Only do this if it's not a PDF filename (to avoid conflicts with PDF images)
+		if len(documents) == 0 && !strings.HasSuffix(originalFilename, ".pdf") {
+			// Search for standalone images with URL matching the filename exactly
+			documents, err = client.GetDocumentsByMetadata(ctx, collectionName, []string{fmt.Sprintf("url=%s", originalFilename)})
+			if err != nil {
+				printError(fmt.Sprintf("Failed to query standalone images by URL: %v", err))
+				return
+			}
+		}
+	}
+
+	if len(documents) == 0 {
+		printWarning(fmt.Sprintf("No documents found with original filename '%s' in collection '%s'", originalFilename, collectionName))
+		return
+	}
+
+	// Delete each document individually
+	deletedCount := 0
+	for _, doc := range documents {
+		if err := client.DeleteDocument(ctx, collectionName, doc.ID); err != nil {
+			// Log error but continue with other documents
+			fmt.Printf("Warning: Failed to delete document %s: %v\n", doc.ID, err)
+			continue
+		}
+		deletedCount++
+	}
+
+	if deletedCount == 0 {
+		printWarning("No documents were successfully deleted")
+	} else {
+		printSuccess(fmt.Sprintf("Successfully deleted %d documents (chunks/images) associated with original filename '%s' from collection '%s'", deletedCount, originalFilename, collectionName))
+	}
+}
+
+// deleteMockDocumentsByOriginalFilename deletes all mock documents (chunks and images) associated with an original filename
+func deleteMockDocumentsByOriginalFilename(ctx context.Context, cfg *config.VectorDBConfig, collectionName, originalFilename string) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// First, find all documents associated with this original filename
+	documents, err := client.ListDocuments(ctx, collectionName, 1000) // Get up to 1000 documents
+	if err != nil {
+		printError(fmt.Sprintf("Failed to list documents: %v", err))
+		return
+	}
+
+	// Filter documents by original filename
+	var matchingDocuments []mock.Document
+	for _, doc := range documents {
+		if metadata, ok := doc.Metadata["metadata"]; ok {
+			if metadataStr, ok := metadata.(string); ok {
+				// Parse the JSON metadata to extract original filename
+				var metadataObj map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+					if docOriginalFilename, ok := metadataObj["original_filename"].(string); ok {
+						if docOriginalFilename == originalFilename {
+							matchingDocuments = append(matchingDocuments, doc)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(matchingDocuments) == 0 {
+		printWarning(fmt.Sprintf("No documents found with original filename '%s' in collection '%s'", originalFilename, collectionName))
+		return
+	}
+
+	// Delete each document individually
+	deletedCount := 0
+	for _, doc := range matchingDocuments {
+		if err := client.DeleteDocument(ctx, collectionName, doc.ID); err != nil {
+			// Log error but continue with other documents
+			fmt.Printf("Warning: Failed to delete document %s: %v\n", doc.ID, err)
+			continue
+		}
+		deletedCount++
+	}
+
+	if deletedCount == 0 {
+		printWarning("No documents were successfully deleted")
+	} else {
+		printSuccess(fmt.Sprintf("Successfully deleted %d documents (chunks/images) associated with original filename '%s' from collection '%s'", deletedCount, originalFilename, collectionName))
+	}
 }

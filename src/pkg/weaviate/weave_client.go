@@ -175,6 +175,14 @@ func (wc *WeaveClient) queryDocumentsByMetadata(ctx context.Context, collectionN
 				operator: Like
 				valueString: "*filename\": \"%s\"*"
 			}`, value))
+		} else if key == "original_filename" {
+			// For original_filename, we need to search within the JSON string in the metadata field
+			// Use Like operator to search for the original_filename within the JSON string
+			whereClauses = append(whereClauses, fmt.Sprintf(`{
+				path: ["metadata"]
+				operator: Like
+				valueString: "*original_filename\": \"%s\"*"
+			}`, value))
 		} else if key == "url" {
 			// For URL, use Like operator to allow partial matching
 			whereClauses = append(whereClauses, fmt.Sprintf(`{

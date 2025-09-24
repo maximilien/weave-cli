@@ -36,6 +36,7 @@ cd weave-cli
 ### Quick Start
 
 1. **Configure your database**:
+
    ```bash
    # Copy the example configuration
    cp config.yaml.example config.yaml
@@ -45,6 +46,7 @@ cd weave-cli
    ```
 
 2. **Set environment variables**:
+
    ```bash
    export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
    export WEAVIATE_API_KEY="your-api-key"
@@ -52,11 +54,13 @@ cd weave-cli
    ```
 
 3. **Test your connection**:
+
    ```bash
    ./bin/weave health check
    ```
 
 4. **List your collections**:
+
    ```bash
    ./bin/weave collection list
    ```
@@ -68,6 +72,7 @@ cd weave-cli
 Weave CLI uses two configuration files:
 
 #### config.yaml
+
 ```yaml
 # Databases Configuration
 databases:
@@ -113,6 +118,7 @@ databases:
 ```
 
 #### .env
+
 ```bash
 # Vector Database Configuration  
 VECTOR_DB_TYPE="weaviate-cloud"
@@ -126,18 +132,21 @@ WEAVIATE_API_KEY="your-api-key"
 ### Database Types
 
 #### Weaviate Cloud
+
 - **Type**: `weaviate-cloud`
 - **Authentication**: API key required
 - **Connection**: HTTPS
 - **Use Case**: Production environments
 
 #### Weaviate Local
+
 - **Type**: `weaviate-local`
 - **Authentication**: None required
 - **Connection**: HTTP
 - **Use Case**: Development and testing
 
 #### Mock Database
+
 - **Type**: `mock`
 - **Authentication**: None required
 - **Connection**: In-memory
@@ -314,6 +323,7 @@ $ weave document list MyCollection --virtual
 ## Global Flags
 
 ### --no-color
+
 Disables colored output for better compatibility with scripts and logs.
 
 ```bash
@@ -325,6 +335,7 @@ weave collection list --no-color >> output.log
 ```
 
 ### --no-truncate
+
 Shows all data without truncation.
 
 ```bash
@@ -336,6 +347,7 @@ weave document list MyCollection --virtual --no-truncate
 ```
 
 ### --verbose
+
 Provides detailed output for debugging.
 
 ```bash
@@ -347,6 +359,7 @@ weave config show --verbose
 ```
 
 ### --quiet
+
 Minimal output for scripts.
 
 ```bash
@@ -406,6 +419,7 @@ VECTOR_DB_TYPE=weaviate-cloud weave health check
 ### Common Issues
 
 #### Connection Errors
+
 ```bash
 # Check your configuration
 weave config show
@@ -419,6 +433,7 @@ echo $WEAVIATE_API_KEY
 ```
 
 #### Permission Errors
+
 ```bash
 # Make sure the binary is executable
 chmod +x bin/weave
@@ -428,6 +443,7 @@ ls -la bin/weave
 ```
 
 #### Configuration Issues
+
 ```bash
 # Validate configuration syntax
 weave config show

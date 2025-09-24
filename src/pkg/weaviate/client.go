@@ -29,11 +29,24 @@ func NewClient(config *Config) (*Client, error) {
 	var client *weaviate.Client
 	var err error
 
+	// Parse URL to extract host and scheme
+	host := config.URL
+	scheme := "http"
+
+	// Remove protocol if present
+	if strings.HasPrefix(host, "http://") {
+		host = strings.TrimPrefix(host, "http://")
+		scheme = "http"
+	} else if strings.HasPrefix(host, "https://") {
+		host = strings.TrimPrefix(host, "https://")
+		scheme = "https"
+	}
+
 	if config.APIKey != "" {
 		// Use API key authentication for Weaviate Cloud
 		client, err = weaviate.NewClient(weaviate.Config{
-			Host:   config.URL,
-			Scheme: "https",
+			Host:   host,
+			Scheme: scheme,
 			AuthConfig: auth.ApiKey{
 				Value: config.APIKey,
 			},
@@ -44,8 +57,8 @@ func NewClient(config *Config) (*Client, error) {
 	} else {
 		// Use no authentication for local Weaviate
 		client, err = weaviate.NewClient(weaviate.Config{
-			Host:   config.URL,
-			Scheme: "http",
+			Host:   host,
+			Scheme: scheme,
 		})
 	}
 
@@ -529,6 +542,14 @@ func (c *Client) queryDocumentsByMetadata(ctx context.Context, collectionName st
 				path: ["metadata"]
 				operator: Like
 				valueString: "*filename\": \"%s\"*"
+			}`, value))
+		} else if key == "original_filename" {
+			// For original_filename, we need to search within the JSON string in the metadata field
+			// Use Like operator to search for the original_filename within the JSON string
+			whereClauses = append(whereClauses, fmt.Sprintf(`{
+				path: ["metadata"]
+				operator: Like
+				valueString: "*original_filename\": \"%s\"*"
 			}`, value))
 		} else if key == "url" {
 			// For URL, use Like operator to allow partial matching
