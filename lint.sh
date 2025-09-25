@@ -144,11 +144,11 @@ else
     echo "ℹ️  No YAML files found to lint"
 fi
 
-# Markdown linting
+# Markdown linting (excluding docs directory with extended formats)
 echo "📝 Checking Markdown files..."
-if find . -name "*.md" -not -path "./src/vendor/*" -not -path "./node_modules/*" | grep -q .; then
+if find . -name "*.md" -not -path "./src/vendor/*" -not -path "./node_modules/*" -not -path "./docs/*" | grep -q .; then
     if command_exists markdownlint; then
-        if npx markdownlint "**/*.md" --ignore node_modules --ignore src/vendor; then
+        if npx markdownlint "**/*.md" --ignore node_modules --ignore src/vendor --ignore docs; then
             print_success "Markdown linting passed!"
         else
             print_warning "Markdown linting issues found"
@@ -158,7 +158,7 @@ if find . -name "*.md" -not -path "./src/vendor/*" -not -path "./node_modules/*"
         print_status "Install markdownlint: npm install -g markdownlint-cli"
     fi
 else
-    echo "ℹ️  No Markdown files found to lint"
+    echo "ℹ️  No Markdown files found to lint (excluding docs directory with extended formats)"
 fi
 
 # Shell script linting
