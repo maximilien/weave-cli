@@ -229,6 +229,17 @@ For comprehensive documentation, examples, and advanced usage:
 📖 **[Complete User Guide](docs/USER_GUIDE.md)** - Detailed usage instructions,
 configuration examples, troubleshooting, and more.
 
+🎯 **[Presentation](docs/PRESENTATION.md)** - Marp presentation with overview,
+features, and usage examples.
+
+## Recent Improvements
+
+- ✅ **Linting fixes** - All YAML, Markdown, and Go linting issues resolved
+- ✅ **Security tools** - govulncheck and gosec installed and configured
+- ✅ **CI/CD pipeline** - GitHub Actions for automated testing and building
+- ✅ **Documentation** - Added Marp presentation and updated guides
+- ✅ **Code quality** - Comprehensive test coverage and quality checks
+
 ## Development
 
 ### Building
