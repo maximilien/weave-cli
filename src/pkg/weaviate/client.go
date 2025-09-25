@@ -184,6 +184,19 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 
 	// Extract count from the result
 	if result.Errors != nil && len(result.Errors) > 0 {
+		// Parse GraphQL errors to provide user-friendly messages
+		for _, err := range result.Errors {
+			if err.Message != "" {
+				// Check for common error patterns and provide better messages
+				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
+					return 0, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				if strings.Contains(err.Message, "Unknown class") {
+					return 0, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				return 0, fmt.Errorf("graphql error: %s", err.Message)
+			}
+		}
 		return 0, fmt.Errorf("graphql errors: %v", result.Errors)
 	}
 
@@ -261,6 +274,24 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 	if err != nil {
 		// If the schema-based query fails, fall back to simple query
 		return c.listDocumentsSimple(ctx, collectionName, limit)
+	}
+
+	// Check for GraphQL errors
+	if result.Errors != nil && len(result.Errors) > 0 {
+		// Parse GraphQL errors to provide user-friendly messages
+		for _, err := range result.Errors {
+			if err.Message != "" {
+				// Check for common error patterns and provide better messages
+				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
+					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				if strings.Contains(err.Message, "Unknown class") {
+					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				return nil, fmt.Errorf("graphql error: %s", err.Message)
+			}
+		}
+		return nil, fmt.Errorf("graphql errors: %v", result.Errors)
 	}
 
 	var documents []Document
@@ -341,6 +372,24 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query documents: %w", err)
+	}
+
+	// Check for GraphQL errors
+	if result.Errors != nil && len(result.Errors) > 0 {
+		// Parse GraphQL errors to provide user-friendly messages
+		for _, err := range result.Errors {
+			if err.Message != "" {
+				// Check for common error patterns and provide better messages
+				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
+					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				if strings.Contains(err.Message, "Unknown class") {
+					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				return nil, fmt.Errorf("graphql error: %s", err.Message)
+			}
+		}
+		return nil, fmt.Errorf("graphql errors: %v", result.Errors)
 	}
 
 	var documents []Document

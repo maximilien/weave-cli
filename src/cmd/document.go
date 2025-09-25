@@ -939,7 +939,12 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
-			printError(fmt.Sprintf("Failed to count documents: %v", err))
+			// Provide more specific error messages
+			if strings.Contains(err.Error(), "does not exist") {
+				printError(fmt.Sprintf("Collection '%s' does not exist", collectionName))
+			} else {
+				printError(fmt.Sprintf("Failed to count documents: %v", err))
+			}
 			os.Exit(1)
 		}
 
@@ -975,7 +980,12 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
-			color.New(color.FgRed).Printf("ERROR - %v\n", err)
+			// Provide more specific error messages
+			if strings.Contains(err.Error(), "does not exist") {
+				color.New(color.FgRed).Printf("ERROR - Collection '%s' does not exist\n", collectionName)
+			} else {
+				color.New(color.FgRed).Printf("ERROR - %v\n", err)
+			}
 			errorCount++
 		} else {
 			color.New(color.FgGreen).Printf("%d documents\n", count)
