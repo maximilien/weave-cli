@@ -235,7 +235,8 @@ weave doc show MyCol ID # Same as: weave document show MyCol ID
 
 ## Document Display
 
-Both regular and virtual document views feature consistent visual styling for better readability and user experience.
+Both regular and virtual document views feature consistent visual styling for
+better readability and user experience.
 
 ### Regular Document View
 
@@ -257,7 +258,8 @@ weave document list MyCollection
 
 ### Virtual Document View
 
-The `--virtual` flag provides an intelligent view by aggregating chunked content back into original documents.
+The `--virtual` flag provides an intelligent view by aggregating chunked
+content back into original documents.
 
 #### Features
 
@@ -288,7 +290,8 @@ weave collection list --virtual
 ```bash
 $ weave document list MyCollection --virtual
 
-✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from 6 total documents):
+✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from
+6 total documents):
 
 1. 📄 Document: research_paper.pdf
    📝 Chunks: 3/3
@@ -454,15 +457,21 @@ weave config show --verbose
 
 #### Virtual Document Chunk Count Issues
 
-**Issue**: Virtual document view (`-w` flag) shows incorrect chunk counts when using limit parameter.
+**Issue**: Virtual document view (`-w` flag) shows incorrect chunk counts when
+using limit parameter.
 
 **Symptoms**:
-- Commands like `weave docs l MyCollection -w -S -l 10` show wrong chunk counts
+
+- Commands like `weave docs l MyCollection -w -S -l 10` show wrong chunk
+  counts
 - Example: vectras.pdf shows "1 chunks" instead of "7 chunks"
 
-**Solution**: This issue was fixed in v0.0.6. The virtual document view now correctly retrieves all chunks for proper aggregation, regardless of the limit parameter.
+**Solution**: This issue was fixed in v0.0.6. The virtual document view now
+correctly retrieves all chunks for proper aggregation, regardless of the
+limit parameter.
 
 **Verification**:
+
 ```bash
 # Test with your collection
 weave docs l MyCollection -w -S -l 10
