@@ -194,6 +194,17 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 				if strings.Contains(err.Message, "Unknown class") {
 					return 0, fmt.Errorf("collection %s does not exist", collectionName)
 				}
+				// Check for "Did you mean" suggestions and extract them
+				if strings.Contains(err.Message, "Did you mean") {
+					// Extract the suggestion part from the error message
+					parts := strings.Split(err.Message, "Did you mean")
+					if len(parts) > 1 {
+						suggestion := strings.TrimSpace(parts[1])
+						// Remove trailing question mark and clean up
+						suggestion = strings.TrimSuffix(suggestion, "?")
+						return 0, fmt.Errorf("collection %s does not exist. Did you mean %s?", collectionName, suggestion)
+					}
+				}
 				return 0, fmt.Errorf("graphql error: %s", err.Message)
 			}
 		}
@@ -287,6 +298,17 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 				}
 				if strings.Contains(err.Message, "Unknown class") {
 					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				// Check for "Did you mean" suggestions and extract them
+				if strings.Contains(err.Message, "Did you mean") {
+					// Extract the suggestion part from the error message
+					parts := strings.Split(err.Message, "Did you mean")
+					if len(parts) > 1 {
+						suggestion := strings.TrimSpace(parts[1])
+						// Remove trailing question mark and clean up
+						suggestion = strings.TrimSuffix(suggestion, "?")
+						return nil, fmt.Errorf("collection %s does not exist. Did you mean %s?", collectionName, suggestion)
+					}
 				}
 				return nil, fmt.Errorf("graphql error: %s", err.Message)
 			}
@@ -385,6 +407,17 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 				}
 				if strings.Contains(err.Message, "Unknown class") {
 					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+				// Check for "Did you mean" suggestions and extract them
+				if strings.Contains(err.Message, "Did you mean") {
+					// Extract the suggestion part from the error message
+					parts := strings.Split(err.Message, "Did you mean")
+					if len(parts) > 1 {
+						suggestion := strings.TrimSpace(parts[1])
+						// Remove trailing question mark and clean up
+						suggestion = strings.TrimSuffix(suggestion, "?")
+						return nil, fmt.Errorf("collection %s does not exist. Did you mean %s?", collectionName, suggestion)
+					}
 				}
 				return nil, fmt.Errorf("graphql error: %s", err.Message)
 			}
