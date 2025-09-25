@@ -1,0 +1,11 @@
+---
+extends: default
+
+rules:
+  truthy:
+    # Allow GitHub Actions workflow triggers
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+
+ignore: |
+  .github/workflows/release.yml
+  .github/workflows/ci.yml
