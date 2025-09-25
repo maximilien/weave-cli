@@ -14,10 +14,12 @@ applications.
 - 📄 **Document Management** - List, show, and delete individual documents
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
-- 📋 **Virtual Document View** - Aggregate chunked documents by original file with cross-collection image support
+- 📋 **Virtual Document View** - Aggregate chunked documents by original file with
+  cross-collection image support
 - 🎯 **Smart Truncation** - Intelligent content truncation with `--no-truncate` option
 - 🌈 **Color Control** - `--no-color` flag for terminal compatibility
-- ⚡ **Fast & Lightweight** - Single binary deployment with optimized image collection queries
+- ⚡ **Fast & Lightweight** - Single binary deployment with optimized image collection
+  queries
 
 ## Quick Start
 
@@ -156,7 +158,8 @@ includes images extracted from PDFs:
 ```bash
 $ weave document list MyCollection --virtual
 
-✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from 15 total documents):
+✅ Found 3 virtual documents in collection 'MyCollection' (aggregated from 15 total
+documents):
 
 1. 📄 Document: research_paper.pdf
    📝 Chunks: 3/3
@@ -187,11 +190,17 @@ $ weave document list MyCollection --virtual
 ```
 
 **Key Features:**
-- **Cross-collection aggregation**: Automatically finds and includes images from corresponding image collections
-- **Smart grouping**: Images are grouped with their source documents (PDFs, presentations, etc.)
-- **Complete view**: Shows both text chunks and extracted images in one unified view
-- **Collection mapping**: Maps document collections to image collections (e.g., `MyDocs` → `MyImages`)
-- **Performance optimized**: Excludes large base64 image data from queries for fast listing and counting
+
+- **Cross-collection aggregation**: Automatically finds and includes images from
+  corresponding image collections
+- **Smart grouping**: Images are grouped with their source documents (PDFs,
+  presentations, etc.)
+- **Complete view**: Shows both text chunks and extracted images in one unified
+  view
+- **Collection mapping**: Maps document collections to image collections (e.g.,
+  `MyDocs` → `MyImages`)
+- **Performance optimized**: Excludes large base64 image data from queries for
+  fast listing and counting
 
 ### Visual Styling
 
@@ -270,5 +279,6 @@ This project is licensed under the MIT License - see the
 ## Acknowledgments
 
 - Built with [Cobra](https://github.com/spf13/cobra) CLI framework
-- Uses [Weaviate Go Client](https://github.com/weaviate/weaviate-go-client) for database operations
+- Uses [Weaviate Go Client](https://github.com/weaviate/weaviate-go-client) for database
+  operations
 - Inspired by RAGme.io's tools/vdb.sh script

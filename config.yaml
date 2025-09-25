@@ -41,7 +41,7 @@ databases:
           type: "image"
           description: "Mock image documents collection"
 
-# Additional databases can be added here
+  # Additional databases can be added here
   # production:
   #   type: "weaviate-cloud"
   #   weaviate_cloud:

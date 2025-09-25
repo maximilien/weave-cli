@@ -36,7 +36,7 @@ func Get() Info {
 // String returns a formatted version string
 func String() string {
 	info := Get()
-	
+
 	// Format build time if it's not "unknown"
 	var buildTimeStr string
 	if info.BuildTime != "unknown" {
@@ -48,13 +48,13 @@ func String() string {
 	} else {
 		buildTimeStr = "unknown"
 	}
-	
+
 	// Short git commit (first 7 characters)
 	gitCommitShort := info.GitCommit
 	if len(gitCommitShort) > 7 {
 		gitCommitShort = gitCommitShort[:7]
 	}
-	
+
 	return fmt.Sprintf("Weave CLI %s\n"+
 		"  Git Commit: %s\n"+
 		"  Build Time: %s\n"+

@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/maximilien/weave-cli/src/pkg/version"
 )
 
 var (
@@ -61,7 +61,7 @@ func init() {
 
 	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
-	
+
 	// Override the default version template
 	rootCmd.SetVersionTemplate(version.String())
 }

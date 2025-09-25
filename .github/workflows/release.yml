@@ -4,7 +4,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
@@ -34,23 +34,24 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           GIT_COMMIT=$(git rev-parse HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
+
           # Build flags for version information
-          LDFLAGS="-X github.com/maximilien/weave-cli/src/pkg/version.Version=$VERSION"
-          LDFLAGS="$LDFLAGS -X github.com/maximilien/weave-cli/src/pkg/version.GitCommit=$GIT_COMMIT"
-          LDFLAGS="$LDFLAGS -X github.com/maximilien/weave-cli/src/pkg/version.BuildTime=$BUILD_TIME"
+          VERSION_PKG="github.com/maximilien/weave-cli/src/pkg/version"
+          LDFLAGS="-X $VERSION_PKG.Version=$VERSION"
+          LDFLAGS="$LDFLAGS -X $VERSION_PKG.GitCommit=$GIT_COMMIT"
+          LDFLAGS="$LDFLAGS -X $VERSION_PKG.BuildTime=$BUILD_TIME"
 
           # Build for different platforms
-          GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-linux-amd64 \
-            ./src/main.go
-          GOOS=linux GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/weave-linux-arm64 \
-            ./src/main.go
-          GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-amd64 \
-            ./src/main.go
-          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-arm64 \
-            ./src/main.go
-          GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-windows-amd64.exe \
-            ./src/main.go
+          GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" \
+            -o dist/weave-linux-amd64 ./src/main.go
+          GOOS=linux GOARCH=arm64 go build -ldflags "$LDFLAGS" \
+            -o dist/weave-linux-arm64 ./src/main.go
+          GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" \
+            -o dist/weave-darwin-amd64 ./src/main.go
+          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" \
+            -o dist/weave-darwin-arm64 ./src/main.go
+          GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" \
+            -o dist/weave-windows-amd64.exe ./src/main.go
 
           # Make binaries executable
           chmod +x dist/weave-*
