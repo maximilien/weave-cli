@@ -7,6 +7,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/maximilien/weave-cli/src/pkg/version"
 )
 
 var (
@@ -35,7 +36,7 @@ This tool provides commands following a consistent pattern:
 
 The tool uses ./config.yaml and ./.env files by default, or you can specify
 custom locations with --config and --env flags.`,
-	Version: "0.0.5",
+	Version: version.Get().Version,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -58,8 +59,11 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&noTruncate, "no-truncate", false, "show all data without truncation")
 
-	// Add version flag
+	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
+	
+	// Override the default version template
+	rootCmd.SetVersionTemplate(version.String())
 }
 
 // initConfig reads in config file and ENV variables if set.

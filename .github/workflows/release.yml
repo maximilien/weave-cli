@@ -30,16 +30,26 @@ jobs:
           # Create build directory
           mkdir -p dist
 
+          # Get version information from git tag
+          VERSION=${GITHUB_REF#refs/tags/v}
+          GIT_COMMIT=$(git rev-parse HEAD)
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Build flags for version information
+          LDFLAGS="-X github.com/maximilien/weave-cli/src/pkg/version.Version=$VERSION"
+          LDFLAGS="$LDFLAGS -X github.com/maximilien/weave-cli/src/pkg/version.GitCommit=$GIT_COMMIT"
+          LDFLAGS="$LDFLAGS -X github.com/maximilien/weave-cli/src/pkg/version.BuildTime=$BUILD_TIME"
+
           # Build for different platforms
-          GOOS=linux GOARCH=amd64 go build -o dist/weave-linux-amd64 \
+          GOOS=linux GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-linux-amd64 \
             ./src/main.go
-          GOOS=linux GOARCH=arm64 go build -o dist/weave-linux-arm64 \
+          GOOS=linux GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/weave-linux-arm64 \
             ./src/main.go
-          GOOS=darwin GOARCH=amd64 go build -o dist/weave-darwin-amd64 \
+          GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-amd64 \
             ./src/main.go
-          GOOS=darwin GOARCH=arm64 go build -o dist/weave-darwin-arm64 \
+          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-arm64 \
             ./src/main.go
-          GOOS=windows GOARCH=amd64 go build -o dist/weave-windows-amd64.exe \
+          GOOS=windows GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-windows-amd64.exe \
             ./src/main.go
 
           # Make binaries executable

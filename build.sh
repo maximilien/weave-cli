@@ -95,9 +95,28 @@ build_cli() {
     # Create bin directory if it doesn't exist
     mkdir -p bin
     
-    # Build the CLI binary
+    # Get version information from git
+    print_status "Getting version information from git..."
+    VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+    GIT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%SZ")
+    
+    # Clean version string (remove 'v' prefix if present)
+    if [[ $VERSION == v* ]]; then
+        VERSION=${VERSION#v}
+    fi
+    
+    print_status "Version: $VERSION"
+    print_status "Git Commit: ${GIT_COMMIT:0:7}"
+    print_status "Build Time: $BUILD_TIME"
+    
+    # Build the CLI binary with version information
     print_status "Building CLI binary..."
-    if ! go build -o bin/weave ./src/main.go; then
+    LDFLAGS="-X github.com/maximilien/weave-cli/src/pkg/version.Version=$VERSION"
+    LDFLAGS="$LDFLAGS -X github.com/maximilien/weave-cli/src/pkg/version.GitCommit=$GIT_COMMIT"
+    LDFLAGS="$LDFLAGS -X github.com/maximilien/weave-cli/src/pkg/version.BuildTime=$BUILD_TIME"
+    
+    if ! go build -ldflags "$LDFLAGS" -o bin/weave ./src/main.go; then
         print_error "CLI build failed"
         exit 1
     fi
@@ -136,20 +155,33 @@ clean_build() {
 create_build_info() {
     print_status "Creating build information..."
     
+    # Get version information
+    VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+    GIT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+    BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date +"%Y-%m-%dT%H:%M:%SZ")
+    
+    # Clean version string (remove 'v' prefix if present)
+    if [[ $VERSION == v* ]]; then
+        VERSION=${VERSION#v}
+    fi
+    
     BUILD_INFO_FILE="bin/build-info.txt"
     cat > "$BUILD_INFO_FILE" << EOF
 Weave CLI Build Information
 =============================
 
+Version: $VERSION
 Build Date: $(date)
+Build Time: $BUILD_TIME
 Build Host: $(hostname)
 Git Branch: $(git branch --show-current 2>/dev/null || echo "unknown")
-Git Commit: $(git rev-parse HEAD 2>/dev/null || echo "unknown")
+Git Commit: $GIT_COMMIT
 Git Status: $(git status --porcelain 2>/dev/null | wc -l | xargs echo) files changed
 
 CLI Build:
 $(if [ -f "bin/weave" ]; then
     echo "  Status: Built"
+    echo "  Version: $VERSION"
     echo "  Go Version: $(go version 2>/dev/null || echo "unknown")"
     echo "  Binary: bin/weave ($(stat -f%z bin/weave 2>/dev/null | numfmt --to=iec || echo "unknown"))"
 else
