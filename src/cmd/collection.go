@@ -719,11 +719,18 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 
 	if documentCount > 0 {
 		// Get sample document for metadata analysis (just one document)
+		// Use ListDocuments but get the first document ID, then use GetDocument for accurate data
 		sampleDocuments, err := client.ListDocuments(ctx, collectionName, 1)
 		if err != nil {
 			printWarning(fmt.Sprintf("Could not retrieve sample document: %v", err))
 		} else if len(sampleDocuments) > 0 {
-			sampleDoc := sampleDocuments[0]
+			// Get the actual document with full data using GetDocument
+			sampleDoc, err := client.GetDocument(ctx, collectionName, sampleDocuments[0].ID)
+			if err != nil {
+				printWarning(fmt.Sprintf("Could not retrieve full sample document: %v", err))
+				// Fall back to the basic document from ListDocuments
+				sampleDoc = &sampleDocuments[0]
+			}
 			printStyledEmoji("📋")
 			fmt.Printf(" ")
 			printStyledKeyProminent("Sample Document Metadata")
@@ -768,7 +775,7 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 				fmt.Printf(" ")
 				printStyledKeyProminent("Sample Document Content")
 				fmt.Println()
-				
+
 				// Check if this is image content (base64 data)
 				if isImageContent(sampleDoc.Content) {
 					fmt.Printf("  📷 Image Document (Base64 encoded)\n")
@@ -1199,7 +1206,6 @@ func isMockImageDocument(doc mock.Document) bool {
 	return false
 }
 
-
 // truncateMetadataValue truncates a metadata value to prevent massive dumps
 func truncateMetadataValue(value interface{}, maxLength int) string {
 	valueStr := fmt.Sprintf("%v", value)
@@ -1222,27 +1228,27 @@ func isImageContent(content string) bool {
 	if len(content) < 20 {
 		return false
 	}
-	
+
 	// Common base64 image prefixes
 	imagePrefixes := []string{
 		"data:image/",
-		"/9j/", // JPEG
+		"/9j/",        // JPEG
 		"iVBORw0KGgo", // PNG
-		"R0lGOD", // GIF
-		"UklGR", // WebP
+		"R0lGOD",      // GIF
+		"UklGR",       // WebP
 	}
-	
+
 	for _, prefix := range imagePrefixes {
 		if strings.HasPrefix(content, prefix) {
 			return true
 		}
 	}
-	
+
 	// Check if it's a long base64 string (likely image data)
 	if len(content) > 1000 && isBase64String(content) {
 		return true
 	}
-	
+
 	return false
 }
 
@@ -1251,7 +1257,7 @@ func isImageDocument(metadata map[string]interface{}) bool {
 	if metadata == nil {
 		return false
 	}
-	
+
 	// Check for image-related metadata fields
 	imageFields := []string{"content_type", "file_type", "type", "mime_type"}
 	for _, field := range imageFields {
@@ -1262,7 +1268,7 @@ func isImageDocument(metadata map[string]interface{}) bool {
 			}
 		}
 	}
-	
+
 	// Check for image-related field names
 	for key := range metadata {
 		keyLower := strings.ToLower(key)
@@ -1270,7 +1276,7 @@ func isImageDocument(metadata map[string]interface{}) bool {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -1278,11 +1284,11 @@ func isImageDocument(metadata map[string]interface{}) bool {
 func isBase64String(s string) bool {
 	// Base64 characters: A-Z, a-z, 0-9, +, /, =
 	base64Chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
-	
+
 	if len(s) == 0 {
 		return false
 	}
-	
+
 	// Check if most characters are base64 characters
 	base64Count := 0
 	for _, char := range s {
@@ -1290,7 +1296,7 @@ func isBase64String(s string) bool {
 			base64Count++
 		}
 	}
-	
+
 	// If more than 90% of characters are base64 characters, likely base64
 	return float64(base64Count)/float64(len(s)) > 0.9
 }
