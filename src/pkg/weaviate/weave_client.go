@@ -51,6 +51,11 @@ func (wc *WeaveClient) ListDocuments(ctx context.Context, collectionName string,
 	return wc.Client.ListDocuments(ctx, collectionName, limit)
 }
 
+// CountDocuments delegates to the official client
+func (wc *WeaveClient) CountDocuments(ctx context.Context, collectionName string) (int, error) {
+	return wc.Client.CountDocuments(ctx, collectionName)
+}
+
 // GetDocument delegates to the official client
 func (wc *WeaveClient) GetDocument(ctx context.Context, collectionName, documentID string) (*Document, error) {
 	return wc.Client.GetDocument(ctx, collectionName, documentID)

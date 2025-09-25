@@ -160,6 +160,51 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 	return c.listDocumentsBasic(ctx, collectionName, limit)
 }
 
+// CountDocuments efficiently counts documents in a collection without fetching content
+// This is much faster than ListDocuments for large collections with heavy data
+func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int, error) {
+	// Use Weaviate's aggregation API to count documents efficiently
+	// This doesn't fetch the actual document content, just counts them
+	query := fmt.Sprintf(`
+		query {
+			Aggregate {
+				%s {
+					meta {
+						count
+					}
+				}
+			}
+		}
+	`, collectionName)
+
+	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count documents in collection %s: %w", collectionName, err)
+	}
+
+	// Extract count from the result
+	if result.Errors != nil && len(result.Errors) > 0 {
+		return 0, fmt.Errorf("graphql errors: %v", result.Errors)
+	}
+
+	// Parse the aggregation result
+	if result.Data != nil {
+		if aggregateData, ok := result.Data["Aggregate"].(map[string]interface{}); ok {
+			if collectionData, ok := aggregateData[collectionName].([]interface{}); ok && len(collectionData) > 0 {
+				if metaData, ok := collectionData[0].(map[string]interface{}); ok {
+					if countData, ok := metaData["meta"].(map[string]interface{}); ok {
+						if count, ok := countData["count"].(float64); ok {
+							return int(count), nil
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return 0, fmt.Errorf("failed to parse count result for collection %s", collectionName)
+}
+
 // isImageCollection checks if a collection name suggests it contains images
 func isImageCollection(collectionName string) bool {
 	imageKeywords := []string{"image", "img", "photo", "picture", "visual"}

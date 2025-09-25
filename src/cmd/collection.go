@@ -301,14 +301,10 @@ func listWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			// Show virtual structure summary
 			showCollectionVirtualSummary(ctx, client, collection)
 		} else {
-			// Show regular document count
-			documents, err := client.ListDocuments(ctx, collection, 1000) // Use 1000 as a reasonable limit for counting
+			// Show regular document count using efficient method
+			count, err := client.CountDocuments(ctx, collection)
 			if err == nil {
-				if len(documents) >= 1000 {
-					fmt.Printf("   Documents: %d+ (showing first 1000)\n", len(documents))
-				} else {
-					fmt.Printf("   Documents: %d\n", len(documents))
-				}
+				fmt.Printf("   Documents: %d\n", count)
 			} else {
 				fmt.Printf("   Documents: Unable to count\n")
 			}
@@ -657,14 +653,12 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		return
 	}
 
-	// Get document count
-	allDocuments, err := client.ListDocuments(ctx, collectionName, 10000) // High limit to get count
+	// Get document count using efficient method
+	documentCount, err := client.CountDocuments(ctx, collectionName)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to get document count: %v", err))
 		return
 	}
-
-	documentCount := len(allDocuments)
 
 	// Display collection information with styling
 	printStyledEmoji("📊")
@@ -712,67 +706,72 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 	fmt.Println()
 
 	if documentCount > 0 {
-		// Get sample document for metadata analysis
-		sampleDoc := allDocuments[0]
-		printStyledEmoji("📋")
-		fmt.Printf(" ")
-		printStyledKeyProminent("Sample Document Metadata")
-		fmt.Println()
-		if len(sampleDoc.Metadata) > 0 {
-			metadataCount := 0
-			for key, value := range sampleDoc.Metadata {
-				if metadataCount >= shortLines {
-					remainingFields := len(sampleDoc.Metadata) - shortLines
-					fmt.Printf("... (truncated, %d more metadata fields)\n", remainingFields)
-					break
-				}
+		// Get sample document for metadata analysis (just one document)
+		sampleDocuments, err := client.ListDocuments(ctx, collectionName, 1)
+		if err != nil {
+			printWarning(fmt.Sprintf("Could not retrieve sample document: %v", err))
+		} else if len(sampleDocuments) > 0 {
+			sampleDoc := sampleDocuments[0]
+			printStyledEmoji("📋")
+			fmt.Printf(" ")
+			printStyledKeyProminent("Sample Document Metadata")
+			fmt.Println()
+			if len(sampleDoc.Metadata) > 0 {
+				metadataCount := 0
+				for key, value := range sampleDoc.Metadata {
+					if metadataCount >= shortLines {
+						remainingFields := len(sampleDoc.Metadata) - shortLines
+						fmt.Printf("... (truncated, %d more metadata fields)\n", remainingFields)
+						break
+					}
 
-				var displayValue string
+					var displayValue string
+					if noTruncate {
+						displayValue = fmt.Sprintf("%v", value)
+					} else {
+						displayValue = truncateMetadataValue(value, 100) // Limit each value to 100 chars
+					}
+
+					// Style the key-value pair directly
+					fmt.Printf("  - ")
+					printStyledKeyProminent(key)
+					fmt.Printf(": ")
+					if key == "id" {
+						printStyledID(displayValue)
+					} else {
+						printStyledValueDimmed(displayValue)
+					}
+					fmt.Println()
+					metadataCount++
+				}
+			} else {
+				printStyledKey("  No metadata available")
+				fmt.Println()
+			}
+			fmt.Println()
+
+			// Show sample content
+			if len(sampleDoc.Content) > 0 {
+				printStyledEmoji("📄")
+				fmt.Printf(" ")
+				printStyledKeyProminent("Sample Document Content")
+				fmt.Println()
 				if noTruncate {
-					displayValue = fmt.Sprintf("%v", value)
+					fmt.Printf("%s\n", sampleDoc.Content)
 				} else {
-					displayValue = truncateMetadataValue(value, 100) // Limit each value to 100 chars
-				}
-
-				// Style the key-value pair directly
-				fmt.Printf("  - ")
-				printStyledKeyProminent(key)
-				fmt.Printf(": ")
-				if key == "id" {
-					printStyledID(displayValue)
-				} else {
-					printStyledValueDimmed(displayValue)
+					contentLines := strings.Split(sampleDoc.Content, "\n")
+					maxLines := shortLines
+					if len(contentLines) > maxLines {
+						for i := 0; i < maxLines; i++ {
+							fmt.Printf("%s\n", contentLines[i])
+						}
+						fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
+					} else {
+						fmt.Printf("%s\n", sampleDoc.Content)
+					}
 				}
 				fmt.Println()
-				metadataCount++
 			}
-		} else {
-			printStyledKey("  No metadata available")
-			fmt.Println()
-		}
-		fmt.Println()
-
-		// Show sample content
-		if len(sampleDoc.Content) > 0 {
-			printStyledEmoji("📄")
-			fmt.Printf(" ")
-			printStyledKeyProminent("Sample Document Content")
-			fmt.Println()
-			if noTruncate {
-				fmt.Printf("%s\n", sampleDoc.Content)
-			} else {
-				contentLines := strings.Split(sampleDoc.Content, "\n")
-				maxLines := shortLines
-				if len(contentLines) > maxLines {
-					for i := 0; i < maxLines; i++ {
-						fmt.Printf("%s\n", contentLines[i])
-					}
-					fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
-				} else {
-					fmt.Printf("%s\n", sampleDoc.Content)
-				}
-			}
-			fmt.Println()
 		}
 	}
 

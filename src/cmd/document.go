@@ -999,13 +999,14 @@ func countWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 		return 0, fmt.Errorf("failed to create client: %w", err)
 	}
 
-	// Get documents with a high limit to count them all
-	documents, err := client.ListDocuments(ctx, collectionName, 10000) // High limit to get all documents
+	// Use the efficient CountDocuments method that doesn't fetch document content
+	// This is much faster for collections with large data like base64 images
+	count, err := client.CountDocuments(ctx, collectionName)
 	if err != nil {
-		return 0, fmt.Errorf("failed to list documents: %w", err)
+		return 0, fmt.Errorf("failed to count documents: %w", err)
 	}
 
-	return len(documents), nil
+	return count, nil
 }
 
 func countMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
