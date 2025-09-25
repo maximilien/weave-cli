@@ -207,6 +207,12 @@ weave document list MyCollection
 # List documents with virtual view
 weave document list MyCollection --virtual
 
+# Count documents in a single collection
+weave document count MyCollection
+
+# Count documents in multiple collections
+weave document count RagMeDocs RagMeImages
+
 # Show a specific document
 weave document show MyCollection document-id
 
@@ -230,7 +236,70 @@ weave col delete MyCol  # Same as: weave collection delete MyCol
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
+weave doc c MyCol       # Same as: weave document count MyCol
+weave docs c MyCol      # Same as: weave document count MyCol
+weave docs c RagMeDocs RagMeImages  # Count multiple collections
 weave doc show MyCol ID # Same as: weave document show MyCol ID
+```
+
+## Document Count Command
+
+The `weave document count` command (alias: `weave docs c`) allows you to count
+documents in one or more collections efficiently.
+
+### Single Collection Count
+
+```bash
+# Count documents in a single collection
+weave document count MyCollection
+
+# Using alias
+weave docs c MyCollection
+
+# Example output:
+# ✅ Found 150 documents in collection 'MyCollection'
+```
+
+### Multiple Collections Count
+
+```bash
+# Count documents in multiple collections
+weave document count RagMeDocs RagMeImages
+
+# Using alias
+weave docs c RagMeDocs RagMeImages
+
+# Example output:
+# 📊 Document Count: 2 Collections
+# 
+# Counting documents in weaviate-cloud database...
+# 
+# 1. RagMeDocs: 150 documents
+# 2. RagMeImages: 75 documents
+# 
+# ✅ Total documents across 2 collections: 225
+```
+
+### Error Handling
+
+If a collection doesn't exist or there's an error accessing it, the command will
+show an error for that specific collection but continue processing others:
+
+```bash
+# Example with one failing collection
+weave docs c RagMeDocs NonExistentCollection RagMeImages
+
+# Output:
+# 📊 Document Count: 3 Collections
+# 
+# Counting documents in weaviate-cloud database...
+# 
+# 1. RagMeDocs: 150 documents
+# 2. NonExistentCollection: ERROR - Collection 'NonExistentCollection' not found
+# 3. RagMeImages: 75 documents
+# 
+# ✅ Total documents across 2 collections: 225
+# ⚠️ Failed to count 1 collection(s)
 ```
 
 ## Document Display
@@ -520,10 +589,16 @@ weave health check
 # 3. List collections
 weave collection list
 
-# 4. List documents in a collection
+# 4. Count documents in collections
+weave document count MyCollection
+
+# 5. Count documents in multiple collections
+weave document count RagMeDocs RagMeImages
+
+# 6. List documents in a collection
 weave document list MyCollection
 
-# 5. View documents in virtual format
+# 7. View documents in virtual format
 weave document list MyCollection --virtual
 ```
 
@@ -559,8 +634,8 @@ collections=$(weave collection list --no-color --quiet)
 for collection in $collections; do
     echo "Processing collection: $collection"
     
-    # Get document count
-    count=$(weave document list "$collection" --no-color --quiet | wc -l)
+    # Get document count (more efficient than listing all documents)
+    count=$(weave document count "$collection" --no-color --quiet | grep -o '[0-9]\+' | tail -1)
     echo "Documents in $collection: $count"
 done
 ```
@@ -571,8 +646,11 @@ done
 # Log collection status
 weave collection list --no-color >> /var/log/weave-collections.log
 
-# Monitor document counts
-weave document list MyCollection --no-color --quiet >> /var/log/weave-documents.log
+# Monitor document counts (more efficient)
+weave document count MyCollection --no-color --quiet >> /var/log/weave-documents.log
+
+# Monitor multiple collections
+weave document count RagMeDocs RagMeImages --no-color --quiet >> /var/log/weave-documents.log
 
 # Health check monitoring
 weave health check --no-color >> /var/log/weave-health.log

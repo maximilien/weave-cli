@@ -96,13 +96,19 @@ delete ALL documents in the specified collection. Use with caution!`,
 
 // documentCountCmd represents the document count command
 var documentCountCmd = &cobra.Command{
-	Use:     "count COLLECTION_NAME",
+	Use:     "count COLLECTION_NAME [COLLECTION_NAME...]",
 	Aliases: []string{"c"},
-	Short:   "Count documents in a collection",
-	Long: `Count the number of documents in a specific collection.
+	Short:   "Count documents in one or more collections",
+	Long: `Count the number of documents in one or more collections.
 
-This command returns the total number of documents in the specified collection.`,
-	Args: cobra.ExactArgs(1),
+This command returns the total number of documents in the specified collection(s).
+You can specify multiple collections to get counts for each one.
+
+Examples:
+  weave docs c MyCollection
+  weave docs c RagMeDocs RagMeImages
+  weave docs c Collection1 Collection2 Collection3`,
+	Args: cobra.MinimumNArgs(1),
 	Run:  runDocumentCount,
 }
 
@@ -892,7 +898,7 @@ func deleteAllMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 func runDocumentCount(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
-	collectionName := args[0]
+	collectionNames := args
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -901,9 +907,6 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader(fmt.Sprintf("Document Count: %s", collectionName))
-	fmt.Println()
-
 	// Get default database (for now, we'll use default for document operations)
 	dbConfig, err := cfg.GetDefaultDatabase()
 	if err != nil {
@@ -911,30 +914,83 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	ctx := context.Background()
+
+	// Handle single collection (backward compatibility)
+	if len(collectionNames) == 1 {
+		collectionName := collectionNames[0]
+		printHeader(fmt.Sprintf("Document Count: %s", collectionName))
+		fmt.Println()
+
+		color.New(color.FgCyan, color.Bold).Printf("Counting documents in %s database...\n", dbConfig.Type)
+		fmt.Println()
+
+		var count int
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud:
+			count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
+		case config.VectorDBTypeLocal:
+			count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
+		case config.VectorDBTypeMock:
+			count, err = countMockDocuments(ctx, dbConfig, collectionName)
+		default:
+			printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			os.Exit(1)
+		}
+
+		if err != nil {
+			printError(fmt.Sprintf("Failed to count documents: %v", err))
+			os.Exit(1)
+		}
+
+		printSuccess(fmt.Sprintf("Found %d documents in collection '%s'", count, collectionName))
+		return
+	}
+
+	// Handle multiple collections
+	printHeader(fmt.Sprintf("Document Count: %d Collections", len(collectionNames)))
+	fmt.Println()
+
 	color.New(color.FgCyan, color.Bold).Printf("Counting documents in %s database...\n", dbConfig.Type)
 	fmt.Println()
 
-	ctx := context.Background()
+	totalCount := 0
+	successCount := 0
+	errorCount := 0
 
-	var count int
-	switch dbConfig.Type {
-	case config.VectorDBTypeCloud:
-		count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
-	case config.VectorDBTypeLocal:
-		count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
-	case config.VectorDBTypeMock:
-		count, err = countMockDocuments(ctx, dbConfig, collectionName)
-	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
-		os.Exit(1)
+	for i, collectionName := range collectionNames {
+		color.New(color.FgYellow).Printf("%d. %s: ", i+1, collectionName)
+
+		var count int
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud:
+			count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
+		case config.VectorDBTypeLocal:
+			count, err = countWeaviateDocuments(ctx, dbConfig, collectionName)
+		case config.VectorDBTypeMock:
+			count, err = countMockDocuments(ctx, dbConfig, collectionName)
+		default:
+			printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			os.Exit(1)
+		}
+
+		if err != nil {
+			color.New(color.FgRed).Printf("ERROR - %v\n", err)
+			errorCount++
+		} else {
+			color.New(color.FgGreen).Printf("%d documents\n", count)
+			totalCount += count
+			successCount++
+		}
 	}
 
-	if err != nil {
-		printError(fmt.Sprintf("Failed to count documents: %v", err))
-		os.Exit(1)
+	fmt.Println()
+	if successCount > 0 {
+		printSuccess(fmt.Sprintf("Total documents across %d collections: %d", successCount, totalCount))
 	}
-
-	printSuccess(fmt.Sprintf("Found %d documents in collection '%s'", count, collectionName))
+	if errorCount > 0 {
+		printWarning(fmt.Sprintf("Failed to count %d collection(s)", errorCount))
+	}
 }
 
 func countWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {

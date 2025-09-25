@@ -871,15 +871,15 @@ func TestCollectionCountCommand(t *testing.T) {
 
 // TestDocumentCountCommand tests the document count command functionality
 func TestDocumentCountCommand(t *testing.T) {
-	t.Run("Document Count Command Structure", func(t *testing.T) {
+	t.Run("Document Count Single Collection", func(t *testing.T) {
 		cmd := &cobra.Command{
-			Use:     "count COLLECTION_NAME",
+			Use:     "count COLLECTION_NAME [COLLECTION_NAME...]",
 			Aliases: []string{"c"},
-			Short:   "Count documents in a collection",
+			Short:   "Count documents in one or more collections",
 			Run: func(cmd *cobra.Command, args []string) {
-				// Mock count function
+				// Mock count function for single collection
 				if len(args) != 1 {
-					t.Errorf("Expected 1 argument, got %d", len(args))
+					t.Errorf("Expected 1 argument for single collection, got %d", len(args))
 				}
 				if args[0] != "TestCollection" {
 					t.Errorf("Expected 'TestCollection', got %s", args[0])
@@ -887,8 +887,38 @@ func TestDocumentCountCommand(t *testing.T) {
 			},
 		}
 
-		// Test with collection name
+		// Test with single collection name
 		cmd.SetArgs([]string{"TestCollection"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Document Count Multiple Collections", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "count COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"c"},
+			Short:   "Count documents in one or more collections",
+			Run: func(cmd *cobra.Command, args []string) {
+				// Mock count function for multiple collections
+				if len(args) < 1 {
+					t.Errorf("Expected at least 1 argument, got %d", len(args))
+				}
+				expectedCollections := []string{"RagMeDocs", "RagMeImages"}
+				if len(args) != len(expectedCollections) {
+					t.Errorf("Expected %d collections, got %d", len(expectedCollections), len(args))
+				}
+				for i, expected := range expectedCollections {
+					if args[i] != expected {
+						t.Errorf("Expected collection %d to be '%s', got '%s'", i, expected, args[i])
+					}
+				}
+			},
+		}
+
+		// Test with multiple collection names
+		cmd.SetArgs([]string{"RagMeDocs", "RagMeImages"})
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
@@ -901,13 +931,38 @@ func TestDocumentCountCommand(t *testing.T) {
 			Aliases: []string{"c"},
 			Run: func(cmd *cobra.Command, args []string) {
 				// Mock count function
-				if len(args) != 1 {
-					t.Errorf("Expected 1 argument, got %d", len(args))
+				if len(args) < 1 {
+					t.Errorf("Expected at least 1 argument, got %d", len(args))
 				}
 			},
 		}
 
 		cmd.SetArgs([]string{"TestCollection"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Document Count Three Collections", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "count COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"c"},
+			Run: func(cmd *cobra.Command, args []string) {
+				// Mock count function for three collections
+				expectedCollections := []string{"Collection1", "Collection2", "Collection3"}
+				if len(args) != len(expectedCollections) {
+					t.Errorf("Expected %d collections, got %d", len(expectedCollections), len(args))
+				}
+				for i, expected := range expectedCollections {
+					if args[i] != expected {
+						t.Errorf("Expected collection %d to be '%s', got '%s'", i, expected, args[i])
+					}
+				}
+			},
+		}
+
+		cmd.SetArgs([]string{"Collection1", "Collection2", "Collection3"})
 		err := cmd.Execute()
 		if err != nil {
 			t.Errorf("Command execution failed: %v", err)
