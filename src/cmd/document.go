@@ -942,6 +942,8 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 			// Provide more specific error messages
 			if strings.Contains(err.Error(), "does not exist") {
 				printError(fmt.Sprintf("Collection '%s' does not exist", collectionName))
+			} else if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
+				printError(fmt.Sprintf("Collection '%s' not found, check database configuration", collectionName))
 			} else {
 				printError(fmt.Sprintf("Failed to count documents: %v", err))
 			}
@@ -983,6 +985,8 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 			// Provide more specific error messages
 			if strings.Contains(err.Error(), "does not exist") {
 				color.New(color.FgRed).Printf("ERROR - Collection '%s' does not exist\n", collectionName)
+			} else if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
+				color.New(color.FgRed).Printf("ERROR - Collection '%s' not found, check database configuration\n", collectionName)
 			} else {
 				color.New(color.FgRed).Printf("ERROR - %v\n", err)
 			}
