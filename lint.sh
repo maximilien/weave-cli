@@ -127,10 +127,11 @@ else
     echo "ℹ️  No JSON files found to validate"
 fi
 
-# YAML linting
+# YAML linting (excluding GitHub Actions workflows with false positives)
 echo "📋 Checking YAML files..."
 if find . -name "*.yml" -o -name "*.yaml" | grep -q .; then
     if command_exists yamllint; then
+        # Use .yamllint config file to exclude GitHub Actions workflows with false positives
         if yamllint .; then
             print_success "YAML linting passed!"
         else
