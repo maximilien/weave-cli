@@ -150,15 +150,10 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 // Note: Currently shows document IDs only. To show actual document content/metadata,
 // we would need to implement dynamic schema discovery for each collection.
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	// For image collections, use optimized query that excludes large base64 fields
+	// For image collections, use basic method with excluded fields for performance
 	if isImageCollection(collectionName) {
-		// Try optimized query first (excludes large image fields for performance)
-		documents, err := c.listDocumentsOptimized(ctx, collectionName, limit)
-		if err == nil && len(documents) > 0 {
-			return documents, nil
-		}
-		// If optimized query fails or returns no results, fall back to simple query
-		return c.listDocumentsSimple(ctx, collectionName, limit)
+		// Use basic method which dynamically discovers schema and excludes large fields
+		return c.listDocumentsBasic(ctx, collectionName, limit)
 	}
 
 	// Use the basic method that works reliably for text collections
@@ -194,6 +189,11 @@ func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName stri
 					content_type
 					date_added
 					file_size
+					filename
+					source_document
+					pdf_filename
+					source_type
+					processed_by
 				}
 			}
 		}
@@ -227,6 +227,18 @@ func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName stri
 					if url, ok := itemMap["url"].(string); ok {
 						doc.Metadata["url"] = url
 					}
+					if filename, ok := itemMap["filename"].(string); ok {
+						doc.Metadata["filename"] = filename
+					}
+					if sourceDocument, ok := itemMap["source_document"].(string); ok {
+						doc.Metadata["source_document"] = sourceDocument
+					}
+					if pdfFilename, ok := itemMap["pdf_filename"].(string); ok {
+						doc.Metadata["pdf_filename"] = pdfFilename
+					}
+					if sourceType, ok := itemMap["source_type"].(string); ok {
+						doc.Metadata["source_type"] = sourceType
+					}
 					if contentType, ok := itemMap["content_type"].(string); ok {
 						doc.Metadata["content_type"] = contentType
 					}
@@ -235,6 +247,9 @@ func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName stri
 					}
 					if fileSize, ok := itemMap["file_size"]; ok {
 						doc.Metadata["file_size"] = fileSize
+					}
+					if processedBy, ok := itemMap["processed_by"].(string); ok {
+						doc.Metadata["processed_by"] = processedBy
 					}
 
 					// Add metadata field if present (may contain classification info)
@@ -268,6 +283,7 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 	// Filter out large fields that cause performance issues
 	excludedFields := map[string]bool{
 		"image":       true, // Base64 image data can be very large
+		"image_data":  true, // Another image field name
 		"base64_data": true, // Alternative image field name
 		"content":     true, // Large text content
 	}

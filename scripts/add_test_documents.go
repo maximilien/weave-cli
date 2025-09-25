@@ -90,7 +90,7 @@ func main() {
 			break
 		}
 	}
-	
+
 	if vectorDBConfig == nil {
 		log.Fatal("No default vector database found")
 	}
