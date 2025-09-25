@@ -768,21 +768,44 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 				fmt.Printf(" ")
 				printStyledKeyProminent("Sample Document Content")
 				fmt.Println()
-				if noTruncate {
-					fmt.Printf("%s\n", sampleDoc.Content)
+				
+				// Check if this is image content (base64 data)
+				if isImageContent(sampleDoc.Content) {
+					fmt.Printf("  📷 Image Document (Base64 encoded)\n")
+					fmt.Printf("  📏 Content Size: %d characters\n", len(sampleDoc.Content))
+					fmt.Printf("  🔍 Preview: %s...\n", sampleDoc.Content[:min(50, len(sampleDoc.Content))])
+					if len(sampleDoc.Content) > 50 {
+						fmt.Printf("  ℹ️  Full base64 data available (use --no-truncate to see all)\n")
+					}
 				} else {
-					contentLines := strings.Split(sampleDoc.Content, "\n")
-					maxLines := shortLines
-					if len(contentLines) > maxLines {
-						for i := 0; i < maxLines; i++ {
-							fmt.Printf("%s\n", contentLines[i])
-						}
-						fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
-					} else {
+					// Regular text content
+					if noTruncate {
 						fmt.Printf("%s\n", sampleDoc.Content)
+					} else {
+						contentLines := strings.Split(sampleDoc.Content, "\n")
+						maxLines := shortLines
+						if len(contentLines) > maxLines {
+							for i := 0; i < maxLines; i++ {
+								fmt.Printf("%s\n", contentLines[i])
+							}
+							fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
+						} else {
+							fmt.Printf("%s\n", sampleDoc.Content)
+						}
 					}
 				}
 				fmt.Println()
+			} else {
+				// No content, but show if it's an image document based on metadata
+				if isImageDocument(sampleDoc.Metadata) {
+					printStyledEmoji("📄")
+					fmt.Printf(" ")
+					printStyledKeyProminent("Sample Document Content")
+					fmt.Println()
+					fmt.Printf("  📷 Image Document (no text content)\n")
+					fmt.Printf("  ℹ️  Image data stored in metadata fields\n")
+					fmt.Println()
+				}
 			}
 		}
 	}
@@ -1030,7 +1053,7 @@ func analyzeCollectionVirtualStructure(documents []interface{}) CollectionVirtua
 			}
 
 			// Check if this is an image
-			if isImageDocument(doc) {
+			if isImageDocument(doc.Metadata) {
 				summary.TotalImages++
 				groupKey := getImageGroupKey(doc)
 				imageMap[groupKey] = true
@@ -1176,30 +1199,6 @@ func isMockImageDocument(doc mock.Document) bool {
 	return false
 }
 
-// isImageDocument checks if a document represents an image
-func isImageDocument(doc weaviate.Document) bool {
-	// Check for image field
-	if _, hasImage := doc.Metadata["image"]; hasImage {
-		return true
-	}
-
-	// Check metadata for image-related fields
-	if metadata, ok := doc.Metadata["metadata"]; ok {
-		if metadataStr, ok := metadata.(string); ok {
-			var metadataObj map[string]interface{}
-			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
-				if _, hasBase64Data := metadataObj["base64_data"]; hasBase64Data {
-					return true
-				}
-				if _, hasClassification := metadataObj["classification"]; hasClassification {
-					return true
-				}
-			}
-		}
-	}
-
-	return false
-}
 
 // truncateMetadataValue truncates a metadata value to prevent massive dumps
 func truncateMetadataValue(value interface{}, maxLength int) string {
@@ -1214,6 +1213,94 @@ func truncateMetadataValue(value interface{}, maxLength int) string {
 	truncated := valueStr[:maxLength]
 	remainingChars := len(valueStr) - maxLength
 	return fmt.Sprintf("%s... (truncated, %d more characters)", truncated, remainingChars)
+}
+
+// isImageContent checks if content appears to be base64 encoded image data
+func isImageContent(content string) bool {
+	// Check if content looks like base64 data (starts with common image prefixes)
+	content = strings.TrimSpace(content)
+	if len(content) < 20 {
+		return false
+	}
+	
+	// Common base64 image prefixes
+	imagePrefixes := []string{
+		"data:image/",
+		"/9j/", // JPEG
+		"iVBORw0KGgo", // PNG
+		"R0lGOD", // GIF
+		"UklGR", // WebP
+	}
+	
+	for _, prefix := range imagePrefixes {
+		if strings.HasPrefix(content, prefix) {
+			return true
+		}
+	}
+	
+	// Check if it's a long base64 string (likely image data)
+	if len(content) > 1000 && isBase64String(content) {
+		return true
+	}
+	
+	return false
+}
+
+// isImageDocument checks if metadata indicates this is an image document
+func isImageDocument(metadata map[string]interface{}) bool {
+	if metadata == nil {
+		return false
+	}
+	
+	// Check for image-related metadata fields
+	imageFields := []string{"content_type", "file_type", "type", "mime_type"}
+	for _, field := range imageFields {
+		if value, exists := metadata[field]; exists {
+			valueStr := strings.ToLower(fmt.Sprintf("%v", value))
+			if strings.Contains(valueStr, "image") {
+				return true
+			}
+		}
+	}
+	
+	// Check for image-related field names
+	for key := range metadata {
+		keyLower := strings.ToLower(key)
+		if strings.Contains(keyLower, "image") || strings.Contains(keyLower, "base64") {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// isBase64String checks if a string appears to be base64 encoded
+func isBase64String(s string) bool {
+	// Base64 characters: A-Z, a-z, 0-9, +, /, =
+	base64Chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+	
+	if len(s) == 0 {
+		return false
+	}
+	
+	// Check if most characters are base64 characters
+	base64Count := 0
+	for _, char := range s {
+		if strings.ContainsRune(base64Chars, char) {
+			base64Count++
+		}
+	}
+	
+	// If more than 90% of characters are base64 characters, likely base64
+	return float64(base64Count)/float64(len(s)) > 0.9
+}
+
+// min returns the minimum of two integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // confirmAction prompts the user for confirmation
