@@ -939,11 +939,18 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
+			verbose, _ := cmd.Flags().GetBool("verbose")
 			// Provide more specific error messages
 			if strings.Contains(err.Error(), "does not exist") {
 				printError(fmt.Sprintf("Collection '%s' does not exist", collectionName))
+				if verbose {
+					printWarning(fmt.Sprintf("Details: %v", err))
+				}
 			} else if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
 				printError(fmt.Sprintf("Collection '%s' not found, check database configuration", collectionName))
+				if verbose {
+					printWarning(fmt.Sprintf("Details: %v", err))
+				}
 			} else {
 				printError(fmt.Sprintf("Failed to count documents: %v", err))
 			}
@@ -982,11 +989,18 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
+			verbose, _ := cmd.Flags().GetBool("verbose")
 			// Provide more specific error messages
 			if strings.Contains(err.Error(), "does not exist") {
 				color.New(color.FgRed).Printf("ERROR - Collection '%s' does not exist\n", collectionName)
+				if verbose {
+					color.New(color.FgYellow).Printf("  Details: %v\n", err)
+				}
 			} else if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
 				color.New(color.FgRed).Printf("ERROR - Collection '%s' not found, check database configuration\n", collectionName)
+				if verbose {
+					color.New(color.FgYellow).Printf("  Details: %v\n", err)
+				}
 			} else {
 				color.New(color.FgRed).Printf("ERROR - %v\n", err)
 			}

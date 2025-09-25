@@ -553,7 +553,11 @@ func runCollectionCount(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
+		verbose, _ := cmd.Flags().GetBool("verbose")
 		printError(fmt.Sprintf("Failed to count collections: %v", err))
+		if verbose {
+			printWarning(fmt.Sprintf("Details: %v", err))
+		}
 		os.Exit(1)
 	}
 
@@ -626,11 +630,12 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 
 	ctx := context.Background()
 
+	verbose, _ := cmd.Flags().GetBool("verbose")
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose)
 	case config.VectorDBTypeLocal:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose)
 	case config.VectorDBTypeMock:
 		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
 	default:
@@ -639,7 +644,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	}
 }
 
-func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool) {
+func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool) {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -649,7 +654,14 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 	// Check if collection exists by trying to list documents
 	_, err = client.ListDocuments(ctx, collectionName, 1) // Just get 1 to check existence
 	if err != nil {
-		printError(fmt.Sprintf("Collection '%s' not found or error accessing it: %v", collectionName, err))
+		if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
+			printError(fmt.Sprintf("Collection '%s' not found", collectionName))
+		} else {
+			printError(fmt.Sprintf("Collection '%s' not found or error accessing it: %v", collectionName, err))
+		}
+		if verbose {
+			printWarning(fmt.Sprintf("Details: %v", err))
+		}
 		return
 	}
 
