@@ -17,7 +17,7 @@ applications.
 - 📋 **Virtual Document View** - Aggregate chunked documents by original file with cross-collection image support
 - 🎯 **Smart Truncation** - Intelligent content truncation with `--no-truncate` option
 - 🌈 **Color Control** - `--no-color` flag for terminal compatibility
-- ⚡ **Fast & Lightweight** - Single binary deployment
+- ⚡ **Fast & Lightweight** - Single binary deployment with optimized image collection queries
 
 ## Quick Start
 
@@ -191,6 +191,7 @@ $ weave document list MyCollection --virtual
 - **Smart grouping**: Images are grouped with their source documents (PDFs, presentations, etc.)
 - **Complete view**: Shows both text chunks and extracted images in one unified view
 - **Collection mapping**: Maps document collections to image collections (e.g., `MyDocs` → `MyImages`)
+- **Performance optimized**: Excludes large base64 image data from queries for fast listing and counting
 
 ### Visual Styling
 

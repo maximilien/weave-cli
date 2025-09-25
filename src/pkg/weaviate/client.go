@@ -150,16 +150,16 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 // Note: Currently shows document IDs only. To show actual document content/metadata,
 // we would need to implement dynamic schema discovery for each collection.
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	// Temporarily disable image collection optimization to get metadata for virtual aggregation
-	// if isImageCollection(collectionName) {
-	// 	// Try optimized query first
-	// 	documents, err := c.listDocumentsOptimized(ctx, collectionName, limit)
-	// 	if err == nil && len(documents) > 0 {
-	// 		return documents, nil
-	// 	}
-	// 	// If optimized query fails or returns no results, fall back to simple query
-	// 	return c.listDocumentsSimple(ctx, collectionName, limit)
-	// }
+	// For image collections, use optimized query that excludes large base64 fields
+	if isImageCollection(collectionName) {
+		// Try optimized query first (excludes large image fields for performance)
+		documents, err := c.listDocumentsOptimized(ctx, collectionName, limit)
+		if err == nil && len(documents) > 0 {
+			return documents, nil
+		}
+		// If optimized query fails or returns no results, fall back to simple query
+		return c.listDocumentsSimple(ctx, collectionName, limit)
+	}
 
 	// Use the basic method that works reliably for text collections
 	return c.listDocumentsBasic(ctx, collectionName, limit)
@@ -178,8 +178,10 @@ func isImageCollection(collectionName string) bool {
 }
 
 // listDocumentsOptimized fetches documents with ID and essential fields for virtual aggregation
+// Excludes large base64 image fields for better performance
 func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName string, limit int) ([]Document, error) {
 	// Build a query that includes ID and specific fields needed for virtual document aggregation
+	// Excludes 'image', 'image_data', and 'base64_data' fields to avoid performance issues
 	query := fmt.Sprintf(`
 		{
 			Get {
@@ -188,13 +190,10 @@ func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName stri
 						id
 					}
 					url
-					filename
-					source_document
-					pdf_filename
-					source_type
+					metadata
 					content_type
 					date_added
-					processed_by
+					file_size
 				}
 			}
 		}
@@ -228,27 +227,24 @@ func (c *Client) listDocumentsOptimized(ctx context.Context, collectionName stri
 					if url, ok := itemMap["url"].(string); ok {
 						doc.Metadata["url"] = url
 					}
-					if filename, ok := itemMap["filename"].(string); ok {
-						doc.Metadata["filename"] = filename
-					}
-					if sourceDocument, ok := itemMap["source_document"].(string); ok {
-						doc.Metadata["source_document"] = sourceDocument
-					}
-					if pdfFilename, ok := itemMap["pdf_filename"].(string); ok {
-						doc.Metadata["pdf_filename"] = pdfFilename
-					}
-					if sourceType, ok := itemMap["source_type"].(string); ok {
-						doc.Metadata["source_type"] = sourceType
-					}
 					if contentType, ok := itemMap["content_type"].(string); ok {
 						doc.Metadata["content_type"] = contentType
 					}
 					if dateAdded, ok := itemMap["date_added"].(string); ok {
 						doc.Metadata["date_added"] = dateAdded
 					}
-					if processedBy, ok := itemMap["processed_by"].(string); ok {
-						doc.Metadata["processed_by"] = processedBy
+					if fileSize, ok := itemMap["file_size"]; ok {
+						doc.Metadata["file_size"] = fileSize
 					}
+
+					// Add metadata field if present (may contain classification info)
+					if metadata, ok := itemMap["metadata"]; ok {
+						doc.Metadata["metadata"] = metadata
+					}
+
+					// Add placeholders for excluded large fields to indicate they exist
+					doc.Metadata["image"] = "[base64 data excluded for performance]"
+					doc.Metadata["image_data"] = "[base64 data excluded for performance]"
 
 					doc.Content = fmt.Sprintf("Document ID: %s", doc.ID)
 					documents = append(documents, doc)
@@ -341,6 +337,15 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 								}
 							}
 						}
+					}
+
+					// Add placeholders for excluded large fields to indicate they exist
+					if isImageCollection(collectionName) {
+						doc.Metadata["image"] = "[base64 data excluded for performance]"
+						doc.Metadata["base64_data"] = "[base64 data excluded for performance]"
+					}
+					if doc.Metadata["content"] == nil {
+						doc.Metadata["content"] = "[large content excluded for performance]"
 					}
 
 					// If no content found, create a summary
