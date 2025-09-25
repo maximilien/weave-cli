@@ -12,6 +12,8 @@ backgroundImage: url('https://marp.app/assets/hero-background.svg')
 
 **A powerful command-line tool for managing Weaviate vector databases**
 
+**Maximilien.ai** 
+
 ---
 
 # What is Weave CLI?
