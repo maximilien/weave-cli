@@ -20,9 +20,12 @@ type Client struct {
 
 // Document represents a mock document
 type Document struct {
-	ID       string                 `json:"id"`
-	Content  string                 `json:"content"`
-	Metadata map[string]interface{} `json:"metadata"`
+	ID        string                 `json:"id"`
+	Content   string                 `json:"content"`
+	Image     string                 `json:"image"`
+	ImageData string                 `json:"image_data"`
+	URL       string                 `json:"url"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // NewClient creates a new mock client
@@ -399,5 +402,27 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 	// Create empty collection
 	c.collections[collectionName] = []Document{}
 
+	return nil
+}
+
+// CreateDocument creates a new document in the specified collection
+func (c *Client) CreateDocument(ctx context.Context, collectionName string, document Document) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Check if collection exists
+	if _, exists := c.collections[collectionName]; !exists {
+		return fmt.Errorf("collection '%s' does not exist", collectionName)
+	}
+
+	// Check if document ID already exists
+	for _, existingDoc := range c.collections[collectionName] {
+		if existingDoc.ID == document.ID {
+			return fmt.Errorf("document with ID '%s' already exists in collection '%s'", document.ID, collectionName)
+		}
+	}
+
+	// Add document to collection
+	c.collections[collectionName] = append(c.collections[collectionName], document)
 	return nil
 }

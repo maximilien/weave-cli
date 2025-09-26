@@ -641,3 +641,65 @@ func (wc *WeaveClient) deleteObjectViaREST(ctx context.Context, objectID string)
 func (wc *WeaveClient) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
 	return wc.Client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
 }
+
+// CreateDocument creates a new document in the specified collection
+func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string, document Document) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Construct the REST API URL
+	baseURL := strings.TrimSuffix(wc.config.URL, "/")
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	url := fmt.Sprintf("%s/v1/objects", baseURL)
+
+	// Create the document payload
+	payload := map[string]interface{}{
+		"class": collectionName,
+		"properties": map[string]interface{}{
+			"content":   document.Content,
+			"image":     document.Image,
+			"image_data": document.ImageData,
+			"url":       document.URL,
+			"metadata":  document.Metadata,
+		},
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal document payload: %w", err)
+	}
+
+	// Create the POST request
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add headers
+	if wc.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+wc.config.APIKey)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Make the request
+	resp, err := wc.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to create document: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Check response status
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to create document: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
+	return nil
+}

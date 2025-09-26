@@ -939,9 +939,12 @@ func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName stri
 
 // Document represents a document in Weaviate
 type Document struct {
-	ID       string                 `json:"id"`
-	Content  string                 `json:"content"`
-	Metadata map[string]interface{} `json:"metadata"`
+	ID        string                 `json:"id"`
+	Content   string                 `json:"content"`
+	Image     string                 `json:"image"`
+	ImageData string                 `json:"image_data"`
+	URL       string                 `json:"url"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // GetCollectionSchema returns the schema for a collection

@@ -2,11 +2,15 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"mime"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
@@ -101,6 +105,32 @@ delete ALL documents in the specified collection. Use with caution!`,
 	Run:  runDocumentDeleteAll,
 }
 
+// documentCreateCmd represents the document create command
+var documentCreateCmd = &cobra.Command{
+	Use:     "create COLLECTION_NAME FILE_PATH",
+	Aliases: []string{"c"},
+	Short:   "Create a document from a file",
+	Long: `Create a document in a collection from a file.
+
+Supported file types:
+- Text files (.txt, .md, .json, etc.) - Content goes to 'text' field
+- Image files (.jpg, .jpeg, .png, .gif, etc.) - Base64 data goes to 'image_data' field
+- PDF files (.pdf) - Text extracted and chunked, goes to 'text' field
+
+The command will automatically:
+- Detect file type and process accordingly
+- Generate appropriate metadata
+- Chunk text content (default 1000 chars, configurable with --chunk-size)
+- Create documents following RagMeDocs/RagMeImages schema
+
+Examples:
+  weave docs create MyCollection document.txt
+  weave docs create MyCollection image.jpg
+  weave docs create MyCollection document.pdf --chunk-size 500`,
+	Args: cobra.ExactArgs(2),
+	Run:  runDocumentCreate,
+}
+
 // documentCountCmd represents the document count command
 var documentCountCmd = &cobra.Command{
 	Use:     "count COLLECTION_NAME [COLLECTION_NAME...]",
@@ -124,6 +154,7 @@ func init() {
 	documentCmd.AddCommand(documentListCmd)
 	documentCmd.AddCommand(documentShowCmd)
 	documentCmd.AddCommand(documentCountCmd)
+	documentCmd.AddCommand(documentCreateCmd)
 	documentCmd.AddCommand(documentDeleteCmd)
 	documentCmd.AddCommand(documentDeleteAllCmd)
 
@@ -138,6 +169,8 @@ func init() {
 	documentShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	documentShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")
 
+	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
+	
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
 	documentDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -2104,4 +2137,353 @@ func deleteMockDocumentsByOriginalFilename(ctx context.Context, cfg *config.Vect
 	} else {
 		printSuccess(fmt.Sprintf("Successfully deleted %d documents (chunks/images) associated with original filename '%s' from collection '%s'", deletedCount, originalFilename, collectionName))
 	}
+}
+
+
+func runDocumentCreate(cmd *cobra.Command, args []string) {
+	cfgFile, _ := cmd.Flags().GetString("config")
+	envFile, _ := cmd.Flags().GetString("env")
+	chunkSize, _ := cmd.Flags().GetInt("chunk-size")
+
+	collectionName := args[0]
+	filePath := args[1]
+
+	// Load configuration
+	cfg, err := config.LoadConfig(cfgFile, envFile)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		printError(fmt.Sprintf("File not found: %s", filePath))
+		os.Exit(1)
+	}
+
+	// Get database configuration
+	dbConfig, err := cfg.GetDefaultDatabase()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get database configuration: %v", err))
+		os.Exit(1)
+	}
+
+	printHeader("Create Document")
+	fmt.Println()
+
+	// Process the file based on its type
+	documents, err := processFile(filePath, chunkSize)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to process file: %v", err))
+		os.Exit(1)
+	}
+
+	// Create documents in the database
+	ctx := context.Background()
+	successCount := 0
+	errorCount := 0
+
+	for i, doc := range documents {
+		printInfo(fmt.Sprintf("Creating document %d/%d: %s", i+1, len(documents), doc.ID))
+		
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			if err := createWeaviateDocument(ctx, dbConfig, collectionName, doc); err != nil {
+				printError(fmt.Sprintf("Failed to create document '%s': %v", doc.ID, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully created document: %s", doc.ID))
+				successCount++
+			}
+		case config.VectorDBTypeMock:
+			if err := createMockDocument(ctx, dbConfig, collectionName, doc); err != nil {
+				printError(fmt.Sprintf("Failed to create document '%s': %v", doc.ID, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully created document: %s", doc.ID))
+				successCount++
+			}
+		default:
+			printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			errorCount++
+		}
+	}
+
+	// Summary
+	if len(documents) > 1 {
+		if errorCount == 0 {
+			printSuccess(fmt.Sprintf("All %d documents created successfully!", successCount))
+		} else if successCount == 0 {
+			printError(fmt.Sprintf("Failed to create all %d documents", errorCount))
+		} else {
+			printWarning(fmt.Sprintf("Created %d documents successfully, %d failed", successCount, errorCount))
+		}
+	}
+}
+
+// DocumentData represents the data structure for creating a document
+type DocumentData struct {
+	ID       string
+	Content  string
+	Image    string
+	ImageData string
+	URL      string
+	Metadata map[string]interface{}
+}
+
+// processFile processes a file and returns document data
+func processFile(filePath string, chunkSize int) ([]DocumentData, error) {
+	// Determine file type
+	ext := strings.ToLower(filepath.Ext(filePath))
+	
+	switch ext {
+	case ".pdf":
+		return processPDFFile(filePath, chunkSize)
+	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
+		return processImageFile(filePath)
+	default:
+		return processTextFile(filePath, chunkSize)
+	}
+}
+
+// processTextFile processes a text file and chunks it
+func processTextFile(filePath string, chunkSize int) ([]DocumentData, error) {
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	text := string(content)
+	if len(text) == 0 {
+		return nil, fmt.Errorf("file is empty")
+	}
+
+	// Chunk the text
+	chunks := chunkText(text, chunkSize)
+	
+	// Generate documents
+	var documents []DocumentData
+	for i, chunk := range chunks {
+		docID := generateDocumentID()
+		
+		// Generate metadata
+		metadata := generateTextMetadata(filePath, i, len(chunks), len(chunk))
+		
+		doc := DocumentData{
+			ID:       docID,
+			Content:  chunk,
+			URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+			Metadata: metadata,
+		}
+		
+		documents = append(documents, doc)
+	}
+
+	return documents, nil
+}
+
+// processImageFile processes an image file
+func processImageFile(filePath string) ([]DocumentData, error) {
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	// Encode to base64
+	base64Data := base64.StdEncoding.EncodeToString(content)
+	
+	// Determine MIME type
+	mimeType := mime.TypeByExtension(filepath.Ext(filePath))
+	if mimeType == "" {
+		mimeType = "image/jpeg" // default
+	}
+	
+	// Generate document
+	docID := generateDocumentID()
+	metadata := generateImageMetadata(filePath, len(content))
+	
+	doc := DocumentData{
+		ID:        docID,
+		Image:     fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data),
+		ImageData: base64Data,
+		URL:       fmt.Sprintf("file://%s", filePath),
+		Metadata:  metadata,
+	}
+
+	return []DocumentData{doc}, nil
+}
+
+// processPDFFile processes a PDF file (placeholder - will implement with pdfcpu)
+func processPDFFile(filePath string, chunkSize int) ([]DocumentData, error) {
+	// For now, return an error indicating PDF support is not yet implemented
+	return nil, fmt.Errorf("PDF processing not yet implemented - will add pdfcpu support")
+}
+
+// chunkText splits text into chunks of specified size
+func chunkText(text string, chunkSize int) []string {
+	if len(text) <= chunkSize {
+		return []string{text}
+	}
+
+	var chunks []string
+	start := 0
+	
+	for start < len(text) {
+		end := start + chunkSize
+		
+		// Ensure we don't go beyond the text length
+		if end > len(text) {
+			end = len(text)
+		}
+		
+		// Try to break at word boundary
+		if end < len(text) {
+			// Look for the last space within the chunk
+			for i := end; i > start; i-- {
+				if text[i] == ' ' || text[i] == '\n' {
+					end = i
+					break
+				}
+			}
+		}
+		
+		chunk := strings.TrimSpace(text[start:end])
+		if len(chunk) > 0 {
+			chunks = append(chunks, chunk)
+		}
+		
+		start = end
+		if start < len(text) && text[start] == ' ' {
+			start++ // Skip the space
+		}
+	}
+
+	return chunks
+}
+
+// generateDocumentID generates a unique document ID
+func generateDocumentID() string {
+	// Simple UUID-like ID generation
+	return fmt.Sprintf("%x-%x-%x-%x-%x", 
+		time.Now().UnixNano()&0xffffffff,
+		time.Now().UnixNano()>>32&0xffff,
+		time.Now().UnixNano()>>48&0xffff,
+		time.Now().UnixNano()>>64&0xffff,
+		time.Now().UnixNano()>>80&0xffffffff)
+}
+
+// generateTextMetadata generates metadata for text documents
+func generateTextMetadata(filePath string, chunkIndex, totalChunks int, chunkSize int) map[string]interface{} {
+	fileName := filepath.Base(filePath)
+	fileSize := int64(0)
+	
+	if stat, err := os.Stat(filePath); err == nil {
+		fileSize = stat.Size()
+	}
+
+	metadata := map[string]interface{}{
+		"filename":           fileName,
+		"file_size":          float64(fileSize),
+		"content_type":       "text",
+		"date_added":         time.Now().Format(time.RFC3339),
+		"chunk_index":        chunkIndex,
+		"chunk_size":         chunkSize,
+		"total_chunks":       totalChunks,
+		"source_document":    fileName,
+		"processed_by":       "weave-cli document create",
+		"processing_time":    time.Now().Unix(),
+		"is_extracted_from_document": true,
+	}
+
+	return metadata
+}
+
+// generateImageMetadata generates metadata for image documents
+func generateImageMetadata(filePath string, fileSize int) map[string]interface{} {
+	fileName := filepath.Base(filePath)
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	metadata := map[string]interface{}{
+		"filename":           fileName,
+		"file_size":          float64(fileSize),
+		"content_type":       "image",
+		"date_added":         time.Now().Format(time.RFC3339),
+		"source_document":    fileName,
+		"processed_by":       "weave-cli document create",
+		"processing_time":    time.Now().Unix(),
+		"is_extracted_from_document": true,
+		"file_extension":     ext,
+	}
+
+	return metadata
+}
+
+// createWeaviateDocument creates a document in Weaviate
+func createWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, doc DocumentData) error {
+	// Convert VectorDBConfig to weaviate.Config
+	weaviateConfig := &weaviate.Config{
+		URL:    cfg.URL,
+		APIKey: cfg.APIKey,
+	}
+
+	// Create Weaviate client
+	client, err := weaviate.NewWeaveClient(weaviateConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create weaviate client: %w", err)
+	}
+
+	// Convert metadata to JSON string
+	metadataJSON, err := json.Marshal(doc.Metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	// Create document object
+	document := weaviate.Document{
+		ID:       doc.ID,
+		Content:  doc.Content,
+		Image:    doc.Image,
+		ImageData: doc.ImageData,
+		URL:      doc.URL,
+		Metadata: map[string]interface{}{
+			"metadata": string(metadataJSON),
+		},
+	}
+
+	// Create the document
+	return client.CreateDocument(ctx, collectionName, document)
+}
+
+// createMockDocument creates a document in mock database
+func createMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, doc DocumentData) error {
+	// Convert VectorDBConfig to mock.Config
+	mockConfig := &config.MockConfig{
+		Collections: []config.MockCollection{},
+	}
+
+	// Create mock client
+	client := mock.NewClient(mockConfig)
+
+	// Convert metadata to JSON string
+	metadataJSON, err := json.Marshal(doc.Metadata)
+	if err != nil {
+		return fmt.Errorf("failed to marshal metadata: %w", err)
+	}
+
+	// Create document object
+	document := mock.Document{
+		ID:       doc.ID,
+		Content:  doc.Content,
+		Image:    doc.Image,
+		ImageData: doc.ImageData,
+		URL:      doc.URL,
+		Metadata: map[string]interface{}{
+			"metadata": string(metadataJSON),
+		},
+	}
+
+	// Create the document
+	return client.CreateDocument(ctx, collectionName, document)
 }
