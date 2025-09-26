@@ -79,8 +79,8 @@ You can customize the collection by specifying custom fields and embedding model
 
 Examples:
   weave cols create MyCollection
-  weave cols create MyCollection --embedding text-embedding-ada-002
-  weave cols create MyCollection --field title:text,content:text,metadata:object`,
+  weave cols create MyCollection --embedding text-embedding-3-small
+  weave cols create MyCollection --field title:text,content:text,metadata:text`,
 	Args: cobra.ExactArgs(1),
 	Run:  runCollectionCreate,
 }
@@ -126,7 +126,7 @@ func init() {
 	collectionListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
 	collectionListCmd.Flags().BoolP("virtual", "w", false, "Show collections with virtual structure summary (chunks, images, stacks)")
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
-	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-ada-002", "Embedding model to use for the collection")
+	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
 }
 

@@ -2,6 +2,7 @@ package weaviate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -157,25 +158,98 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	// For now, we'll use a simple approach that creates a basic collection
-	// This is a placeholder implementation - in a real scenario, you would need
-	// to properly construct the Weaviate class schema using the REST API
-
 	// Check if collection already exists
 	collections, err := c.ListCollections(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to check existing collections: %w", err)
 	}
-
+	
 	for _, existingCollection := range collections {
 		if existingCollection == collectionName {
 			return fmt.Errorf("collection '%s' already exists", collectionName)
 		}
 	}
 
-	// For now, we'll just return success since we don't have a proper schema creation method
-	// In a real implementation, you would use the Weaviate REST API to create the class
-	return fmt.Errorf("collection creation not yet implemented - please create collections manually in Weaviate")
+	// Create the collection using Weaviate's REST API
+	err = c.createCollectionViaREST(ctx, collectionName, embeddingModel, customFields)
+	if err != nil {
+		return fmt.Errorf("failed to create collection '%s': %w", collectionName, err)
+	}
+
+	return nil
+}
+
+// createCollectionViaREST creates a collection using Weaviate's REST API
+func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
+	// Build the class schema
+	classSchema := map[string]interface{}{
+		"class":      collectionName,
+		"vectorizer": "text2vec-openai",
+		"moduleConfig": map[string]interface{}{
+			"text2vec-openai": map[string]interface{}{
+				"model": embeddingModel,
+			},
+		},
+		"properties": []map[string]interface{}{
+			{
+				"name":     "content",
+				"dataType": []string{"text"},
+			},
+			{
+				"name":     "metadata",
+				"dataType": []string{"text"},
+			},
+		},
+	}
+
+	// Add custom fields if provided
+	for _, field := range customFields {
+		property := map[string]interface{}{
+			"name":     field.Name,
+			"dataType": []string{mapWeaviateDataType(field.Type)},
+		}
+		classSchema["properties"] = append(classSchema["properties"].([]map[string]interface{}), property)
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(classSchema)
+	if err != nil {
+		return fmt.Errorf("failed to marshal class schema: %w", err)
+	}
+
+	// Create HTTP request
+	url := c.config.URL + "/v1/schema"
+	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(jsonData)))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add headers
+	req.Header.Set("Content-Type", "application/json")
+	if c.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
+	}
+
+	// Make the request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response: %w", err)
+	}
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("failed to create collection: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
 
 // mapWeaviateDataType maps our field types to Weaviate data types
