@@ -332,7 +332,7 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	// Require exact "yes" confirmation
 	fmt.Print("Type 'yes' to confirm deletion: ")
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 
 	if response != "yes" {
 		printInfo("Operation cancelled - confirmation not received")

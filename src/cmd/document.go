@@ -481,7 +481,7 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	// Require exact "yes" confirmation
 	fmt.Print("Type 'yes' to confirm deletion: ")
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 
 	if response != "yes" {
 		printInfo("Operation cancelled - confirmation not received")
@@ -810,22 +810,6 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
 }
 
-func deleteWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string) {
-	client, err := createWeaviateClient(cfg)
-
-	if err != nil {
-		printError(fmt.Sprintf("Failed to create client: %v", err))
-		return
-	}
-
-	// Delete document
-	if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
-		printError(fmt.Sprintf("Failed to delete document: %v", err))
-		os.Exit(1)
-	}
-
-	printSuccess(fmt.Sprintf("Successfully deleted document '%s' from collection '%s'", documentID, collectionName))
-}
 
 func deleteMultipleWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
 	client, err := createWeaviateClient(cfg)
@@ -884,29 +868,6 @@ func deleteWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDB
 	}
 }
 
-func deleteMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string) {
-	// Convert to MockConfig for backward compatibility
-	mockConfig := &config.MockConfig{
-		Enabled:            cfg.Enabled,
-		SimulateEmbeddings: cfg.SimulateEmbeddings,
-		EmbeddingDimension: cfg.EmbeddingDimension,
-		Collections:        make([]config.MockCollection, len(cfg.Collections)),
-	}
-
-	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection(col)
-	}
-
-	client := mock.NewClient(mockConfig)
-
-	// Delete document
-	if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
-		printError(fmt.Sprintf("Failed to delete document: %v", err))
-		os.Exit(1)
-	}
-
-	printSuccess(fmt.Sprintf("Successfully deleted document '%s' from collection '%s'", documentID, collectionName))
-}
 
 func deleteMultipleMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
 	// Convert to MockConfig for backward compatibility
@@ -2365,13 +2326,14 @@ func chunkText(text string, chunkSize int) []string {
 
 // generateDocumentID generates a unique document ID
 func generateDocumentID() string {
-	// Simple UUID-like ID generation
+	// Simple UUID-like ID generation using timestamp and random components
+	now := time.Now().UnixNano()
 	return fmt.Sprintf("%x-%x-%x-%x-%x", 
-		time.Now().UnixNano()&0xffffffff,
-		time.Now().UnixNano()>>32&0xffff,
-		time.Now().UnixNano()>>48&0xffff,
-		time.Now().UnixNano()>>64&0xffff,
-		time.Now().UnixNano()>>80&0xffffffff)
+		now&0xffffffff,
+		(now>>32)&0xffff,
+		(now>>48)&0xffff,
+		(now>>16)&0xffff,
+		(now>>0)&0xffffffff)
 }
 
 // generateTextMetadata generates metadata for text documents
