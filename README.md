@@ -109,6 +109,7 @@ weave cols create MyCollection --field title:text,author:text
 ```
 
 **Supported Field Types:**
+
 - `text` - Text content
 - `int` - Integer numbers
 - `float` - Floating point numbers

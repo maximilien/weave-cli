@@ -163,7 +163,7 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 	if err != nil {
 		return fmt.Errorf("failed to check existing collections: %w", err)
 	}
-	
+
 	for _, existingCollection := range collections {
 		if existingCollection == collectionName {
 			return fmt.Errorf("collection '%s' already exists", collectionName)
@@ -313,7 +313,7 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 	}
 
 	// Extract count from the result
-	if result.Errors != nil && len(result.Errors) > 0 {
+	if len(result.Errors) > 0 {
 		// Parse GraphQL errors to provide user-friendly messages
 		for _, err := range result.Errors {
 			if err.Message != "" {
@@ -422,7 +422,7 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 	}
 
 	// Check for GraphQL errors
-	if result.Errors != nil && len(result.Errors) > 0 {
+	if len(result.Errors) > 0 {
 		// Parse GraphQL errors to provide user-friendly messages
 		for _, err := range result.Errors {
 			if err.Message != "" {
@@ -535,7 +535,7 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 	}
 
 	// Check for GraphQL errors
-	if result.Errors != nil && len(result.Errors) > 0 {
+	if len(result.Errors) > 0 {
 		// Parse GraphQL errors to provide user-friendly messages
 		for _, err := range result.Errors {
 			if err.Message != "" {
