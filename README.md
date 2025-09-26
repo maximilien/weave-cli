@@ -138,6 +138,7 @@ weave docs d MyCollection doc1 doc2 doc3 --force
 ```
 
 **Safety Features:**
+
 - Itemized lists showing exactly what will be deleted
 - Progress tracking ("Deleting item X/Y")
 - Error resilience (continues on individual failures)
@@ -161,16 +162,16 @@ Weave follows a consistent command pattern:
 - **collection** - Collection management
   - `weave collection list` - List all collections
   - `weave collection create COLLECTION_NAME` - Create a new collection
-  - `weave collection list --virtual` - Show collections with virtual structure summary
-  - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Clear one or more collections (delete all documents)
+  - `weave collection list --virtual` - Show collections with virtual structure
+  - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Clear collections
   - `weave collection delete-all` - Clear all collections (double confirmation)
 
 - **document** - Document management
   - `weave document list COLLECTION_NAME` - List documents in collection
-  - `weave document list COLLECTION_NAME --virtual` - Virtual document view
-  - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show specific document
-  - `weave document delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]` - Delete one or more documents
-  - `weave document delete-all COLLECTION_NAME` - Delete all documents in collection (double confirmation)
+  - `weave document list COLLECTION_NAME --virtual` - Virtual view
+  - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show document
+  - `weave document delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]` - Delete docs
+  - `weave document delete-all COLLECTION_NAME` - Delete all docs (double confirmation)
 
 ### Command Aliases
 

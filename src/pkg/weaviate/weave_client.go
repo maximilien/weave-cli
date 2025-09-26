@@ -658,11 +658,11 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 	payload := map[string]interface{}{
 		"class": collectionName,
 		"properties": map[string]interface{}{
-			"content":   document.Content,
-			"image":     document.Image,
+			"content":    document.Content,
+			"image":      document.Image,
 			"image_data": document.ImageData,
-			"url":       document.URL,
-			"metadata":  document.Metadata,
+			"url":        document.URL,
+			"metadata":   document.Metadata,
 		},
 	}
 

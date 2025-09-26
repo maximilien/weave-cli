@@ -170,7 +170,7 @@ func init() {
 	documentShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")
 
 	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
-	
+
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
 	documentDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -810,7 +810,6 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
 }
 
-
 func deleteMultipleWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
@@ -867,7 +866,6 @@ func deleteWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDB
 		printSuccess(fmt.Sprintf("Successfully deleted %d documents from collection '%s' matching metadata filters", deletedCount, collectionName))
 	}
 }
-
 
 func deleteMultipleMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
 	// Convert to MockConfig for backward compatibility
@@ -2100,7 +2098,6 @@ func deleteMockDocumentsByOriginalFilename(ctx context.Context, cfg *config.Vect
 	}
 }
 
-
 func runDocumentCreate(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
@@ -2146,7 +2143,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	for i, doc := range documents {
 		printInfo(fmt.Sprintf("Creating document %d/%d: %s", i+1, len(documents), doc.ID))
-		
+
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			if err := createWeaviateDocument(ctx, dbConfig, collectionName, doc); err != nil {
@@ -2184,19 +2181,19 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 // DocumentData represents the data structure for creating a document
 type DocumentData struct {
-	ID       string
-	Content  string
-	Image    string
+	ID        string
+	Content   string
+	Image     string
 	ImageData string
-	URL      string
-	Metadata map[string]interface{}
+	URL       string
+	Metadata  map[string]interface{}
 }
 
 // processFile processes a file and returns document data
 func processFile(filePath string, chunkSize int) ([]DocumentData, error) {
 	// Determine file type
 	ext := strings.ToLower(filepath.Ext(filePath))
-	
+
 	switch ext {
 	case ".pdf":
 		return processPDFFile(filePath, chunkSize)
@@ -2222,22 +2219,22 @@ func processTextFile(filePath string, chunkSize int) ([]DocumentData, error) {
 
 	// Chunk the text
 	chunks := chunkText(text, chunkSize)
-	
+
 	// Generate documents
 	var documents []DocumentData
 	for i, chunk := range chunks {
 		docID := generateDocumentID()
-		
+
 		// Generate metadata
 		metadata := generateTextMetadata(filePath, i, len(chunks), len(chunk))
-		
+
 		doc := DocumentData{
 			ID:       docID,
 			Content:  chunk,
 			URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
 			Metadata: metadata,
 		}
-		
+
 		documents = append(documents, doc)
 	}
 
@@ -2254,17 +2251,17 @@ func processImageFile(filePath string) ([]DocumentData, error) {
 
 	// Encode to base64
 	base64Data := base64.StdEncoding.EncodeToString(content)
-	
+
 	// Determine MIME type
 	mimeType := mime.TypeByExtension(filepath.Ext(filePath))
 	if mimeType == "" {
 		mimeType = "image/jpeg" // default
 	}
-	
+
 	// Generate document
 	docID := generateDocumentID()
 	metadata := generateImageMetadata(filePath, len(content))
-	
+
 	doc := DocumentData{
 		ID:        docID,
 		Image:     fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data),
@@ -2290,15 +2287,15 @@ func chunkText(text string, chunkSize int) []string {
 
 	var chunks []string
 	start := 0
-	
+
 	for start < len(text) {
 		end := start + chunkSize
-		
+
 		// Ensure we don't go beyond the text length
 		if end > len(text) {
 			end = len(text)
 		}
-		
+
 		// Try to break at word boundary
 		if end < len(text) {
 			// Look for the last space within the chunk
@@ -2309,12 +2306,12 @@ func chunkText(text string, chunkSize int) []string {
 				}
 			}
 		}
-		
+
 		chunk := strings.TrimSpace(text[start:end])
 		if len(chunk) > 0 {
 			chunks = append(chunks, chunk)
 		}
-		
+
 		start = end
 		if start < len(text) && text[start] == ' ' {
 			start++ // Skip the space
@@ -2328,7 +2325,7 @@ func chunkText(text string, chunkSize int) []string {
 func generateDocumentID() string {
 	// Simple UUID-like ID generation using timestamp and random components
 	now := time.Now().UnixNano()
-	return fmt.Sprintf("%x-%x-%x-%x-%x", 
+	return fmt.Sprintf("%x-%x-%x-%x-%x",
 		now&0xffffffff,
 		(now>>32)&0xffff,
 		(now>>48)&0xffff,
@@ -2340,22 +2337,22 @@ func generateDocumentID() string {
 func generateTextMetadata(filePath string, chunkIndex, totalChunks int, chunkSize int) map[string]interface{} {
 	fileName := filepath.Base(filePath)
 	fileSize := int64(0)
-	
+
 	if stat, err := os.Stat(filePath); err == nil {
 		fileSize = stat.Size()
 	}
 
 	metadata := map[string]interface{}{
-		"filename":           fileName,
-		"file_size":          float64(fileSize),
-		"content_type":       "text",
-		"date_added":         time.Now().Format(time.RFC3339),
-		"chunk_index":        chunkIndex,
-		"chunk_size":         chunkSize,
-		"total_chunks":       totalChunks,
-		"source_document":    fileName,
-		"processed_by":       "weave-cli document create",
-		"processing_time":    time.Now().Unix(),
+		"filename":                   fileName,
+		"file_size":                  float64(fileSize),
+		"content_type":               "text",
+		"date_added":                 time.Now().Format(time.RFC3339),
+		"chunk_index":                chunkIndex,
+		"chunk_size":                 chunkSize,
+		"total_chunks":               totalChunks,
+		"source_document":            fileName,
+		"processed_by":               "weave-cli document create",
+		"processing_time":            time.Now().Unix(),
 		"is_extracted_from_document": true,
 	}
 
@@ -2368,15 +2365,15 @@ func generateImageMetadata(filePath string, fileSize int) map[string]interface{}
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	metadata := map[string]interface{}{
-		"filename":           fileName,
-		"file_size":          float64(fileSize),
-		"content_type":       "image",
-		"date_added":         time.Now().Format(time.RFC3339),
-		"source_document":    fileName,
-		"processed_by":       "weave-cli document create",
-		"processing_time":    time.Now().Unix(),
+		"filename":                   fileName,
+		"file_size":                  float64(fileSize),
+		"content_type":               "image",
+		"date_added":                 time.Now().Format(time.RFC3339),
+		"source_document":            fileName,
+		"processed_by":               "weave-cli document create",
+		"processing_time":            time.Now().Unix(),
 		"is_extracted_from_document": true,
-		"file_extension":     ext,
+		"file_extension":             ext,
 	}
 
 	return metadata
@@ -2404,11 +2401,11 @@ func createWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 
 	// Create document object
 	document := weaviate.Document{
-		ID:       doc.ID,
-		Content:  doc.Content,
-		Image:    doc.Image,
+		ID:        doc.ID,
+		Content:   doc.Content,
+		Image:     doc.Image,
 		ImageData: doc.ImageData,
-		URL:      doc.URL,
+		URL:       doc.URL,
 		Metadata: map[string]interface{}{
 			"metadata": string(metadataJSON),
 		},
@@ -2436,11 +2433,11 @@ func createMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 	// Create document object
 	document := mock.Document{
-		ID:       doc.ID,
-		Content:  doc.Content,
-		Image:    doc.Image,
+		ID:        doc.ID,
+		Content:   doc.Content,
+		Image:     doc.Image,
 		ImageData: doc.ImageData,
-		URL:      doc.URL,
+		URL:       doc.URL,
 		Metadata: map[string]interface{}{
 			"metadata": string(metadataJSON),
 		},

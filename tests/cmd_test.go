@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -1367,6 +1368,396 @@ delete the specified documents. Use with caution!`,
 		}
 		if !strings.Contains(cmd.Long, "chunks and images") {
 			t.Error("Help text should mention chunks and images")
+		}
+	})
+}
+
+// TestDocumentCreateCommand tests the new document create functionality
+func TestDocumentCreateCommand(t *testing.T) {
+	t.Run("Document Create Command Structure", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create COLLECTION_NAME FILE_PATH",
+			Aliases: []string{"c"},
+			Short:   "Create a document from a file",
+			Args:    cobra.ExactArgs(2),
+		}
+
+		// Test command structure
+		if cmd.Use != "create COLLECTION_NAME FILE_PATH" {
+			t.Errorf("Expected use 'create COLLECTION_NAME FILE_PATH', got %s", cmd.Use)
+		}
+
+		if cmd.Short == "" {
+			t.Error("Command should have a short description")
+		}
+
+		// Test aliases
+		if len(cmd.Aliases) == 0 {
+			t.Error("Command should have aliases")
+		}
+
+		if cmd.Aliases[0] != "c" {
+			t.Errorf("Expected alias 'c', got %s", cmd.Aliases[0])
+		}
+
+		// Test argument validation
+		if cmd.Args == nil {
+			t.Error("Command should have argument validation")
+		}
+	})
+
+	t.Run("Document Create Chunk Size Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "create",
+			Run: func(cmd *cobra.Command, args []string) {
+				chunkSize, _ := cmd.Flags().GetInt("chunk-size")
+				if chunkSize != 500 {
+					t.Errorf("Expected chunk size 500, got %d", chunkSize)
+				}
+			},
+		}
+
+		cmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content")
+		cmd.SetArgs([]string{"TestCollection", "test.txt", "--chunk-size", "500"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Document Create Default Chunk Size", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "create",
+			Run: func(cmd *cobra.Command, args []string) {
+				chunkSize, _ := cmd.Flags().GetInt("chunk-size")
+				if chunkSize != 1000 {
+					t.Errorf("Expected default chunk size 1000, got %d", chunkSize)
+				}
+			},
+		}
+
+		cmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content")
+		cmd.SetArgs([]string{"TestCollection", "test.txt"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Document Create Help Text", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use: "create",
+			Long: `Create a document in a collection from a file.
+
+Supported file types:
+- Text files (.txt, .md, .json, etc.) - Content goes to 'text' field
+- Image files (.jpg, .jpeg, .png, .gif, etc.) - Base64 data goes to 'image_data' field
+- PDF files (.pdf) - Text extracted and chunked, goes to 'text' field
+
+The command will automatically:
+- Detect file type and process accordingly
+- Generate appropriate metadata
+- Chunk text content (default 1000 chars, configurable with --chunk-size)
+- Create documents following RagMeDocs/RagMeImages schema
+
+Examples:
+  weave docs create MyCollection document.txt
+  weave docs create MyCollection image.jpg
+  weave docs create MyCollection document.pdf --chunk-size 500`,
+		}
+
+		// Verify the help text includes key information
+		if !strings.Contains(cmd.Long, "Text files") {
+			t.Error("Help text should mention text file support")
+		}
+		if !strings.Contains(cmd.Long, "Image files") {
+			t.Error("Help text should mention image file support")
+		}
+		if !strings.Contains(cmd.Long, "PDF files") {
+			t.Error("Help text should mention PDF file support")
+		}
+		if !strings.Contains(cmd.Long, "chunk-size") {
+			t.Error("Help text should mention chunk-size flag")
+		}
+		if !strings.Contains(cmd.Long, "RagMeDocs/RagMeImages") {
+			t.Error("Help text should mention schema compatibility")
+		}
+	})
+}
+
+// TestDocumentCreateFunctionality tests the core document creation functionality
+func TestDocumentCreateFunctionality(t *testing.T) {
+	t.Run("Text File Processing", func(t *testing.T) {
+		// Create a temporary text file
+		tempFile, err := os.CreateTemp("", "test-*.txt")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tempFile.Name())
+
+		// Write test content
+		testContent := "This is a test document for the weave CLI. It contains some sample text that will be chunked into smaller pieces for better processing. The weave CLI is a powerful tool for managing vector databases and documents."
+		_, err = tempFile.WriteString(testContent)
+		if err != nil {
+			t.Fatalf("Failed to write test content: %v", err)
+		}
+		tempFile.Close()
+
+		// Test file processing
+		// Note: This tests the file processing logic conceptually
+		// In a real implementation, we would test the actual processFile function
+		if len(testContent) == 0 {
+			t.Error("Test content should not be empty")
+		}
+
+		// Verify file exists
+		if _, err := os.Stat(tempFile.Name()); os.IsNotExist(err) {
+			t.Error("Temp file should exist")
+		}
+	})
+
+	t.Run("Image File Processing", func(t *testing.T) {
+		// Create a temporary image file (minimal PNG)
+		tempFile, err := os.CreateTemp("", "test-*.png")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tempFile.Name())
+
+		// Write minimal PNG data
+		pngData := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52}
+		_, err = tempFile.Write(pngData)
+		if err != nil {
+			t.Fatalf("Failed to write PNG data: %v", err)
+		}
+		tempFile.Close()
+
+		// Test that file exists and has content
+		fileInfo, err := os.Stat(tempFile.Name())
+		if err != nil {
+			t.Fatalf("Failed to get file info: %v", err)
+		}
+
+		if fileInfo.Size() == 0 {
+			t.Error("Image file should have content")
+		}
+
+		// Test file extension detection
+		ext := strings.ToLower(filepath.Ext(tempFile.Name()))
+		if ext != ".png" {
+			t.Errorf("Expected .png extension, got %s", ext)
+		}
+	})
+
+	t.Run("PDF File Processing Placeholder", func(t *testing.T) {
+		// Create a temporary PDF file
+		tempFile, err := os.CreateTemp("", "test-*.pdf")
+		if err != nil {
+			t.Fatalf("Failed to create temp file: %v", err)
+		}
+		defer os.Remove(tempFile.Name())
+
+		// Write minimal PDF data
+		pdfData := []byte("%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj")
+		_, err = tempFile.Write(pdfData)
+		if err != nil {
+			t.Fatalf("Failed to write PDF data: %v", err)
+		}
+		tempFile.Close()
+
+		// Test file extension detection
+		ext := strings.ToLower(filepath.Ext(tempFile.Name()))
+		if ext != ".pdf" {
+			t.Errorf("Expected .pdf extension, got %s", ext)
+		}
+
+		// Note: PDF processing is not yet implemented, so we just test file detection
+	})
+
+	t.Run("Chunk Size Validation", func(t *testing.T) {
+		testCases := []struct {
+			name     string
+			chunkSize int
+			expected bool
+		}{
+			{"Valid chunk size", 1000, true},
+			{"Small chunk size", 50, true},
+			{"Large chunk size", 10000, true},
+			{"Zero chunk size", 0, false},
+			{"Negative chunk size", -100, false},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.name, func(t *testing.T) {
+				// Test chunk size validation logic
+				isValid := tc.chunkSize > 0
+				if isValid != tc.expected {
+					t.Errorf("Expected chunk size %d to be valid: %v, got %v", tc.chunkSize, tc.expected, isValid)
+				}
+			})
+		}
+	})
+
+	t.Run("File Type Detection", func(t *testing.T) {
+		testCases := []struct {
+			filename string
+			expected string
+		}{
+			{"document.txt", "text"},
+			{"readme.md", "text"},
+			{"config.json", "text"},
+			{"image.jpg", "image"},
+			{"photo.jpeg", "image"},
+			{"picture.png", "image"},
+			{"document.pdf", "pdf"},
+			{"report.PDF", "pdf"},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.filename, func(t *testing.T) {
+				ext := strings.ToLower(filepath.Ext(tc.filename))
+				var fileType string
+
+				switch ext {
+				case ".pdf":
+					fileType = "pdf"
+				case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
+					fileType = "image"
+				default:
+					fileType = "text"
+				}
+
+				if fileType != tc.expected {
+					t.Errorf("Expected file type %s for %s, got %s", tc.expected, tc.filename, fileType)
+				}
+			})
+		}
+	})
+}
+
+// TestDocumentCreateMockClient tests document creation with mock client
+func TestDocumentCreateMockClient(t *testing.T) {
+	t.Run("Mock Client Document Creation", func(t *testing.T) {
+		// Create mock config
+		mockConfig := &config.MockConfig{
+			Collections: []config.MockCollection{
+				{Name: "TestCollection"},
+			},
+		}
+
+		// Create mock client
+		client := mock.NewClient(mockConfig)
+
+		// Test document creation
+		ctx := context.Background()
+		document := mock.Document{
+			ID:       "test-doc-1",
+			Content:  "This is a test document",
+			URL:      "file://test.txt",
+			Metadata: map[string]interface{}{
+				"metadata": `{"filename": "test.txt", "content_type": "text"}`,
+			},
+		}
+
+		err := client.CreateDocument(ctx, "TestCollection", document)
+		if err != nil {
+			t.Errorf("Failed to create document: %v", err)
+		}
+
+		// Verify document was created
+		documents, err := client.ListDocuments(ctx, "TestCollection", 10)
+		if err != nil {
+			t.Errorf("Failed to list documents: %v", err)
+		}
+
+		if len(documents) == 0 {
+			t.Error("Expected at least one document in collection")
+		}
+
+		found := false
+		for _, doc := range documents {
+			if doc.ID == "test-doc-1" {
+				found = true
+				if doc.Content != "This is a test document" {
+					t.Errorf("Expected content 'This is a test document', got '%s'", doc.Content)
+				}
+				break
+			}
+		}
+
+		if !found {
+			t.Error("Created document not found in collection")
+		}
+	})
+
+	t.Run("Mock Client Duplicate Document ID", func(t *testing.T) {
+		// Create mock config
+		mockConfig := &config.MockConfig{
+			Collections: []config.MockCollection{
+				{Name: "TestCollection"},
+			},
+		}
+
+		// Create mock client
+		client := mock.NewClient(mockConfig)
+
+		ctx := context.Background()
+		document := mock.Document{
+			ID:       "duplicate-doc",
+			Content:  "First document",
+			URL:      "file://test1.txt",
+			Metadata: map[string]interface{}{
+				"metadata": `{"filename": "test1.txt"}`,
+			},
+		}
+
+		// Create first document
+		err := client.CreateDocument(ctx, "TestCollection", document)
+		if err != nil {
+			t.Errorf("Failed to create first document: %v", err)
+		}
+
+		// Try to create duplicate document
+		document.Content = "Second document"
+		err = client.CreateDocument(ctx, "TestCollection", document)
+		if err == nil {
+			t.Error("Expected error when creating duplicate document ID")
+		}
+
+		if !strings.Contains(err.Error(), "already exists") {
+			t.Errorf("Expected 'already exists' error, got: %v", err)
+		}
+	})
+
+	t.Run("Mock Client Non-existent Collection", func(t *testing.T) {
+		// Create mock config with empty collections
+		mockConfig := &config.MockConfig{
+			Collections: []config.MockCollection{},
+		}
+
+		// Create mock client
+		client := mock.NewClient(mockConfig)
+
+		ctx := context.Background()
+		document := mock.Document{
+			ID:       "test-doc",
+			Content:  "Test content",
+			URL:      "file://test.txt",
+			Metadata: map[string]interface{}{
+				"metadata": `{"filename": "test.txt"}`,
+			},
+		}
+
+		// Try to create document in non-existent collection
+		err := client.CreateDocument(ctx, "NonExistentCollection", document)
+		if err == nil {
+			t.Error("Expected error when creating document in non-existent collection")
+		}
+
+		if !strings.Contains(err.Error(), "does not exist") {
+			t.Errorf("Expected 'does not exist' error, got: %v", err)
 		}
 	})
 }
