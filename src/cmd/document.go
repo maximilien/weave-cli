@@ -1394,6 +1394,36 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 					continue
 				}
 			}
+			
+			// Check for chunked document using RagMeDocs metadata structure
+			if _, ok := metadataObj["chunk_index"].(float64); ok {
+				// This is a chunked document from RagMeDocs
+				// Extract original filename from URL
+				if url, ok := doc.Metadata["url"].(string); ok {
+					// Extract filename from URL like "file:///path/to/file.pdf#chunk-0"
+					parts := strings.Split(url, "#")
+					if len(parts) > 0 {
+						originalFilename := strings.TrimPrefix(parts[0], "file://")
+						originalFilename = filepath.Base(originalFilename)
+						
+						if vdoc, exists := docMap[originalFilename]; exists {
+							vdoc.Chunks = append(vdoc.Chunks, doc)
+						} else {
+							totalChunks := 0
+							if chunkSizes, ok := metadataObj["chunk_sizes"].([]interface{}); ok {
+								totalChunks = len(chunkSizes)
+							}
+							docMap[originalFilename] = &VirtualDocument{
+								OriginalFilename: originalFilename,
+								TotalChunks:      totalChunks,
+								Chunks:           []weaviate.Document{doc},
+								Metadata:         metadataObj,
+							}
+						}
+						continue
+					}
+				}
+			}
 		}
 
 		// Check if this is an image extracted from a PDF
