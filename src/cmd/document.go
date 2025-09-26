@@ -399,7 +399,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			printError(fmt.Sprintf("Failed to get default database: %v", err))
 			os.Exit(1)
 		}
-		
+
 		matchingDocs, err := findDocumentsByPattern(cfg, dbConfig, collectionName, pattern)
 		if err != nil {
 			printError(fmt.Sprintf("Failed to find documents matching pattern: %v", err))
@@ -2686,13 +2686,13 @@ func formatDocumentCreationError(docID string, err error) string {
 // findDocumentsByPattern finds documents matching a regex pattern
 func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, pattern string) ([]weaviate.Document, error) {
 	ctx := context.Background()
-	
+
 	// Compile the regex pattern
 	regex, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("invalid regex pattern: %v", err)
 	}
-	
+
 	// Create client based on database type
 	var client weaviate.WeaveClient
 	switch dbConfig.Type {
@@ -2707,13 +2707,13 @@ func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig,
 	default:
 		return nil, fmt.Errorf("unsupported database type: %s", dbConfig.Type)
 	}
-	
+
 	// Get all documents from the collection
 	allDocs, err := client.ListDocuments(ctx, collectionName, 10000) // Large limit to get all docs
 	if err != nil {
 		return nil, fmt.Errorf("failed to list documents: %v", err)
 	}
-	
+
 	// Filter documents that match the pattern
 	var matchingDocs []weaviate.Document
 	for _, doc := range allDocs {
@@ -2721,13 +2721,20 @@ func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig,
 			matchingDocs = append(matchingDocs, doc)
 		}
 	}
-	
+
 	return matchingDocs, nil
 }
 
 // matchesPattern checks if a document matches the regex pattern
 func matchesPattern(doc weaviate.Document, regex *regexp.Regexp) bool {
-	// Check filename in metadata
+	// Check filename field directly (for image documents)
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if regex.MatchString(filename) {
+			return true
+		}
+	}
+
+	// Check filename in nested metadata (for text documents)
 	if metadata, ok := doc.Metadata["metadata"]; ok {
 		if metadataStr, ok := metadata.(string); ok {
 			var metadataObj map[string]interface{}
@@ -2740,21 +2747,14 @@ func matchesPattern(doc weaviate.Document, regex *regexp.Regexp) bool {
 			}
 		}
 	}
-	
-	// Check URL
+
+	// Check URL field
 	if url, ok := doc.Metadata["url"].(string); ok {
 		if regex.MatchString(url) {
 			return true
 		}
 	}
-	
-	// Check filename field directly
-	if filename, ok := doc.Metadata["filename"].(string); ok {
-		if regex.MatchString(filename) {
-			return true
-		}
-	}
-	
+
 	return false
 }
 
@@ -2771,17 +2771,17 @@ func getDocumentDisplayName(doc weaviate.Document) string {
 			}
 		}
 	}
-	
+
 	// Try URL
 	if url, ok := doc.Metadata["url"].(string); ok {
 		return url
 	}
-	
+
 	// Try filename field directly
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		return filename
 	}
-	
+
 	// Fallback to ID
 	return doc.ID
 }
@@ -2794,18 +2794,18 @@ func deleteWeaviateDocumentsByPattern(ctx context.Context, dbConfig *config.Vect
 		printError(fmt.Sprintf("Failed to find documents: %v", err))
 		return
 	}
-	
+
 	if len(matchingDocs) == 0 {
 		printInfo("No documents found matching pattern")
 		return
 	}
-	
+
 	// Extract document IDs
 	var docIDs []string
 	for _, doc := range matchingDocs {
 		docIDs = append(docIDs, doc.ID)
 	}
-	
+
 	// Delete the documents
 	deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, docIDs)
 }
