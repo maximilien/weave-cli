@@ -1439,19 +1439,37 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 			}
 		}
 
-		// Check if this is an image extracted from a PDF
-		groupKey := getImageGroupKey(doc)
-
-		if vdoc, exists := docMap[groupKey]; exists {
-			// Add to existing group
-			vdoc.Chunks = append(vdoc.Chunks, doc)
+		// Check if this is an image document that should be grouped with its source
+		if isImageDocumentFromMetadata(doc.Metadata) {
+			groupKey := getImageGroupKey(doc)
+			
+			if vdoc, exists := docMap[groupKey]; exists {
+				// Add to existing group
+				vdoc.Chunks = append(vdoc.Chunks, doc)
+			} else {
+				// Create new group
+				docMap[groupKey] = &VirtualDocument{
+					OriginalFilename: groupKey,
+					TotalChunks:      0, // Images are not chunks
+					Chunks:           []weaviate.Document{doc},
+					Metadata:         doc.Metadata,
+				}
+			}
 		} else {
-			// Create new group
-			docMap[groupKey] = &VirtualDocument{
-				OriginalFilename: groupKey,
-				TotalChunks:      0, // Images are not chunks
-				Chunks:           []weaviate.Document{doc},
-				Metadata:         doc.Metadata,
+			// For standalone documents, use URL or filename as key
+			groupKey := getStandaloneDocumentKey(doc)
+			
+			if vdoc, exists := docMap[groupKey]; exists {
+				// Add to existing group
+				vdoc.Chunks = append(vdoc.Chunks, doc)
+			} else {
+				// Create new group
+				docMap[groupKey] = &VirtualDocument{
+					OriginalFilename: groupKey,
+					TotalChunks:      0,
+					Chunks:           []weaviate.Document{doc},
+					Metadata:         doc.Metadata,
+				}
 			}
 		}
 	}
@@ -1518,6 +1536,74 @@ func getImageCollectionName(collectionName string) string {
 	return collectionName + "Images"
 }
 
+// isImageDocumentFromMetadata checks if a document is an image based on metadata
+func isImageDocumentFromMetadata(metadata map[string]interface{}) bool {
+	if metadata == nil {
+		return false
+	}
+	
+	// Check metadata for image indicators
+	if metadataField, ok := metadata["metadata"]; ok {
+		if metadataStr, ok := metadataField.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				// Check for image content type
+				if contentType, ok := metadataObj["content_type"].(string); ok {
+					if contentType == "image" {
+						return true
+					}
+				}
+				// Check for source type indicating PDF extracted image
+				if sourceType, ok := metadataObj["source_type"].(string); ok {
+					if sourceType == "pdf_extracted_image" {
+						return true
+					}
+				}
+			}
+		}
+	}
+	
+	// Check URL for image indicators
+	if url, ok := metadata["url"].(string); ok {
+		if strings.HasSuffix(strings.ToLower(url), ".png") || 
+		   strings.HasSuffix(strings.ToLower(url), ".jpg") || 
+		   strings.HasSuffix(strings.ToLower(url), ".jpeg") || 
+		   strings.HasSuffix(strings.ToLower(url), ".gif") || 
+		   strings.HasSuffix(strings.ToLower(url), ".bmp") {
+			return true
+		}
+	}
+	
+	// Check filename for image indicators
+	if filename, ok := metadata["filename"].(string); ok {
+		if strings.HasSuffix(strings.ToLower(filename), ".png") || 
+		   strings.HasSuffix(strings.ToLower(filename), ".jpg") || 
+		   strings.HasSuffix(strings.ToLower(filename), ".jpeg") || 
+		   strings.HasSuffix(strings.ToLower(filename), ".gif") || 
+		   strings.HasSuffix(strings.ToLower(filename), ".bmp") {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// getStandaloneDocumentKey determines the grouping key for standalone documents
+func getStandaloneDocumentKey(doc weaviate.Document) string {
+	// Use URL as primary key
+	if url, ok := doc.Metadata["url"].(string); ok {
+		return url
+	}
+	
+	// Use filename as fallback
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		return filename
+	}
+	
+	// Fallback
+	return "Unknown Document"
+}
+
 // getImageGroupKey determines the grouping key for an image document
 func getImageGroupKey(doc weaviate.Document) string {
 	// Check if this is an image extracted from a PDF
@@ -1525,9 +1611,24 @@ func getImageGroupKey(doc weaviate.Document) string {
 		if metadataStr, ok := metadata.(string); ok {
 			var metadataObj map[string]interface{}
 			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
-				// Check for PDF filename
+				// Check for PDF filename (RagMeDocs format)
 				if pdfFilename, ok := metadataObj["pdf_filename"].(string); ok {
 					return pdfFilename
+				}
+				// Check for source document (RagMeDocs format)
+				if sourceDoc, ok := metadataObj["source_document"].(string); ok {
+					return sourceDoc
+				}
+				// Check for source type to confirm it's from PDF
+				if sourceType, ok := metadataObj["source_type"].(string); ok {
+					if sourceType == "pdf_extracted_image" {
+						// Try to extract PDF name from filename
+						if filename, ok := metadataObj["filename"].(string); ok {
+							// For tmp files like "tmp00cnn9fb_p23_i0.png", we need to find the source PDF
+							// This should be handled by pdf_filename or source_document above
+							return filename
+						}
+					}
 				}
 			}
 		}
