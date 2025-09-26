@@ -236,15 +236,15 @@ weave col delete MyCol  # Same as: weave collection delete MyCol
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
-weave doc c MyCol       # Same as: weave document count MyCol
-weave docs c MyCol      # Same as: weave document count MyCol
-weave docs c RagMeDocs RagMeImages  # Count multiple collections
+weave doc C MyCol       # Same as: weave document count MyCol
+weave docs C MyCol      # Same as: weave document count MyCol
+weave docs C RagMeDocs RagMeImages  # Count multiple collections
 weave doc show MyCol ID # Same as: weave document show MyCol ID
 ```
 
 ## Document Count Command
 
-The `weave document count` command (alias: `weave docs c`) allows you to count
+The `weave document count` command (alias: `weave docs C`) allows you to count
 documents in one or more collections efficiently.
 
 ### Single Collection Count
@@ -254,7 +254,7 @@ documents in one or more collections efficiently.
 weave document count MyCollection
 
 # Using alias
-weave docs c MyCollection
+weave docs C MyCollection
 
 # Example output:
 # ✅ Found 150 documents in collection 'MyCollection'
@@ -267,7 +267,7 @@ weave docs c MyCollection
 weave document count RagMeDocs RagMeImages
 
 # Using alias
-weave docs c RagMeDocs RagMeImages
+weave docs C RagMeDocs RagMeImages
 
 # Example output:
 # 📊 Document Count: 2 Collections
@@ -287,7 +287,7 @@ show an error for that specific collection but continue processing others:
 
 ```bash
 # Example with one failing collection
-weave docs c RagMeDocs NonExistentCollection RagMeImages
+weave docs C RagMeDocs NonExistentCollection RagMeImages
 
 # Output:
 # 📊 Document Count: 3 Collections

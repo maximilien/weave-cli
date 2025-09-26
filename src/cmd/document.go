@@ -97,7 +97,7 @@ delete ALL documents in the specified collection. Use with caution!`,
 // documentCountCmd represents the document count command
 var documentCountCmd = &cobra.Command{
 	Use:     "count COLLECTION_NAME [COLLECTION_NAME...]",
-	Aliases: []string{"c"},
+	Aliases: []string{"C"},
 	Short:   "Count documents in one or more collections",
 	Long: `Count the number of documents in one or more collections.
 
@@ -105,9 +105,9 @@ This command returns the total number of documents in the specified collection(s
 You can specify multiple collections to get counts for each one.
 
 Examples:
-  weave docs c MyCollection
-  weave docs c RagMeDocs RagMeImages
-  weave docs c Collection1 Collection2 Collection3`,
+  weave docs C MyCollection
+  weave docs C RagMeDocs RagMeImages
+  weave docs C Collection1 Collection2 Collection3`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runDocumentCount,
 }

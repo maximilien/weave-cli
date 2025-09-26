@@ -70,7 +70,7 @@ delete all data in all collections. Use with caution!`,
 // collectionCountCmd represents the collection count command
 var collectionCountCmd = &cobra.Command{
 	Use:     "count [database-name]",
-	Aliases: []string{"c"},
+	Aliases: []string{"C"},
 	Short:   "Count collections",
 	Long: `Count the number of collections in the configured vector database.
 
