@@ -11,6 +11,7 @@ databases:
       type: "weaviate-cloud"
       url: "${WEAVIATE_URL}"
       api_key: "${WEAVIATE_API_KEY}"
+      openai_api_key: "${OPENAI_API_KEY}"
       collections:
         - name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
           type: "text"

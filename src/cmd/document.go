@@ -2384,8 +2384,9 @@ func generateImageMetadata(filePath string, fileSize int) map[string]interface{}
 func createWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, doc DocumentData) error {
 	// Convert VectorDBConfig to weaviate.Config
 	weaviateConfig := &weaviate.Config{
-		URL:    cfg.URL,
-		APIKey: cfg.APIKey,
+		URL:          cfg.URL,
+		APIKey:       cfg.APIKey,
+		OpenAIAPIKey: cfg.OpenAIAPIKey,
 	}
 
 	// Create Weaviate client

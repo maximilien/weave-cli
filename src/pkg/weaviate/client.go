@@ -27,8 +27,9 @@ type Client struct {
 
 // Config holds Weaviate client configuration
 type Config struct {
-	URL    string
-	APIKey string
+	URL          string
+	APIKey       string
+	OpenAIAPIKey string
 }
 
 // NewClient creates a new Weaviate client
@@ -58,7 +59,7 @@ func NewClient(config *Config) (*Client, error) {
 				Value: config.APIKey,
 			},
 			Headers: map[string]string{
-				"X-OpenAI-Api-Key": config.APIKey,
+				"X-Openai-Api-Key": config.OpenAIAPIKey,
 			},
 		})
 	} else {

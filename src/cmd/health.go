@@ -132,8 +132,9 @@ func checkWeaviateCloudHealth(ctx context.Context, cfg *config.VectorDBConfig) (
 
 	// Create client
 	client, err := weaviate.NewClient(&weaviate.Config{
-		URL:    cfg.URL,
-		APIKey: cfg.APIKey,
+		URL:          cfg.URL,
+		APIKey:       cfg.APIKey,
+		OpenAIAPIKey: cfg.OpenAIAPIKey,
 	})
 	if err != nil {
 		return false, fmt.Sprintf("Failed to create Weaviate client: %v", err)
@@ -154,7 +155,8 @@ func checkWeaviateLocalHealth(ctx context.Context, cfg *config.VectorDBConfig) (
 
 	// Create client
 	client, err := weaviate.NewClient(&weaviate.Config{
-		URL: cfg.URL,
+		URL:          cfg.URL,
+		OpenAIAPIKey: cfg.OpenAIAPIKey,
 	})
 	if err != nil {
 		return false, fmt.Sprintf("Failed to create Weaviate client: %v", err)

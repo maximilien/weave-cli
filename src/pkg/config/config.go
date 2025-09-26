@@ -48,6 +48,7 @@ type VectorDBConfig struct {
 	Type               VectorDBType `yaml:"type"`
 	URL                string       `yaml:"url,omitempty"`
 	APIKey             string       `yaml:"api_key,omitempty"`
+	OpenAIAPIKey       string       `yaml:"openai_api_key,omitempty"`
 	Enabled            bool         `yaml:"enabled,omitempty"`
 	SimulateEmbeddings bool         `yaml:"simulate_embeddings,omitempty"`
 	EmbeddingDimension int          `yaml:"embedding_dimension,omitempty"`

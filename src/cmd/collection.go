@@ -1756,8 +1756,9 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 func deleteWeaviateCollectionSchema(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) error {
 	// Convert VectorDBConfig to weaviate.Config
 	weaviateConfig := &weaviate.Config{
-		URL:    cfg.URL,
-		APIKey: cfg.APIKey,
+		URL:          cfg.URL,
+		APIKey:       cfg.APIKey,
+		OpenAIAPIKey: cfg.OpenAIAPIKey,
 	}
 
 	// Create Weaviate client
