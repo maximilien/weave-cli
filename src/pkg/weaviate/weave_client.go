@@ -356,11 +356,27 @@ func (wc *WeaveClient) GetDocumentsByMetadata(ctx context.Context, collectionNam
 	return fullDocuments, nil
 }
 
-// DeleteCollection deletes all objects from a collection using GraphQL
+// DeleteCollection deletes all objects from a collection
 func (wc *WeaveClient) DeleteCollection(ctx context.Context, collectionName string) error {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
+	// First try GraphQL deletion
+	err := wc.deleteCollectionViaGraphQL(ctx, collectionName)
+	if err == nil {
+		return nil
+	}
+
+	// If GraphQL fails (e.g., mutations disabled), try REST API
+	if strings.Contains(err.Error(), "mutations") || strings.Contains(err.Error(), "Schema is not configured") {
+		return wc.deleteCollectionViaREST(ctx, collectionName)
+	}
+
+	return err
+}
+
+// deleteCollectionViaGraphQL deletes all objects using GraphQL
+func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectionName string) error {
 	// Create GraphQL mutation to delete all objects in collection
 	mutation := fmt.Sprintf(`
 		mutation {
@@ -452,6 +468,173 @@ func (wc *WeaveClient) DeleteCollection(ctx context.Context, collectionName stri
 	}
 
 	return fmt.Errorf("failed to delete collection %s: no objects deleted", collectionName)
+}
+
+// deleteCollectionViaREST deletes all objects using REST API
+func (wc *WeaveClient) deleteCollectionViaREST(ctx context.Context, collectionName string) error {
+	// First, get all objects in the collection using GraphQL query (queries are usually allowed)
+	objects, err := wc.getAllObjectsInCollection(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("failed to get objects in collection %s: %w", collectionName, err)
+	}
+
+	if len(objects) == 0 {
+		return nil // Nothing to delete
+	}
+
+	// Delete each object individually using REST API
+	deletedCount := 0
+	for _, obj := range objects {
+		if err := wc.deleteObjectViaREST(ctx, obj.ID); err != nil {
+			// Log error but continue with other objects
+			fmt.Printf("Warning: Failed to delete object %s: %v\n", obj.ID, err)
+			continue
+		}
+		deletedCount++
+	}
+
+	if deletedCount == 0 {
+		return fmt.Errorf("failed to delete any objects from collection %s", collectionName)
+	}
+
+	return nil
+}
+
+// getAllObjectsInCollection gets all objects in a collection using GraphQL query
+func (wc *WeaveClient) getAllObjectsInCollection(ctx context.Context, collectionName string) ([]ObjectInfo, error) {
+	query := fmt.Sprintf(`
+		query {
+			Get {
+				%s {
+					_additional {
+						id
+					}
+				}
+			}
+		}
+	`, collectionName)
+
+	// Create GraphQL request payload
+	payload := map[string]interface{}{
+		"query": query,
+	}
+
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal GraphQL payload: %w", err)
+	}
+
+	// Construct the GraphQL endpoint URL
+	baseURL := strings.TrimSuffix(wc.config.URL, "/")
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	url := fmt.Sprintf("%s/v1/graphql", baseURL)
+
+	// Create the POST request
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GraphQL request: %w", err)
+	}
+
+	// Add headers
+	if wc.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+wc.config.APIKey)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Make the request
+	resp, err := wc.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query collection %s: %w", collectionName, err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read GraphQL response: %w", err)
+	}
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to query collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
+	}
+
+	// Parse GraphQL response
+	var graphqlResp struct {
+		Data   map[string]interface{} `json:"data"`
+		Errors []struct {
+			Message string `json:"message"`
+		} `json:"errors"`
+	}
+
+	if err := json.Unmarshal(body, &graphqlResp); err != nil {
+		return nil, fmt.Errorf("failed to parse GraphQL response: %w", err)
+	}
+
+	// Check for GraphQL errors
+	if len(graphqlResp.Errors) > 0 {
+		return nil, fmt.Errorf("GraphQL errors: %v", graphqlResp.Errors)
+	}
+
+	// Extract objects from result
+	var objects []ObjectInfo
+	if data, ok := graphqlResp.Data["Get"].(map[string]interface{}); ok {
+		if collectionData, ok := data[collectionName].([]interface{}); ok {
+			for _, item := range collectionData {
+				if obj, ok := item.(map[string]interface{}); ok {
+					if additional, ok := obj["_additional"].(map[string]interface{}); ok {
+						if id, ok := additional["id"].(string); ok {
+							objects = append(objects, ObjectInfo{ID: id})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return objects, nil
+}
+
+// ObjectInfo represents basic object information
+type ObjectInfo struct {
+	ID string
+}
+
+// deleteObjectViaREST deletes a single object using REST API
+func (wc *WeaveClient) deleteObjectViaREST(ctx context.Context, objectID string) error {
+	// Construct the REST API URL
+	baseURL := strings.TrimSuffix(wc.config.URL, "/")
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	url := fmt.Sprintf("%s/v1/objects/%s", baseURL, objectID)
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Add headers
+	if wc.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+wc.config.APIKey)
+	}
+
+	// Make the request
+	resp, err := wc.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("failed to delete object: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
+	return nil
 }
 
 // CreateCollection delegates to the official client

@@ -120,38 +120,15 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	// Delete all objects in the collection using GraphQL
-	query := fmt.Sprintf(`
-		mutation {
-			delete {
-				%s(where: {
-					path: ["id"]
-					operator: Like
-					valueString: "*"
-				}) {
-					successful
-					failed
-				}
-			}
-		}
-	`, collectionName)
-
-	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
+	// Use the WeaveClient which has better REST API support
+	weaveClient, err := NewWeaveClient(c.config)
 	if err != nil {
-		return fmt.Errorf("failed to delete collection %s: %w", collectionName, err)
+		return fmt.Errorf("failed to create weave client: %w", err)
 	}
 
-	// Check if deletion was successful
-	if data, ok := result.Data["delete"].(map[string]interface{}); ok {
-		if collectionData, ok := data[collectionName].(map[string]interface{}); ok {
-			if successful, ok := collectionData["successful"].(float64); ok && successful > 0 {
-				return nil
-			}
-		}
-	}
-
-	return fmt.Errorf("failed to delete collection %s: no objects deleted", collectionName)
+	return weaveClient.DeleteCollection(ctx, collectionName)
 }
+
 
 // CreateCollection creates a new collection with the specified schema
 func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
