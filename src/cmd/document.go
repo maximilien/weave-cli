@@ -1360,7 +1360,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		if metadata, ok := doc.Metadata["metadata"]; ok {
 			// Handle both string and map metadata formats
 			var metadataObj map[string]interface{}
-			
+
 			if metadataStr, ok := metadata.(string); ok {
 				// Parse the JSON metadata to extract original filename
 				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err != nil {
@@ -1372,7 +1372,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 			} else {
 				continue
 			}
-			
+
 			// Check for chunked document using current metadata structure
 			if filename, ok := metadataObj["filename"].(string); ok {
 				if isExtracted, ok := metadataObj["is_extracted_from_document"].(bool); ok && isExtracted {

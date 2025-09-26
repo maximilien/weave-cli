@@ -679,7 +679,26 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 
 	// Add all available properties to the query
 	for _, prop := range properties {
-		query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+		if prop == "metadata" {
+			// Handle metadata as an object with nested properties
+			query += `
+				metadata {
+					filename
+					file_size
+					content_type
+					date_added
+					chunk_index
+					chunk_size
+					total_chunks
+					source_document
+					processed_by
+					processing_time
+					is_extracted_from_document
+					file_extension
+				}`
+		} else {
+			query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+		}
 	}
 
 	query += `
