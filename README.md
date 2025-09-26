@@ -122,7 +122,7 @@ weave cols create MyCollection --field title:text,author:text
 Delete multiple collections or documents efficiently with enhanced safety:
 
 ```bash
-# Delete multiple collections
+# Clear multiple collections (delete all documents)
 weave collection delete Collection1 Collection2 Collection3
 
 # Delete multiple documents
@@ -143,6 +143,7 @@ weave docs d MyCollection doc1 doc2 doc3 --force
 - Error resilience (continues on individual failures)
 - Summary reports with success/failure counts
 - Double confirmation for delete-all operations
+- Clear messaging: collection deletion removes documents but keeps schema
 
 ## Command Structure
 
@@ -161,8 +162,8 @@ Weave follows a consistent command pattern:
   - `weave collection list` - List all collections
   - `weave collection create COLLECTION_NAME` - Create a new collection
   - `weave collection list --virtual` - Show collections with virtual structure summary
-  - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Delete one or more collections
-  - `weave collection delete-all` - Delete all collections (double confirmation)
+  - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Clear one or more collections (delete all documents)
+  - `weave collection delete-all` - Clear all collections (double confirmation)
 
 - **document** - Document management
   - `weave document list COLLECTION_NAME` - List documents in collection

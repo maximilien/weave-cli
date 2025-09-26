@@ -46,11 +46,12 @@ Use 'weave config list' to see all available databases.`,
 var collectionDeleteCmd = &cobra.Command{
 	Use:     "delete COLLECTION_NAME [COLLECTION_NAME...]",
 	Aliases: []string{"del", "d"},
-	Short:   "Delete one or more collections",
-	Long: `Delete one or more collections from the configured vector database.
+	Short:   "Clear one or more collections (delete all documents)",
+	Long: `Clear one or more collections by deleting all documents from them.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
-delete all data in the specified collection(s). Use with caution!
+delete all documents in the specified collection(s). The collection
+schema will remain but will be empty. Use with caution!
 
 Examples:
   weave cols delete MyCollection
@@ -64,11 +65,12 @@ Examples:
 var collectionDeleteAllCmd = &cobra.Command{
 	Use:     "delete-all",
 	Aliases: []string{"del-all", "da"},
-	Short:   "Delete all collections",
-	Long: `Delete all collections from the configured vector database.
+	Short:   "Clear all collections (delete all documents)",
+	Long: `Clear all collections by deleting all documents from them.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
-delete all data in all collections. Use with caution!`,
+delete all documents in all collections. The collection schemas will
+remain but will be empty. Use with caution!`,
 	Run: runCollectionDeleteAll,
 }
 
@@ -207,9 +209,9 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	fmt.Println()
 
 	if len(collectionNames) == 1 {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete collection '%s' and all its data!", collectionNames[0]))
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete all documents from collection '%s'!", collectionNames[0]))
 	} else {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete %d collections and all their data!", len(collectionNames)))
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete all documents from %d collections!", len(collectionNames)))
 		fmt.Println()
 		printInfo("Collections to delete:")
 		for i, name := range collectionNames {
@@ -222,9 +224,9 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	if !force {
 		var confirmMessage string
 		if len(collectionNames) == 1 {
-			confirmMessage = fmt.Sprintf("Are you sure you want to delete collection '%s'?", collectionNames[0])
+			confirmMessage = fmt.Sprintf("Are you sure you want to clear collection '%s'?", collectionNames[0])
 		} else {
-			confirmMessage = fmt.Sprintf("Are you sure you want to delete %d collections?", len(collectionNames))
+			confirmMessage = fmt.Sprintf("Are you sure you want to clear %d collections?", len(collectionNames))
 		}
 
 		if !confirmAction(confirmMessage) {
@@ -260,7 +262,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 				printError(fmt.Sprintf("Failed to delete collection '%s': %v", collectionName, err))
 				errorCount++
 			} else {
-				printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+				printSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
 				successCount++
 			}
 		case config.VectorDBTypeLocal:
@@ -268,7 +270,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 				printError(fmt.Sprintf("Failed to delete collection '%s': %v", collectionName, err))
 				errorCount++
 			} else {
-				printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+				printSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
 				successCount++
 			}
 		case config.VectorDBTypeMock:
@@ -276,7 +278,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 				printError(fmt.Sprintf("Failed to delete collection '%s': %v", collectionName, err))
 				errorCount++
 			} else {
-				printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+				printSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
 				successCount++
 			}
 		default:
@@ -289,11 +291,11 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	// Summary
 	if len(collectionNames) > 1 {
 		if errorCount == 0 {
-			printSuccess(fmt.Sprintf("All %d collections deleted successfully!", successCount))
+			printSuccess(fmt.Sprintf("All %d collections cleared successfully!", successCount))
 		} else if successCount == 0 {
-			printError(fmt.Sprintf("Failed to delete all %d collections", errorCount))
+			printError(fmt.Sprintf("Failed to clear all %d collections", errorCount))
 		} else {
-			printWarning(fmt.Sprintf("Deleted %d collections successfully, %d failed", successCount, errorCount))
+			printWarning(fmt.Sprintf("Cleared %d collections successfully, %d failed", successCount, errorCount))
 		}
 	}
 }
@@ -312,11 +314,11 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	printHeader("Delete All Collections")
 	fmt.Println()
 
-	printWarning("⚠️  WARNING: This will permanently delete ALL collections and their data!")
+	printWarning("⚠️  WARNING: This will permanently delete all documents from ALL collections!")
 	fmt.Println()
 
 	// First confirmation
-	if !confirmAction("Are you sure you want to delete all collections?") {
+	if !confirmAction("Are you sure you want to clear all collections?") {
 		printInfo("Operation cancelled by user")
 		return
 	}
@@ -324,7 +326,7 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	// Second confirmation with red warning
 	fmt.Println()
 	color.New(color.FgRed, color.Bold).Println("🚨 FINAL WARNING: This operation CANNOT be undone!")
-	color.New(color.FgRed).Println("All collections and their data will be permanently deleted.")
+	color.New(color.FgRed).Println("All documents in all collections will be permanently deleted.")
 	fmt.Println()
 
 	// Require exact "yes" confirmation
@@ -602,11 +604,11 @@ func deleteAllWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfi
 		if err := client.DeleteCollection(ctx, collection); err != nil {
 			printError(fmt.Sprintf("Failed to delete collection %s: %v", collection, err))
 		} else {
-			printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collection))
+			printSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collection))
 		}
 	}
 
-	printSuccess("All collections deleted successfully!")
+	printSuccess("All collections cleared successfully!")
 }
 
 func deleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
@@ -642,11 +644,11 @@ func deleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 		if err := client.DeleteCollection(ctx, collection); err != nil {
 			printError(fmt.Sprintf("Failed to delete collection %s: %v", collection, err))
 		} else {
-			printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collection))
+			printSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collection))
 		}
 	}
 
-	printSuccess("All collections deleted successfully!")
+	printSuccess("All collections cleared successfully!")
 }
 
 func runCollectionCount(cmd *cobra.Command, args []string) {

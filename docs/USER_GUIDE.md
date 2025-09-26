@@ -203,13 +203,13 @@ weave collection create MyCollection --field title:text,author:text,rating:float
 # Create collection with both custom embedding and fields
 weave collection create MyCollection --embedding text-embedding-ada-002 --field title:text,content:text,metadata:object
 
-# Delete a specific collection
+# Clear a specific collection (delete all documents)
 weave collection delete MyCollection
 
-# Delete multiple collections
+# Clear multiple collections (delete all documents)
 weave collection delete Collection1 Collection2 Collection3
 
-# Delete all collections (⚠️ DESTRUCTIVE)
+# Clear all collections (⚠️ DESTRUCTIVE)
 weave collection delete-all
 ```
 
@@ -356,12 +356,15 @@ weave cols c MyCollection --field title
 ## Multi-Delete Commands
 
 The `weave collection delete` and `weave document delete` commands now support
-deleting multiple items at once with enhanced safety features.
+clearing multiple items at once with enhanced safety features.
+
+**Note:** Collection deletion removes all documents from the collection but keeps
+the collection schema intact. The collection will appear empty but still exist.
 
 ### Collection Multi-Delete
 
 ```bash
-# Delete multiple collections with confirmation
+# Clear multiple collections with confirmation
 weave collection delete Collection1 Collection2 Collection3
 
 # Using alias
@@ -373,27 +376,27 @@ weave cols d Collection1 Collection2 Collection3 --force
 # Example output:
 # 🔧 Delete Collection(s)
 # 
-# ⚠️  WARNING: This will permanently delete 3 collections and all their data!
+# ⚠️  WARNING: This will permanently delete all documents from 3 collections!
 # 
 # ℹ️  Collections to delete:
 #   1. Collection1
 #   2. Collection2
 #   3. Collection3
 # 
-# Are you sure you want to delete 3 collections? (y/N): y
+# Are you sure you want to clear 3 collections? (y/N): y
 # 
 # Deleting 3 collections in weaviate-cloud database...
 # 
 # Deleting collection 1/3: Collection1
-# ✅ Successfully deleted collection: Collection1
+# ✅ Successfully deleted all documents from collection: Collection1
 # 
 # Deleting collection 2/3: Collection2
-# ✅ Successfully deleted collection: Collection2
+# ✅ Successfully deleted all documents from collection: Collection2
 # 
 # Deleting collection 3/3: Collection3
-# ✅ Successfully deleted collection: Collection3
+# ✅ Successfully deleted all documents from collection: Collection3
 # 
-# ✅ All 3 collections deleted successfully!
+# ✅ All 3 collections cleared successfully!
 ```
 
 ### Document Multi-Delete
