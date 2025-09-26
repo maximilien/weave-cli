@@ -129,6 +129,20 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 	return weaveClient.DeleteCollection(ctx, collectionName)
 }
 
+// DeleteCollectionSchema deletes the collection schema completely
+func (c *Client) DeleteCollectionSchema(ctx context.Context, collectionName string) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Use the WeaveClient which has better REST API support
+	weaveClient, err := NewWeaveClient(c.config)
+	if err != nil {
+		return fmt.Errorf("failed to create weave client: %w", err)
+	}
+
+	return weaveClient.DeleteCollectionSchema(ctx, collectionName)
+}
+
 // CreateCollection creates a new collection with the specified schema
 func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -173,7 +187,57 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 			},
 			{
 				"name":     "metadata",
-				"dataType": []string{"text"},
+				"dataType": []string{"object"},
+				"nestedProperties": []map[string]interface{}{
+					{
+						"name":     "filename",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "file_size",
+						"dataType": []string{"number"},
+					},
+					{
+						"name":     "content_type",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "date_added",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "chunk_index",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "chunk_size",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "total_chunks",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "source_document",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "processed_by",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "processing_time",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "is_extracted_from_document",
+						"dataType": []string{"boolean"},
+					},
+					{
+						"name":     "file_extension",
+						"dataType": []string{"text"},
+					},
+				},
 			},
 		},
 	}

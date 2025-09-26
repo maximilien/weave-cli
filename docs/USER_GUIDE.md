@@ -318,6 +318,45 @@ weave cols c MyCollection --field title:text,author:text,rating:float
 # ℹ️  Embedding model: text-embedding-ada-002
 ```
 
+### Multiple Collection Creation
+
+Create multiple collections at once:
+
+```bash
+# Create multiple collections with default settings
+weave collection create WeaveDocs WeaveImages WeaveTest
+
+# Using alias
+weave cols c Col1 Col2 Col3 Col4
+
+# Create multiple collections with custom embedding
+weave collection create MyCol1 MyCol2 MyCol3 --embedding text-embedding-3-large
+
+# Create multiple collections with custom fields
+weave collection create DataCol1 DataCol2 --field title:text,author:text,tags:text
+
+# Example output for multiple collections:
+# 🔧 Create Collection(s)
+# 
+# Creating 3 collections in weaviate-cloud database...
+# 
+# ℹ️  Collections to create:
+#   1. WeaveDocs
+#   2. WeaveImages
+#   3. WeaveTest
+# 
+# Creating collection 1/3: WeaveDocs
+# ✅ Successfully created collection: WeaveDocs
+# 
+# Creating collection 2/3: WeaveImages
+# ✅ Successfully created collection: WeaveImages
+# 
+# Creating collection 3/3: WeaveTest
+# ✅ Successfully created collection: WeaveTest
+# 
+# ✅ All 3 collections created successfully!
+```
+
 ### Combined Options
 
 ```bash
@@ -360,6 +399,48 @@ clearing multiple items at once with enhanced safety features.
 
 **Note:** Collection deletion removes all documents from the collection but keeps
 the collection schema intact. The collection will appear empty but still exist.
+
+### Collection Schema Deletion
+
+For complete removal of collections (including schema), use the `delete-schema` command:
+
+```bash
+# Delete collection schema completely
+weave collection delete-schema WeaveDocs --force
+
+# Using alias
+weave cols ds WeaveImages --force
+
+# Delete multiple collection schemas at once
+weave collection delete-schema WeaveDocs WeaveImages WeaveTest --force
+weave cols ds Col1 Col2 Col3 --force
+
+# Example output for multiple schemas:
+# 🔧 Delete Collection Schema(s)
+# 
+# ⚠️  WARNING: This will permanently delete the schemas for 3 collections!
+# 
+# ℹ️  Collections to delete:
+#   1. WeaveDocs
+#   2. WeaveImages
+#   3. WeaveTest
+# 
+# Deleting schemas for 3 collections in weaviate-cloud database...
+# 
+# Deleting schema 1/3: WeaveDocs
+# ✅ Successfully deleted schema for collection: WeaveDocs
+# 
+# Deleting schema 2/3: WeaveImages
+# ✅ Successfully deleted schema for collection: WeaveImages
+# 
+# Deleting schema 3/3: WeaveTest
+# ✅ Successfully deleted schema for collection: WeaveTest
+# 
+# ✅ All 3 collection schemas deleted successfully!
+```
+
+**Important:** Schema deletion completely removes the collection from the database.
+Use this when you need to recreate a collection with a different schema.
 
 ### Collection Multi-Delete
 

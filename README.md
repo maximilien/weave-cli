@@ -161,16 +161,19 @@ Weave follows a consistent command pattern:
 
 - **collection** - Collection management
   - `weave collection list` - List all collections
-  - `weave collection create COLLECTION_NAME` - Create a new collection
+  - `weave collection create COLLECTION_NAME [COLLECTION_NAME...]` - Create collection(s)
   - `weave collection list --virtual` - Show collections with virtual structure
   - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Clear collections
+  - `weave collection delete-schema COLLECTION_NAME [COLLECTION_NAME...]` -
+    Delete collection schema(s) completely
   - `weave collection delete-all` - Clear all collections (double confirmation)
 
 - **document** - Document management
   - `weave document list COLLECTION_NAME` - List documents in collection
   - `weave document list COLLECTION_NAME --virtual` - Virtual view
   - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show document
-  - `weave document delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]` - Delete docs
+  - `weave document delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]` -
+    Delete docs
   - `weave document delete-all COLLECTION_NAME` - Delete all docs (double confirmation)
 
 ### Command Aliases
@@ -184,13 +187,54 @@ weave cols list         # Same as: weave collection list
 weave col create MyCol  # Same as: weave collection create MyCol
 weave cols create MyCol # Same as: weave collection create MyCol
 weave cols c MyCol      # Same as: weave collection create MyCol
+weave cols c Col1 Col2 Col3  # Create multiple collections at once
 weave cols d Col1 Col2  # Same as: weave collection delete Col1 Col2
+weave cols ds MyCol     # Same as: weave collection delete-schema MyCol
+weave cols ds Col1 Col2 Col3  # Delete multiple collection schemas at once
 
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
 weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
 ```
+
+## New Features
+
+### Multiple Collection Creation
+
+Create multiple collections at once with a single command:
+
+```bash
+# Create multiple collections
+weave collection create WeaveDocs WeaveImages WeaveTest
+weave cols c Col1 Col2 Col3 Col4
+
+# With custom embedding model
+weave collection create MyCol1 MyCol2 --embedding text-embedding-3-large
+
+# With custom fields
+weave collection create DataCol1 DataCol2 --field title:text,author:text,tags:text
+```
+
+### Collection Schema Management
+
+Completely remove collection schemas (useful for schema updates):
+
+```bash
+# Delete collection schema completely
+weave collection delete-schema WeaveDocs --force
+weave cols ds WeaveImages --force
+
+# Delete multiple collection schemas at once
+weave collection delete-schema WeaveDocs WeaveImages WeaveTest --force
+weave cols ds Col1 Col2 Col3 --force
+
+# Then recreate with new schema
+weave collection create WeaveDocs
+```
+
+**Note**: `delete-schema` removes the collection entirely, while `delete` only
+clears documents.
 
 ## Global Flags
 

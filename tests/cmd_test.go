@@ -1761,3 +1761,245 @@ func TestDocumentCreateMockClient(t *testing.T) {
 		}
 	})
 }
+
+// TestMultipleCollectionCreation tests the multiple collection creation functionality
+func TestMultipleCollectionCreation(t *testing.T) {
+	t.Run("Multiple Collection Create Command Structure", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"c"},
+			Short:   "Create one or more collections",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// Verify we can accept multiple arguments
+				if len(args) < 1 {
+					t.Error("Expected at least 1 argument")
+				}
+			},
+		}
+
+		// Test with single collection name
+		cmd.SetArgs([]string{"TestCollection"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+
+		// Test with multiple collection names
+		cmd.SetArgs([]string{"TestCollection1", "TestCollection2", "TestCollection3"})
+		err = cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Multiple Collection Create with Flags", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"c"},
+			Short:   "Create one or more collections",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// Verify arguments
+				if len(args) != 3 {
+					t.Errorf("Expected 3 arguments, got %d", len(args))
+				}
+				expectedNames := []string{"Col1", "Col2", "Col3"}
+				for i, name := range args {
+					if name != expectedNames[i] {
+						t.Errorf("Expected '%s', got '%s'", expectedNames[i], name)
+					}
+				}
+
+				// Verify flags
+				embedding, _ := cmd.Flags().GetString("embedding")
+				if embedding != "text-embedding-3-large" {
+					t.Errorf("Expected embedding 'text-embedding-3-large', got '%s'", embedding)
+				}
+
+				field, _ := cmd.Flags().GetString("field")
+				if field != "title:text,author:text" {
+					t.Errorf("Expected field 'title:text,author:text', got '%s'", field)
+				}
+			},
+		}
+
+		// Add flags
+		cmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model")
+		cmd.Flags().StringP("field", "f", "", "Custom fields")
+
+		// Test with multiple collections and flags
+		cmd.SetArgs([]string{"Col1", "Col2", "Col3", "--embedding", "text-embedding-3-large", "--field", "title:text,author:text"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Multiple Collection Create with Aliases", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"c"},
+			Short:   "Create one or more collections",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// Verify arguments
+				if len(args) != 2 {
+					t.Errorf("Expected 2 arguments, got %d", len(args))
+				}
+				if args[0] != "AliasCol1" {
+					t.Errorf("Expected 'AliasCol1', got '%s'", args[0])
+				}
+				if args[1] != "AliasCol2" {
+					t.Errorf("Expected 'AliasCol2', got '%s'", args[1])
+				}
+			},
+		}
+
+		// Test with alias command
+		cmd.SetArgs([]string{"AliasCol1", "AliasCol2"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Multiple Collection Create Error Handling", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"c"},
+			Short:   "Create one or more collections",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// This should not be called if args validation fails
+				t.Error("Run function should not be called with invalid args")
+			},
+		}
+
+		// Test with no arguments (should fail)
+		cmd.SetArgs([]string{})
+		err := cmd.Execute()
+		if err == nil {
+			t.Error("Expected error when no arguments provided")
+		}
+	})
+}
+
+// TestCollectionSchemaDeletion tests the collection schema deletion functionality
+func TestCollectionSchemaDeletion(t *testing.T) {
+	t.Run("Collection Schema Delete Command Structure", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "delete-schema COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"del-schema", "ds"},
+			Short:   "Delete collection schema(s) completely",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// Verify arguments
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+				if args[0] != "TestCollection" {
+					t.Errorf("Expected 'TestCollection', got %s", args[0])
+				}
+
+				// Verify force flag
+				force, _ := cmd.Flags().GetBool("force")
+				if !force {
+					t.Error("Expected force flag to be true")
+				}
+			},
+		}
+
+		// Add flags
+		cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
+		// Test with collection name and force flag
+		cmd.SetArgs([]string{"TestCollection", "--force"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Schema Delete with Aliases", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "delete-schema COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"del-schema", "ds"},
+			Short:   "Delete collection schema(s) completely",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// Verify arguments
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+				if args[0] != "AliasTestCollection" {
+					t.Errorf("Expected 'AliasTestCollection', got %s", args[0])
+				}
+			},
+		}
+
+		// Test with alias command
+		cmd.SetArgs([]string{"AliasTestCollection"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Multiple Collection Schema Delete Command Structure", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "delete-schema COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"del-schema", "ds"},
+			Short:   "Delete collection schema(s) completely",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// Verify we can accept multiple arguments
+				if len(args) < 1 {
+					t.Error("Expected at least 1 argument")
+				}
+				expectedNames := []string{"MultiSchema1", "MultiSchema2", "MultiSchema3"}
+				for i, name := range args {
+					if name != expectedNames[i] {
+						t.Errorf("Expected '%s', got '%s'", expectedNames[i], name)
+					}
+				}
+
+				// Verify force flag
+				force, _ := cmd.Flags().GetBool("force")
+				if !force {
+					t.Error("Expected force flag to be true")
+				}
+			},
+		}
+
+		// Add flags
+		cmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+
+		// Test with multiple collection names and force flag
+		cmd.SetArgs([]string{"MultiSchema1", "MultiSchema2", "MultiSchema3", "--force"})
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Schema Delete Error Handling", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "delete-schema COLLECTION_NAME [COLLECTION_NAME...]",
+			Aliases: []string{"del-schema", "ds"},
+			Short:   "Delete collection schema(s) completely",
+			Args:    cobra.MinimumNArgs(1),
+			Run: func(cmd *cobra.Command, args []string) {
+				// This should not be called if args validation fails
+				t.Error("Run function should not be called with invalid args")
+			},
+		}
+
+		// Test with no arguments (should fail)
+		cmd.SetArgs([]string{})
+		err := cmd.Execute()
+		if err == nil {
+			t.Error("Expected error when no arguments provided")
+		}
+	})
+}

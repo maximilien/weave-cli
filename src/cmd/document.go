@@ -2393,12 +2393,6 @@ func createWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 		return fmt.Errorf("failed to create weaviate client: %w", err)
 	}
 
-	// Convert metadata to JSON string
-	metadataJSON, err := json.Marshal(doc.Metadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
 	// Create document object
 	document := weaviate.Document{
 		ID:        doc.ID,
@@ -2406,9 +2400,7 @@ func createWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 		Image:     doc.Image,
 		ImageData: doc.ImageData,
 		URL:       doc.URL,
-		Metadata: map[string]interface{}{
-			"metadata": string(metadataJSON),
-		},
+		Metadata:  doc.Metadata,
 	}
 
 	// Create the document
@@ -2425,12 +2417,6 @@ func createMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 	// Create mock client
 	client := mock.NewClient(mockConfig)
 
-	// Convert metadata to JSON string
-	metadataJSON, err := json.Marshal(doc.Metadata)
-	if err != nil {
-		return fmt.Errorf("failed to marshal metadata: %w", err)
-	}
-
 	// Create document object
 	document := mock.Document{
 		ID:        doc.ID,
@@ -2438,9 +2424,7 @@ func createMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 		Image:     doc.Image,
 		ImageData: doc.ImageData,
 		URL:       doc.URL,
-		Metadata: map[string]interface{}{
-			"metadata": string(metadataJSON),
-		},
+		Metadata:  doc.Metadata,
 	}
 
 	// Create the document

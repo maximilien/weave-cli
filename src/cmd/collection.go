@@ -74,21 +74,41 @@ remain but will be empty. Use with caution!`,
 	Run: runCollectionDeleteAll,
 }
 
+// collectionDeleteSchemaCmd represents the collection delete-schema command
+var collectionDeleteSchemaCmd = &cobra.Command{
+	Use:     "delete-schema COLLECTION_NAME [COLLECTION_NAME...]",
+	Aliases: []string{"del-schema", "ds"},
+	Short:   "Delete collection schema(s) completely",
+	Long: `Delete one or more collection schemas completely from the database.
+
+This command will:
+- Delete the collection schema definition(s)
+- Remove the collection(s) from the database
+- Allow recreation with new schemas
+
+⚠️  WARNING: This operation cannot be undone!
+
+Use --force to skip confirmation prompts.`,
+	Args: cobra.MinimumNArgs(1),
+	Run:  runCollectionDeleteSchema,
+}
+
 // collectionCreateCmd represents the collection create command
 var collectionCreateCmd = &cobra.Command{
-	Use:     "create COLLECTION_NAME",
+	Use:     "create COLLECTION_NAME [COLLECTION_NAME...]",
 	Aliases: []string{"c"},
-	Short:   "Create a new collection",
-	Long: `Create a new collection in the configured vector database.
+	Short:   "Create one or more collections",
+	Long: `Create one or more collections in the configured vector database.
 
-This command creates a collection with default fields and embedding model.
-You can customize the collection by specifying custom fields and embedding model.
+This command creates collections with default fields and embedding model.
+You can customize the collections by specifying custom fields and embedding model.
 
 Examples:
   weave cols create MyCollection
+  weave cols create Col1 Col2 Col3
   weave cols create MyCollection --embedding text-embedding-3-small
   weave cols create MyCollection --field title:text,content:text,metadata:text`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MinimumNArgs(1),
 	Run:  runCollectionCreate,
 }
 
@@ -128,6 +148,7 @@ func init() {
 	collectionCmd.AddCommand(collectionCreateCmd)
 	collectionCmd.AddCommand(collectionDeleteCmd)
 	collectionCmd.AddCommand(collectionDeleteAllCmd)
+	collectionCmd.AddCommand(collectionDeleteSchemaCmd)
 
 	// Add flags
 	collectionListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
@@ -136,6 +157,7 @@ func init() {
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
 	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	collectionDeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
@@ -367,7 +389,7 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 func runCollectionCreate(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
-	collectionName := args[0]
+	collectionNames := args
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
 	customFields, _ := cmd.Flags().GetString("field")
 
@@ -378,7 +400,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader("Create Collection")
+	printHeader("Create Collection(s)")
 	fmt.Println()
 
 	// Get default database
@@ -388,7 +410,16 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	color.New(color.FgCyan, color.Bold).Printf("Creating collection '%s' in %s database...\n", collectionName, dbConfig.Type)
+	if len(collectionNames) == 1 {
+		color.New(color.FgCyan, color.Bold).Printf("Creating collection '%s' in %s database...\n", collectionNames[0], dbConfig.Type)
+	} else {
+		color.New(color.FgCyan, color.Bold).Printf("Creating %d collections in %s database...\n", len(collectionNames), dbConfig.Type)
+		fmt.Println()
+		printInfo("Collections to create:")
+		for i, name := range collectionNames {
+			fmt.Printf("  %d. %s\n", i+1, name)
+		}
+	}
 	fmt.Println()
 
 	// Parse custom fields if provided
@@ -402,17 +433,56 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	}
 
 	ctx := context.Background()
+	successCount := 0
+	errorCount := 0
 
-	switch dbConfig.Type {
-	case config.VectorDBTypeCloud:
-		createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields)
-	case config.VectorDBTypeLocal:
-		createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields)
-	case config.VectorDBTypeMock:
-		createMockCollection(ctx, dbConfig, collectionName, embeddingModel, fields)
-	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
-		os.Exit(1)
+	// Create each collection
+	for i, collectionName := range collectionNames {
+		if len(collectionNames) > 1 {
+			fmt.Printf("Creating collection %d/%d: %s\n", i+1, len(collectionNames), collectionName)
+		}
+
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud:
+			if err := createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields); err != nil {
+				printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+				successCount++
+			}
+		case config.VectorDBTypeLocal:
+			if err := createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields); err != nil {
+				printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+				successCount++
+			}
+		case config.VectorDBTypeMock:
+			if err := createMockCollection(ctx, dbConfig, collectionName, embeddingModel, fields); err != nil {
+				printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+				successCount++
+			}
+		default:
+			printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			errorCount++
+		}
+		fmt.Println()
+	}
+
+	// Summary
+	if len(collectionNames) > 1 {
+		if errorCount == 0 {
+			printSuccess(fmt.Sprintf("All %d collections created successfully!", successCount))
+		} else if successCount == 0 {
+			printError(fmt.Sprintf("Failed to create all %d collections", errorCount))
+		} else {
+			printWarning(fmt.Sprintf("Created %d collections successfully, %d failed", successCount, errorCount))
+		}
 	}
 }
 
@@ -1525,21 +1595,17 @@ func isValidFieldType(fieldType string) bool {
 }
 
 // createWeaviateCollection creates a collection in Weaviate
-func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) {
+func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to create client: %v", err))
-		return
+		return fmt.Errorf("failed to create client: %w", err)
 	}
 
 	// Create the collection using Weaviate's REST API
 	err = client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
-		os.Exit(1)
+		return fmt.Errorf("failed to create collection '%s': %w", collectionName, err)
 	}
-
-	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
 
 	// Show collection details
 	if len(customFields) > 0 {
@@ -1552,10 +1618,12 @@ func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 
 	fmt.Println()
 	printInfo(fmt.Sprintf("Embedding model: %s", embeddingModel))
+
+	return nil
 }
 
 // createMockCollection creates a collection in Mock database
-func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) {
+func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            true,
@@ -1569,11 +1637,8 @@ func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 	// Create the collection
 	err := client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
-		os.Exit(1)
+		return fmt.Errorf("failed to create collection '%s': %w", collectionName, err)
 	}
-
-	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
 
 	// Show collection details
 	if len(customFields) > 0 {
@@ -1586,4 +1651,121 @@ func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 
 	fmt.Println()
 	printInfo(fmt.Sprintf("Embedding model: %s", embeddingModel))
+
+	return nil
+}
+
+func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
+	cfgFile, _ := cmd.Flags().GetString("config")
+	envFile, _ := cmd.Flags().GetString("env")
+	force, _ := cmd.Flags().GetBool("force")
+	collectionNames := args
+
+	// Load configuration
+	cfg, err := config.LoadConfig(cfgFile, envFile)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	printHeader("Delete Collection Schema(s)")
+	fmt.Println()
+
+	if len(collectionNames) == 1 {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete the schema for collection '%s'!", collectionNames[0]))
+	} else {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete the schemas for %d collections!", len(collectionNames)))
+		fmt.Println()
+		printInfo("Collections to delete:")
+		for i, name := range collectionNames {
+			fmt.Printf("  %d. %s\n", i+1, name)
+		}
+	}
+	fmt.Println()
+
+	// Confirm deletion unless --force is used
+	if !force {
+		var confirmMessage string
+		if len(collectionNames) == 1 {
+			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schema for collection '%s'?", collectionNames[0])
+		} else {
+			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schemas for %d collections?", len(collectionNames))
+		}
+
+		if !confirmAction(confirmMessage) {
+			printInfo("Operation cancelled by user")
+			return
+		}
+	}
+
+	// Get default database
+	dbConfig, err := cfg.GetDefaultDatabase()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		os.Exit(1)
+	}
+
+	if len(collectionNames) == 1 {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting schema for collection '%s' in %s database...\n", collectionNames[0], dbConfig.Type)
+	} else {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting schemas for %d collections in %s database...\n", len(collectionNames), dbConfig.Type)
+	}
+	fmt.Println()
+
+	ctx := context.Background()
+	successCount := 0
+	errorCount := 0
+
+	// Delete each collection schema
+	for i, collectionName := range collectionNames {
+		if len(collectionNames) > 1 {
+			fmt.Printf("Deleting schema %d/%d: %s\n", i+1, len(collectionNames), collectionName)
+		}
+
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			if err := deleteWeaviateCollectionSchema(ctx, dbConfig, collectionName); err != nil {
+				printError(fmt.Sprintf("Failed to delete collection schema '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully deleted schema for collection: %s", collectionName))
+				successCount++
+			}
+		case config.VectorDBTypeMock:
+			printError("Schema deletion is not supported for mock database")
+			errorCount++
+		default:
+			printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			errorCount++
+		}
+		fmt.Println()
+	}
+
+	// Summary
+	if len(collectionNames) > 1 {
+		if errorCount == 0 {
+			printSuccess(fmt.Sprintf("All %d collection schemas deleted successfully!", successCount))
+		} else if successCount == 0 {
+			printError(fmt.Sprintf("Failed to delete all %d collection schemas", errorCount))
+		} else {
+			printWarning(fmt.Sprintf("Deleted %d collection schemas successfully, %d failed", successCount, errorCount))
+		}
+	}
+}
+
+func deleteWeaviateCollectionSchema(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) error {
+	// Convert VectorDBConfig to weaviate.Config
+	weaviateConfig := &weaviate.Config{
+		URL:    cfg.URL,
+		APIKey: cfg.APIKey,
+	}
+
+	// Create Weaviate client
+	client, err := weaviate.NewClient(weaviateConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create weaviate client: %w", err)
+	}
+
+	// Delete the collection schema
+	return client.DeleteCollectionSchema(ctx, collectionName)
 }

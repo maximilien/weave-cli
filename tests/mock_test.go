@@ -4,9 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"testing"
+
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
-	"testing"
+	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
 // contains checks if a string slice contains a specific string
@@ -537,6 +540,194 @@ func TestMockClientGetDocumentsByMetadata(t *testing.T) {
 		_, err := client.GetDocumentsByMetadata(ctx, "nonexistent", []string{"filename=test.png"})
 		if err == nil {
 			t.Error("Expected error for non-existent collection")
+		}
+	})
+}
+
+// TestMultipleCollectionCreationIntegration tests multiple collection creation with mock client
+func TestMultipleCollectionCreationIntegration(t *testing.T) {
+	cfg := &config.MockConfig{
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
+		Collections:        []config.MockCollection{},
+	}
+
+	client := mock.NewClient(cfg)
+	ctx := context.Background()
+
+	t.Run("Create Multiple Collections", func(t *testing.T) {
+		collectionNames := []string{"MultiCol1", "MultiCol2", "MultiCol3"}
+		
+		// Create multiple collections
+		for _, name := range collectionNames {
+			err := client.CreateCollection(ctx, name, "text-embedding-3-small", []weaviate.FieldDefinition{})
+			if err != nil {
+				t.Errorf("Failed to create collection %s: %v", name, err)
+			}
+		}
+
+		// Verify all collections were created
+		collections, err := client.ListCollections(ctx)
+		if err != nil {
+			t.Errorf("Failed to list collections: %v", err)
+		}
+
+		for _, name := range collectionNames {
+			if !contains(collections, name) {
+				t.Errorf("Collection %s was not created", name)
+			}
+		}
+	})
+
+	t.Run("Create Multiple Collections with Custom Fields", func(t *testing.T) {
+		collectionNames := []string{"CustomCol1", "CustomCol2"}
+		customFields := []weaviate.FieldDefinition{
+			{Name: "title", Type: "text"},
+			{Name: "author", Type: "text"},
+		}
+		
+		// Create multiple collections with custom fields
+		for _, name := range collectionNames {
+			err := client.CreateCollection(ctx, name, "text-embedding-3-large", customFields)
+			if err != nil {
+				t.Errorf("Failed to create collection %s: %v", name, err)
+			}
+		}
+
+		// Verify collections were created
+		collections, err := client.ListCollections(ctx)
+		if err != nil {
+			t.Errorf("Failed to list collections: %v", err)
+		}
+
+		for _, name := range collectionNames {
+			if !contains(collections, name) {
+				t.Errorf("Collection %s was not created", name)
+			}
+		}
+	})
+
+	t.Run("Create Multiple Collections with Error Handling", func(t *testing.T) {
+		// Try to create a collection that already exists
+		err := client.CreateCollection(ctx, "MultiCol1", "text-embedding-3-small", []weaviate.FieldDefinition{})
+		if err == nil {
+			t.Error("Expected error when creating duplicate collection")
+		}
+
+		if !strings.Contains(err.Error(), "already exists") {
+			t.Errorf("Expected 'already exists' error, got: %v", err)
+		}
+	})
+}
+
+// TestCollectionSchemaDeletionIntegration tests collection schema deletion with mock client
+func TestCollectionSchemaDeletionIntegration(t *testing.T) {
+	cfg := &config.MockConfig{
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
+		Collections:        []config.MockCollection{},
+	}
+
+	client := mock.NewClient(cfg)
+	ctx := context.Background()
+
+	t.Run("Delete Collection Schema", func(t *testing.T) {
+		collectionName := "SchemaTestCollection"
+		
+		// Create a collection first
+		err := client.CreateCollection(ctx, collectionName, "text-embedding-3-small", []weaviate.FieldDefinition{})
+		if err != nil {
+			t.Errorf("Failed to create collection: %v", err)
+		}
+
+		// Verify collection exists
+		collections, err := client.ListCollections(ctx)
+		if err != nil {
+			t.Errorf("Failed to list collections: %v", err)
+		}
+
+		if !contains(collections, collectionName) {
+			t.Error("Collection was not created")
+		}
+
+		// Delete the collection schema
+		err = client.DeleteCollection(ctx, collectionName)
+		if err != nil {
+			t.Errorf("Failed to delete collection: %v", err)
+		}
+
+		// Verify collection is gone
+		collections, err = client.ListCollections(ctx)
+		if err != nil {
+			t.Errorf("Failed to list collections after deletion: %v", err)
+		}
+
+		if contains(collections, collectionName) {
+			t.Error("Collection should have been deleted")
+		}
+	})
+
+	t.Run("Delete Non-existent Collection Schema", func(t *testing.T) {
+		// Try to delete a collection that doesn't exist
+		err := client.DeleteCollection(ctx, "NonExistentCollection")
+		if err == nil {
+			t.Error("Expected error when deleting non-existent collection")
+		}
+
+		if !strings.Contains(err.Error(), "does not exist") {
+			t.Errorf("Expected 'does not exist' error, got: %v", err)
+		}
+	})
+
+	t.Run("Delete Collection with Documents", func(t *testing.T) {
+		collectionName := "CollectionWithDocs"
+		
+		// Create a collection
+		err := client.CreateCollection(ctx, collectionName, "text-embedding-3-small", []weaviate.FieldDefinition{})
+		if err != nil {
+			t.Errorf("Failed to create collection: %v", err)
+		}
+
+		// Add a document
+		document := mock.Document{
+			ID:      "test-doc-1",
+			Content: "Test content",
+			Metadata: map[string]interface{}{
+				"title": "Test Document",
+			},
+		}
+
+		err = client.CreateDocument(ctx, collectionName, document)
+		if err != nil {
+			t.Errorf("Failed to create document: %v", err)
+		}
+
+		// Verify document exists
+		documents, err := client.ListDocuments(ctx, collectionName, 10)
+		if err != nil {
+			t.Errorf("Failed to list documents: %v", err)
+		}
+
+		if len(documents) != 1 {
+			t.Errorf("Expected 1 document, got %d", len(documents))
+		}
+
+		// Delete the collection (should remove both schema and documents)
+		err = client.DeleteCollection(ctx, collectionName)
+		if err != nil {
+			t.Errorf("Failed to delete collection: %v", err)
+		}
+
+		// Verify collection is gone
+		collections, err := client.ListCollections(ctx)
+		if err != nil {
+			t.Errorf("Failed to list collections after deletion: %v", err)
+		}
+
+		if contains(collections, collectionName) {
+			t.Error("Collection should have been deleted")
 		}
 	})
 }

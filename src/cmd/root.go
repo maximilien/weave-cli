@@ -27,7 +27,7 @@ This tool provides commands following a consistent pattern:
   weave config show                    # Show current configuration
   weave health check                   # Check database health
   weave collection list                # List all collections
-  weave collection create COLLECTION  # Create a new collection
+  weave collection create COLLECTION [COLLECTION...]  # Create one or more collections
   weave collection delete COLLECTION [COLLECTION...] # Clear one or more collections (delete all documents)
   weave collection delete-all          # Clear all collections (double confirmation)
   weave document list COLLECTION      # List documents in collection

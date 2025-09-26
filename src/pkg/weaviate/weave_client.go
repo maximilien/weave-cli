@@ -375,6 +375,51 @@ func (wc *WeaveClient) DeleteCollection(ctx context.Context, collectionName stri
 	return err
 }
 
+// DeleteCollectionSchema deletes the collection schema completely
+func (wc *WeaveClient) DeleteCollectionSchema(ctx context.Context, collectionName string) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Construct the REST API URL for schema deletion
+	baseURL := strings.TrimSuffix(wc.config.URL, "/")
+	if !strings.HasPrefix(baseURL, "http://") && !strings.HasPrefix(baseURL, "https://") {
+		baseURL = "https://" + baseURL
+	}
+	url := fmt.Sprintf("%s/v1/schema/%s", baseURL, collectionName)
+
+	// Create the DELETE request
+	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create delete schema request: %w", err)
+	}
+
+	// Add headers
+	if wc.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+wc.config.APIKey)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Make the request
+	resp, err := wc.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to delete collection schema %s: %w", collectionName, err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Check response status
+	if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusNoContent {
+		return nil
+	}
+
+	return fmt.Errorf("failed to delete collection schema %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
+}
+
 // deleteCollectionViaGraphQL deletes all objects using GraphQL
 func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectionName string) error {
 	// Create GraphQL mutation to delete all objects in collection
