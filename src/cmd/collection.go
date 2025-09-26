@@ -44,14 +44,19 @@ Use 'weave config list' to see all available databases.`,
 
 // collectionDeleteCmd represents the collection delete command
 var collectionDeleteCmd = &cobra.Command{
-	Use:     "delete COLLECTION_NAME",
+	Use:     "delete COLLECTION_NAME [COLLECTION_NAME...]",
 	Aliases: []string{"del", "d"},
-	Short:   "Delete a specific collection",
-	Long: `Delete a specific collection from the configured vector database.
+	Short:   "Delete one or more collections",
+	Long: `Delete one or more collections from the configured vector database.
 
 ⚠️  WARNING: This is a destructive operation that will permanently
-delete all data in the specified collection. Use with caution!`,
-	Args: cobra.ExactArgs(1),
+delete all data in the specified collection(s). Use with caution!
+
+Examples:
+  weave cols delete MyCollection
+  weave cols d Collection1 Collection2 Collection3
+  weave cols del MyCollection --force`,
+	Args: cobra.MinimumNArgs(1),
 	Run:  runCollectionDelete,
 }
 
@@ -128,6 +133,7 @@ func init() {
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
+	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
@@ -187,7 +193,8 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 func runCollectionDelete(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
-	collectionName := args[0]
+	force, _ := cmd.Flags().GetBool("force")
+	collectionNames := args
 
 	// Load configuration
 	cfg, err := config.LoadConfig(cfgFile, envFile)
@@ -196,16 +203,34 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader("Delete Collection")
+	printHeader("Delete Collection(s)")
 	fmt.Println()
 
-	printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete collection '%s' and all its data!", collectionName))
+	if len(collectionNames) == 1 {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete collection '%s' and all its data!", collectionNames[0]))
+	} else {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete %d collections and all their data!", len(collectionNames)))
+		fmt.Println()
+		printInfo("Collections to delete:")
+		for i, name := range collectionNames {
+			fmt.Printf("  %d. %s\n", i+1, name)
+		}
+	}
 	fmt.Println()
 
-	// Confirm deletion
-	if !confirmAction(fmt.Sprintf("Are you sure you want to delete collection '%s'?", collectionName)) {
-		printInfo("Operation cancelled by user")
-		return
+	// Confirm deletion unless --force is used
+	if !force {
+		var confirmMessage string
+		if len(collectionNames) == 1 {
+			confirmMessage = fmt.Sprintf("Are you sure you want to delete collection '%s'?", collectionNames[0])
+		} else {
+			confirmMessage = fmt.Sprintf("Are you sure you want to delete %d collections?", len(collectionNames))
+		}
+		
+		if !confirmAction(confirmMessage) {
+			printInfo("Operation cancelled by user")
+			return
+		}
 	}
 
 	// Get default database (for now, we'll use default for delete operations)
@@ -215,21 +240,61 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	color.New(color.FgCyan, color.Bold).Printf("Deleting collection '%s' in %s database...\n", collectionName, dbConfig.Type)
+	if len(collectionNames) == 1 {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting collection '%s' in %s database...\n", collectionNames[0], dbConfig.Type)
+	} else {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting %d collections in %s database...\n", len(collectionNames), dbConfig.Type)
+	}
 	fmt.Println()
 
 	ctx := context.Background()
+	successCount := 0
+	errorCount := 0
 
-	switch dbConfig.Type {
-	case config.VectorDBTypeCloud:
-		deleteWeaviateCollection(ctx, dbConfig, collectionName)
-	case config.VectorDBTypeLocal:
-		deleteWeaviateCollection(ctx, dbConfig, collectionName)
-	case config.VectorDBTypeMock:
-		deleteMockCollection(ctx, dbConfig, collectionName)
-	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
-		os.Exit(1)
+	for i, collectionName := range collectionNames {
+		fmt.Printf("Deleting collection %d/%d: %s\n", i+1, len(collectionNames), collectionName)
+		
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud:
+			if err := deleteWeaviateCollection(ctx, dbConfig, collectionName); err != nil {
+				printError(fmt.Sprintf("Failed to delete collection '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+				successCount++
+			}
+		case config.VectorDBTypeLocal:
+			if err := deleteWeaviateCollection(ctx, dbConfig, collectionName); err != nil {
+				printError(fmt.Sprintf("Failed to delete collection '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+				successCount++
+			}
+		case config.VectorDBTypeMock:
+			if err := deleteMockCollection(ctx, dbConfig, collectionName); err != nil {
+				printError(fmt.Sprintf("Failed to delete collection '%s': %v", collectionName, err))
+				errorCount++
+			} else {
+				printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+				successCount++
+			}
+		default:
+			printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			errorCount++
+		}
+		fmt.Println()
+	}
+
+	// Summary
+	if len(collectionNames) > 1 {
+		if errorCount == 0 {
+			printSuccess(fmt.Sprintf("All %d collections deleted successfully!", successCount))
+		} else if successCount == 0 {
+			printError(fmt.Sprintf("Failed to delete all %d collections", errorCount))
+		} else {
+			printWarning(fmt.Sprintf("Deleted %d collections successfully, %d failed", successCount, errorCount))
+		}
 	}
 }
 
@@ -458,24 +523,21 @@ func listMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 	}
 }
 
-func deleteWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
+func deleteWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) error {
 	client, err := createWeaviateClient(cfg)
-
 	if err != nil {
-		printError(fmt.Sprintf("Failed to create client: %v", err))
-		return
+		return fmt.Errorf("failed to create client: %w", err)
 	}
 
 	// Delete the collection
 	if err := client.DeleteCollection(ctx, collectionName); err != nil {
-		printError(fmt.Sprintf("Failed to delete collection %s: %v", collectionName, err))
-		os.Exit(1)
+		return fmt.Errorf("failed to delete collection %s: %w", collectionName, err)
 	}
 
-	printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+	return nil
 }
 
-func deleteMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
+func deleteMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) error {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -492,11 +554,10 @@ func deleteMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 
 	// Delete the collection
 	if err := client.DeleteCollection(ctx, collectionName); err != nil {
-		printError(fmt.Sprintf("Failed to delete collection %s: %v", collectionName, err))
-		os.Exit(1)
+		return fmt.Errorf("failed to delete collection %s: %w", collectionName, err)
 	}
 
-	printSuccess(fmt.Sprintf("Successfully deleted collection: %s", collectionName))
+	return nil
 }
 
 func deleteAllWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {

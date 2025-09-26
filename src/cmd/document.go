@@ -62,22 +62,29 @@ This command displays:
 
 // documentDeleteCmd represents the document delete command
 var documentDeleteCmd = &cobra.Command{
-	Use:     "delete COLLECTION_NAME [DOCUMENT_ID]",
+	Use:     "delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]",
 	Aliases: []string{"del", "d"},
 	Short:   "Delete documents from a collection",
 	Long: `Delete documents from a collection.
 
-You can delete documents in three ways:
-1. By document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
-2. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
-3. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
+You can delete documents in four ways:
+1. By single document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
+2. By multiple document IDs: weave doc delete COLLECTION_NAME DOC_ID1 DOC_ID2 DOC_ID3
+3. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
+4. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
 
 When using --virtual flag, all chunks and images associated with the original filename
 will be deleted in one operation.
 
+Examples:
+  weave docs delete MyCollection doc123
+  weave docs d MyCollection doc123 doc456 doc789
+  weave docs delete MyCollection --metadata filename=test.pdf
+  weave docs delete MyCollection test.pdf --virtual
+
 ⚠️  WARNING: This is a destructive operation that will permanently
 delete the specified documents. Use with caution!`,
-	Args: cobra.RangeArgs(1, 2),
+	Args: cobra.MinimumNArgs(1),
 	Run:  runDocumentDelete,
 }
 
@@ -133,6 +140,7 @@ func init() {
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
+	documentDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
 func runDocumentList(cmd *cobra.Command, args []string) {
@@ -268,18 +276,17 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 func runDocumentDelete(cmd *cobra.Command, args []string) {
 	cfgFile, _ := cmd.Flags().GetString("config")
 	envFile, _ := cmd.Flags().GetString("env")
+	force, _ := cmd.Flags().GetBool("force")
 	collectionName := args[0]
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 	virtual, _ := cmd.Flags().GetBool("virtual")
 
-	var documentID string
-	if len(args) > 1 {
-		documentID = args[1]
-	}
+	// Get document IDs (all args after collection name)
+	documentIDs := args[1:]
 
 	// Validate arguments
-	if len(metadataFilters) == 0 && documentID == "" {
-		printError("Either DOCUMENT_ID or --metadata filter must be provided")
+	if len(metadataFilters) == 0 && len(documentIDs) == 0 {
+		printError("Either DOCUMENT_ID(s) or --metadata filter must be provided")
 		os.Exit(1)
 	}
 
@@ -288,8 +295,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if len(metadataFilters) > 0 && documentID != "" && !virtual {
-		printError("Cannot specify both DOCUMENT_ID and --metadata filter")
+	if len(metadataFilters) > 0 && len(documentIDs) > 0 && !virtual {
+		printError("Cannot specify both DOCUMENT_ID(s) and --metadata filter")
 		os.Exit(1)
 	}
 
@@ -300,7 +307,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	printHeader("Delete Document")
+	printHeader("Delete Document(s)")
 	fmt.Println()
 
 	if len(metadataFilters) > 0 {
@@ -308,28 +315,52 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		fmt.Printf("Metadata filters: %v\n", metadataFilters)
 		fmt.Println()
 
-		// Confirm deletion
-		if !confirmAction("Are you sure you want to delete documents matching these metadata filters?") {
+		// Confirm deletion unless --force is used
+		if !force && !confirmAction("Are you sure you want to delete documents matching these metadata filters?") {
 			printInfo("Operation cancelled by user")
 			return
 		}
 	} else if virtual {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete ALL chunks and images associated with original filename '%s' from collection '%s'!", documentID, collectionName))
+		if len(documentIDs) != 1 {
+			printError("Virtual deletion requires exactly one original filename")
+			os.Exit(1)
+		}
+		originalFilename := documentIDs[0]
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete ALL chunks and images associated with original filename '%s' from collection '%s'!", originalFilename, collectionName))
 		fmt.Println()
 
-		// Confirm deletion
-		if !confirmAction(fmt.Sprintf("Are you sure you want to delete all chunks and images for original filename '%s'?", documentID)) {
+		// Confirm deletion unless --force is used
+		if !force && !confirmAction(fmt.Sprintf("Are you sure you want to delete all chunks and images for original filename '%s'?", originalFilename)) {
 			printInfo("Operation cancelled by user")
 			return
 		}
 	} else {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete document '%s' from collection '%s'!", documentID, collectionName))
+		// Multiple document IDs
+		if len(documentIDs) == 1 {
+			printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete document '%s' from collection '%s'!", documentIDs[0], collectionName))
+		} else {
+			printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete %d documents from collection '%s'!", len(documentIDs), collectionName))
+			fmt.Println()
+			printInfo("Documents to delete:")
+			for i, docID := range documentIDs {
+				fmt.Printf("  %d. %s\n", i+1, docID)
+			}
+		}
 		fmt.Println()
 
-		// Confirm deletion
-		if !confirmAction(fmt.Sprintf("Are you sure you want to delete document '%s'?", documentID)) {
-			printInfo("Operation cancelled by user")
-			return
+		// Confirm deletion unless --force is used
+		if !force {
+			var confirmMessage string
+			if len(documentIDs) == 1 {
+				confirmMessage = fmt.Sprintf("Are you sure you want to delete document '%s'?", documentIDs[0])
+			} else {
+				confirmMessage = fmt.Sprintf("Are you sure you want to delete %d documents?", len(documentIDs))
+			}
+			
+			if !confirmAction(confirmMessage) {
+				printInfo("Operation cancelled by user")
+				return
+			}
 		}
 	}
 
@@ -340,7 +371,15 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	color.New(color.FgCyan, color.Bold).Printf("Deleting document from %s database...\n", dbConfig.Type)
+	if len(metadataFilters) > 0 {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by metadata from %s database...\n", dbConfig.Type)
+	} else if virtual {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by original filename from %s database...\n", dbConfig.Type)
+	} else if len(documentIDs) == 1 {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting document from %s database...\n", dbConfig.Type)
+	} else {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting %d documents from %s database...\n", len(documentIDs), dbConfig.Type)
+	}
 	fmt.Println()
 
 	ctx := context.Background()
@@ -350,25 +389,25 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		if len(metadataFilters) > 0 {
 			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
 		} else if virtual {
-			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentID)
+			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
 		} else {
-			deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
+			deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
 	case config.VectorDBTypeLocal:
 		if len(metadataFilters) > 0 {
 			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
 		} else if virtual {
-			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentID)
+			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
 		} else {
-			deleteWeaviateDocument(ctx, dbConfig, collectionName, documentID)
+			deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
 	case config.VectorDBTypeMock:
 		if len(metadataFilters) > 0 {
 			deleteMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
 		} else if virtual {
-			deleteMockDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentID)
+			deleteMockDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
 		} else {
-			deleteMockDocument(ctx, dbConfig, collectionName, documentID)
+			deleteMultipleMockDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
@@ -739,6 +778,41 @@ func deleteWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 	printSuccess(fmt.Sprintf("Successfully deleted document '%s' from collection '%s'", documentID, collectionName))
 }
 
+func deleteMultipleWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
+	client, err := createWeaviateClient(cfg)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	successCount := 0
+	errorCount := 0
+
+	for i, documentID := range documentIDs {
+		fmt.Printf("Deleting document %d/%d: %s\n", i+1, len(documentIDs), documentID)
+		
+		if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
+			printError(fmt.Sprintf("Failed to delete document %s: %v", documentID, err))
+			errorCount++
+		} else {
+			printSuccess(fmt.Sprintf("Successfully deleted document: %s", documentID))
+			successCount++
+		}
+		fmt.Println()
+	}
+
+	// Summary
+	if len(documentIDs) > 1 {
+		if errorCount == 0 {
+			printSuccess(fmt.Sprintf("All %d documents deleted successfully!", successCount))
+		} else if successCount == 0 {
+			printError(fmt.Sprintf("Failed to delete all %d documents", errorCount))
+		} else {
+			printWarning(fmt.Sprintf("Deleted %d documents successfully, %d failed", successCount, errorCount))
+		}
+	}
+}
+
 func deleteWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string) {
 	client, err := createWeaviateClient(cfg)
 
@@ -783,6 +857,49 @@ func deleteMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 	}
 
 	printSuccess(fmt.Sprintf("Successfully deleted document '%s' from collection '%s'", documentID, collectionName))
+}
+
+func deleteMultipleMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	successCount := 0
+	errorCount := 0
+
+	for i, documentID := range documentIDs {
+		fmt.Printf("Deleting document %d/%d: %s\n", i+1, len(documentIDs), documentID)
+		
+		if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
+			printError(fmt.Sprintf("Failed to delete document %s: %v", documentID, err))
+			errorCount++
+		} else {
+			printSuccess(fmt.Sprintf("Successfully deleted document: %s", documentID))
+			successCount++
+		}
+		fmt.Println()
+	}
+
+	// Summary
+	if len(documentIDs) > 1 {
+		if errorCount == 0 {
+			printSuccess(fmt.Sprintf("All %d documents deleted successfully!", successCount))
+		} else if successCount == 0 {
+			printError(fmt.Sprintf("Failed to delete all %d documents", errorCount))
+		} else {
+			printWarning(fmt.Sprintf("Deleted %d documents successfully, %d failed", successCount, errorCount))
+		}
+	}
 }
 
 func deleteMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string) {
