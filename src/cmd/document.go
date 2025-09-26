@@ -1369,6 +1369,19 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 			} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
 				// Metadata is already a map
 				metadataObj = metadataMap
+				
+				// Check if there's nested metadata (like in TestCollection)
+				if nestedMetadata, ok := metadataObj["metadata"]; ok {
+					if nestedStr, ok := nestedMetadata.(string); ok {
+						// Parse the nested JSON metadata
+						if err := json.Unmarshal([]byte(nestedStr), &metadataObj); err != nil {
+							continue
+						}
+					} else if nestedMap, ok := nestedMetadata.(map[string]interface{}); ok {
+						// Use the nested metadata map
+						metadataObj = nestedMap
+					}
+				}
 			} else {
 				continue
 			}
@@ -1394,7 +1407,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 					continue
 				}
 			}
-			
+
 			// Check for chunked document using RagMeDocs metadata structure
 			if _, ok := metadataObj["chunk_index"].(float64); ok {
 				// This is a chunked document from RagMeDocs
@@ -1405,7 +1418,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 					if len(parts) > 0 {
 						originalFilename := strings.TrimPrefix(parts[0], "file://")
 						originalFilename = filepath.Base(originalFilename)
-						
+
 						if vdoc, exists := docMap[originalFilename]; exists {
 							vdoc.Chunks = append(vdoc.Chunks, doc)
 						} else {

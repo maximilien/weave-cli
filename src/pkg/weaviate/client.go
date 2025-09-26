@@ -570,64 +570,68 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 
 // buildMetadataQuery dynamically discovers the metadata schema and builds the appropriate GraphQL query
 func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) (string, error) {
-	// Try the object metadata query first (new format)
-	discoveryQuery := fmt.Sprintf(`
-		{
-			Get {
-				%s(limit: 1) {
-					_additional {
-						id
-					}
-					metadata {
-						filename
-						file_size
-						content_type
-						date_added
-						chunk_index
-						chunk_size
-						total_chunks
-						source_document
-						processed_by
-						processing_time
-						is_extracted_from_document
-						file_extension
-					}
-				}
-			}
-		}
-	`, collectionName)
-
-	result, err := c.client.GraphQL().Raw().WithQuery(discoveryQuery).Do(ctx)
+	// Get the collection schema via REST API to understand the metadata structure
+	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/v1/schema/%s", c.config.URL, collectionName), nil)
 	if err != nil {
-		// If the object query fails, it's likely a string metadata field (old format)
 		return "\n\t\t\t\tmetadata", nil
 	}
 
-	// Check for GraphQL errors
-	if len(result.Errors) > 0 {
-		// If metadata field doesn't support sub-selection, it's a string field
-		if strings.Contains(result.Errors[0].Message, "must not have a sub selection") {
-			return "\n\t\t\t\tmetadata", nil
-		}
-		return "", fmt.Errorf("graphql error: %s", result.Errors[0].Message)
+	req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
+	if c.config.OpenAIAPIKey != "" {
+		req.Header.Set("X-Openai-Api-Key", c.config.OpenAIAPIKey)
 	}
 
-	// If we get here, the object metadata query worked
-	return `
-				metadata {
-					filename
-					file_size
-					content_type
-					date_added
-					chunk_index
-					chunk_size
-					total_chunks
-					source_document
-					processed_by
-					processing_time
-					is_extracted_from_document
-					file_extension
-				}`, nil
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "\n\t\t\t\tmetadata", nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "\n\t\t\t\tmetadata", nil
+	}
+
+	var schema struct {
+		Properties []struct {
+			Name     string `json:"name"`
+			DataType []string `json:"dataType"`
+			NestedProperties []struct {
+				Name string `json:"name"`
+			} `json:"nestedProperties"`
+		} `json:"properties"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&schema); err != nil {
+		return "\n\t\t\t\tmetadata", nil
+	}
+
+	// Find the metadata property
+	for _, prop := range schema.Properties {
+		if prop.Name == "metadata" {
+			// Check if it's an object type
+			if len(prop.DataType) > 0 && prop.DataType[0] == "object" {
+				// Build query with available nested properties
+				if len(prop.NestedProperties) > 0 {
+					var nestedFields []string
+					for _, nested := range prop.NestedProperties {
+						nestedFields = append(nestedFields, nested.Name)
+					}
+					
+					query := "\n\t\t\t\tmetadata {\n"
+					for _, field := range nestedFields {
+						query += fmt.Sprintf("\t\t\t\t\t%s\n", field)
+					}
+					query += "\t\t\t\t}"
+					return query, nil
+				}
+			}
+			// If it's not an object or has no nested properties, use simple metadata
+			return "\n\t\t\t\tmetadata", nil
+		}
+	}
+
+	// If metadata property not found, use simple metadata
+	return "\n\t\t\t\tmetadata", nil
 }
 
 // listDocumentsWithSimpleMetadata handles collections with string metadata (old format)
