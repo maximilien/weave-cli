@@ -1358,30 +1358,40 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 	for _, doc := range documents {
 		// Check if this is a chunked document
 		if metadata, ok := doc.Metadata["metadata"]; ok {
+			// Handle both string and map metadata formats
+			var metadataObj map[string]interface{}
+			
 			if metadataStr, ok := metadata.(string); ok {
 				// Parse the JSON metadata to extract original filename
-				var metadataObj map[string]interface{}
-				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
-					if originalFilename, ok := metadataObj["original_filename"].(string); ok {
-						if isChunked, ok := metadataObj["is_chunked"].(bool); ok && isChunked {
-							// This is a chunk
-							if vdoc, exists := docMap[originalFilename]; exists {
-								vdoc.Chunks = append(vdoc.Chunks, doc)
-							} else {
-								totalChunks := 0
-								if tc, ok := metadataObj["total_chunks"].(float64); ok {
-									totalChunks = int(tc)
-								}
-								docMap[originalFilename] = &VirtualDocument{
-									OriginalFilename: originalFilename,
-									TotalChunks:      totalChunks,
-									Chunks:           []weaviate.Document{doc},
-									Metadata:         metadataObj,
-								}
-							}
-							continue
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err != nil {
+					continue
+				}
+			} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
+				// Metadata is already a map
+				metadataObj = metadataMap
+			} else {
+				continue
+			}
+			
+			// Check for chunked document using current metadata structure
+			if filename, ok := metadataObj["filename"].(string); ok {
+				if isExtracted, ok := metadataObj["is_extracted_from_document"].(bool); ok && isExtracted {
+					// This is a chunk from a document
+					if vdoc, exists := docMap[filename]; exists {
+						vdoc.Chunks = append(vdoc.Chunks, doc)
+					} else {
+						totalChunks := 0
+						if tc, ok := metadataObj["total_chunks"].(float64); ok {
+							totalChunks = int(tc)
+						}
+						docMap[filename] = &VirtualDocument{
+							OriginalFilename: filename,
+							TotalChunks:      totalChunks,
+							Chunks:           []weaviate.Document{doc},
+							Metadata:         metadataObj,
 						}
 					}
+					continue
 				}
 			}
 		}
