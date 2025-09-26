@@ -593,8 +593,8 @@ func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) 
 
 	var schema struct {
 		Properties []struct {
-			Name     string `json:"name"`
-			DataType []string `json:"dataType"`
+			Name             string   `json:"name"`
+			DataType         []string `json:"dataType"`
 			NestedProperties []struct {
 				Name string `json:"name"`
 			} `json:"nestedProperties"`
@@ -616,7 +616,7 @@ func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) 
 					for _, nested := range prop.NestedProperties {
 						nestedFields = append(nestedFields, nested.Name)
 					}
-					
+
 					query := "\n\t\t\t\tmetadata {\n"
 					for _, field := range nestedFields {
 						query += fmt.Sprintf("\t\t\t\t\t%s\n", field)

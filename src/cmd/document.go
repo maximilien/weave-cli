@@ -8,6 +8,7 @@ import (
 	"mime"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -71,11 +72,12 @@ var documentDeleteCmd = &cobra.Command{
 	Short:   "Delete documents from a collection",
 	Long: `Delete documents from a collection.
 
-You can delete documents in four ways:
+You can delete documents in five ways:
 1. By single document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
 2. By multiple document IDs: weave doc delete COLLECTION_NAME DOC_ID1 DOC_ID2 DOC_ID3
 3. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
 4. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
+5. By regex pattern: weave doc delete COLLECTION_NAME --pattern "tmpz.*\.png"
 
 When using --virtual flag, all chunks and images associated with the original filename
 will be deleted in one operation.
@@ -85,6 +87,7 @@ Examples:
   weave docs d MyCollection doc123 doc456 doc789
   weave docs delete MyCollection --metadata filename=test.pdf
   weave docs delete MyCollection test.pdf --virtual
+  weave docs delete MyCollection --pattern "tmpz.*\.png"
 
 ⚠️  WARNING: This is a destructive operation that will permanently
 delete the specified documents. Use with caution!`,
@@ -173,6 +176,7 @@ func init() {
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
+	documentDeleteCmd.Flags().StringP("pattern", "p", "", "Delete documents matching regex pattern (matches against filename or URL)")
 	documentDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
@@ -313,13 +317,14 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	collectionName := args[0]
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 	virtual, _ := cmd.Flags().GetBool("virtual")
+	pattern, _ := cmd.Flags().GetString("pattern")
 
 	// Get document IDs (all args after collection name)
 	documentIDs := args[1:]
 
 	// Validate arguments
-	if len(metadataFilters) == 0 && len(documentIDs) == 0 {
-		printError("Either DOCUMENT_ID(s) or --metadata filter must be provided")
+	if len(metadataFilters) == 0 && len(documentIDs) == 0 && pattern == "" {
+		printError("Either DOCUMENT_ID(s), --metadata filter, or --pattern must be provided")
 		os.Exit(1)
 	}
 
@@ -328,8 +333,23 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if len(metadataFilters) > 0 && len(documentIDs) > 0 && !virtual {
+	if virtual && pattern != "" {
+		printError("Cannot use --virtual flag with --pattern")
+		os.Exit(1)
+	}
+
+	if len(metadataFilters) > 0 && len(documentIDs) > 0 && !virtual && pattern == "" {
 		printError("Cannot specify both DOCUMENT_ID(s) and --metadata filter")
+		os.Exit(1)
+	}
+
+	if pattern != "" && len(documentIDs) > 0 {
+		printError("Cannot specify both DOCUMENT_ID(s) and --pattern")
+		os.Exit(1)
+	}
+
+	if pattern != "" && len(metadataFilters) > 0 {
+		printError("Cannot specify both --metadata filter and --pattern")
 		os.Exit(1)
 	}
 
@@ -364,6 +384,42 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 
 		// Confirm deletion unless --force is used
 		if !force && !confirmAction(fmt.Sprintf("Are you sure you want to delete all chunks and images for original filename '%s'?", originalFilename)) {
+			printInfo("Operation cancelled by user")
+			return
+		}
+	} else if pattern != "" {
+		// Pattern-based deletion
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete documents matching pattern '%s' from collection '%s'!", pattern, collectionName))
+		fmt.Println()
+
+		// First, let's find matching documents to show the user
+		// Get default database (for now, we'll use default for document operations)
+		dbConfig, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get default database: %v", err))
+			os.Exit(1)
+		}
+		
+		matchingDocs, err := findDocumentsByPattern(cfg, dbConfig, collectionName, pattern)
+		if err != nil {
+			printError(fmt.Sprintf("Failed to find documents matching pattern: %v", err))
+			os.Exit(1)
+		}
+
+		if len(matchingDocs) == 0 {
+			printInfo(fmt.Sprintf("No documents found matching pattern '%s'", pattern))
+			return
+		}
+
+		printInfo(fmt.Sprintf("Found %d documents matching pattern '%s':", len(matchingDocs), pattern))
+		for i, doc := range matchingDocs {
+			filename := getDocumentDisplayName(doc)
+			fmt.Printf("  %d. %s (ID: %s)\n", i+1, filename, doc.ID)
+		}
+		fmt.Println()
+
+		// Confirm deletion unless --force is used
+		if !force && !confirmAction(fmt.Sprintf("Are you sure you want to delete %d documents matching pattern '%s'?", len(matchingDocs), pattern)) {
 			printInfo("Operation cancelled by user")
 			return
 		}
@@ -408,6 +464,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by metadata from %s database...\n", dbConfig.Type)
 	} else if virtual {
 		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by original filename from %s database...\n", dbConfig.Type)
+	} else if pattern != "" {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by pattern from %s database...\n", dbConfig.Type)
 	} else if len(documentIDs) == 1 {
 		color.New(color.FgCyan, color.Bold).Printf("Deleting document from %s database...\n", dbConfig.Type)
 	} else {
@@ -423,6 +481,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
 		} else if virtual {
 			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
+		} else if pattern != "" {
+			deleteWeaviateDocumentsByPattern(ctx, dbConfig, collectionName, pattern)
 		} else {
 			deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
@@ -431,6 +491,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			deleteWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
 		} else if virtual {
 			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
+		} else if pattern != "" {
+			deleteWeaviateDocumentsByPattern(ctx, dbConfig, collectionName, pattern)
 		} else {
 			deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
@@ -439,6 +501,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			deleteMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters)
 		} else if virtual {
 			deleteMockDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
+		} else if pattern != "" {
+			deleteMockDocumentsByPattern(ctx, dbConfig, collectionName, pattern)
 		} else {
 			deleteMultipleMockDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
@@ -1369,7 +1433,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 			} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
 				// Metadata is already a map
 				metadataObj = metadataMap
-				
+
 				// Check if there's nested metadata (like in TestCollection)
 				if nestedMetadata, ok := metadataObj["metadata"]; ok {
 					if nestedStr, ok := nestedMetadata.(string); ok {
@@ -1442,7 +1506,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		// Check if this is an image document that should be grouped with its source
 		if isImageDocumentFromMetadata(doc.Metadata) {
 			groupKey := getImageGroupKey(doc)
-			
+
 			if vdoc, exists := docMap[groupKey]; exists {
 				// Add to existing group
 				vdoc.Chunks = append(vdoc.Chunks, doc)
@@ -1458,7 +1522,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		} else {
 			// For standalone documents, use URL or filename as key
 			groupKey := getStandaloneDocumentKey(doc)
-			
+
 			if vdoc, exists := docMap[groupKey]; exists {
 				// Add to existing group
 				vdoc.Chunks = append(vdoc.Chunks, doc)
@@ -1541,7 +1605,7 @@ func isImageDocumentFromMetadata(metadata map[string]interface{}) bool {
 	if metadata == nil {
 		return false
 	}
-	
+
 	// Check metadata for image indicators
 	if metadataField, ok := metadata["metadata"]; ok {
 		if metadataStr, ok := metadataField.(string); ok {
@@ -1562,29 +1626,29 @@ func isImageDocumentFromMetadata(metadata map[string]interface{}) bool {
 			}
 		}
 	}
-	
+
 	// Check URL for image indicators
 	if url, ok := metadata["url"].(string); ok {
-		if strings.HasSuffix(strings.ToLower(url), ".png") || 
-		   strings.HasSuffix(strings.ToLower(url), ".jpg") || 
-		   strings.HasSuffix(strings.ToLower(url), ".jpeg") || 
-		   strings.HasSuffix(strings.ToLower(url), ".gif") || 
-		   strings.HasSuffix(strings.ToLower(url), ".bmp") {
+		if strings.HasSuffix(strings.ToLower(url), ".png") ||
+			strings.HasSuffix(strings.ToLower(url), ".jpg") ||
+			strings.HasSuffix(strings.ToLower(url), ".jpeg") ||
+			strings.HasSuffix(strings.ToLower(url), ".gif") ||
+			strings.HasSuffix(strings.ToLower(url), ".bmp") {
 			return true
 		}
 	}
-	
+
 	// Check filename for image indicators
 	if filename, ok := metadata["filename"].(string); ok {
-		if strings.HasSuffix(strings.ToLower(filename), ".png") || 
-		   strings.HasSuffix(strings.ToLower(filename), ".jpg") || 
-		   strings.HasSuffix(strings.ToLower(filename), ".jpeg") || 
-		   strings.HasSuffix(strings.ToLower(filename), ".gif") || 
-		   strings.HasSuffix(strings.ToLower(filename), ".bmp") {
+		if strings.HasSuffix(strings.ToLower(filename), ".png") ||
+			strings.HasSuffix(strings.ToLower(filename), ".jpg") ||
+			strings.HasSuffix(strings.ToLower(filename), ".jpeg") ||
+			strings.HasSuffix(strings.ToLower(filename), ".gif") ||
+			strings.HasSuffix(strings.ToLower(filename), ".bmp") {
 			return true
 		}
 	}
-	
+
 	return false
 }
 
@@ -1594,12 +1658,12 @@ func getStandaloneDocumentKey(doc weaviate.Document) string {
 	if url, ok := doc.Metadata["url"].(string); ok {
 		return url
 	}
-	
+
 	// Use filename as fallback
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		return filename
 	}
-	
+
 	// Fallback
 	return "Unknown Document"
 }
@@ -2617,4 +2681,136 @@ func formatDocumentCreationError(docID string, err error) string {
 
 	// Default error message
 	return fmt.Sprintf("Failed to create document '%s': %v", docID, err)
+}
+
+// findDocumentsByPattern finds documents matching a regex pattern
+func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, pattern string) ([]weaviate.Document, error) {
+	ctx := context.Background()
+	
+	// Compile the regex pattern
+	regex, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex pattern: %v", err)
+	}
+	
+	// Create client based on database type
+	var client weaviate.WeaveClient
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+		weaviateClient, err := createWeaviateClient(dbConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Weaviate client: %v", err)
+		}
+		client = *weaviateClient
+	case config.VectorDBTypeMock:
+		return nil, fmt.Errorf("pattern deletion not yet supported for mock database")
+	default:
+		return nil, fmt.Errorf("unsupported database type: %s", dbConfig.Type)
+	}
+	
+	// Get all documents from the collection
+	allDocs, err := client.ListDocuments(ctx, collectionName, 10000) // Large limit to get all docs
+	if err != nil {
+		return nil, fmt.Errorf("failed to list documents: %v", err)
+	}
+	
+	// Filter documents that match the pattern
+	var matchingDocs []weaviate.Document
+	for _, doc := range allDocs {
+		if matchesPattern(doc, regex) {
+			matchingDocs = append(matchingDocs, doc)
+		}
+	}
+	
+	return matchingDocs, nil
+}
+
+// matchesPattern checks if a document matches the regex pattern
+func matchesPattern(doc weaviate.Document, regex *regexp.Regexp) bool {
+	// Check filename in metadata
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if filename, ok := metadataObj["filename"].(string); ok {
+					if regex.MatchString(filename) {
+						return true
+					}
+				}
+			}
+		}
+	}
+	
+	// Check URL
+	if url, ok := doc.Metadata["url"].(string); ok {
+		if regex.MatchString(url) {
+			return true
+		}
+	}
+	
+	// Check filename field directly
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if regex.MatchString(filename) {
+			return true
+		}
+	}
+	
+	return false
+}
+
+// getDocumentDisplayName returns a display name for a document
+func getDocumentDisplayName(doc weaviate.Document) string {
+	// Try to get filename from metadata
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if filename, ok := metadataObj["filename"].(string); ok {
+					return filename
+				}
+			}
+		}
+	}
+	
+	// Try URL
+	if url, ok := doc.Metadata["url"].(string); ok {
+		return url
+	}
+	
+	// Try filename field directly
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		return filename
+	}
+	
+	// Fallback to ID
+	return doc.ID
+}
+
+// deleteWeaviateDocumentsByPattern deletes documents matching a pattern from Weaviate
+func deleteWeaviateDocumentsByPattern(ctx context.Context, dbConfig *config.VectorDBConfig, collectionName, pattern string) {
+	// Find matching documents
+	matchingDocs, err := findDocumentsByPattern(nil, dbConfig, collectionName, pattern)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to find documents: %v", err))
+		return
+	}
+	
+	if len(matchingDocs) == 0 {
+		printInfo("No documents found matching pattern")
+		return
+	}
+	
+	// Extract document IDs
+	var docIDs []string
+	for _, doc := range matchingDocs {
+		docIDs = append(docIDs, doc.ID)
+	}
+	
+	// Delete the documents
+	deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, docIDs)
+}
+
+// deleteMockDocumentsByPattern deletes documents matching a pattern from mock database
+func deleteMockDocumentsByPattern(ctx context.Context, dbConfig *config.VectorDBConfig, collectionName, pattern string) {
+	printError("Pattern deletion not yet supported for mock database")
 }
