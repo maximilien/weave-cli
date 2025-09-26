@@ -726,6 +726,9 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 	if wc.config.APIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+wc.config.APIKey)
 	}
+	if wc.config.OpenAIAPIKey != "" {
+		req.Header.Set("X-Openai-Api-Key", wc.config.OpenAIAPIKey)
+	}
 	req.Header.Set("Content-Type", "application/json")
 
 	// Make the request
