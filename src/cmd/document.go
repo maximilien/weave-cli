@@ -2147,7 +2147,8 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			if err := createWeaviateDocument(ctx, dbConfig, collectionName, doc); err != nil {
-				printError(fmt.Sprintf("Failed to create document '%s': %v", doc.ID, err))
+				errorMsg := formatDocumentCreationError(doc.ID, err)
+				printError(errorMsg)
 				errorCount++
 			} else {
 				printSuccess(fmt.Sprintf("Successfully created document: %s", doc.ID))
@@ -2429,4 +2430,37 @@ func createMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 	// Create the document
 	return client.CreateDocument(ctx, collectionName, document)
+}
+
+
+// formatDocumentCreationError formats document creation errors with user-friendly messages
+func formatDocumentCreationError(docID string, err error) string {
+	errorStr := err.Error()
+	
+	// Check for OpenAI API key missing error
+	if strings.Contains(errorStr, "no api key found") && strings.Contains(errorStr, "OPENAI_APIKEY") {
+		return fmt.Sprintf("Failed to create document '%s': Missing OpenAI API key for vectorization.\n"+
+			"   💡 Solution: Add OPENAI_APIKEY to your .env file or use mock database (VECTOR_DB_TYPE=mock)", docID)
+	}
+	
+	// Check for other common vectorization errors
+	if strings.Contains(errorStr, "vectorize target vector") {
+		return fmt.Sprintf("Failed to create document '%s': Vectorization error.\n"+
+			"   💡 Check your embedding model configuration and API keys", docID)
+	}
+	
+	// Check for authentication errors
+	if strings.Contains(errorStr, "unauthorized") || strings.Contains(errorStr, "401") {
+		return fmt.Sprintf("Failed to create document '%s': Authentication failed.\n"+
+			"   💡 Check your WEAVIATE_API_KEY in .env file", docID)
+	}
+	
+	// Check for connection errors
+	if strings.Contains(errorStr, "connection") || strings.Contains(errorStr, "timeout") {
+		return fmt.Sprintf("Failed to create document '%s': Connection error.\n"+
+			"   💡 Check your WEAVIATE_URL and network connection", docID)
+	}
+	
+	// Default error message
+	return fmt.Sprintf("Failed to create document '%s': %v", docID, err)
 }
