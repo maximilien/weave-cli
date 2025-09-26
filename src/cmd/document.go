@@ -356,7 +356,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			} else {
 				confirmMessage = fmt.Sprintf("Are you sure you want to delete %d documents?", len(documentIDs))
 			}
-			
+
 			if !confirmAction(confirmMessage) {
 				printInfo("Operation cancelled by user")
 				return
@@ -433,9 +433,25 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete ALL documents from collection '%s'!", collectionName))
 	fmt.Println()
 
-	// Confirm deletion
+	// First confirmation
 	if !confirmAction(fmt.Sprintf("Are you sure you want to delete ALL documents from collection '%s'?", collectionName)) {
 		printInfo("Operation cancelled by user")
+		return
+	}
+
+	// Second confirmation with red warning
+	fmt.Println()
+	color.New(color.FgRed, color.Bold).Println("🚨 FINAL WARNING: This operation CANNOT be undone!")
+	color.New(color.FgRed).Printf("All documents in collection '%s' will be permanently deleted.\n", collectionName)
+	fmt.Println()
+	
+	// Require exact "yes" confirmation
+	fmt.Print("Type 'yes' to confirm deletion: ")
+	var response string
+	fmt.Scanln(&response)
+	
+	if response != "yes" {
+		printInfo("Operation cancelled - confirmation not received")
 		return
 	}
 
@@ -790,7 +806,7 @@ func deleteMultipleWeaviateDocuments(ctx context.Context, cfg *config.VectorDBCo
 
 	for i, documentID := range documentIDs {
 		fmt.Printf("Deleting document %d/%d: %s\n", i+1, len(documentIDs), documentID)
-		
+
 		if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
 			printError(fmt.Sprintf("Failed to delete document %s: %v", documentID, err))
 			errorCount++
@@ -879,7 +895,7 @@ func deleteMultipleMockDocuments(ctx context.Context, cfg *config.VectorDBConfig
 
 	for i, documentID := range documentIDs {
 		fmt.Printf("Deleting document %d/%d: %s\n", i+1, len(documentIDs), documentID)
-		
+
 		if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
 			printError(fmt.Sprintf("Failed to delete document %s: %v", documentID, err))
 			errorCount++

@@ -226,7 +226,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		} else {
 			confirmMessage = fmt.Sprintf("Are you sure you want to delete %d collections?", len(collectionNames))
 		}
-		
+
 		if !confirmAction(confirmMessage) {
 			printInfo("Operation cancelled by user")
 			return
@@ -253,7 +253,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 
 	for i, collectionName := range collectionNames {
 		fmt.Printf("Deleting collection %d/%d: %s\n", i+1, len(collectionNames), collectionName)
-		
+
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud:
 			if err := deleteWeaviateCollection(ctx, dbConfig, collectionName); err != nil {
@@ -315,9 +315,25 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	printWarning("⚠️  WARNING: This will permanently delete ALL collections and their data!")
 	fmt.Println()
 
-	// Confirm deletion
+	// First confirmation
 	if !confirmAction("Are you sure you want to delete all collections?") {
 		printInfo("Operation cancelled by user")
+		return
+	}
+
+	// Second confirmation with red warning
+	fmt.Println()
+	color.New(color.FgRed, color.Bold).Println("🚨 FINAL WARNING: This operation CANNOT be undone!")
+	color.New(color.FgRed).Println("All collections and their data will be permanently deleted.")
+	fmt.Println()
+	
+	// Require exact "yes" confirmation
+	fmt.Print("Type 'yes' to confirm deletion: ")
+	var response string
+	fmt.Scanln(&response)
+	
+	if response != "yes" {
+		printInfo("Operation cancelled - confirmation not received")
 		return
 	}
 
