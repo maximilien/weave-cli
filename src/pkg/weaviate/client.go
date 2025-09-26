@@ -129,7 +129,6 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 	return weaveClient.DeleteCollection(ctx, collectionName)
 }
 
-
 // CreateCollection creates a new collection with the specified schema
 func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)

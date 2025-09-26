@@ -444,12 +444,12 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	color.New(color.FgRed, color.Bold).Println("🚨 FINAL WARNING: This operation CANNOT be undone!")
 	color.New(color.FgRed).Printf("All documents in collection '%s' will be permanently deleted.\n", collectionName)
 	fmt.Println()
-	
+
 	// Require exact "yes" confirmation
 	fmt.Print("Type 'yes' to confirm deletion: ")
 	var response string
 	fmt.Scanln(&response)
-	
+
 	if response != "yes" {
 		printInfo("Operation cancelled - confirmation not received")
 		return

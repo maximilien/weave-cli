@@ -117,6 +117,33 @@ weave cols create MyCollection --field title:text,author:text
 - `date` - Date/time values
 - `object` - JSON objects
 
+## Multi-Delete Operations
+
+Delete multiple collections or documents efficiently with enhanced safety:
+
+```bash
+# Delete multiple collections
+weave collection delete Collection1 Collection2 Collection3
+
+# Delete multiple documents
+weave document delete MyCollection doc1 doc2 doc3
+
+# Using aliases
+weave cols d Col1 Col2 Col3
+weave docs d MyCollection doc1 doc2 doc3
+
+# Skip confirmation with --force flag
+weave cols d Col1 Col2 Col3 --force
+weave docs d MyCollection doc1 doc2 doc3 --force
+```
+
+**Safety Features:**
+- Itemized lists showing exactly what will be deleted
+- Progress tracking ("Deleting item X/Y")
+- Error resilience (continues on individual failures)
+- Summary reports with success/failure counts
+- Double confirmation for delete-all operations
+
 ## Command Structure
 
 Weave follows a consistent command pattern:
@@ -134,15 +161,15 @@ Weave follows a consistent command pattern:
   - `weave collection list` - List all collections
   - `weave collection create COLLECTION_NAME` - Create a new collection
   - `weave collection list --virtual` - Show collections with virtual structure summary
-  - `weave collection delete COLLECTION_NAME` - Delete a specific collection
-  - `weave collection delete-all` - Delete all collections
+  - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Delete one or more collections
+  - `weave collection delete-all` - Delete all collections (double confirmation)
 
 - **document** - Document management
   - `weave document list COLLECTION_NAME` - List documents in collection
   - `weave document list COLLECTION_NAME --virtual` - Virtual document view
   - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show specific document
-  - `weave document delete COLLECTION_NAME DOCUMENT_ID` - Delete specific document
-  - `weave document delete-all COLLECTION_NAME` - Delete all documents in collection
+  - `weave document delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]` - Delete one or more documents
+  - `weave document delete-all COLLECTION_NAME` - Delete all documents in collection (double confirmation)
 
 ### Command Aliases
 
@@ -155,10 +182,12 @@ weave cols list         # Same as: weave collection list
 weave col create MyCol  # Same as: weave collection create MyCol
 weave cols create MyCol # Same as: weave collection create MyCol
 weave cols c MyCol      # Same as: weave collection create MyCol
+weave cols d Col1 Col2  # Same as: weave collection delete Col1 Col2
 
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
+weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
 ```
 
 ## Global Flags

@@ -206,6 +206,9 @@ weave collection create MyCollection --embedding text-embedding-ada-002 --field 
 # Delete a specific collection
 weave collection delete MyCollection
 
+# Delete multiple collections
+weave collection delete Collection1 Collection2 Collection3
+
 # Delete all collections (⚠️ DESTRUCTIVE)
 weave collection delete-all
 ```
@@ -231,6 +234,9 @@ weave document show MyCollection document-id
 # Delete a specific document
 weave document delete MyCollection document-id
 
+# Delete multiple documents
+weave document delete MyCollection doc1 doc2 doc3
+
 # Delete all documents in a collection (⚠️ DESTRUCTIVE)
 weave document delete-all MyCollection
 ```
@@ -247,6 +253,7 @@ weave col create MyCol  # Same as: weave collection create MyCol
 weave cols create MyCol # Same as: weave collection create MyCol
 weave cols c MyCol      # Same as: weave collection create MyCol
 weave col delete MyCol  # Same as: weave collection delete MyCol
+weave cols d Col1 Col2  # Same as: weave collection delete Col1 Col2
 
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol
@@ -255,6 +262,7 @@ weave doc C MyCol       # Same as: weave document count MyCol
 weave docs C MyCol      # Same as: weave document count MyCol
 weave docs C RagMeDocs RagMeImages  # Count multiple collections
 weave doc show MyCol ID # Same as: weave document show MyCol ID
+weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
 ```
 
 ## Collection Create Command
@@ -344,6 +352,127 @@ weave cols c MyCollection --field title:invalid
 weave cols c MyCollection --field title
 # ❌ Invalid field definition: field definition must be in format 'name:type', got 'title'
 ```
+
+## Multi-Delete Commands
+
+The `weave collection delete` and `weave document delete` commands now support
+deleting multiple items at once with enhanced safety features.
+
+### Collection Multi-Delete
+
+```bash
+# Delete multiple collections with confirmation
+weave collection delete Collection1 Collection2 Collection3
+
+# Using alias
+weave cols d Collection1 Collection2 Collection3
+
+# Skip confirmation with --force flag
+weave cols d Collection1 Collection2 Collection3 --force
+
+# Example output:
+# 🔧 Delete Collection(s)
+# 
+# ⚠️  WARNING: This will permanently delete 3 collections and all their data!
+# 
+# ℹ️  Collections to delete:
+#   1. Collection1
+#   2. Collection2
+#   3. Collection3
+# 
+# Are you sure you want to delete 3 collections? (y/N): y
+# 
+# Deleting 3 collections in weaviate-cloud database...
+# 
+# Deleting collection 1/3: Collection1
+# ✅ Successfully deleted collection: Collection1
+# 
+# Deleting collection 2/3: Collection2
+# ✅ Successfully deleted collection: Collection2
+# 
+# Deleting collection 3/3: Collection3
+# ✅ Successfully deleted collection: Collection3
+# 
+# ✅ All 3 collections deleted successfully!
+```
+
+### Document Multi-Delete
+
+```bash
+# Delete multiple documents with confirmation
+weave document delete MyCollection doc1 doc2 doc3
+
+# Using alias
+weave docs d MyCollection doc1 doc2 doc3
+
+# Skip confirmation with --force flag
+weave docs d MyCollection doc1 doc2 doc3 --force
+
+# Example output:
+# 🔧 Delete Document(s)
+# 
+# ⚠️  WARNING: This will permanently delete 3 documents from collection 'MyCollection'!
+# 
+# ℹ️  Documents to delete:
+#   1. doc1
+#   2. doc2
+#   3. doc3
+# 
+# Are you sure you want to delete 3 documents? (y/N): y
+# 
+# Deleting 3 documents from weaviate-cloud database...
+# 
+# Deleting document 1/3: doc1
+# ✅ Successfully deleted document: doc1
+# 
+# Deleting document 2/3: doc2
+# ✅ Successfully deleted document: doc2
+# 
+# Deleting document 3/3: doc3
+# ✅ Successfully deleted document: doc3
+# 
+# ✅ All 3 documents deleted successfully!
+```
+
+### Enhanced Safety Features
+
+- **Itemized Lists**: Shows exactly what will be deleted before confirmation
+- **Progress Tracking**: Displays "Deleting item X/Y" progress
+- **Error Resilience**: Continues processing even if some deletions fail
+- **Summary Reports**: Shows success/failure counts for multi-item operations
+- **--force Flag**: Skip confirmation prompts for automated scripts
+
+### Double Confirmation for Delete-All Commands
+
+The most destructive operations (`weave cols da` and `weave docs da`) require
+**double confirmation** for maximum safety:
+
+```bash
+# Collection delete-all with double confirmation
+weave cols da
+
+# Example output:
+# 🔧 Delete All Collections
+# 
+# ⚠️  WARNING: This will permanently delete ALL collections and their data!
+# 
+# Are you sure you want to delete all collections? (y/N): y
+# 
+# 🚨 FINAL WARNING: This operation CANNOT be undone!
+# All collections and their data will be permanently deleted.
+# 
+# Type 'yes' to confirm deletion: yes
+# 
+# Deleting all collections in weaviate-cloud database...
+# ✅ All collections deleted successfully!
+```
+
+**Safety Features:**
+- **First Confirmation**: Standard y/N prompt
+- **Second Confirmation**: Red warning requiring exact "yes" input
+- **Visual Warning**: 🚨 emoji and red text for maximum visibility
+- **Exact Input Required**: Must type "yes" exactly (case-sensitive)
+- **Clear Cancellation**: Shows "Operation cancelled" if confirmation not received
 
 ## Document Count Command
 

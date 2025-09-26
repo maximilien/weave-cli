@@ -28,12 +28,12 @@ This tool provides commands following a consistent pattern:
   weave health check                   # Check database health
   weave collection list                # List all collections
   weave collection create COLLECTION  # Create a new collection
-  weave collection delete COLLECTION   # Delete a specific collection
-  weave collection delete-all          # Delete all collections
+  weave collection delete COLLECTION [COLLECTION...] # Delete one or more collections
+  weave collection delete-all          # Delete all collections (double confirmation)
   weave document list COLLECTION      # List documents in collection
   weave document show COLLECTION ID   # Show specific document
-  weave document delete COLLECTION ID # Delete specific document
-  weave document delete-all COLLECTION # Delete all documents in collection
+  weave document delete COLLECTION [ID] [ID...] # Delete one or more documents
+  weave document delete-all COLLECTION # Delete all documents in collection (double confirmation)
 
 The tool uses ./config.yaml and ./.env files by default, or you can specify
 custom locations with --config and --env flags.`,
