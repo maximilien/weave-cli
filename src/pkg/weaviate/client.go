@@ -442,7 +442,26 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 	// Add available properties to the query, excluding large fields
 	for _, prop := range properties {
 		if !excludedFields[prop] {
-			query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+			if prop == "metadata" {
+				// Handle metadata as an object with nested properties
+				query += `
+					metadata {
+						filename
+						file_size
+						content_type
+						date_added
+						chunk_index
+						chunk_size
+						total_chunks
+						source_document
+						processed_by
+						processing_time
+						is_extracted_from_document
+						file_extension
+					}`
+			} else {
+				query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+			}
 		}
 	}
 
