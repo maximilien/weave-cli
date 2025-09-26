@@ -1394,44 +1394,43 @@ func confirmAction(message string) bool {
 	return response == "y" || response == "Y" || response == "yes" || response == "Yes"
 }
 
-
 // parseFieldDefinitions parses field definitions from command line input
 func parseFieldDefinitions(fieldStr string) ([]weaviate.FieldDefinition, error) {
 	var fields []weaviate.FieldDefinition
-	
+
 	// Split by comma to get individual field definitions
 	fieldParts := strings.Split(fieldStr, ",")
-	
+
 	for _, part := range fieldParts {
 		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
-		
+
 		// Split by colon to get name:type
 		nameTypeParts := strings.Split(part, ":")
 		if len(nameTypeParts) != 2 {
 			return nil, fmt.Errorf("invalid field format '%s', expected 'name:type'", part)
 		}
-		
+
 		name := strings.TrimSpace(nameTypeParts[0])
 		fieldType := strings.TrimSpace(nameTypeParts[1])
-		
+
 		if name == "" || fieldType == "" {
 			return nil, fmt.Errorf("field name and type cannot be empty in '%s'", part)
 		}
-		
+
 		// Validate field type
 		if !isValidFieldType(fieldType) {
 			return nil, fmt.Errorf("invalid field type '%s', supported types: text, int, float, bool, date, object", fieldType)
 		}
-		
+
 		fields = append(fields, weaviate.FieldDefinition{
 			Name: name,
 			Type: fieldType,
 		})
 	}
-	
+
 	return fields, nil
 }
 
@@ -1462,7 +1461,7 @@ func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 	}
 
 	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
-	
+
 	// Show collection details
 	if len(customFields) > 0 {
 		fmt.Println()
@@ -1471,7 +1470,7 @@ func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 			fmt.Printf("  - %s: %s\n", field.Name, field.Type)
 		}
 	}
-	
+
 	fmt.Println()
 	printInfo(fmt.Sprintf("Embedding model: %s", embeddingModel))
 }
@@ -1496,7 +1495,7 @@ func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 	}
 
 	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
-	
+
 	// Show collection details
 	if len(customFields) > 0 {
 		fmt.Println()
@@ -1505,7 +1504,7 @@ func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 			fmt.Printf("  - %s: %s\n", field.Name, field.Type)
 		}
 	}
-	
+
 	fmt.Println()
 	printInfo(fmt.Sprintf("Embedding model: %s", embeddingModel))
 }

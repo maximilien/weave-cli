@@ -10,7 +10,7 @@ applications.
 - 🌐 **Weaviate Cloud Support** - Connect to Weaviate Cloud instances
 - 🏠 **Weaviate Local Support** - Connect to local Weaviate instances  
 - 🎭 **Mock Database** - Built-in mock database for testing and development
-- 📊 **Collection Management** - List, view, and delete collections
+- 📊 **Collection Management** - List, create, view, and delete collections
 - 📄 **Document Management** - List, show, and delete individual documents
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
@@ -70,6 +70,9 @@ weave health check
 # List collections
 weave collection list
 
+# Create a new collection
+weave collection create MyCollection
+
 # List documents in a collection
 weave document list MyCollection
 
@@ -82,6 +85,36 @@ weave document list MyCollection --no-truncate
 # Disable colored output (useful for scripts)
 weave document list MyCollection --no-color
 ```
+
+## Collection Creation
+
+Create new collections with custom fields and embedding models:
+
+```bash
+# Create a basic collection
+weave collection create MyCollection
+
+# Create with custom embedding model
+weave collection create MyCollection --embedding text-embedding-3-small
+
+# Create with custom fields
+weave collection create MyCollection --field title:text,author:text,rating:float
+
+# Create with both custom embedding and fields
+weave collection create MyCollection --embedding text-embedding-ada-002 --field title:text,content:text,metadata:object
+
+# Using aliases
+weave cols c MyCollection
+weave cols create MyCollection --field title:text,author:text
+```
+
+**Supported Field Types:**
+- `text` - Text content
+- `int` - Integer numbers
+- `float` - Floating point numbers
+- `bool` - Boolean values
+- `date` - Date/time values
+- `object` - JSON objects
 
 ## Command Structure
 
@@ -98,6 +131,7 @@ Weave follows a consistent command pattern:
 
 - **collection** - Collection management
   - `weave collection list` - List all collections
+  - `weave collection create COLLECTION_NAME` - Create a new collection
   - `weave collection list --virtual` - Show collections with virtual structure summary
   - `weave collection delete COLLECTION_NAME` - Delete a specific collection
   - `weave collection delete-all` - Delete all collections
@@ -117,6 +151,9 @@ For convenience, shorter aliases are available:
 # Collection commands
 weave col list          # Same as: weave collection list
 weave cols list         # Same as: weave collection list
+weave col create MyCol  # Same as: weave collection create MyCol
+weave cols create MyCol # Same as: weave collection create MyCol
+weave cols c MyCol      # Same as: weave collection create MyCol
 
 # Document commands  
 weave doc list MyCol    # Same as: weave document list MyCol

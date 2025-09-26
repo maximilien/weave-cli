@@ -160,13 +160,13 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 	// For now, we'll use a simple approach that creates a basic collection
 	// This is a placeholder implementation - in a real scenario, you would need
 	// to properly construct the Weaviate class schema using the REST API
-	
+
 	// Check if collection already exists
 	collections, err := c.ListCollections(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to check existing collections: %w", err)
 	}
-	
+
 	for _, existingCollection := range collections {
 		if existingCollection == collectionName {
 			return fmt.Errorf("collection '%s' already exists", collectionName)

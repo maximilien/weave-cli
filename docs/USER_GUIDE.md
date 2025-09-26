@@ -191,6 +191,18 @@ weave collection list --virtual
 # List collections in specific database
 weave collection list mock
 
+# Create a new collection
+weave collection create MyCollection
+
+# Create collection with custom embedding model
+weave collection create MyCollection --embedding text-embedding-3-small
+
+# Create collection with custom fields
+weave collection create MyCollection --field title:text,author:text,rating:float,published:bool
+
+# Create collection with both custom embedding and fields
+weave collection create MyCollection --embedding text-embedding-ada-002 --field title:text,content:text,metadata:object
+
 # Delete a specific collection
 weave collection delete MyCollection
 
@@ -231,6 +243,9 @@ For convenience, shorter aliases are available:
 # Collection commands
 weave col list          # Same as: weave collection list
 weave cols list         # Same as: weave collection list
+weave col create MyCol  # Same as: weave collection create MyCol
+weave cols create MyCol # Same as: weave collection create MyCol
+weave cols c MyCol      # Same as: weave collection create MyCol
 weave col delete MyCol  # Same as: weave collection delete MyCol
 
 # Document commands  
@@ -240,6 +255,94 @@ weave doc C MyCol       # Same as: weave document count MyCol
 weave docs C MyCol      # Same as: weave document count MyCol
 weave docs C RagMeDocs RagMeImages  # Count multiple collections
 weave doc show MyCol ID # Same as: weave document show MyCol ID
+```
+
+## Collection Create Command
+
+The `weave collection create` command (alias: `weave cols c`) allows you to
+create new collections with custom fields and embedding models.
+
+### Basic Collection Creation
+
+```bash
+# Create a basic collection with default fields
+weave collection create MyCollection
+
+# Using alias
+weave cols c MyCollection
+
+# Example output:
+# ✅ Successfully created collection: MyCollection
+# ℹ️  Embedding model: text-embedding-ada-002
+```
+
+### Custom Embedding Models
+
+```bash
+# Create collection with specific embedding model
+weave collection create MyCollection --embedding text-embedding-3-small
+
+# Using alias
+weave cols c MyCollection --embedding text-embedding-ada-002
+
+# Example output:
+# ✅ Successfully created collection: MyCollection
+# ℹ️  Embedding model: text-embedding-3-small
+```
+
+### Custom Fields
+
+```bash
+# Create collection with custom fields
+weave collection create MyCollection --field title:text,author:text,rating:float
+
+# Using alias
+weave cols c MyCollection --field title:text,author:text,rating:float
+
+# Example output:
+# ✅ Successfully created collection: MyCollection
+# 
+# Custom fields:
+#   - title: text
+#   - author: text
+#   - rating: float
+# 
+# ℹ️  Embedding model: text-embedding-ada-002
+```
+
+### Combined Options
+
+```bash
+# Create collection with both custom embedding and fields
+weave collection create MyCollection --embedding text-embedding-3-small --field title:text,content:text,metadata:object
+
+# Using alias
+weave cols c MyCollection --embedding text-embedding-ada-002 --field title:text,content:text,metadata:object
+```
+
+### Supported Field Types
+
+- `text` - Text content
+- `int` - Integer numbers
+- `float` - Floating point numbers
+- `bool` - Boolean values
+- `date` - Date/time values
+- `object` - JSON objects
+
+### Error Handling
+
+```bash
+# Collection already exists
+weave cols c ExistingCollection
+# ❌ Failed to create collection 'ExistingCollection': collection 'ExistingCollection' already exists
+
+# Invalid field type
+weave cols c MyCollection --field title:invalid
+# ❌ Invalid field definition: invalid field type 'invalid', supported types: text, int, float, bool, date, object
+
+# Invalid field format
+weave cols c MyCollection --field title
+# ❌ Invalid field definition: field definition must be in format 'name:type', got 'title'
 ```
 
 ## Document Count Command
@@ -586,19 +689,22 @@ weave config show
 # 2. Test connection
 weave health check
 
-# 3. List collections
+# 3. List existing collections
 weave collection list
 
-# 4. Count documents in collections
+# 4. Create a new collection (if needed)
+weave collection create MyNewCollection
+
+# 5. Count documents in collections
 weave document count MyCollection
 
-# 5. Count documents in multiple collections
+# 6. Count documents in multiple collections
 weave document count RagMeDocs RagMeImages
 
-# 6. List documents in a collection
+# 7. List documents in a collection
 weave document list MyCollection
 
-# 7. View documents in virtual format
+# 8. View documents in virtual format
 weave document list MyCollection --virtual
 ```
 
