@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
 // Client represents a mock vector database client
@@ -383,4 +384,20 @@ Proper data preprocessing can significantly improve model performance and reduce
 		}
 		c.collections["WeaveImages"] = testImages
 	}
+}
+
+// CreateCollection creates a new collection in the mock database
+func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Check if collection already exists
+	if _, exists := c.collections[collectionName]; exists {
+		return fmt.Errorf("collection '%s' already exists", collectionName)
+	}
+
+	// Create empty collection
+	c.collections[collectionName] = []Document{}
+
+	return nil
 }

@@ -453,3 +453,8 @@ func (wc *WeaveClient) DeleteCollection(ctx context.Context, collectionName stri
 
 	return fmt.Errorf("failed to delete collection %s: no objects deleted", collectionName)
 }
+
+// CreateCollection delegates to the official client
+func (wc *WeaveClient) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
+	return wc.Client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
+}

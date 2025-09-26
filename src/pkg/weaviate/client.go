@@ -12,6 +12,12 @@ import (
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/auth"
 )
 
+// FieldDefinition represents a field in a collection
+type FieldDefinition struct {
+	Name string
+	Type string
+}
+
 // Client wraps the Weaviate client with additional functionality
 type Client struct {
 	client *weaviate.Client
@@ -144,6 +150,52 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 	}
 
 	return fmt.Errorf("failed to delete collection %s: no objects deleted", collectionName)
+}
+
+// CreateCollection creates a new collection with the specified schema
+func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// For now, we'll use a simple approach that creates a basic collection
+	// This is a placeholder implementation - in a real scenario, you would need
+	// to properly construct the Weaviate class schema using the REST API
+	
+	// Check if collection already exists
+	collections, err := c.ListCollections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to check existing collections: %w", err)
+	}
+	
+	for _, existingCollection := range collections {
+		if existingCollection == collectionName {
+			return fmt.Errorf("collection '%s' already exists", collectionName)
+		}
+	}
+
+	// For now, we'll just return success since we don't have a proper schema creation method
+	// In a real implementation, you would use the Weaviate REST API to create the class
+	return fmt.Errorf("collection creation not yet implemented - please create collections manually in Weaviate")
+}
+
+// mapWeaviateDataType maps our field types to Weaviate data types
+func mapWeaviateDataType(fieldType string) string {
+	switch fieldType {
+	case "text":
+		return "text"
+	case "int":
+		return "int"
+	case "float":
+		return "number"
+	case "bool":
+		return "boolean"
+	case "date":
+		return "date"
+	case "object":
+		return "object"
+	default:
+		return "text" // Default to text
+	}
 }
 
 // ListDocuments returns a list of documents in a collection

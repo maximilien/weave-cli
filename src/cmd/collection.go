@@ -67,6 +67,24 @@ delete all data in all collections. Use with caution!`,
 	Run: runCollectionDeleteAll,
 }
 
+// collectionCreateCmd represents the collection create command
+var collectionCreateCmd = &cobra.Command{
+	Use:     "create COLLECTION_NAME",
+	Aliases: []string{"c"},
+	Short:   "Create a new collection",
+	Long: `Create a new collection in the configured vector database.
+
+This command creates a collection with default fields and embedding model.
+You can customize the collection by specifying custom fields and embedding model.
+
+Examples:
+  weave cols create MyCollection
+  weave cols create MyCollection --embedding text-embedding-ada-002
+  weave cols create MyCollection --field title:text,content:text,metadata:object`,
+	Args: cobra.ExactArgs(1),
+	Run:  runCollectionCreate,
+}
+
 // collectionCountCmd represents the collection count command
 var collectionCountCmd = &cobra.Command{
 	Use:     "count [database-name]",
@@ -100,6 +118,7 @@ func init() {
 	collectionCmd.AddCommand(collectionListCmd)
 	collectionCmd.AddCommand(collectionCountCmd)
 	collectionCmd.AddCommand(collectionShowCmd)
+	collectionCmd.AddCommand(collectionCreateCmd)
 	collectionCmd.AddCommand(collectionDeleteCmd)
 	collectionCmd.AddCommand(collectionDeleteAllCmd)
 
@@ -107,6 +126,8 @@ func init() {
 	collectionListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
 	collectionListCmd.Flags().BoolP("virtual", "w", false, "Show collections with virtual structure summary (chunks, images, stacks)")
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
+	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-ada-002", "Embedding model to use for the collection")
+	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
@@ -254,6 +275,58 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 		deleteAllWeaviateCollections(ctx, dbConfig)
 	case config.VectorDBTypeMock:
 		deleteAllMockCollections(ctx, dbConfig)
+	default:
+		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		os.Exit(1)
+	}
+}
+
+func runCollectionCreate(cmd *cobra.Command, args []string) {
+	cfgFile, _ := cmd.Flags().GetString("config")
+	envFile, _ := cmd.Flags().GetString("env")
+	collectionName := args[0]
+	embeddingModel, _ := cmd.Flags().GetString("embedding")
+	customFields, _ := cmd.Flags().GetString("field")
+
+	// Load configuration
+	cfg, err := config.LoadConfig(cfgFile, envFile)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	printHeader("Create Collection")
+	fmt.Println()
+
+	// Get default database
+	dbConfig, err := cfg.GetDefaultDatabase()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		os.Exit(1)
+	}
+
+	color.New(color.FgCyan, color.Bold).Printf("Creating collection '%s' in %s database...\n", collectionName, dbConfig.Type)
+	fmt.Println()
+
+	// Parse custom fields if provided
+	var fields []weaviate.FieldDefinition
+	if customFields != "" {
+		fields, err = parseFieldDefinitions(customFields)
+		if err != nil {
+			printError(fmt.Sprintf("Invalid field definition: %v", err))
+			os.Exit(1)
+		}
+	}
+
+	ctx := context.Background()
+
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud:
+		createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields)
+	case config.VectorDBTypeLocal:
+		createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields)
+	case config.VectorDBTypeMock:
+		createMockCollection(ctx, dbConfig, collectionName, embeddingModel, fields)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
@@ -1319,4 +1392,120 @@ func confirmAction(message string) bool {
 		return false
 	}
 	return response == "y" || response == "Y" || response == "yes" || response == "Yes"
+}
+
+
+// parseFieldDefinitions parses field definitions from command line input
+func parseFieldDefinitions(fieldStr string) ([]weaviate.FieldDefinition, error) {
+	var fields []weaviate.FieldDefinition
+	
+	// Split by comma to get individual field definitions
+	fieldParts := strings.Split(fieldStr, ",")
+	
+	for _, part := range fieldParts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		
+		// Split by colon to get name:type
+		nameTypeParts := strings.Split(part, ":")
+		if len(nameTypeParts) != 2 {
+			return nil, fmt.Errorf("invalid field format '%s', expected 'name:type'", part)
+		}
+		
+		name := strings.TrimSpace(nameTypeParts[0])
+		fieldType := strings.TrimSpace(nameTypeParts[1])
+		
+		if name == "" || fieldType == "" {
+			return nil, fmt.Errorf("field name and type cannot be empty in '%s'", part)
+		}
+		
+		// Validate field type
+		if !isValidFieldType(fieldType) {
+			return nil, fmt.Errorf("invalid field type '%s', supported types: text, int, float, bool, date, object", fieldType)
+		}
+		
+		fields = append(fields, weaviate.FieldDefinition{
+			Name: name,
+			Type: fieldType,
+		})
+	}
+	
+	return fields, nil
+}
+
+// isValidFieldType checks if a field type is valid
+func isValidFieldType(fieldType string) bool {
+	validTypes := []string{"text", "int", "float", "bool", "date", "object"}
+	for _, validType := range validTypes {
+		if fieldType == validType {
+			return true
+		}
+	}
+	return false
+}
+
+// createWeaviateCollection creates a collection in Weaviate
+func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) {
+	client, err := createWeaviateClient(cfg)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Create the collection using Weaviate's REST API
+	err = client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
+		os.Exit(1)
+	}
+
+	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+	
+	// Show collection details
+	if len(customFields) > 0 {
+		fmt.Println()
+		printInfo("Custom fields:")
+		for _, field := range customFields {
+			fmt.Printf("  - %s: %s\n", field.Name, field.Type)
+		}
+	}
+	
+	fmt.Println()
+	printInfo(fmt.Sprintf("Embedding model: %s", embeddingModel))
+}
+
+// createMockCollection creates a collection in Mock database
+func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 1536, // Default OpenAI embedding dimension
+		Collections:        []config.MockCollection{},
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// Create the collection
+	err := client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
+		os.Exit(1)
+	}
+
+	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+	
+	// Show collection details
+	if len(customFields) > 0 {
+		fmt.Println()
+		printInfo("Custom fields:")
+		for _, field := range customFields {
+			fmt.Printf("  - %s: %s\n", field.Name, field.Type)
+		}
+	}
+	
+	fmt.Println()
+	printInfo(fmt.Sprintf("Embedding model: %s", embeddingModel))
 }
