@@ -443,22 +443,14 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 	for _, prop := range properties {
 		if !excludedFields[prop] {
 			if prop == "metadata" {
-				// Handle metadata as an object with nested properties
-				query += `
-					metadata {
-						filename
-						file_size
-						content_type
-						date_added
-						chunk_index
-						chunk_size
-						total_chunks
-						source_document
-						processed_by
-						processing_time
-						is_extracted_from_document
-						file_extension
-					}`
+				// Dynamically discover metadata schema and build appropriate query
+				metadataQuery, err := c.buildMetadataQuery(ctx, collectionName)
+				if err != nil {
+					// If we can't discover the schema, use simple field
+					query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+				} else {
+					query += metadataQuery
+				}
 			} else {
 				query += fmt.Sprintf("\n\t\t\t\t%s", prop)
 			}
@@ -473,6 +465,11 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
+		// Check for metadata field type mismatch error
+		if strings.Contains(err.Error(), "must not have a sub selection") && strings.Contains(err.Error(), "metadata") {
+			// Retry with simple metadata field (for old collections with string metadata)
+			return c.listDocumentsWithSimpleMetadata(ctx, collectionName, limit, properties, excludedFields)
+		}
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
 			return nil, fmt.Errorf("collection %s not found, check database configuration", collectionName)
@@ -560,6 +557,148 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 					// If no content found, create a summary
 					if doc.Content == "" {
 						doc.Content = fmt.Sprintf("Document ID: %s", doc.ID)
+					}
+
+					documents = append(documents, doc)
+				}
+			}
+		}
+	}
+
+	return documents, nil
+}
+
+// buildMetadataQuery dynamically discovers the metadata schema and builds the appropriate GraphQL query
+func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) (string, error) {
+	// Try the object metadata query first (new format)
+	discoveryQuery := fmt.Sprintf(`
+		{
+			Get {
+				%s(limit: 1) {
+					_additional {
+						id
+					}
+					metadata {
+						filename
+						file_size
+						content_type
+						date_added
+						chunk_index
+						chunk_size
+						total_chunks
+						source_document
+						processed_by
+						processing_time
+						is_extracted_from_document
+						file_extension
+					}
+				}
+			}
+		}
+	`, collectionName)
+
+	result, err := c.client.GraphQL().Raw().WithQuery(discoveryQuery).Do(ctx)
+	if err != nil {
+		// If the object query fails, it's likely a string metadata field (old format)
+		return "\n\t\t\t\tmetadata", nil
+	}
+
+	// Check for GraphQL errors
+	if len(result.Errors) > 0 {
+		// If metadata field doesn't support sub-selection, it's a string field
+		if strings.Contains(result.Errors[0].Message, "must not have a sub selection") {
+			return "\n\t\t\t\tmetadata", nil
+		}
+		return "", fmt.Errorf("graphql error: %s", result.Errors[0].Message)
+	}
+
+	// If we get here, the object metadata query worked
+	return `
+				metadata {
+					filename
+					file_size
+					content_type
+					date_added
+					chunk_index
+					chunk_size
+					total_chunks
+					source_document
+					processed_by
+					processing_time
+					is_extracted_from_document
+					file_extension
+				}`, nil
+}
+
+// listDocumentsWithSimpleMetadata handles collections with string metadata (old format)
+func (c *Client) listDocumentsWithSimpleMetadata(ctx context.Context, collectionName string, limit int, properties []string, excludedFields map[string]bool) ([]Document, error) {
+	// Build a query with simple metadata field (no sub-selection)
+	query := fmt.Sprintf(`
+		{
+			Get {
+				%s(limit: %d) {
+					_additional {
+						id
+					}
+	`, collectionName, limit)
+
+	// Add available properties to the query, excluding large fields
+	for _, prop := range properties {
+		if !excludedFields[prop] {
+			query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+		}
+	}
+
+	query += `
+				}
+			}
+		}
+	`
+
+	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
+	if err != nil {
+		// If this also fails, fall back to simple query
+		return c.listDocumentsSimple(ctx, collectionName, limit)
+	}
+
+	// Check for GraphQL errors
+	if len(result.Errors) > 0 {
+		// Parse GraphQL errors to provide user-friendly messages
+		for _, err := range result.Errors {
+			if err.Message != "" {
+				// Check for common error patterns and provide better messages
+				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
+					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+				}
+			}
+		}
+		return nil, fmt.Errorf("graphql error: %s", result.Errors[0].Message)
+	}
+
+	var documents []Document
+	if data, ok := result.Data["Get"].(map[string]interface{}); ok {
+		if collectionData, ok := data[collectionName].([]interface{}); ok {
+			for _, item := range collectionData {
+				if itemMap, ok := item.(map[string]interface{}); ok {
+					doc := Document{}
+
+					// Extract ID
+					if additional, ok := itemMap["_additional"].(map[string]interface{}); ok {
+						if id, ok := additional["id"].(string); ok {
+							doc.ID = id
+						}
+					}
+
+					// Extract properties
+					for _, prop := range properties {
+						if !excludedFields[prop] {
+							if value, exists := itemMap[prop]; exists {
+								if doc.Metadata == nil {
+									doc.Metadata = make(map[string]interface{})
+								}
+								doc.Metadata[prop] = value
+							}
+						}
 					}
 
 					documents = append(documents, doc)
@@ -680,22 +819,14 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 	// Add all available properties to the query
 	for _, prop := range properties {
 		if prop == "metadata" {
-			// Handle metadata as an object with nested properties
-			query += `
-				metadata {
-					filename
-					file_size
-					content_type
-					date_added
-					chunk_index
-					chunk_size
-					total_chunks
-					source_document
-					processed_by
-					processing_time
-					is_extracted_from_document
-					file_extension
-				}`
+			// Dynamically discover metadata schema and build appropriate query
+			metadataQuery, err := c.buildMetadataQuery(ctx, collectionName)
+			if err != nil {
+				// If we can't discover the schema, use simple field
+				query += fmt.Sprintf("\n\t\t\t\t%s", prop)
+			} else {
+				query += metadataQuery
+			}
 		} else {
 			query += fmt.Sprintf("\n\t\t\t\t%s", prop)
 		}
