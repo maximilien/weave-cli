@@ -110,6 +110,12 @@ weave document show MyCollection doc-id
 # Show document by filename
 weave document show MyCollection --name test_image.png
 
+# Show collection schema
+weave collection show MyCollection --schema
+
+# Show document with schema information
+weave document show MyCollection doc-id --schema
+
 # Delete document by filename
 weave document delete MyCollection --name test_image.png
 ```

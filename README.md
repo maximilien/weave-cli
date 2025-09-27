@@ -111,6 +111,15 @@ weave document list MyCollection --no-truncate
 
 # Disable colored output (useful for scripts)
 weave document list MyCollection --no-color
+
+# Show collection schema and metadata structure
+weave collection show MyCollection --schema
+
+# Show document details with schema information
+weave document show MyCollection DOCUMENT_ID --schema
+
+# Show document by name with schema
+weave document show MyCollection --name filename.pdf --schema
 ```
 
 ## Detailed Configuration

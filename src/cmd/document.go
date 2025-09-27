@@ -62,7 +62,9 @@ You can show documents in three ways:
 This command displays:
 - Full document content
 - Complete metadata
-- Document ID and collection information`,
+- Document ID and collection information
+
+Use --schema to show the document schema including metadata structure.`,
 	Args: cobra.RangeArgs(1, 2),
 	Run:  runDocumentShow,
 }
@@ -184,6 +186,7 @@ func init() {
 	documentShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")
 	documentShowCmd.Flags().StringP("name", "n", "", "Show document by filename/name")
 	documentShowCmd.Flags().StringP("filename", "f", "", "Show document by filename/name (alias for --name)")
+	documentShowCmd.Flags().Bool("schema", false, "Show document schema including metadata structure")
 
 	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
 
@@ -256,6 +259,7 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	}
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
+	showSchema, _ := cmd.Flags().GetBool("schema")
 
 	var documentID string
 	if len(args) > 1 {
@@ -317,27 +321,27 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
 		if len(metadataFilters) > 0 {
-			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema)
 		} else if documentName != "" {
-			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines)
+			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema)
 		} else {
-			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema)
 		}
 	case config.VectorDBTypeLocal:
 		if len(metadataFilters) > 0 {
-			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema)
 		} else if documentName != "" {
-			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines)
+			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema)
 		} else {
-			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema)
 		}
 	case config.VectorDBTypeMock:
 		if len(metadataFilters) > 0 {
-			showMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+			showMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema)
 		} else if documentName != "" {
-			showMockDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines)
+			showMockDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema)
 		} else {
-			showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
+			showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema)
 		}
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
@@ -739,7 +743,7 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 	}
 }
 
-func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int) {
+func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int, showSchema bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -778,9 +782,14 @@ func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
 	}
+
+	// Show schema if requested
+	if showSchema {
+		showDocumentSchema(*document, collectionName)
+	}
 }
 
-func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int) {
+func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int, showSchema bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -826,9 +835,14 @@ func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
 	}
+
+	// Show schema if requested
+	if showSchema {
+		showMockDocumentSchema(*document, collectionName)
+	}
 }
 
-func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int) {
+func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int, showSchema bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -882,9 +896,14 @@ func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBCo
 	}
 
 	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
+
+	// Show schema if requested (only for first document to avoid repetition)
+	if showSchema && len(documents) > 0 {
+		showDocumentSchema(documents[0], collectionName)
+	}
 }
 
-func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int) {
+func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int, showSchema bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -945,6 +964,11 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 	}
 
 	printSuccess(fmt.Sprintf("Found and displayed %d documents matching metadata filters", len(documents)))
+
+	// Show schema if requested (only for first document to avoid repetition)
+	if showSchema && len(documents) > 0 {
+		showMockDocumentSchema(documents[0], collectionName)
+	}
 }
 
 func deleteMultipleWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string) {
@@ -3176,7 +3200,7 @@ func documentNameMatches(doc weaviate.Document, name string) bool {
 }
 
 // showWeaviateDocumentByName shows a Weaviate document by its name
-func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int) {
+func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int, showSchema bool) {
 	docWithCollection, err := findDocumentByName(nil, cfg, collectionName, documentName)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to find document: %v", err))
@@ -3215,10 +3239,15 @@ func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig,
 		}
 		fmt.Println()
 	}
+
+	// Show schema if requested
+	if showSchema {
+		showDocumentSchema(*doc, actualCollection)
+	}
 }
 
 // showMockDocumentByName shows a mock document by its name
-func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int) {
+func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int, showSchema bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -3279,6 +3308,11 @@ func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, col
 			fmt.Printf("  %s: %s\n", key, truncatedValue)
 		}
 		fmt.Println()
+	}
+
+	// Show schema if requested
+	if showSchema {
+		showMockDocumentSchema(*foundDoc, collectionName)
 	}
 }
 
@@ -3531,4 +3565,139 @@ func deleteMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, c
 
 	// Delete all matching documents
 	deleteMultipleMockDocuments(ctx, cfg, collectionName, docIDs)
+}
+
+// showDocumentSchema shows the schema of a Weaviate document
+func showDocumentSchema(doc weaviate.Document, collectionName string) {
+	fmt.Println()
+	color.New(color.FgYellow, color.Bold).Printf("📋 Document Schema: %s\n", collectionName)
+	fmt.Println()
+
+	// Document structure
+	printStyledEmoji("🏗️")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Document Structure")
+	fmt.Println()
+
+	fmt.Printf("  • ")
+	printStyledKeyProminent("id")
+	fmt.Printf(" (")
+	printStyledValueDimmed("string")
+	fmt.Printf(") - Unique document identifier")
+	fmt.Println()
+
+	fmt.Printf("  • ")
+	printStyledKeyProminent("content")
+	fmt.Printf(" (")
+	printStyledValueDimmed("text")
+	fmt.Printf(") - Document text content")
+	fmt.Println()
+
+	// Metadata fields
+	if len(doc.Metadata) > 0 {
+		fmt.Printf("  • ")
+		printStyledKeyProminent("metadata")
+		fmt.Printf(" (")
+		printStyledValueDimmed("object")
+		fmt.Printf(") - Document metadata")
+		fmt.Println()
+
+		// Show metadata field types
+		printStyledEmoji("📊")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Metadata Fields")
+		fmt.Println()
+
+		for key, value := range doc.Metadata {
+			fmt.Printf("    • ")
+			printStyledKeyProminent(key)
+			fmt.Printf(" (")
+			printStyledValueDimmed(getValueType(value))
+			fmt.Printf(")")
+			fmt.Println()
+		}
+	} else {
+		fmt.Printf("  • ")
+		printStyledKeyProminent("metadata")
+		fmt.Printf(" (")
+		printStyledValueDimmed("object")
+		fmt.Printf(") - No metadata fields")
+		fmt.Println()
+	}
+
+	fmt.Println()
+}
+
+// showMockDocumentSchema shows the schema of a mock document
+func showMockDocumentSchema(doc mock.Document, collectionName string) {
+	fmt.Println()
+	color.New(color.FgYellow, color.Bold).Printf("📋 Document Schema: %s\n", collectionName)
+	fmt.Println()
+
+	// Document structure
+	printStyledEmoji("🏗️")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Document Structure")
+	fmt.Println()
+
+	fmt.Printf("  • ")
+	printStyledKeyProminent("id")
+	fmt.Printf(" (")
+	printStyledValueDimmed("string")
+	fmt.Printf(") - Unique document identifier")
+	fmt.Println()
+
+	fmt.Printf("  • ")
+	printStyledKeyProminent("content")
+	fmt.Printf(" (")
+	printStyledValueDimmed("text")
+	fmt.Printf(") - Document text content")
+	fmt.Println()
+
+	// Metadata fields
+	if len(doc.Metadata) > 0 {
+		fmt.Printf("  • ")
+		printStyledKeyProminent("metadata")
+		fmt.Printf(" (")
+		printStyledValueDimmed("object")
+		fmt.Printf(") - Document metadata")
+		fmt.Println()
+
+		// Show metadata field types
+		printStyledEmoji("📊")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Metadata Fields")
+		fmt.Println()
+
+		for key, value := range doc.Metadata {
+			fmt.Printf("    • ")
+			printStyledKeyProminent(key)
+			fmt.Printf(" (")
+			printStyledValueDimmed(getValueType(value))
+			fmt.Printf(")")
+			fmt.Println()
+		}
+	} else {
+		fmt.Printf("  • ")
+		printStyledKeyProminent("metadata")
+		fmt.Printf(" (")
+		printStyledValueDimmed("object")
+		fmt.Printf(") - No metadata fields")
+		fmt.Println()
+	}
+
+	fmt.Println()
+
+	// Mock-specific information
+	printStyledEmoji("🎭")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Mock Document Info")
+	fmt.Println()
+	fmt.Printf("  • Type: ")
+	printStyledValueDimmed("Mock Document")
+	fmt.Println()
+	fmt.Printf("  • Collection: ")
+	printStyledValueDimmed(collectionName)
+	fmt.Println()
+	fmt.Println()
 }

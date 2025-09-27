@@ -135,7 +135,9 @@ This command displays:
 - Document count
 - Creation date (if available)
 - Last document date (if available)
-- Collection statistics`,
+- Collection statistics
+
+Use --schema to show the collection schema including metadata structure.`,
 	Args: cobra.ExactArgs(1),
 	Run:  runCollectionShow,
 }
@@ -154,6 +156,7 @@ func init() {
 	collectionListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
 	collectionListCmd.Flags().BoolP("virtual", "w", false, "Show collections with virtual structure summary (chunks, images, stacks)")
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
+	collectionShowCmd.Flags().Bool("schema", false, "Show collection schema including metadata structure")
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
 	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -815,6 +818,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	collectionName := args[0]
 	shortLines, _ := cmd.Flags().GetInt("short")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
+	showSchema, _ := cmd.Flags().GetBool("schema")
 
 	// Load configuration
 	cfg, err := loadConfigWithOverrides()
@@ -841,18 +845,18 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema)
 	case config.VectorDBTypeLocal:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema)
 	case config.VectorDBTypeMock:
-		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate)
+		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
 
-func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool) {
+func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool) {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -1025,10 +1029,15 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		}
 	}
 
+	// Show schema if requested
+	if showSchema {
+		showCollectionSchema(ctx, client, collectionName)
+	}
+
 	printSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
 }
 
-func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool) {
+func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -1150,6 +1159,11 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 			fmt.Println()
 		}
 		fmt.Println()
+	}
+
+	// Show schema if requested
+	if showSchema {
+		showMockCollectionSchema(ctx, client, collectionName)
 	}
 
 	printSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
@@ -1753,4 +1767,147 @@ func deleteWeaviateCollectionSchema(ctx context.Context, cfg *config.VectorDBCon
 
 	// Delete the collection schema
 	return client.DeleteCollectionSchema(ctx, collectionName)
+}
+
+// showCollectionSchema shows the schema of a Weaviate collection
+func showCollectionSchema(ctx context.Context, client *weaviate.WeaveClient, collectionName string) {
+	fmt.Println()
+	color.New(color.FgYellow, color.Bold).Printf("📋 Collection Schema: %s\n", collectionName)
+	fmt.Println()
+
+	// Get collection schema
+	schema, err := client.GetCollectionSchema(ctx, collectionName)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get collection schema: %v", err))
+		return
+	}
+
+	// Display schema information
+	if schema != nil && len(schema) > 0 {
+		// Collection properties
+		printStyledEmoji("🏗️")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Collection Properties")
+		fmt.Println()
+
+		for _, prop := range schema {
+			fmt.Printf("  • ")
+			printStyledKeyProminent(prop)
+			fmt.Printf(" (")
+			printStyledValueDimmed("property")
+			fmt.Printf(")")
+			fmt.Println()
+		}
+		fmt.Println()
+	} else {
+		printStyledValueDimmed("No schema information available")
+		fmt.Println()
+	}
+}
+
+// showMockCollectionSchema shows the schema of a mock collection
+func showMockCollectionSchema(ctx context.Context, client *mock.Client, collectionName string) {
+	fmt.Println()
+	color.New(color.FgYellow, color.Bold).Printf("📋 Collection Schema: %s\n", collectionName)
+	fmt.Println()
+
+	// For mock collections, we'll analyze the metadata structure from sample documents
+	documents, err := client.ListDocuments(ctx, collectionName, 100)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get documents for schema analysis: %v", err))
+		return
+	}
+
+	if len(documents) == 0 {
+		printStyledValueDimmed("No documents found to analyze schema")
+		fmt.Println()
+		return
+	}
+
+	// Analyze metadata structure from all documents
+	metadataFields := make(map[string]string) // field name -> type
+	contentFields := make(map[string]bool)
+
+	for _, doc := range documents {
+		// Analyze metadata fields
+		for key, value := range doc.Metadata {
+			if value != nil {
+				metadataFields[key] = getValueType(value)
+			}
+		}
+
+		// Check for content field
+		if doc.Content != "" {
+			contentFields["content"] = true
+		}
+	}
+
+	// Display schema information
+	printStyledEmoji("🏗️")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Collection Properties")
+	fmt.Println()
+
+	// Content field
+	if contentFields["content"] {
+		fmt.Printf("  • ")
+		printStyledKeyProminent("content")
+		fmt.Printf(" (")
+		printStyledValueDimmed("text")
+		fmt.Printf(") - Document text content")
+		fmt.Println()
+	}
+
+	// Metadata fields
+	if len(metadataFields) > 0 {
+		for field, fieldType := range metadataFields {
+			fmt.Printf("  • ")
+			printStyledKeyProminent(field)
+			fmt.Printf(" (")
+			printStyledValueDimmed(fieldType)
+			fmt.Printf(") - Metadata field")
+			fmt.Println()
+		}
+	}
+
+	if len(metadataFields) == 0 && !contentFields["content"] {
+		fmt.Printf("  ")
+		printStyledValueDimmed("No properties found")
+		fmt.Println()
+	}
+
+	fmt.Println()
+
+	// Mock-specific information
+	printStyledEmoji("🎭")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Mock Collection Info")
+	fmt.Println()
+	fmt.Printf("  • Type: ")
+	printStyledValueDimmed("Mock Collection")
+	fmt.Println()
+	fmt.Printf("  • Documents: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(documents)))
+	fmt.Println()
+	fmt.Println()
+}
+
+// getValueType returns a string representation of the Go type
+func getValueType(value interface{}) string {
+	switch value.(type) {
+	case string:
+		return "string"
+	case int, int8, int16, int32, int64:
+		return "integer"
+	case float32, float64:
+		return "float"
+	case bool:
+		return "boolean"
+	case []interface{}:
+		return "array"
+	case map[string]interface{}:
+		return "object"
+	default:
+		return "unknown"
+	}
 }
