@@ -53,9 +53,11 @@ var documentShowCmd = &cobra.Command{
 	Short:   "Show documents from a collection",
 	Long: `Show detailed information about documents from a collection.
 
-You can show documents in two ways:
+You can show documents in three ways:
 1. By document ID: weave doc show COLLECTION_NAME DOCUMENT_ID
 2. By metadata filter: weave doc show COLLECTION_NAME --metadata key=value
+3. By filename/name: weave doc show COLLECTION_NAME --name filename.pdf
+   (or use --filename as an alias)
 
 This command displays:
 - Full document content
@@ -72,12 +74,14 @@ var documentDeleteCmd = &cobra.Command{
 	Short:   "Delete documents from a collection",
 	Long: `Delete documents from a collection.
 
-You can delete documents in five ways:
+You can delete documents in six ways:
 1. By single document ID: weave doc delete COLLECTION_NAME DOCUMENT_ID
 2. By multiple document IDs: weave doc delete COLLECTION_NAME DOC_ID1 DOC_ID2 DOC_ID3
 3. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
-4. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
-5. By pattern: weave doc delete COLLECTION_NAME --pattern "tmp*.png"
+4. By filename/name: weave doc delete COLLECTION_NAME --name filename.pdf
+   (or use --filename as an alias)
+5. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
+6. By pattern: weave doc delete COLLECTION_NAME --pattern "tmp*.png"
 
 Pattern types (auto-detected):
 - Shell glob: tmp*.png, tmp?.png, tmp[0-9].png
@@ -90,6 +94,8 @@ Examples:
   weave docs delete MyCollection doc123
   weave docs d MyCollection doc123 doc456 doc789
   weave docs delete MyCollection --metadata filename=test.pdf
+  weave docs delete MyCollection --name test_image.png
+  weave docs delete MyCollection --filename test_image.png
   weave docs delete MyCollection test.pdf --virtual
   weave docs delete MyCollection --pattern "tmp*.png"
   weave docs delete MyCollection --pattern "tmp.*\.png"
@@ -176,12 +182,16 @@ func init() {
 	documentShowCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	documentShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	documentShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")
+	documentShowCmd.Flags().StringP("name", "n", "", "Show document by filename/name")
+	documentShowCmd.Flags().StringP("filename", "f", "", "Show document by filename/name (alias for --name)")
 
 	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
 	documentDeleteCmd.Flags().StringP("pattern", "p", "", "Delete documents matching pattern (auto-detects shell glob vs regex)")
+	documentDeleteCmd.Flags().StringP("name", "n", "", "Delete document by filename/name")
+	documentDeleteCmd.Flags().StringP("filename", "F", "", "Delete document by filename/name (alias for --name)")
 	documentDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
@@ -244,6 +254,10 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
+	documentName, _ := cmd.Flags().GetString("name")
+	if documentName == "" {
+		documentName, _ = cmd.Flags().GetString("filename")
+	}
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
 
@@ -253,13 +267,25 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	}
 
 	// Validate arguments
-	if len(metadataFilters) == 0 && documentID == "" {
-		printError("Either DOCUMENT_ID or --metadata filter must be provided")
+	if len(metadataFilters) == 0 && documentID == "" && documentName == "" {
+		printError("Either DOCUMENT_ID, --metadata filter, or --name must be provided")
 		os.Exit(1)
 	}
 
-	if len(metadataFilters) > 0 && documentID != "" {
-		printError("Cannot specify both DOCUMENT_ID and --metadata filter")
+	// Check for conflicting arguments
+	providedArgs := 0
+	if len(metadataFilters) > 0 {
+		providedArgs++
+	}
+	if documentID != "" {
+		providedArgs++
+	}
+	if documentName != "" {
+		providedArgs++
+	}
+
+	if providedArgs > 1 {
+		printError("Cannot specify multiple methods (DOCUMENT_ID, --metadata filter, or --name) at the same time")
 		os.Exit(1)
 	}
 
@@ -273,6 +299,8 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	if len(metadataFilters) > 0 {
 		printHeader("Documents matching metadata filters")
 		fmt.Printf("Metadata filters: %v\n", metadataFilters)
+	} else if documentName != "" {
+		printHeader(fmt.Sprintf("Document Details: %s", documentName))
 	} else {
 		printHeader(fmt.Sprintf("Document Details: %s", documentID))
 	}
@@ -294,18 +322,24 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeCloud:
 		if len(metadataFilters) > 0 {
 			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+		} else if documentName != "" {
+			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines)
 		} else {
 			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
 		}
 	case config.VectorDBTypeLocal:
 		if len(metadataFilters) > 0 {
 			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+		} else if documentName != "" {
+			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines)
 		} else {
 			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
 		}
 	case config.VectorDBTypeMock:
 		if len(metadataFilters) > 0 {
 			showMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines)
+		} else if documentName != "" {
+			showMockDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines)
 		} else {
 			showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines)
 		}
@@ -323,13 +357,17 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 	virtual, _ := cmd.Flags().GetBool("virtual")
 	pattern, _ := cmd.Flags().GetString("pattern")
+	documentName, _ := cmd.Flags().GetString("name")
+	if documentName == "" {
+		documentName, _ = cmd.Flags().GetString("filename")
+	}
 
 	// Get document IDs (all args after collection name)
 	documentIDs := args[1:]
 
 	// Validate arguments
-	if len(metadataFilters) == 0 && len(documentIDs) == 0 && pattern == "" {
-		printError("Either DOCUMENT_ID(s), --metadata filter, or --pattern must be provided")
+	if len(metadataFilters) == 0 && len(documentIDs) == 0 && pattern == "" && documentName == "" {
+		printError("Either DOCUMENT_ID(s), --metadata filter, --pattern, or --name must be provided")
 		os.Exit(1)
 	}
 
@@ -343,7 +381,12 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if len(metadataFilters) > 0 && len(documentIDs) > 0 && !virtual && pattern == "" {
+	if virtual && documentName != "" {
+		printError("Cannot use --virtual flag with --name")
+		os.Exit(1)
+	}
+
+	if len(metadataFilters) > 0 && len(documentIDs) > 0 && !virtual && pattern == "" && documentName == "" {
 		printError("Cannot specify both DOCUMENT_ID(s) and --metadata filter")
 		os.Exit(1)
 	}
@@ -355,6 +398,21 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 
 	if pattern != "" && len(metadataFilters) > 0 {
 		printError("Cannot specify both --metadata filter and --pattern")
+		os.Exit(1)
+	}
+
+	if documentName != "" && len(documentIDs) > 0 {
+		printError("Cannot specify both DOCUMENT_ID(s) and --name")
+		os.Exit(1)
+	}
+
+	if documentName != "" && len(metadataFilters) > 0 {
+		printError("Cannot specify both --metadata filter and --name")
+		os.Exit(1)
+	}
+
+	if documentName != "" && pattern != "" {
+		printError("Cannot specify both --name and --pattern")
 		os.Exit(1)
 	}
 
@@ -428,6 +486,16 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			printInfo("Operation cancelled by user")
 			return
 		}
+	} else if documentName != "" {
+		// Name-based deletion
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete document '%s' from collection '%s'!", documentName, collectionName))
+		fmt.Println()
+
+		// Confirm deletion unless --force is used
+		if !force && !confirmAction(fmt.Sprintf("Are you sure you want to delete document '%s'?", documentName)) {
+			printInfo("Operation cancelled by user")
+			return
+		}
 	} else {
 		// Multiple document IDs
 		if len(documentIDs) == 1 {
@@ -471,6 +539,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by original filename from %s database...\n", dbConfig.Type)
 	} else if pattern != "" {
 		color.New(color.FgCyan, color.Bold).Printf("Deleting documents by pattern from %s database...\n", dbConfig.Type)
+	} else if documentName != "" {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting document by name from %s database...\n", dbConfig.Type)
 	} else if len(documentIDs) == 1 {
 		color.New(color.FgCyan, color.Bold).Printf("Deleting document from %s database...\n", dbConfig.Type)
 	} else {
@@ -488,6 +558,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
 		} else if pattern != "" {
 			deleteWeaviateDocumentsByPattern(ctx, dbConfig, collectionName, pattern)
+		} else if documentName != "" {
+			deleteWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName)
 		} else {
 			deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
@@ -498,6 +570,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			deleteWeaviateDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
 		} else if pattern != "" {
 			deleteWeaviateDocumentsByPattern(ctx, dbConfig, collectionName, pattern)
+		} else if documentName != "" {
+			deleteWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName)
 		} else {
 			deleteMultipleWeaviateDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
@@ -508,6 +582,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			deleteMockDocumentsByOriginalFilename(ctx, dbConfig, collectionName, documentIDs[0])
 		} else if pattern != "" {
 			deleteMockDocumentsByPattern(ctx, dbConfig, collectionName, pattern)
+		} else if documentName != "" {
+			deleteMockDocumentByName(ctx, dbConfig, collectionName, documentName)
 		} else {
 			deleteMultipleMockDocuments(ctx, dbConfig, collectionName, documentIDs)
 		}
@@ -2972,4 +3048,261 @@ func deleteWeaviateDocumentsByPattern(ctx context.Context, dbConfig *config.Vect
 // deleteMockDocumentsByPattern deletes documents matching a pattern from mock database
 func deleteMockDocumentsByPattern(ctx context.Context, dbConfig *config.VectorDBConfig, collectionName, pattern string) {
 	printError("Pattern deletion not yet supported for mock database")
+}
+
+// Helper functions for document operations by name
+
+// findDocumentByName finds a document by its filename/name
+func findDocumentByName(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, documentName string) (*weaviate.Document, error) {
+	ctx := context.Background()
+
+	client, err := createWeaviateClient(dbConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client: %v", err)
+	}
+
+	// Get all documents from the collection
+	documents, err := client.ListDocuments(ctx, collectionName, 1000) // Get up to 1000 documents
+	if err != nil {
+		return nil, fmt.Errorf("failed to list documents: %v", err)
+	}
+
+	// Search for document with matching name
+	for _, doc := range documents {
+		if documentNameMatches(doc, documentName) {
+			return &doc, nil
+		}
+	}
+
+	return nil, fmt.Errorf("document with name '%s' not found", documentName)
+}
+
+// documentNameMatches checks if a document matches the given name
+func documentNameMatches(doc weaviate.Document, name string) bool {
+	// Check URL field (common for documents)
+	if url, ok := doc.Metadata["url"].(string); ok {
+		if url == name || filepath.Base(url) == name {
+			return true
+		}
+	}
+
+	// Check filename field directly
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if filename == name || filepath.Base(filename) == name {
+			return true
+		}
+	}
+
+	// Check nested metadata for filename (common in text documents)
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if filename, ok := metadataObj["filename"].(string); ok {
+					if filename == name || filepath.Base(filename) == name {
+						return true
+					}
+				}
+				if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+					if originalFilename == name || filepath.Base(originalFilename) == name {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// showWeaviateDocumentByName shows a Weaviate document by its name
+func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int) {
+	doc, err := findDocumentByName(nil, cfg, collectionName, documentName)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to find document: %v", err))
+		return
+	}
+
+	// Display document details
+	color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
+	fmt.Printf("Collection: %s\n", collectionName)
+	fmt.Printf("Name: %s\n", documentName)
+	fmt.Println()
+
+	fmt.Printf("Content:\n")
+	if showLong {
+		fmt.Printf("%s\n", doc.Content)
+	} else {
+		// Use shortLines to limit content by lines instead of characters
+		preview := truncateStringByLines(doc.Content, shortLines)
+		fmt.Printf("%s\n", preview)
+	}
+	fmt.Println()
+
+	if len(doc.Metadata) > 0 {
+		fmt.Printf("Metadata:\n")
+		for key, value := range doc.Metadata {
+			// Truncate value based on shortLines directive
+			valueStr := fmt.Sprintf("%v", value)
+			truncatedValue := smartTruncate(valueStr, key, shortLines)
+			fmt.Printf("  %s: %s\n", key, truncatedValue)
+		}
+		fmt.Println()
+	}
+}
+
+// showMockDocumentByName shows a mock document by its name
+func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// Get all documents from the collection
+	documents, err := client.ListDocuments(ctx, collectionName, 1000)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to list documents: %v", err))
+		return
+	}
+
+	// Search for document with matching name
+	var foundDoc *mock.Document
+	for _, doc := range documents {
+		if mockDocumentNameMatches(doc, documentName) {
+			foundDoc = &doc
+			break
+		}
+	}
+
+	if foundDoc == nil {
+		printError(fmt.Sprintf("Document with name '%s' not found", documentName))
+		return
+	}
+
+	// Display document details
+	color.New(color.FgGreen).Printf("Document ID: %s\n", foundDoc.ID)
+	fmt.Printf("Collection: %s\n", collectionName)
+	fmt.Printf("Name: %s\n", documentName)
+	fmt.Println()
+
+	fmt.Printf("Content:\n")
+	if showLong {
+		fmt.Printf("%s\n", foundDoc.Content)
+	} else {
+		// Use shortLines to limit content by lines instead of characters
+		preview := truncateStringByLines(foundDoc.Content, shortLines)
+		fmt.Printf("%s\n", preview)
+	}
+	fmt.Println()
+
+	if len(foundDoc.Metadata) > 0 {
+		fmt.Printf("Metadata:\n")
+		for key, value := range foundDoc.Metadata {
+			// Truncate value based on shortLines directive
+			valueStr := fmt.Sprintf("%v", value)
+			truncatedValue := smartTruncate(valueStr, key, shortLines)
+			fmt.Printf("  %s: %s\n", key, truncatedValue)
+		}
+		fmt.Println()
+	}
+}
+
+// mockDocumentNameMatches checks if a mock document matches the given name
+func mockDocumentNameMatches(doc mock.Document, name string) bool {
+	// Check URL field (common for documents)
+	if url, ok := doc.Metadata["url"].(string); ok {
+		if url == name || filepath.Base(url) == name {
+			return true
+		}
+	}
+
+	// Check filename field directly
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if filename == name || filepath.Base(filename) == name {
+			return true
+		}
+	}
+
+	// Check nested metadata for filename (common in text documents)
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if filename, ok := metadataObj["filename"].(string); ok {
+					if filename == name || filepath.Base(filename) == name {
+						return true
+					}
+				}
+				if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+					if originalFilename == name || filepath.Base(originalFilename) == name {
+						return true
+					}
+				}
+			}
+		}
+	}
+
+	return false
+}
+
+// deleteWeaviateDocumentByName deletes a Weaviate document by its name
+func deleteWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string) {
+	doc, err := findDocumentByName(nil, cfg, collectionName, documentName)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to find document: %v", err))
+		return
+	}
+
+	// Delete the document
+	deleteMultipleWeaviateDocuments(ctx, cfg, collectionName, []string{doc.ID})
+}
+
+// deleteMockDocumentByName deletes a mock document by its name
+func deleteMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string) {
+	// Convert to MockConfig for backward compatibility
+	mockConfig := &config.MockConfig{
+		Enabled:            cfg.Enabled,
+		SimulateEmbeddings: cfg.SimulateEmbeddings,
+		EmbeddingDimension: cfg.EmbeddingDimension,
+		Collections:        make([]config.MockCollection, len(cfg.Collections)),
+	}
+
+	for i, col := range cfg.Collections {
+		mockConfig.Collections[i] = config.MockCollection(col)
+	}
+
+	client := mock.NewClient(mockConfig)
+
+	// Get all documents from the collection
+	documents, err := client.ListDocuments(ctx, collectionName, 1000)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to list documents: %v", err))
+		return
+	}
+
+	// Search for document with matching name
+	var foundDoc *mock.Document
+	for _, doc := range documents {
+		if mockDocumentNameMatches(doc, documentName) {
+			foundDoc = &doc
+			break
+		}
+	}
+
+	if foundDoc == nil {
+		printError(fmt.Sprintf("Document with name '%s' not found", documentName))
+		return
+	}
+
+	// Delete the document
+	deleteMultipleMockDocuments(ctx, cfg, collectionName, []string{foundDoc.ID})
 }

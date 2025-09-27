@@ -32,7 +32,9 @@ This tool provides commands following a consistent pattern:
   weave collection delete-all          # Clear all collections (double confirmation)
   weave document list COLLECTION      # List documents in collection
   weave document show COLLECTION ID   # Show specific document
+  weave document show COLLECTION --name filename.pdf  # Show document by filename
   weave document delete COLLECTION [ID] [ID...] # Delete one or more documents
+  weave document delete COLLECTION --name filename.pdf  # Delete document by filename
   weave document delete-all COLLECTION # Delete all documents in collection (double confirmation)
 
 The tool uses ./config.yaml and ./.env files by default, or you can specify

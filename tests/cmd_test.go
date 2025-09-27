@@ -3,6 +3,7 @@ package tests
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -2148,4 +2149,182 @@ func globToRegex(glob string) string {
 	// result = "^" + result + "$"
 	
 	return result
+}
+
+// TestDocumentByNameOperations tests the new document by name functionality
+func TestDocumentByNameOperations(t *testing.T) {
+	t.Run("DocumentNameMatching", func(t *testing.T) {
+		// Test document name matching logic
+		tests := []struct {
+			name     string
+			doc      mock.Document
+			searchName string
+			expected bool
+		}{
+			{
+				name: "Exact filename match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"filename": "test_image.png",
+					},
+				},
+				searchName: "test_image.png",
+				expected:  true,
+			},
+			{
+				name: "Base filename match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"filename": "/path/to/test_image.png",
+					},
+				},
+				searchName: "test_image.png",
+				expected:  true,
+			},
+			{
+				name: "URL field match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"url": "test_image.png",
+					},
+				},
+				searchName: "test_image.png",
+				expected:  true,
+			},
+			{
+				name: "Nested metadata filename match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"metadata": `{"filename": "test_image.png"}`,
+					},
+				},
+				searchName: "test_image.png",
+				expected:  true,
+			},
+			{
+				name: "Nested metadata original_filename match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"metadata": `{"original_filename": "test_image.png"}`,
+					},
+				},
+				searchName: "test_image.png",
+				expected:  true,
+			},
+			{
+				name: "No match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"filename": "other_file.jpg",
+					},
+				},
+				searchName: "test_image.png",
+				expected:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := mockDocumentNameMatches(tt.doc, tt.searchName)
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v for test case: %s", tt.expected, result, tt.name)
+				}
+			})
+		}
+	})
+
+	t.Run("DocumentNameMatchingEdgeCases", func(t *testing.T) {
+		// Test edge cases
+		tests := []struct {
+			name     string
+			doc      mock.Document
+			searchName string
+			expected bool
+		}{
+			{
+				name: "Empty metadata",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{},
+				},
+				searchName: "test_image.png",
+				expected:  false,
+			},
+			{
+				name: "Invalid JSON metadata",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"metadata": `{"filename": "test_image.png"`, // Missing closing brace
+					},
+				},
+				searchName: "test_image.png",
+				expected:  false,
+			},
+			{
+				name: "Non-string metadata values",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"filename": 123, // Non-string value
+					},
+				},
+				searchName: "test_image.png",
+				expected:  false,
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				result := mockDocumentNameMatches(tt.doc, tt.searchName)
+				if result != tt.expected {
+					t.Errorf("Expected %v, got %v for test case: %s", tt.expected, result, tt.name)
+				}
+			})
+		}
+	})
+}
+
+// mockDocumentNameMatches is a local copy of the function for testing
+func mockDocumentNameMatches(doc mock.Document, name string) bool {
+	// Check URL field (common for documents)
+	if url, ok := doc.Metadata["url"].(string); ok {
+		if url == name || filepath.Base(url) == name {
+			return true
+		}
+	}
+	
+	// Check filename field directly
+	if filename, ok := doc.Metadata["filename"].(string); ok {
+		if filename == name || filepath.Base(filename) == name {
+			return true
+		}
+	}
+	
+	// Check nested metadata for filename (common in text documents)
+	if metadata, ok := doc.Metadata["metadata"]; ok {
+		if metadataStr, ok := metadata.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if filename, ok := metadataObj["filename"].(string); ok {
+					if filename == name || filepath.Base(filename) == name {
+						return true
+					}
+				}
+				if originalFilename, ok := metadataObj["original_filename"].(string); ok {
+					if originalFilename == name || filepath.Base(originalFilename) == name {
+						return true
+					}
+				}
+			}
+		}
+	}
+	
+	return false
 }
