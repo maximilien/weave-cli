@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -2002,4 +2003,149 @@ func TestCollectionSchemaDeletion(t *testing.T) {
 			t.Error("Expected error when no arguments provided")
 		}
 	})
+}
+
+// TestPatternMatching tests the pattern matching functionality
+func TestPatternMatching(t *testing.T) {
+	t.Run("IsRegexPattern", func(t *testing.T) {
+		// Test cases for regex pattern detection
+		testCases := []struct {
+			pattern string
+			isRegex bool
+		}{
+			// Shell glob patterns (should be false)
+			{"tmp*.png", false},
+			{"file?.txt", false},
+			{"doc[0-9].pdf", false},
+			{"image_[a-z].png", false},
+			{"backup_*.log", false},
+			
+			// Regex patterns (should be true)
+			{"tmp.*\\.png", true},
+			{"^prefix.*\\.jpg$", true},
+			{".*\\.(png|jpg|gif)$", true},
+			{"file_\\d{4}\\.txt", true},
+			{"^(temp|tmp).*\\.pdf$", true},
+			{"tmp.*\\.png", true},
+			{"^file.*\\.txt$", true},
+		}
+
+		for _, tc := range testCases {
+			result := isRegexPattern(tc.pattern)
+			if result != tc.isRegex {
+				t.Errorf("Pattern '%s': expected %v, got %v", tc.pattern, tc.isRegex, result)
+			}
+		}
+	})
+
+	t.Run("GlobToRegex", func(t *testing.T) {
+		// Test cases for glob to regex conversion
+		testCases := []struct {
+			glob    string
+			regex   string
+		}{
+			{"tmp*.png", "tmp.*\\.png"},
+			{"file?.txt", "file.\\.txt"},
+			{"doc[0-9].pdf", "doc[0-9]\\.pdf"},
+			{"image_[a-z].png", "image_[a-z]\\.png"},
+			{"backup_*.log", "backup_.*\\.log"},
+			{"simple.txt", "simple\\.txt"},
+			{"file[abc].pdf", "file[abc]\\.pdf"},
+		}
+
+		for _, tc := range testCases {
+			result := globToRegex(tc.glob)
+			if result != tc.regex {
+				t.Errorf("Glob '%s': expected '%s', got '%s'", tc.glob, tc.regex, result)
+			}
+		}
+	})
+
+	t.Run("PatternMatchingIntegration", func(t *testing.T) {
+		// Test that converted patterns work correctly
+		testCases := []struct {
+			pattern string
+			filename string
+			shouldMatch bool
+		}{
+			// Shell glob patterns
+			{"tmp*.png", "tmp123.png", true},
+			{"tmp*.png", "tmp_file.png", true},
+			{"tmp*.png", "other.png", false},
+			{"file?.txt", "file1.txt", true},
+			{"file?.txt", "file12.txt", false},
+			{"doc[0-9].pdf", "doc1.pdf", true},
+			{"doc[0-9].pdf", "doc5.pdf", true},
+			{"doc[0-9].pdf", "doc12.pdf", false},
+			
+			// Regex patterns
+			{"tmp.*\\.png", "tmp123.png", true},
+			{"tmp.*\\.png", "tmp_file.png", true},
+			{"tmp.*\\.png", "other.png", false},
+			{"^prefix.*\\.jpg$", "prefix_image.jpg", true},
+			{"^prefix.*\\.jpg$", "other_prefix.jpg", false},
+		}
+
+		for _, tc := range testCases {
+			var regex *regexp.Regexp
+			var err error
+			
+			if isRegexPattern(tc.pattern) {
+				regex, err = regexp.Compile(tc.pattern)
+			} else {
+				regexPattern := globToRegex(tc.pattern)
+				regex, err = regexp.Compile(regexPattern)
+			}
+			
+			if err != nil {
+				t.Errorf("Failed to compile pattern '%s': %v", tc.pattern, err)
+				continue
+			}
+			
+			matches := regex.MatchString(tc.filename)
+			if matches != tc.shouldMatch {
+				t.Errorf("Pattern '%s' with filename '%s': expected %v, got %v", 
+					tc.pattern, tc.filename, tc.shouldMatch, matches)
+			}
+		}
+	})
+}
+
+// Helper functions for pattern matching tests
+func isRegexPattern(pattern string) bool {
+	// Strong regex indicators (definitely regex)
+	strongRegexIndicators := []string{
+		"^", "$", "\\", ".*", ".+", ".?", "(", ")", "{", "}", "|", "+",
+	}
+	
+	// Check for strong regex indicators first
+	for _, indicator := range strongRegexIndicators {
+		if strings.Contains(pattern, indicator) {
+			return true
+		}
+	}
+	
+	// Check for escaped characters (indicates regex)
+	if strings.Contains(pattern, "\\") {
+		return true
+	}
+	
+	// If pattern contains only glob characters (*, ?, []) and no strong regex chars, treat as glob
+	return false
+}
+
+func globToRegex(glob string) string {
+	// Escape special regex characters first
+	result := regexp.QuoteMeta(glob)
+	
+	// Convert glob patterns to regex equivalents
+	result = strings.ReplaceAll(result, "\\*", ".*")     // * -> .*
+	result = strings.ReplaceAll(result, "\\?", ".")     // ? -> .
+	result = strings.ReplaceAll(result, "\\[", "[")    // [ -> [
+	result = strings.ReplaceAll(result, "\\]", "]")    // ] -> ]
+	
+	// Add anchors for exact matching (optional - could be made configurable)
+	// result = "^" + result + "$"
+	
+	return result
 }
