@@ -77,7 +77,11 @@ You can delete documents in five ways:
 2. By multiple document IDs: weave doc delete COLLECTION_NAME DOC_ID1 DOC_ID2 DOC_ID3
 3. By metadata filter: weave doc delete COLLECTION_NAME --metadata key=value
 4. By original filename (virtual): weave doc delete COLLECTION_NAME ORIGINAL_FILENAME --virtual
-5. By regex pattern: weave doc delete COLLECTION_NAME --pattern "tmpz.*\.png"
+5. By pattern: weave doc delete COLLECTION_NAME --pattern "tmp*.png"
+
+Pattern types (auto-detected):
+- Shell glob: tmp*.png, tmp?.png, tmp[0-9].png
+- Regex: tmp.*\.png, ^tmp.*\.png$, .*\.(png|jpg)$
 
 When using --virtual flag, all chunks and images associated with the original filename
 will be deleted in one operation.
@@ -87,7 +91,8 @@ Examples:
   weave docs d MyCollection doc123 doc456 doc789
   weave docs delete MyCollection --metadata filename=test.pdf
   weave docs delete MyCollection test.pdf --virtual
-  weave docs delete MyCollection --pattern "tmpz.*\.png"
+  weave docs delete MyCollection --pattern "tmp*.png"
+  weave docs delete MyCollection --pattern "tmp.*\.png"
 
 ⚠️  WARNING: This is a destructive operation that will permanently
 delete the specified documents. Use with caution!`,
@@ -176,7 +181,7 @@ func init() {
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
-	documentDeleteCmd.Flags().StringP("pattern", "p", "", "Delete documents matching regex pattern (matches against filename or URL)")
+	documentDeleteCmd.Flags().StringP("pattern", "p", "", "Delete documents matching pattern (auto-detects shell glob vs regex)")
 	documentDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
@@ -400,7 +405,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 
-		matchingDocs, err := findDocumentsByPattern(cfg, dbConfig, collectionName, pattern)
+		matchingDocs, err := findDocumentsByPattern(cfg, dbConfig, collectionName, pattern, false)
 		if err != nil {
 			printError(fmt.Sprintf("Failed to find documents matching pattern: %v", err))
 			os.Exit(1)
@@ -2683,14 +2688,27 @@ func formatDocumentCreationError(docID string, err error) string {
 	return fmt.Sprintf("Failed to create document '%s': %v", docID, err)
 }
 
-// findDocumentsByPattern finds documents matching a regex pattern
-func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, pattern string) ([]weaviate.Document, error) {
+// findDocumentsByPattern finds documents matching a pattern (auto-detects glob vs regex)
+func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, pattern string, forceRegex bool) ([]weaviate.Document, error) {
 	ctx := context.Background()
 
-	// Compile the regex pattern
-	regex, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("invalid regex pattern: %v", err)
+	// Auto-detect pattern type if not forced to regex
+	var regex *regexp.Regexp
+	var err error
+	
+	if forceRegex || isRegexPattern(pattern) {
+		// Compile as regex pattern
+		regex, err = regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex pattern: %v", err)
+		}
+	} else {
+		// Convert glob pattern to regex
+		regexPattern := globToRegex(pattern)
+		regex, err = regexp.Compile(regexPattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern: %v", err)
+		}
 	}
 
 	// Create client based on database type
@@ -2723,6 +2741,42 @@ func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig,
 	}
 
 	return matchingDocs, nil
+}
+
+// isRegexPattern detects if a pattern looks like regex rather than glob
+func isRegexPattern(pattern string) bool {
+	// Common regex indicators
+	regexIndicators := []string{
+		"^", "$", "\\", ".*", ".+", ".?", "[", "]", "(", ")", "{", "}", "|", "+", "?",
+	}
+	
+	// If pattern contains regex-specific characters, treat as regex
+	for _, indicator := range regexIndicators {
+		if strings.Contains(pattern, indicator) {
+			return true
+		}
+	}
+	
+	// If pattern contains only glob characters (*, ?, []) and no regex chars, treat as glob
+	// This is a simple heuristic - could be improved
+	return false
+}
+
+// globToRegex converts a shell glob pattern to regex
+func globToRegex(glob string) string {
+	// Escape special regex characters first
+	result := regexp.QuoteMeta(glob)
+	
+	// Convert glob patterns to regex equivalents
+	result = strings.ReplaceAll(result, "\\*", ".*")     // * -> .*
+	result = strings.ReplaceAll(result, "\\?", ".")     // ? -> .
+	result = strings.ReplaceAll(result, "\\[", "[")    // [ -> [
+	result = strings.ReplaceAll(result, "\\]", "]")    // ] -> ]
+	
+	// Add anchors for exact matching (optional - could be made configurable)
+	// result = "^" + result + "$"
+	
+	return result
 }
 
 // matchesPattern checks if a document matches the regex pattern
@@ -2789,7 +2843,7 @@ func getDocumentDisplayName(doc weaviate.Document) string {
 // deleteWeaviateDocumentsByPattern deletes documents matching a pattern from Weaviate
 func deleteWeaviateDocumentsByPattern(ctx context.Context, dbConfig *config.VectorDBConfig, collectionName, pattern string) {
 	// Find matching documents
-	matchingDocs, err := findDocumentsByPattern(nil, dbConfig, collectionName, pattern)
+	matchingDocs, err := findDocumentsByPattern(nil, dbConfig, collectionName, pattern, false)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to find documents: %v", err))
 		return
