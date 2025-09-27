@@ -2,42 +2,45 @@
 databases:
   default: ${VECTOR_DB_TYPE:-weaviate-cloud}
   vector_databases:
-    - api_key: ${WEAVIATE_API_KEY}
+    # Uses the Weaviate Cloud (paid) Vector DB environment
+    - name: weaviate-cloud
+      openai_api_key: ${OPENAI_API_KEY}  # needed for vector embeddings
+      type: weaviate-cloud
+      url: ${WEAVIATE_URL}
+      api_key: ${WEAVIATE_API_KEY}
       collections:
         - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
           type: text
+          description: Weaviate CLI text collection
         - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
           type: image
-      name: weaviate-cloud
-      openai_api_key: ${OPENAI_API_KEY}
-      type: weaviate-cloud
-      url: ${WEAVIATE_URL}
-    - collections:
-        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
+          description: Weaviate CLI image collection
+        - name: ${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}
           type: text
-        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
-          type: image
-      name: weaviate-local
+          description: Weaviate CLI text test collection
+
+    # Uses the Weaviate (OSS) Vector DB environment
+    - name: weaviate-local
       type: weaviate-local
       url: http://localhost:8080
-    - collections:
-        - description: Mock text documents collection
-          name: WeaveDocs
+      collections:
+        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
           type: text
-        - description: Mock image documents collection
-          name: WeaveImages
+          description: Weaviate CLI text collection
+        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
           type: image
-      embedding_dimension: 384
-      enabled: true
-      name: mock
+          description: Weaviate CLI image collection
+
+    # Uses a fake Vector DB for fast testing purposes
+    - name: mock
       simulate_embeddings: true
       type: mock
-settings:
-  project_history:
-    current_project: /Users/maximilien/github/maximilien/weave-cli
-    recent_projects:
-      - git_remote: https://github.com/maximilien/weave-cli.git
-        language: Hybrid
-        last_used: '2025-09-26T11:41:24.403538'
-        name: weave-cli
-        path: /Users/maximilien/github/maximilien/weave-cli
+      embedding_dimension: 384
+      enabled: true
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Mock text documents collection
+        - name: WeaveImages
+          type: image
+          description: Mock image documents collection

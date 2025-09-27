@@ -1,0 +1,67 @@
+# Weave CLI Configuration Example
+# Copy this file to config.yaml and update with your values
+
+---
+# Database Configuration
+databases:
+  # Default database type to use
+  # Options: weaviate-cloud, weaviate-local, mock
+  default: ${VECTOR_DB_TYPE:-weaviate-cloud}
+  
+  # Available vector databases
+  vector_databases:
+    
+    # Weaviate Cloud (Paid Service)
+    # Requires: WEAVIATE_URL, WEAVIATE_API_KEY, OPENAI_API_KEY
+    - name: weaviate-cloud
+      type: weaviate-cloud
+      url: ${WEAVIATE_URL}                    # Your Weaviate Cloud URL
+      api_key: ${WEAVIATE_API_KEY}           # Your Weaviate Cloud API key
+      openai_api_key: ${OPENAI_API_KEY}      # OpenAI API key for embeddings
+      collections:
+        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
+          type: text
+          description: Main text documents collection
+        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
+          type: image
+          description: Image documents collection
+        - name: ${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}
+          type: text
+          description: Test text documents collection
+
+    # Weaviate Local (Open Source)
+    # Requires: Local Weaviate instance running on localhost:8080
+    - name: weaviate-local
+      type: weaviate-local
+      url: http://localhost:8080              # Local Weaviate instance
+      collections:
+        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
+          type: text
+          description: Main text documents collection
+        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
+          type: image
+          description: Image documents collection
+
+    # Mock Database (For Testing)
+    # No external dependencies required
+    - name: mock
+      type: mock
+      enabled: true
+      simulate_embeddings: true              # Simulate embedding generation
+      embedding_dimension: 384               # Embedding vector dimension
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Mock text documents collection
+        - name: WeaveImages
+          type: image
+          description: Mock image documents collection
+
+# Environment Variables Reference:
+# VECTOR_DB_TYPE: Database type to use (weaviate-cloud, weaviate-local, mock)
+# WEAVIATE_URL: Your Weaviate Cloud URL
+# WEAVIATE_API_KEY: Your Weaviate Cloud API key
+# OPENAI_API_KEY: OpenAI API key for embeddings (required for weaviate-cloud)
+# WEAVIATE_COLLECTION: Main text collection name
+# WEAVIATE_COLLECTION_IMAGES: Image collection name
+# WEAVIATE_COLLECTION_TEST: Test collection name

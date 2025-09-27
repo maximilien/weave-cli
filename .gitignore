@@ -41,6 +41,9 @@ Thumbs.db
 .env.local
 .env.*.local
 
+# Configuration files (use .example files instead)
+config.yaml
+
 # Log files
 *.log
 logs/

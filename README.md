@@ -38,21 +38,36 @@ cd weave-cli
 
 ### Configuration
 
-1. **Set up your environment variables**:
+1. **Copy example files**:
 
    ```bash
-   export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
-   export WEAVIATE_API_KEY="your-api-key"
-   export VECTOR_DB_TYPE="weaviate-cloud"
+   cp config.yaml.example config.yaml
+   cp .env.example .env
    ```
 
-2. **Test your connection**:
+2. **Configure your environment**:
+
+   Edit `.env` with your values:
+
+   ```bash
+   # Required for weaviate-cloud
+   VECTOR_DB_TYPE="weaviate-cloud"
+   WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+   WEAVIATE_API_KEY="your-api-key"
+   OPENAI_API_KEY="sk-proj-your-openai-key"
+   
+   # Optional collection names
+   WEAVIATE_COLLECTION="MyCollection"
+   WEAVIATE_COLLECTION_IMAGES="MyImages"
+   ```
+
+3. **Test your connection**:
 
    ```bash
    ./bin/weave health check
    ```
 
-3. **List your collections**:
+4. **List your collections**:
 
    ```bash
    ./bin/weave collection list
@@ -85,6 +100,94 @@ weave document list MyCollection --no-truncate
 # Disable colored output (useful for scripts)
 weave document list MyCollection --no-color
 ```
+
+## Detailed Configuration
+
+Weave CLI uses a combination of YAML configuration files and environment
+variables for flexible setup.
+
+### Environment Variables (.env)
+
+Create a `.env` file with your configuration:
+
+```bash
+# REQUIRED VALUES
+VECTOR_DB_TYPE="weaviate-cloud"  # Options: weaviate-cloud, weaviate-local, mock
+
+# Weaviate Cloud Configuration
+WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+WEAVIATE_API_KEY="your-weaviate-api-key"
+OPENAI_API_KEY="sk-proj-your-openai-api-key"  # Required for embeddings
+
+# OPTIONAL VALUES
+WEAVIATE_COLLECTION="MyCollection"
+WEAVIATE_COLLECTION_IMAGES="MyImages"
+WEAVIATE_COLLECTION_TEST="MyCollection_test"
+```
+
+### Configuration File (config.yaml)
+
+The `config.yaml` file defines your database connections and collections:
+
+```yaml
+databases:
+  default: ${VECTOR_DB_TYPE:-weaviate-cloud}
+  vector_databases:
+    - name: weaviate-cloud
+      type: weaviate-cloud
+      url: ${WEAVIATE_URL}
+      api_key: ${WEAVIATE_API_KEY}
+      openai_api_key: ${OPENAI_API_KEY}
+      collections:
+        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
+          type: text
+          description: Main text documents collection
+        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
+          type: image
+          description: Image documents collection
+```
+
+### Database Types
+
+#### Weaviate Cloud (weaviate-cloud)
+
+- **Requirements**: `WEAVIATE_URL`, `WEAVIATE_API_KEY`, `OPENAI_API_KEY`
+- **Use case**: Production environments with paid Weaviate Cloud service
+- **Features**: Full vector search, embeddings, scalability
+
+#### Weaviate Local (weaviate-local)
+
+- **Requirements**: Local Weaviate instance running on `localhost:8080`
+- **Use case**: Development and testing with local Weaviate
+- **Features**: Full functionality without cloud dependencies
+
+#### Mock Database (mock)
+
+- **Requirements**: None
+- **Use case**: Testing, development, demos
+- **Features**: Simulated database with no external dependencies
+
+### Quick Setup
+
+```bash
+# Copy example files
+cp config.yaml.example config.yaml
+cp .env.example .env
+
+# Edit with your values
+nano .env
+nano config.yaml
+
+# Test configuration
+./bin/weave health check
+```
+
+### Security Notes
+
+- **Never commit** `.env` or `config.yaml` files to version control
+- **Use example files** (`config.yaml.example`, `.env.example`) as templates
+- **Rotate API keys** regularly for production environments
+- **Use different keys** for development and production
 
 ## Collection Creation
 

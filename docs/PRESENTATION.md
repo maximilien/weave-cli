@@ -141,24 +141,49 @@ $ weave document list MyCollection --virtual
 
 # Configuration
 
-## Environment Variables
+## Quick Setup
 ```bash
-export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
-export WEAVIATE_API_KEY="your-api-key"
-export VECTOR_DB_TYPE="weaviate-cloud"
-export WEAVIATE_COLLECTION="MyCollection"
+# Copy example files
+cp config.yaml.example config.yaml
+cp .env.example .env
+
+# Edit with your values
+nano .env
+nano config.yaml
+```
+
+## Environment Variables (.env)
+```bash
+# Required for weaviate-cloud
+VECTOR_DB_TYPE="weaviate-cloud"
+WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+WEAVIATE_API_KEY="your-api-key"
+OPENAI_API_KEY="sk-proj-your-openai-key"
+
+# Optional collection names
+WEAVIATE_COLLECTION="MyCollection"
+WEAVIATE_COLLECTION_IMAGES="MyImages"
 ```
 
 ## Config File (config.yaml)
 ```yaml
 databases:
-  default: "${VECTOR_DB_TYPE:-weaviate-cloud}"
+  default: ${VECTOR_DB_TYPE:-weaviate-cloud}
   vector_databases:
-    - name: "weaviate-cloud"
-      type: "weaviate-cloud"
-      url: "${WEAVIATE_URL}"
-      api_key: "${WEAVIATE_API_KEY}"
+    - name: weaviate-cloud
+      type: weaviate-cloud
+      url: ${WEAVIATE_URL}
+      api_key: ${WEAVIATE_API_KEY}
+      openai_api_key: ${OPENAI_API_KEY}
+      collections:
+        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
+          type: text
 ```
+
+## Database Types
+- **weaviate-cloud**: Paid Weaviate Cloud service
+- **weaviate-local**: Local Weaviate instance
+- **mock**: Built-in testing database
 
 ---
 
