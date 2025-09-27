@@ -64,7 +64,8 @@ This command displays:
 - Complete metadata
 - Document ID and collection information
 
-Use --schema to show the document schema including metadata structure.`,
+Use --schema to show the document schema including metadata structure.
+Use --expand-metadata to show expanded metadata information.`,
 	Args: cobra.RangeArgs(1, 2),
 	Run:  runDocumentShow,
 }
@@ -187,6 +188,7 @@ func init() {
 	documentShowCmd.Flags().StringP("name", "n", "", "Show document by filename/name")
 	documentShowCmd.Flags().StringP("filename", "f", "", "Show document by filename/name (alias for --name)")
 	documentShowCmd.Flags().Bool("schema", false, "Show document schema including metadata structure")
+	documentShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information")
 
 	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
 
@@ -260,6 +262,7 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
 	showSchema, _ := cmd.Flags().GetBool("schema")
+	showMetadata, _ := cmd.Flags().GetBool("expand-metadata")
 
 	var documentID string
 	if len(args) > 1 {
@@ -321,27 +324,27 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
 		if len(metadataFilters) > 0 {
-			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema)
+			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema, showMetadata)
 		} else if documentName != "" {
-			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema)
+			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema, showMetadata)
 		} else {
-			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema)
+			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema, showMetadata)
 		}
 	case config.VectorDBTypeLocal:
 		if len(metadataFilters) > 0 {
-			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema)
+			showWeaviateDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema, showMetadata)
 		} else if documentName != "" {
-			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema)
+			showWeaviateDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema, showMetadata)
 		} else {
-			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema)
+			showWeaviateDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema, showMetadata)
 		}
 	case config.VectorDBTypeMock:
 		if len(metadataFilters) > 0 {
-			showMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema)
+			showMockDocumentsByMetadata(ctx, dbConfig, collectionName, metadataFilters, showLong, shortLines, showSchema, showMetadata)
 		} else if documentName != "" {
-			showMockDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema)
+			showMockDocumentByName(ctx, dbConfig, collectionName, documentName, showLong, shortLines, showSchema, showMetadata)
 		} else {
-			showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema)
+			showMockDocument(ctx, dbConfig, collectionName, documentID, showLong, shortLines, showSchema, showMetadata)
 		}
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
@@ -743,7 +746,7 @@ func listMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 	}
 }
 
-func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int, showSchema bool) {
+func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int, showSchema bool, showMetadata bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -787,9 +790,14 @@ func showWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 	if showSchema {
 		showDocumentSchema(*document, collectionName)
 	}
+
+	// Show expanded metadata if requested
+	if showMetadata {
+		showDocumentMetadata(*document, collectionName)
+	}
 }
 
-func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int, showSchema bool) {
+func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID string, showLong bool, shortLines int, showSchema bool, showMetadata bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -840,9 +848,14 @@ func showMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 	if showSchema {
 		showMockDocumentSchema(*document, collectionName)
 	}
+
+	// Show expanded metadata if requested
+	if showMetadata {
+		showMockDocumentMetadata(*document, collectionName)
+	}
 }
 
-func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int, showSchema bool) {
+func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int, showSchema bool, showMetadata bool) {
 	client, err := createWeaviateClient(cfg)
 
 	if err != nil {
@@ -901,9 +914,14 @@ func showWeaviateDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBCo
 	if showSchema && len(documents) > 0 {
 		showDocumentSchema(documents[0], collectionName)
 	}
+
+	// Show expanded metadata if requested (only for first document to avoid repetition)
+	if showMetadata && len(documents) > 0 {
+		showDocumentMetadata(documents[0], collectionName)
+	}
 }
 
-func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int, showSchema bool) {
+func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, metadataFilters []string, showLong bool, shortLines int, showSchema bool, showMetadata bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -968,6 +986,11 @@ func showMockDocumentsByMetadata(ctx context.Context, cfg *config.VectorDBConfig
 	// Show schema if requested (only for first document to avoid repetition)
 	if showSchema && len(documents) > 0 {
 		showMockDocumentSchema(documents[0], collectionName)
+	}
+
+	// Show expanded metadata if requested (only for first document to avoid repetition)
+	if showMetadata && len(documents) > 0 {
+		showMockDocumentMetadata(documents[0], collectionName)
 	}
 }
 
@@ -3200,7 +3223,7 @@ func documentNameMatches(doc weaviate.Document, name string) bool {
 }
 
 // showWeaviateDocumentByName shows a Weaviate document by its name
-func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int, showSchema bool) {
+func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int, showSchema bool, showMetadata bool) {
 	docWithCollection, err := findDocumentByName(nil, cfg, collectionName, documentName)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to find document: %v", err))
@@ -3244,10 +3267,15 @@ func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig,
 	if showSchema {
 		showDocumentSchema(*doc, actualCollection)
 	}
+
+	// Show expanded metadata if requested
+	if showMetadata {
+		showDocumentMetadata(*doc, actualCollection)
+	}
 }
 
 // showMockDocumentByName shows a mock document by its name
-func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int, showSchema bool) {
+func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int, showSchema bool, showMetadata bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -3313,6 +3341,11 @@ func showMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, col
 	// Show schema if requested
 	if showSchema {
 		showMockDocumentSchema(*foundDoc, collectionName)
+	}
+
+	// Show expanded metadata if requested
+	if showMetadata {
+		showMockDocumentMetadata(*foundDoc, collectionName)
 	}
 }
 
@@ -3686,6 +3719,207 @@ func showMockDocumentSchema(doc mock.Document, collectionName string) {
 		fmt.Println()
 	}
 
+	fmt.Println()
+
+	// Mock-specific information
+	printStyledEmoji("🎭")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Mock Document Info")
+	fmt.Println()
+	fmt.Printf("  • Type: ")
+	printStyledValueDimmed("Mock Document")
+	fmt.Println()
+	fmt.Printf("  • Collection: ")
+	printStyledValueDimmed(collectionName)
+	fmt.Println()
+	fmt.Println()
+}
+
+// showDocumentMetadata shows expanded metadata for a Weaviate document
+func showDocumentMetadata(doc weaviate.Document, collectionName string) {
+	fmt.Println()
+	color.New(color.FgCyan, color.Bold).Printf("📊 Document Metadata: %s\n", collectionName)
+	fmt.Println()
+
+	if len(doc.Metadata) == 0 {
+		printStyledValueDimmed("No metadata available for this document")
+		fmt.Println()
+		return
+	}
+
+	// Display metadata analysis
+	printStyledEmoji("📈")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Analysis")
+	fmt.Println()
+
+	fmt.Printf("  • Total Metadata Fields: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(doc.Metadata)))
+	fmt.Println()
+
+	fmt.Printf("  • Document ID: ")
+	printStyledValueDimmed(doc.ID)
+	fmt.Println()
+
+	fmt.Println()
+
+	// Show detailed metadata fields
+	printStyledEmoji("🔍")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Fields")
+	fmt.Println()
+
+	// Sort fields alphabetically for consistent display
+	var sortedKeys []string
+	for key := range doc.Metadata {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, key := range sortedKeys {
+		value := doc.Metadata[key]
+
+		fmt.Printf("  • ")
+		printStyledKeyProminent(key)
+		fmt.Printf(" (")
+		printStyledValueDimmed(getValueType(value))
+		fmt.Printf(")")
+		fmt.Println()
+
+		// Show the actual value
+		valueStr := fmt.Sprintf("%v", value)
+		if len(valueStr) > 200 {
+			valueStr = valueStr[:197] + "..."
+		}
+
+		fmt.Printf("    Value: ")
+		printStyledValueDimmed(valueStr)
+		fmt.Println()
+		fmt.Println()
+	}
+
+	// Show metadata statistics
+	printStyledEmoji("📊")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Statistics")
+	fmt.Println()
+
+	// Calculate field type distribution
+	typeCounts := make(map[string]int)
+	for _, value := range doc.Metadata {
+		typeCounts[getValueType(value)]++
+	}
+
+	fmt.Printf("  • Field Type Distribution: ")
+	var typeDist []string
+	for fieldType, count := range typeCounts {
+		typeDist = append(typeDist, fmt.Sprintf("%s (%d)", fieldType, count))
+	}
+	printStyledValueDimmed(strings.Join(typeDist, ", "))
+	fmt.Println()
+
+	fmt.Printf("  • Average Value Length: ")
+	totalLength := 0
+	for _, value := range doc.Metadata {
+		valueStr := fmt.Sprintf("%v", value)
+		totalLength += len(valueStr)
+	}
+	avgLength := float64(totalLength) / float64(len(doc.Metadata))
+	printStyledValueDimmed(fmt.Sprintf("%.1f characters", avgLength))
+	fmt.Println()
+}
+
+// showMockDocumentMetadata shows expanded metadata for a mock document
+func showMockDocumentMetadata(doc mock.Document, collectionName string) {
+	fmt.Println()
+	color.New(color.FgCyan, color.Bold).Printf("📊 Document Metadata: %s\n", collectionName)
+	fmt.Println()
+
+	if len(doc.Metadata) == 0 {
+		printStyledValueDimmed("No metadata available for this document")
+		fmt.Println()
+		return
+	}
+
+	// Display metadata analysis
+	printStyledEmoji("📈")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Analysis")
+	fmt.Println()
+
+	fmt.Printf("  • Total Metadata Fields: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(doc.Metadata)))
+	fmt.Println()
+
+	fmt.Printf("  • Document ID: ")
+	printStyledValueDimmed(doc.ID)
+	fmt.Println()
+
+	fmt.Println()
+
+	// Show detailed metadata fields
+	printStyledEmoji("🔍")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Fields")
+	fmt.Println()
+
+	// Sort fields alphabetically for consistent display
+	var sortedKeys []string
+	for key := range doc.Metadata {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, key := range sortedKeys {
+		value := doc.Metadata[key]
+
+		fmt.Printf("  • ")
+		printStyledKeyProminent(key)
+		fmt.Printf(" (")
+		printStyledValueDimmed(getValueType(value))
+		fmt.Printf(")")
+		fmt.Println()
+
+		// Show the actual value
+		valueStr := fmt.Sprintf("%v", value)
+		if len(valueStr) > 200 {
+			valueStr = valueStr[:197] + "..."
+		}
+
+		fmt.Printf("    Value: ")
+		printStyledValueDimmed(valueStr)
+		fmt.Println()
+		fmt.Println()
+	}
+
+	// Show metadata statistics
+	printStyledEmoji("📊")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Statistics")
+	fmt.Println()
+
+	// Calculate field type distribution
+	typeCounts := make(map[string]int)
+	for _, value := range doc.Metadata {
+		typeCounts[getValueType(value)]++
+	}
+
+	fmt.Printf("  • Field Type Distribution: ")
+	var typeDist []string
+	for fieldType, count := range typeCounts {
+		typeDist = append(typeDist, fmt.Sprintf("%s (%d)", fieldType, count))
+	}
+	printStyledValueDimmed(strings.Join(typeDist, ", "))
+	fmt.Println()
+
+	fmt.Printf("  • Average Value Length: ")
+	totalLength := 0
+	for _, value := range doc.Metadata {
+		valueStr := fmt.Sprintf("%v", value)
+		totalLength += len(valueStr)
+	}
+	avgLength := float64(totalLength) / float64(len(doc.Metadata))
+	printStyledValueDimmed(fmt.Sprintf("%.1f characters", avgLength))
 	fmt.Println()
 
 	// Mock-specific information

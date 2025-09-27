@@ -116,6 +116,12 @@ weave collection show MyCollection --schema
 # Show document with schema information
 weave document show MyCollection doc-id --schema
 
+# Show collection with expanded metadata analysis
+weave collection show MyCollection --expand-metadata
+
+# Show document with expanded metadata analysis
+weave document show MyCollection doc-id --expand-metadata
+
 # Delete document by filename
 weave document delete MyCollection --name test_image.png
 ```

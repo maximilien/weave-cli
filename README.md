@@ -120,6 +120,12 @@ weave document show MyCollection DOCUMENT_ID --schema
 
 # Show document by name with schema
 weave document show MyCollection --name filename.pdf --schema
+
+# Show collection with expanded metadata analysis
+weave collection show MyCollection --expand-metadata
+
+# Show document with expanded metadata analysis
+weave document show MyCollection DOCUMENT_ID --expand-metadata
 ```
 
 ## Detailed Configuration

@@ -137,7 +137,8 @@ This command displays:
 - Last document date (if available)
 - Collection statistics
 
-Use --schema to show the collection schema including metadata structure.`,
+Use --schema to show the collection schema including metadata structure.
+Use --expand-metadata to show expanded metadata information for collections and documents.`,
 	Args: cobra.ExactArgs(1),
 	Run:  runCollectionShow,
 }
@@ -157,6 +158,7 @@ func init() {
 	collectionListCmd.Flags().BoolP("virtual", "w", false, "Show collections with virtual structure summary (chunks, images, stacks)")
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
 	collectionShowCmd.Flags().Bool("schema", false, "Show collection schema including metadata structure")
+	collectionShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information for collections and documents")
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
 	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -819,6 +821,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	shortLines, _ := cmd.Flags().GetInt("short")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	showSchema, _ := cmd.Flags().GetBool("schema")
+	showMetadata, _ := cmd.Flags().GetBool("expand-metadata")
 
 	// Load configuration
 	cfg, err := loadConfigWithOverrides()
@@ -845,18 +848,18 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
 	case config.VectorDBTypeLocal:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema)
+		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
 	case config.VectorDBTypeMock:
-		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema)
+		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
 	default:
 		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
 
-func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool) {
+func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool) {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to create client: %v", err))
@@ -1034,10 +1037,15 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		showCollectionSchema(ctx, client, collectionName)
 	}
 
+	// Show expanded metadata if requested
+	if showMetadata {
+		showCollectionMetadata(ctx, client, collectionName)
+	}
+
 	printSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
 }
 
-func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool) {
+func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool) {
 	// Convert to MockConfig for backward compatibility
 	mockConfig := &config.MockConfig{
 		Enabled:            cfg.Enabled,
@@ -1164,6 +1172,11 @@ func showMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collect
 	// Show schema if requested
 	if showSchema {
 		showMockCollectionSchema(ctx, client, collectionName)
+	}
+
+	// Show expanded metadata if requested
+	if showMetadata {
+		showMockCollectionMetadata(ctx, client, collectionName)
 	}
 
 	printSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
@@ -1910,4 +1923,347 @@ func getValueType(value interface{}) string {
 	default:
 		return "unknown"
 	}
+}
+
+// showCollectionMetadata shows expanded metadata for a Weaviate collection
+func showCollectionMetadata(ctx context.Context, client *weaviate.WeaveClient, collectionName string) {
+	fmt.Println()
+	color.New(color.FgCyan, color.Bold).Printf("📊 Collection Metadata: %s\n", collectionName)
+	fmt.Println()
+
+	// Get sample documents to analyze metadata
+	documents, err := client.ListDocuments(ctx, collectionName, 100)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get documents for metadata analysis: %v", err))
+		return
+	}
+
+	if len(documents) == 0 {
+		printStyledValueDimmed("No documents found to analyze metadata")
+		fmt.Println()
+		return
+	}
+
+	// Analyze metadata across all documents
+	metadataAnalysis := analyzeMetadata(documents)
+
+	// Display metadata analysis
+	printStyledEmoji("📈")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Analysis")
+	fmt.Println()
+
+	fmt.Printf("  • Total Documents Analyzed: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(documents)))
+	fmt.Println()
+
+	fmt.Printf("  • Unique Metadata Fields: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(metadataAnalysis.FieldCounts)))
+	fmt.Println()
+
+	fmt.Printf("  • Most Common Fields: ")
+	if len(metadataAnalysis.FieldCounts) > 0 {
+		// Show top 3 most common fields
+		topFields := getTopFields(metadataAnalysis.FieldCounts, 3)
+		printStyledValueDimmed(strings.Join(topFields, ", "))
+	} else {
+		printStyledValueDimmed("None")
+	}
+	fmt.Println()
+
+	fmt.Println()
+
+	// Show detailed field analysis
+	if len(metadataAnalysis.FieldCounts) > 0 {
+		printStyledEmoji("🔍")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Field Details")
+		fmt.Println()
+
+		// Sort fields by frequency
+		sortedFields := sortFieldsByFrequency(metadataAnalysis.FieldCounts)
+
+		for _, field := range sortedFields {
+			count := metadataAnalysis.FieldCounts[field]
+			percentage := float64(count) / float64(len(documents)) * 100
+
+			fmt.Printf("  • ")
+			printStyledKeyProminent(field)
+			fmt.Printf(": ")
+			printStyledValueDimmed(fmt.Sprintf("%d occurrences (%.1f%%)", count, percentage))
+			fmt.Println()
+
+			// Show sample values for this field
+			if samples, exists := metadataAnalysis.FieldSamples[field]; exists && len(samples) > 0 {
+				fmt.Printf("    Sample values: ")
+				sampleStr := strings.Join(samples[:min(3, len(samples))], ", ")
+				if len(samples) > 3 {
+					sampleStr += fmt.Sprintf(" (+%d more)", len(samples)-3)
+				}
+				printStyledValueDimmed(sampleStr)
+				fmt.Println()
+			}
+		}
+		fmt.Println()
+	}
+
+	// Show metadata distribution
+	if len(metadataAnalysis.FieldCounts) > 0 {
+		printStyledEmoji("📊")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Metadata Distribution")
+		fmt.Println()
+
+		// Calculate distribution statistics
+		totalFields := 0
+		for _, count := range metadataAnalysis.FieldCounts {
+			totalFields += count
+		}
+		avgFieldsPerDoc := float64(totalFields) / float64(len(documents))
+
+		fmt.Printf("  • Average fields per document: ")
+		printStyledValueDimmed(fmt.Sprintf("%.1f", avgFieldsPerDoc))
+		fmt.Println()
+
+		fmt.Printf("  • Total metadata fields: ")
+		printStyledValueDimmed(fmt.Sprintf("%d", totalFields))
+		fmt.Println()
+	}
+}
+
+// showMockCollectionMetadata shows expanded metadata for a mock collection
+func showMockCollectionMetadata(ctx context.Context, client *mock.Client, collectionName string) {
+	fmt.Println()
+	color.New(color.FgCyan, color.Bold).Printf("📊 Collection Metadata: %s\n", collectionName)
+	fmt.Println()
+
+	// Get sample documents to analyze metadata
+	documents, err := client.ListDocuments(ctx, collectionName, 100)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get documents for metadata analysis: %v", err))
+		return
+	}
+
+	if len(documents) == 0 {
+		printStyledValueDimmed("No documents found to analyze metadata")
+		fmt.Println()
+		return
+	}
+
+	// Analyze metadata across all documents
+	metadataAnalysis := analyzeMockMetadata(documents)
+
+	// Display metadata analysis
+	printStyledEmoji("📈")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Metadata Analysis")
+	fmt.Println()
+
+	fmt.Printf("  • Total Documents Analyzed: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(documents)))
+	fmt.Println()
+
+	fmt.Printf("  • Unique Metadata Fields: ")
+	printStyledValueDimmed(fmt.Sprintf("%d", len(metadataAnalysis.FieldCounts)))
+	fmt.Println()
+
+	fmt.Printf("  • Most Common Fields: ")
+	if len(metadataAnalysis.FieldCounts) > 0 {
+		// Show top 3 most common fields
+		topFields := getTopFields(metadataAnalysis.FieldCounts, 3)
+		printStyledValueDimmed(strings.Join(topFields, ", "))
+	} else {
+		printStyledValueDimmed("None")
+	}
+	fmt.Println()
+
+	fmt.Println()
+
+	// Show detailed field analysis
+	if len(metadataAnalysis.FieldCounts) > 0 {
+		printStyledEmoji("🔍")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Field Details")
+		fmt.Println()
+
+		// Sort fields by frequency
+		sortedFields := sortFieldsByFrequency(metadataAnalysis.FieldCounts)
+
+		for _, field := range sortedFields {
+			count := metadataAnalysis.FieldCounts[field]
+			percentage := float64(count) / float64(len(documents)) * 100
+
+			fmt.Printf("  • ")
+			printStyledKeyProminent(field)
+			fmt.Printf(": ")
+			printStyledValueDimmed(fmt.Sprintf("%d occurrences (%.1f%%)", count, percentage))
+			fmt.Println()
+
+			// Show sample values for this field
+			if samples, exists := metadataAnalysis.FieldSamples[field]; exists && len(samples) > 0 {
+				fmt.Printf("    Sample values: ")
+				sampleStr := strings.Join(samples[:min(3, len(samples))], ", ")
+				if len(samples) > 3 {
+					sampleStr += fmt.Sprintf(" (+%d more)", len(samples)-3)
+				}
+				printStyledValueDimmed(sampleStr)
+				fmt.Println()
+			}
+		}
+		fmt.Println()
+	}
+
+	// Show metadata distribution
+	if len(metadataAnalysis.FieldCounts) > 0 {
+		printStyledEmoji("📊")
+		fmt.Printf(" ")
+		printStyledKeyProminent("Metadata Distribution")
+		fmt.Println()
+
+		// Calculate distribution statistics
+		totalFields := 0
+		for _, count := range metadataAnalysis.FieldCounts {
+			totalFields += count
+		}
+		avgFieldsPerDoc := float64(totalFields) / float64(len(documents))
+
+		fmt.Printf("  • Average fields per document: ")
+		printStyledValueDimmed(fmt.Sprintf("%.1f", avgFieldsPerDoc))
+		fmt.Println()
+
+		fmt.Printf("  • Total metadata fields: ")
+		printStyledValueDimmed(fmt.Sprintf("%d", totalFields))
+		fmt.Println()
+	}
+
+	// Mock-specific information
+	printStyledEmoji("🎭")
+	fmt.Printf(" ")
+	printStyledKeyProminent("Mock Collection Info")
+	fmt.Println()
+	fmt.Printf("  • Type: ")
+	printStyledValueDimmed("Mock Collection")
+	fmt.Println()
+	fmt.Printf("  • Collection: ")
+	printStyledValueDimmed(collectionName)
+	fmt.Println()
+	fmt.Println()
+}
+
+// MetadataAnalysis represents the analysis results of metadata across documents
+type MetadataAnalysis struct {
+	FieldCounts  map[string]int
+	FieldSamples map[string][]string
+}
+
+// analyzeMetadata analyzes metadata across Weaviate documents
+func analyzeMetadata(documents []weaviate.Document) MetadataAnalysis {
+	fieldCounts := make(map[string]int)
+	fieldSamples := make(map[string][]string)
+
+	for _, doc := range documents {
+		for key, value := range doc.Metadata {
+			fieldCounts[key]++
+
+			// Add sample value (limit to 10 samples per field)
+			if len(fieldSamples[key]) < 10 {
+				valueStr := fmt.Sprintf("%v", value)
+				// Truncate long values
+				if len(valueStr) > 50 {
+					valueStr = valueStr[:47] + "..."
+				}
+				fieldSamples[key] = append(fieldSamples[key], valueStr)
+			}
+		}
+	}
+
+	return MetadataAnalysis{
+		FieldCounts:  fieldCounts,
+		FieldSamples: fieldSamples,
+	}
+}
+
+// analyzeMockMetadata analyzes metadata across mock documents
+func analyzeMockMetadata(documents []mock.Document) MetadataAnalysis {
+	fieldCounts := make(map[string]int)
+	fieldSamples := make(map[string][]string)
+
+	for _, doc := range documents {
+		for key, value := range doc.Metadata {
+			fieldCounts[key]++
+
+			// Add sample value (limit to 10 samples per field)
+			if len(fieldSamples[key]) < 10 {
+				valueStr := fmt.Sprintf("%v", value)
+				// Truncate long values
+				if len(valueStr) > 50 {
+					valueStr = valueStr[:47] + "..."
+				}
+				fieldSamples[key] = append(fieldSamples[key], valueStr)
+			}
+		}
+	}
+
+	return MetadataAnalysis{
+		FieldCounts:  fieldCounts,
+		FieldSamples: fieldSamples,
+	}
+}
+
+// getTopFields returns the top N fields by frequency
+func getTopFields(fieldCounts map[string]int, n int) []string {
+	type fieldCount struct {
+		field string
+		count int
+	}
+
+	var fields []fieldCount
+	for field, count := range fieldCounts {
+		fields = append(fields, fieldCount{field, count})
+	}
+
+	// Sort by count (descending)
+	for i := 0; i < len(fields)-1; i++ {
+		for j := i + 1; j < len(fields); j++ {
+			if fields[i].count < fields[j].count {
+				fields[i], fields[j] = fields[j], fields[i]
+			}
+		}
+	}
+
+	var result []string
+	for i := 0; i < min(n, len(fields)); i++ {
+		result = append(result, fields[i].field)
+	}
+
+	return result
+}
+
+// sortFieldsByFrequency returns fields sorted by frequency (descending)
+func sortFieldsByFrequency(fieldCounts map[string]int) []string {
+	type fieldCount struct {
+		field string
+		count int
+	}
+
+	var fields []fieldCount
+	for field, count := range fieldCounts {
+		fields = append(fields, fieldCount{field, count})
+	}
+
+	// Sort by count (descending)
+	for i := 0; i < len(fields)-1; i++ {
+		for j := i + 1; j < len(fields); j++ {
+			if fields[i].count < fields[j].count {
+				fields[i], fields[j] = fields[j], fields[i]
+			}
+		}
+	}
+
+	var result []string
+	for _, field := range fields {
+		result = append(result, field.field)
+	}
+
+	return result
 }
