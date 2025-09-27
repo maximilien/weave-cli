@@ -21,6 +21,7 @@ func createWeaviateClient(cfg *config.VectorDBConfig) (*weaviate.WeaveClient, er
 			URL:          cfg.URL,
 			OpenAIAPIKey: cfg.OpenAIAPIKey,
 		})
+
 	default:
 		return nil, fmt.Errorf("unsupported configuration type: %s", cfg.Type)
 	}
