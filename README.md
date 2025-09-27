@@ -117,6 +117,31 @@ weave cols create MyCollection --field title:text,author:text
 - `date` - Date/time values
 - `object` - JSON objects
 
+## Pattern-Based Document Deletion
+
+Delete documents using intuitive shell glob patterns or powerful regex expressions:
+
+```bash
+# Shell glob patterns (auto-detected)
+weave document delete MyCollection --pattern "tmp*.png"
+weave document delete MyCollection --pattern "*.jpg"
+weave document delete MyCollection --pattern "file[0-9].txt"
+weave document delete MyCollection --pattern "doc?.pdf"
+
+# Regex patterns (auto-detected)
+weave document delete MyCollection --pattern "tmp.*\.png"
+weave document delete MyCollection --pattern "^prefix.*\.jpg$"
+weave document delete MyCollection --pattern ".*\.(png|jpg|gif)$"
+
+# Using aliases
+weave docs d MyCollection --pattern "*.png"
+weave docs d MyCollection --pattern "temp.*\.pdf"
+```
+
+**Pattern Types:**
+- **Shell Glob**: `tmp*.png`, `file?.txt`, `doc[0-9].pdf` (familiar shell syntax)
+- **Regex**: `tmp.*\.png`, `^file.*\.txt$`, `.*\.(png|jpg)$` (powerful pattern matching)
+
 ## Multi-Delete Operations
 
 Delete multiple collections or documents efficiently with enhanced safety:
@@ -128,9 +153,14 @@ weave collection delete Collection1 Collection2 Collection3
 # Delete multiple documents
 weave document delete MyCollection doc1 doc2 doc3
 
+# Delete documents by pattern (shell glob or regex)
+weave document delete MyCollection --pattern "tmp*.png"
+weave document delete MyCollection --pattern "tmp.*\.png"
+
 # Using aliases
 weave cols d Col1 Col2 Col3
 weave docs d MyCollection doc1 doc2 doc3
+weave docs d MyCollection --pattern "*.jpg"
 
 # Skip confirmation with --force flag
 weave cols d Col1 Col2 Col3 --force
@@ -174,6 +204,7 @@ Weave follows a consistent command pattern:
   - `weave document show COLLECTION_NAME DOCUMENT_ID` - Show document
   - `weave document delete COLLECTION_NAME [DOCUMENT_ID] [DOCUMENT_ID...]` -
     Delete docs
+  - `weave document delete COLLECTION_NAME --pattern "PATTERN"` - Delete by pattern
   - `weave document delete-all COLLECTION_NAME` - Delete all docs (double confirmation)
 
 ### Command Aliases

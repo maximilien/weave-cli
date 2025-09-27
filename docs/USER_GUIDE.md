@@ -237,6 +237,12 @@ weave document delete MyCollection document-id
 # Delete multiple documents
 weave document delete MyCollection doc1 doc2 doc3
 
+# Delete documents by pattern (shell glob or regex)
+weave document delete MyCollection --pattern "tmp*.png"
+weave document delete MyCollection --pattern "*.jpg"
+weave document delete MyCollection --pattern "file[0-9].txt"
+weave document delete MyCollection --pattern "tmp.*\.png"
+
 # Delete all documents in a collection (⚠️ DESTRUCTIVE)
 weave document delete-all MyCollection
 ```
@@ -558,6 +564,89 @@ weave cols da
 - **Exact Input Required**: Must type "yes" exactly (case-sensitive)
 - **Clear Cancellation**: Shows "Operation cancelled" if confirmation not received
 
+## Pattern-Based Document Deletion
+
+The `weave document delete` command supports powerful pattern matching to delete
+documents based on filename patterns. The CLI automatically detects whether you're
+using shell glob patterns or regex patterns.
+
+### Shell Glob Patterns (Default)
+
+Shell glob patterns use familiar syntax that most users already know:
+
+```bash
+# Delete all PNG files starting with 'tmp'
+weave document delete MyCollection --pattern "tmp*.png"
+
+# Delete all JPG files
+weave document delete MyCollection --pattern "*.jpg"
+
+# Delete files with single character wildcard
+weave document delete MyCollection --pattern "file?.txt"
+
+# Delete files with character ranges
+weave document delete MyCollection --pattern "doc[0-9].pdf"
+weave document delete MyCollection --pattern "image_[a-z].png"
+
+# Using aliases
+weave docs d MyCollection --pattern "*.png"
+weave docs d MyCollection --pattern "temp*.*"
+```
+
+### Regex Patterns (Auto-detected)
+
+When the pattern contains regex-specific characters, it's automatically treated as regex:
+
+```bash
+# Delete files with regex patterns
+weave document delete MyCollection --pattern "tmp.*\.png"
+weave document delete MyCollection --pattern "^prefix.*\.jpg$"
+weave document delete MyCollection --pattern ".*\.(png|jpg|gif)$"
+
+# Complex regex patterns
+weave document delete MyCollection --pattern "file_\d{4}\.txt"
+weave document delete MyCollection --pattern "^(temp|tmp).*\.pdf$"
+```
+
+### Pattern Detection Logic
+
+The CLI automatically detects pattern type based on content:
+
+**Shell Glob Indicators:**
+- Contains `*`, `?`, `[abc]` but no regex special characters
+- Examples: `tmp*.png`, `file?.txt`, `doc[0-9].pdf`
+
+**Regex Indicators:**
+- Contains `^`, `$`, `\`, `.*`, `.+`, `.?`, `(`, `)`, `{`, `}`, `|`
+- Examples: `tmp.*\.png`, `^file.*\.txt$`, `.*\.(png|jpg)$`
+
+### Examples and Use Cases
+
+```bash
+# Clean up temporary files
+weave docs d MyCollection --pattern "tmp*.png"
+weave docs d MyCollection --pattern "temp*.*"
+
+# Delete specific file types
+weave docs d MyCollection --pattern "*.jpg"
+weave docs d MyCollection --pattern "*.pdf"
+
+# Delete files with specific naming patterns
+weave docs d MyCollection --pattern "backup_*.txt"
+weave docs d MyCollection --pattern "old_[0-9]*.log"
+
+# Complex pattern matching
+weave docs d MyCollection --pattern ".*\.(png|jpg|gif)$"  # All image files
+weave docs d MyCollection --pattern "^temp.*\.pdf$"     # PDFs starting with temp
+```
+
+### Safety Features
+
+- **Preview**: Shows all matching documents before deletion
+- **Confirmation**: Requires user confirmation unless `--force` is used
+- **Pattern Validation**: Validates pattern syntax before execution
+- **Error Handling**: Clear error messages for invalid patterns
+
 ## Document Count Command
 
 The `weave document count` command (alias: `weave docs C`) allows you to count
@@ -840,6 +929,44 @@ weave config show
 weave config show --verbose
 ```
 
+#### Pattern Matching Issues
+
+**Issue**: Pattern not matching expected documents.
+
+**Symptoms**:
+- Pattern returns "No documents found" when documents exist
+- Pattern matches unexpected documents
+
+**Solutions**:
+
+1. **Check pattern syntax**:
+   ```bash
+   # Shell glob (simple wildcards)
+   weave docs d MyCollection --pattern "tmp*.png"
+   
+   # Regex (complex patterns)
+   weave docs d MyCollection --pattern "tmp.*\.png"
+   ```
+
+2. **Verify filename field**:
+   ```bash
+   # Check what filename field looks like
+   weave docs l MyCollection --limit 5
+   ```
+
+3. **Test pattern step by step**:
+   ```bash
+   # Start with simple patterns
+   weave docs d MyCollection --pattern "*.png"
+   weave docs d MyCollection --pattern "tmp*"
+   ```
+
+4. **Use regex for complex patterns**:
+   ```bash
+   # For complex matching, use regex
+   weave docs d MyCollection --pattern ".*\.(png|jpg|gif)$"
+   ```
+
 #### Virtual Document Chunk Count Issues
 
 **Issue**: Virtual document view (`-w` flag) shows incorrect chunk counts when
@@ -919,6 +1046,10 @@ weave document list MyCollection
 
 # 8. View documents in virtual format
 weave document list MyCollection --virtual
+
+# 9. Delete documents by pattern
+weave document delete MyCollection --pattern "tmp*.png"
+weave document delete MyCollection --pattern "*.jpg"
 ```
 
 ### Development Workflow
