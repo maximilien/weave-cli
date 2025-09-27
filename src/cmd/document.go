@@ -1428,6 +1428,26 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 		fmt.Println()
 		printStyledKeyValueProminentWithEmoji("Summary", "", "📋")
 		fmt.Println()
+		
+		// Calculate totals
+		totalChunks := 0
+		totalImages := 0
+		documentCount := 0
+		imageStackCount := 0
+		
+		for _, vdoc := range virtualDocs {
+			if vdoc.TotalChunks > 0 {
+				totalChunks += len(vdoc.Chunks)
+				documentCount++
+			} else if isImageVirtualDocument(vdoc) {
+				totalImages += len(vdoc.Chunks)
+				imageStackCount++
+			} else {
+				documentCount++
+			}
+		}
+		
+		// Show individual document details
 		for i, vdoc := range virtualDocs {
 			fmt.Printf("   %d. ", i+1)
 			printStyledFilename(vdoc.OriginalFilename)
@@ -1439,6 +1459,27 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 				fmt.Printf(" - Single document")
 			}
 			fmt.Println()
+		}
+		
+		// Show totals
+		if len(virtualDocs) > 1 {
+			fmt.Println()
+			printStyledKeyValueProminentWithEmoji("Totals", "", "📊")
+			fmt.Printf("   ")
+			printStyledKeyNumberProminentWithEmoji("Documents", documentCount, "📄")
+			fmt.Printf(" (")
+			printStyledKeyNumberProminentWithEmoji("Total Chunks", totalChunks, "📝")
+			fmt.Printf(")")
+			fmt.Println()
+			
+			if imageStackCount > 0 {
+				fmt.Printf("   ")
+				printStyledKeyNumberProminentWithEmoji("Image Stacks", imageStackCount, "🗂️")
+				fmt.Printf(" (")
+				printStyledKeyNumberProminentWithEmoji("Total Images", totalImages, "🖼️")
+				fmt.Printf(")")
+				fmt.Println()
+			}
 		}
 	}
 }
@@ -1902,6 +1943,26 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 		fmt.Println()
 		printStyledKeyValueProminentWithEmoji("Summary", "", "📋")
 		fmt.Println()
+		
+		// Calculate totals
+		totalChunks := 0
+		totalImages := 0
+		documentCount := 0
+		imageStackCount := 0
+		
+		for _, vdoc := range virtualDocs {
+			if vdoc.TotalChunks > 0 {
+				totalChunks += len(vdoc.Chunks)
+				documentCount++
+			} else if isMockImageVirtualDocument(vdoc) {
+				totalImages += len(vdoc.Chunks)
+				imageStackCount++
+			} else {
+				documentCount++
+			}
+		}
+		
+		// Show individual document details
 		for i, vdoc := range virtualDocs {
 			fmt.Printf("   %d. ", i+1)
 			printStyledFilename(vdoc.OriginalFilename)
@@ -1913,6 +1974,27 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 				fmt.Printf(" - Single document")
 			}
 			fmt.Println()
+		}
+		
+		// Show totals
+		if len(virtualDocs) > 1 {
+			fmt.Println()
+			printStyledKeyValueProminentWithEmoji("Totals", "", "📊")
+			fmt.Printf("   ")
+			printStyledKeyNumberProminentWithEmoji("Documents", documentCount, "📄")
+			fmt.Printf(" (")
+			printStyledKeyNumberProminentWithEmoji("Total Chunks", totalChunks, "📝")
+			fmt.Printf(")")
+			fmt.Println()
+			
+			if imageStackCount > 0 {
+				fmt.Printf("   ")
+				printStyledKeyNumberProminentWithEmoji("Image Stacks", imageStackCount, "🗂️")
+				fmt.Printf(" (")
+				printStyledKeyNumberProminentWithEmoji("Total Images", totalImages, "🖼️")
+				fmt.Printf(")")
+				fmt.Println()
+			}
 		}
 	}
 }
