@@ -139,6 +139,7 @@ weave docs d MyCollection --pattern "temp.*\.pdf"
 ```
 
 **Pattern Types:**
+
 - **Shell Glob**: `tmp*.png`, `file?.txt`, `doc[0-9].pdf` (familiar shell syntax)
 - **Regex**: `tmp.*\.png`, `^file.*\.txt$`, `.*\.(png|jpg)$` (powerful pattern matching)
 
