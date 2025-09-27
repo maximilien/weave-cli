@@ -1025,7 +1025,7 @@ func (c *Client) DeleteDocumentsBulk(ctx context.Context, collectionName string,
 
 	// Create a channel to collect results
 	resultChan := make(chan deleteResult, len(documentIDs))
-	
+
 	// Limit concurrent requests to avoid overwhelming the server
 	maxConcurrency := 10
 	semaphore := make(chan struct{}, maxConcurrency)
@@ -1033,9 +1033,9 @@ func (c *Client) DeleteDocumentsBulk(ctx context.Context, collectionName string,
 	// Launch goroutines for concurrent deletions
 	for _, docID := range documentIDs {
 		go func(id string) {
-			semaphore <- struct{}{} // Acquire semaphore
+			semaphore <- struct{}{}        // Acquire semaphore
 			defer func() { <-semaphore }() // Release semaphore
-			
+
 			err := c.DeleteDocument(ctx, collectionName, id)
 			resultChan <- deleteResult{success: err == nil, err: err}
 		}(docID)

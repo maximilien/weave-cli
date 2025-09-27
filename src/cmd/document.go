@@ -1428,13 +1428,13 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 		fmt.Println()
 		printStyledKeyValueProminentWithEmoji("Summary", "", "📋")
 		fmt.Println()
-		
+
 		// Calculate totals
 		totalChunks := 0
 		totalImages := 0
 		documentCount := 0
 		imageStackCount := 0
-		
+
 		for _, vdoc := range virtualDocs {
 			if vdoc.TotalChunks > 0 {
 				totalChunks += len(vdoc.Chunks)
@@ -1446,7 +1446,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 				documentCount++
 			}
 		}
-		
+
 		// Show individual document details
 		for i, vdoc := range virtualDocs {
 			fmt.Printf("   %d. ", i+1)
@@ -1460,7 +1460,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			}
 			fmt.Println()
 		}
-		
+
 		// Show totals
 		if len(virtualDocs) > 1 {
 			fmt.Println()
@@ -1471,7 +1471,7 @@ func displayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			printStyledKeyNumberProminentWithEmoji("Total Chunks", totalChunks, "📝")
 			fmt.Printf(")")
 			fmt.Println()
-			
+
 			if imageStackCount > 0 {
 				fmt.Printf("   ")
 				printStyledKeyNumberProminentWithEmoji("Image Stacks", imageStackCount, "🗂️")
@@ -1943,13 +1943,13 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 		fmt.Println()
 		printStyledKeyValueProminentWithEmoji("Summary", "", "📋")
 		fmt.Println()
-		
+
 		// Calculate totals
 		totalChunks := 0
 		totalImages := 0
 		documentCount := 0
 		imageStackCount := 0
-		
+
 		for _, vdoc := range virtualDocs {
 			if vdoc.TotalChunks > 0 {
 				totalChunks += len(vdoc.Chunks)
@@ -1961,7 +1961,7 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 				documentCount++
 			}
 		}
-		
+
 		// Show individual document details
 		for i, vdoc := range virtualDocs {
 			fmt.Printf("   %d. ", i+1)
@@ -1975,7 +1975,7 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 			}
 			fmt.Println()
 		}
-		
+
 		// Show totals
 		if len(virtualDocs) > 1 {
 			fmt.Println()
@@ -1986,7 +1986,7 @@ func displayVirtualMockDocuments(documents []mock.Document, collectionName strin
 			printStyledKeyNumberProminentWithEmoji("Total Chunks", totalChunks, "📝")
 			fmt.Printf(")")
 			fmt.Println()
-			
+
 			if imageStackCount > 0 {
 				fmt.Printf("   ")
 				printStyledKeyNumberProminentWithEmoji("Image Stacks", imageStackCount, "🗂️")
