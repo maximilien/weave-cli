@@ -1007,6 +1007,59 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	return fmt.Errorf("failed to delete document %s from collection %s: HTTP %d - %s", documentID, collectionName, resp.StatusCode, string(body))
 }
 
+// DeleteDocumentsBulk deletes multiple documents using concurrent individual requests for better performance
+func (c *Client) DeleteDocumentsBulk(ctx context.Context, collectionName string, documentIDs []string) (int, error) {
+	if len(documentIDs) == 0 {
+		return 0, nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	defer cancel()
+
+	// Use concurrent individual deletions for better performance
+	// This is more reliable than batch API which may not be available in all Weaviate versions
+	type deleteResult struct {
+		success bool
+		err     error
+	}
+
+	// Create a channel to collect results
+	resultChan := make(chan deleteResult, len(documentIDs))
+	
+	// Limit concurrent requests to avoid overwhelming the server
+	maxConcurrency := 10
+	semaphore := make(chan struct{}, maxConcurrency)
+
+	// Launch goroutines for concurrent deletions
+	for _, docID := range documentIDs {
+		go func(id string) {
+			semaphore <- struct{}{} // Acquire semaphore
+			defer func() { <-semaphore }() // Release semaphore
+			
+			err := c.DeleteDocument(ctx, collectionName, id)
+			resultChan <- deleteResult{success: err == nil, err: err}
+		}(docID)
+	}
+
+	// Collect results
+	successCount := 0
+	errorCount := 0
+	for i := 0; i < len(documentIDs); i++ {
+		result := <-resultChan
+		if result.success {
+			successCount++
+		} else {
+			errorCount++
+			// Log individual errors for debugging
+			if result.err != nil {
+				fmt.Printf("Warning: Failed to delete document: %v\n", result.err)
+			}
+		}
+	}
+
+	return successCount, nil
+}
+
 // DeleteDocumentsByMetadata deletes documents matching metadata filters using REST API
 func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadataFilters []string) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)

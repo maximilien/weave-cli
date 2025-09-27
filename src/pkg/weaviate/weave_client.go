@@ -128,6 +128,11 @@ func (wc *WeaveClient) DeleteDocument(ctx context.Context, collectionName, docum
 	return fmt.Errorf("failed to delete document %s from collection %s: HTTP %d - %s", documentID, collectionName, resp.StatusCode, string(body))
 }
 
+// DeleteDocumentsBulk deletes multiple documents in a single batch operation
+func (wc *WeaveClient) DeleteDocumentsBulk(ctx context.Context, collectionName string, documentIDs []string) (int, error) {
+	return wc.Client.DeleteDocumentsBulk(ctx, collectionName, documentIDs)
+}
+
 // DeleteDocumentsByMetadata deletes documents matching metadata filters using REST API
 func (wc *WeaveClient) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadataFilters []string) (int, error) {
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)

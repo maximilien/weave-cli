@@ -886,30 +886,53 @@ func deleteMultipleWeaviateDocuments(ctx context.Context, cfg *config.VectorDBCo
 		return
 	}
 
-	successCount := 0
-	errorCount := 0
+	// Use bulk delete for better performance when deleting multiple documents
+	if len(documentIDs) > 1 {
+		fmt.Printf("Deleting %d documents using bulk operation...\n", len(documentIDs))
 
-	for i, documentID := range documentIDs {
-		fmt.Printf("Deleting document %d/%d: %s\n", i+1, len(documentIDs), documentID)
+		successCount, err := client.DeleteDocumentsBulk(ctx, collectionName, documentIDs)
+		if err != nil {
+			printError(fmt.Sprintf("Bulk delete failed: %v", err))
+			printInfo("Falling back to individual deletions...")
+
+			// Fallback to individual deletions
+			successCount = 0
+			errorCount := 0
+
+			for i, documentID := range documentIDs {
+				fmt.Printf("Deleting document %d/%d: %s\n", i+1, len(documentIDs), documentID)
+
+				if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
+					printError(fmt.Sprintf("Failed to delete document %s: %v", documentID, err))
+					errorCount++
+				} else {
+					successCount++
+				}
+			}
+
+			if errorCount == 0 {
+				printSuccess(fmt.Sprintf("All %d documents deleted successfully!", successCount))
+			} else if successCount == 0 {
+				printError(fmt.Sprintf("Failed to delete all %d documents", errorCount))
+			} else {
+				printWarning(fmt.Sprintf("Deleted %d documents successfully, %d failed", successCount, errorCount))
+			}
+		} else {
+			if successCount == len(documentIDs) {
+				printSuccess(fmt.Sprintf("All %d documents deleted successfully using bulk operation!", successCount))
+			} else {
+				printWarning(fmt.Sprintf("Bulk delete completed: %d/%d documents deleted successfully", successCount, len(documentIDs)))
+			}
+		}
+	} else {
+		// Single document deletion
+		documentID := documentIDs[0]
+		fmt.Printf("Deleting document: %s\n", documentID)
 
 		if err := client.DeleteDocument(ctx, collectionName, documentID); err != nil {
 			printError(fmt.Sprintf("Failed to delete document %s: %v", documentID, err))
-			errorCount++
 		} else {
 			printSuccess(fmt.Sprintf("Successfully deleted document: %s", documentID))
-			successCount++
-		}
-		fmt.Println()
-	}
-
-	// Summary
-	if len(documentIDs) > 1 {
-		if errorCount == 0 {
-			printSuccess(fmt.Sprintf("All %d documents deleted successfully!", successCount))
-		} else if successCount == 0 {
-			printError(fmt.Sprintf("Failed to delete all %d documents", errorCount))
-		} else {
-			printWarning(fmt.Sprintf("Deleted %d documents successfully, %d failed", successCount, errorCount))
 		}
 	}
 }
@@ -2695,7 +2718,7 @@ func findDocumentsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig,
 	// Auto-detect pattern type if not forced to regex
 	var regex *regexp.Regexp
 	var err error
-	
+
 	if forceRegex || isRegexPattern(pattern) {
 		// Compile as regex pattern
 		regex, err = regexp.Compile(pattern)
@@ -2749,14 +2772,14 @@ func isRegexPattern(pattern string) bool {
 	regexIndicators := []string{
 		"^", "$", "\\", ".*", ".+", ".?", "[", "]", "(", ")", "{", "}", "|", "+", "?",
 	}
-	
+
 	// If pattern contains regex-specific characters, treat as regex
 	for _, indicator := range regexIndicators {
 		if strings.Contains(pattern, indicator) {
 			return true
 		}
 	}
-	
+
 	// If pattern contains only glob characters (*, ?, []) and no regex chars, treat as glob
 	// This is a simple heuristic - could be improved
 	return false
@@ -2766,16 +2789,16 @@ func isRegexPattern(pattern string) bool {
 func globToRegex(glob string) string {
 	// Escape special regex characters first
 	result := regexp.QuoteMeta(glob)
-	
+
 	// Convert glob patterns to regex equivalents
-	result = strings.ReplaceAll(result, "\\*", ".*")     // * -> .*
-	result = strings.ReplaceAll(result, "\\?", ".")     // ? -> .
-	result = strings.ReplaceAll(result, "\\[", "[")    // [ -> [
-	result = strings.ReplaceAll(result, "\\]", "]")    // ] -> ]
-	
+	result = strings.ReplaceAll(result, "\\*", ".*") // * -> .*
+	result = strings.ReplaceAll(result, "\\?", ".")  // ? -> .
+	result = strings.ReplaceAll(result, "\\[", "[")  // [ -> [
+	result = strings.ReplaceAll(result, "\\]", "]")  // ] -> ]
+
 	// Add anchors for exact matching (optional - could be made configurable)
 	// result = "^" + result + "$"
-	
+
 	return result
 }
 
