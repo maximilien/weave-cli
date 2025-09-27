@@ -49,13 +49,42 @@ git clone https://github.com/maximilien/weave-cli.git
 cd weave-cli
 ./build.sh
 
-# Configure environment
+# Configure environment (multiple options)
+
+# Option 1: Environment variables
 export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
 export WEAVIATE_API_KEY="your-api-key"
 export VECTOR_DB_TYPE="weaviate-cloud"
 
-# Test connection
-./bin/weave health check
+# Option 2: Command-line flags (highest priority)
+./bin/weave --vector-db-type weaviate-cloud \
+            --weaviate-url "your-weaviate-url.weaviate.cloud" \
+            --weaviate-api-key "your-api-key" \
+            health check
+
+# Option 3: .env file
+echo "VECTOR_DB_TYPE=weaviate-cloud" > .env
+echo "WEAVIATE_URL=your-weaviate-url.weaviate.cloud" >> .env
+echo "WEAVIATE_API_KEY=your-api-key" >> .env
+```
+
+---
+
+# Configuration Priority
+
+**Priority Order** (highest to lowest):
+
+1. **Command-line flags** (`--vector-db-type`, `--weaviate-url`, `--weaviate-api-key`)
+2. **`--env` file** (specified with `--env` flag)
+3. **`.env` file** (in current directory)
+4. **Shell environment variables**
+
+```bash
+# Example: Override everything
+weave --vector-db-type mock \
+      --weaviate-url https://custom.weaviate.cloud \
+      --weaviate-api-key custom-key \
+      collection list
 ```
 
 ---

@@ -46,11 +46,8 @@ func init() {
 }
 
 func runHealthCheck(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
-
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)

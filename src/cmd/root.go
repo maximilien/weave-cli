@@ -5,16 +5,20 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	cfgFile    string
-	envFile    string
-	noColor    bool
-	noTruncate bool
+	cfgFile        string
+	envFile        string
+	noColor        bool
+	noTruncate     bool
+	vectorDBType   string
+	weaviateAPIKey string
+	weaviateURL    string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -38,7 +42,10 @@ This tool provides commands following a consistent pattern:
   weave document delete-all COLLECTION # Delete all documents in collection (double confirmation)
 
 The tool uses ./config.yaml and ./.env files by default, or you can specify
-custom locations with --config and --env flags.`,
+custom locations with --config and --env flags. Environment variables can be
+overridden with --vector-db-type, --weaviate-api-key, and --weaviate-url flags.
+
+Priority order: command flags > --env file > .env file > shell environment.`,
 	Version: version.Get().Version,
 }
 
@@ -61,6 +68,11 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "quiet output (minimal messages)")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&noTruncate, "no-truncate", false, "show all data without truncation")
+
+	// Environment variable override flags (highest priority)
+	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vector-db-type", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|mock)")
+	rootCmd.PersistentFlags().StringVar(&weaviateAPIKey, "weaviate-api-key", "", "override WEAVIATE_API_KEY")
+	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
 
 	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
@@ -93,6 +105,17 @@ func initConfig() {
 			fmt.Fprintf(os.Stderr, "Warning: Could not read config file: %v\n", err)
 		}
 	}
+}
+
+// loadConfigWithOverrides loads configuration with command-line overrides
+func loadConfigWithOverrides() (*config.Config, error) {
+	return config.LoadConfigWithOptions(config.LoadConfigOptions{
+		ConfigFile:     cfgFile,
+		EnvFile:        envFile,
+		VectorDBType:   vectorDBType,
+		WeaviateAPIKey: weaviateAPIKey,
+		WeaviateURL:    weaviateURL,
+	})
 }
 
 // printHeader prints a colored header message

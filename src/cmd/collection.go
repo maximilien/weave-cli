@@ -161,13 +161,11 @@ func init() {
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	limit, _ := cmd.Flags().GetInt("limit")
 	virtual, _ := cmd.Flags().GetBool("virtual")
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -215,13 +213,11 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 }
 
 func runCollectionDelete(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	force, _ := cmd.Flags().GetBool("force")
 	collectionNames := args
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -323,11 +319,8 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 }
 
 func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
-
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -387,14 +380,12 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 }
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	collectionNames := args
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
 	customFields, _ := cmd.Flags().GetString("field")
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -722,16 +713,13 @@ func deleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 }
 
 func runCollectionCount(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
-
 	var databaseName string
 	if len(args) > 0 {
 		databaseName = args[0]
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -824,14 +812,12 @@ func countMockCollections(ctx context.Context, cfg *config.VectorDBConfig) (int,
 }
 
 func runCollectionShow(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 	shortLines, _ := cmd.Flags().GetInt("short")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -1656,13 +1642,11 @@ func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 }
 
 func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	force, _ := cmd.Flags().GetBool("force")
 	collectionNames := args
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)

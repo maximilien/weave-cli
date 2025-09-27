@@ -67,20 +67,53 @@ type Config struct {
 }
 
 // LoadConfig loads configuration from files and environment variables
+// LoadConfigOptions holds options for loading configuration
+type LoadConfigOptions struct {
+	ConfigFile     string
+	EnvFile        string
+	VectorDBType   string
+	WeaviateAPIKey string
+	WeaviateURL    string
+}
+
 func LoadConfig(configFile, envFile string) (*Config, error) {
-	// Load environment variables first
-	if envFile != "" {
-		if err := godotenv.Load(envFile); err != nil {
-			return nil, fmt.Errorf("failed to load env file %s: %w", envFile, err)
+	return LoadConfigWithOptions(LoadConfigOptions{
+		ConfigFile: configFile,
+		EnvFile:    envFile,
+	})
+}
+
+func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
+	// Load environment variables with priority order:
+	// 1. Command flags (highest priority)
+	// 2. --env file
+	// 3. .env file
+	// 4. Shell environment (lowest priority)
+
+	// Load from --env file if specified
+	if opts.EnvFile != "" {
+		if err := godotenv.Load(opts.EnvFile); err != nil {
+			return nil, fmt.Errorf("failed to load env file %s: %w", opts.EnvFile, err)
 		}
 	} else {
 		// Try to load .env from current directory
 		_ = godotenv.Load() // .env file is optional, so we continue without it
 	}
 
+	// Override with command-line flags (highest priority)
+	if opts.VectorDBType != "" {
+		os.Setenv("VECTOR_DB_TYPE", opts.VectorDBType)
+	}
+	if opts.WeaviateAPIKey != "" {
+		os.Setenv("WEAVIATE_API_KEY", opts.WeaviateAPIKey)
+	}
+	if opts.WeaviateURL != "" {
+		os.Setenv("WEAVIATE_URL", opts.WeaviateURL)
+	}
+
 	// Set up viper
-	if configFile != "" {
-		viper.SetConfigFile(configFile)
+	if opts.ConfigFile != "" {
+		viper.SetConfigFile(opts.ConfigFile)
 	} else {
 		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")

@@ -196,8 +196,6 @@ func init() {
 }
 
 func runDocumentList(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 	limit, _ := cmd.Flags().GetInt("limit")
 	showLong, _ := cmd.Flags().GetBool("long")
@@ -215,7 +213,7 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -250,8 +248,6 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 }
 
 func runDocumentShow(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
 	documentName, _ := cmd.Flags().GetString("name")
@@ -290,7 +286,7 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -350,8 +346,6 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 }
 
 func runDocumentDelete(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	force, _ := cmd.Flags().GetBool("force")
 	collectionName := args[0]
 	metadataFilters, _ := cmd.Flags().GetStringSlice("metadata")
@@ -417,7 +411,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	}
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -594,12 +588,10 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 }
 
 func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	collectionName := args[0]
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -1189,12 +1181,10 @@ func deleteAllMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 }
 
 func runDocumentCount(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	collectionNames := args
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -2503,15 +2493,13 @@ func deleteMockDocumentsByOriginalFilename(ctx context.Context, cfg *config.Vect
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
-	cfgFile, _ := cmd.Flags().GetString("config")
-	envFile, _ := cmd.Flags().GetString("env")
 	chunkSize, _ := cmd.Flags().GetInt("chunk-size")
 
 	collectionName := args[0]
 	filePath := args[1]
 
 	// Load configuration
-	cfg, err := config.LoadConfig(cfgFile, envFile)
+	cfg, err := loadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)

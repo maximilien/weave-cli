@@ -61,6 +61,18 @@ cd weave-cli
    WEAVIATE_COLLECTION_IMAGES="MyImages"
    ```
 
+   **Alternative: Use command-line flags** (highest priority):
+
+   ```bash
+   # Override environment variables directly
+   weave --vector-db-type weaviate-cloud \
+         --weaviate-url https://your-cluster.weaviate.cloud \
+         --weaviate-api-key your-api-key \
+         health check
+   ```
+
+   **Priority order**: Command flags > `--env` file > `.env` file > Shell environment
+
 3. **Test your connection**:
 
    ```bash
@@ -124,6 +136,31 @@ WEAVIATE_COLLECTION="MyCollection"
 WEAVIATE_COLLECTION_IMAGES="MyImages"
 WEAVIATE_COLLECTION_TEST="MyCollection_test"
 ```
+
+### Command-Line Overrides
+
+You can override any environment variable using command-line flags:
+
+```bash
+# Override database type
+weave --vector-db-type mock collection list
+
+# Override Weaviate connection details
+weave --vector-db-type weaviate-cloud \
+      --weaviate-url https://custom-cluster.weaviate.cloud \
+      --weaviate-api-key custom-api-key \
+      health check
+
+# Use custom config and env files
+weave --config /path/to/config.yaml --env /path/to/.env collection list
+```
+
+**Priority Order** (highest to lowest):
+
+1. **Command-line flags** (`--vector-db-type`, `--weaviate-url`, `--weaviate-api-key`)
+2. **`--env` file** (specified with `--env` flag)
+3. **`.env` file** (in current directory)
+4. **Shell environment variables**
 
 ### Configuration File (config.yaml)
 
