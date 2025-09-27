@@ -3152,6 +3152,10 @@ func documentNameMatches(doc weaviate.Document, name string) bool {
 		if url == name || filepath.Base(url) == name {
 			return true
 		}
+		// Check if URL contains the name (for PDF image URLs like "pdf://ragme-io.pdf/page_1/image_1")
+		if strings.Contains(url, name) {
+			return true
+		}
 	}
 
 	// Check filename field directly
@@ -3297,6 +3301,10 @@ func mockDocumentNameMatches(doc mock.Document, name string) bool {
 		if url == name || filepath.Base(url) == name {
 			return true
 		}
+		// Check if URL contains the name (for PDF image URLs like "pdf://ragme-io.pdf/page_1/image_1")
+		if strings.Contains(url, name) {
+			return true
+		}
 	}
 
 	// Check filename field directly
@@ -3330,22 +3338,105 @@ func mockDocumentNameMatches(doc mock.Document, name string) bool {
 
 // deleteWeaviateDocumentByName deletes a Weaviate document by its name
 func deleteWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string) {
-	docWithCollection, err := findDocumentByName(nil, cfg, collectionName, documentName)
+	// Find all documents that match the name (for virtual documents like image stacks)
+	documentsWithCollections, err := findAllDocumentsByName(nil, cfg, collectionName, documentName)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to find document: %v", err))
+		printError(fmt.Sprintf("Failed to find documents: %v", err))
 		return
 	}
 
-	doc := docWithCollection.Document
-	actualCollection := docWithCollection.Collection
-
-	// Show info about where the document was found
-	if actualCollection != collectionName {
-		printInfo(fmt.Sprintf("Document found in collection '%s' (searched in '%s')", actualCollection, collectionName))
+	if len(documentsWithCollections) == 0 {
+		printError(fmt.Sprintf("No documents found with name '%s'", documentName))
+		return
 	}
 
-	// Delete the document from the correct collection
-	deleteMultipleWeaviateDocuments(ctx, cfg, actualCollection, []string{doc.ID})
+	// Group documents by collection for efficient deletion
+	collectionGroups := make(map[string][]string)
+	for _, docWithCollection := range documentsWithCollections {
+		collectionGroups[docWithCollection.Collection] = append(collectionGroups[docWithCollection.Collection], docWithCollection.Document.ID)
+	}
+
+	// Show info about what was found
+	if len(documentsWithCollections) == 1 {
+		doc := documentsWithCollections[0]
+		if doc.Collection != collectionName {
+			printInfo(fmt.Sprintf("Document found in collection '%s' (searched in '%s')", doc.Collection, collectionName))
+		}
+	} else {
+		printInfo(fmt.Sprintf("Found %d documents with name '%s' across %d collections", len(documentsWithCollections), documentName, len(collectionGroups)))
+		for collection, docIDs := range collectionGroups {
+			fmt.Printf("  - %s: %d documents\n", collection, len(docIDs))
+		}
+	}
+
+	// Delete documents from each collection
+	totalDeleted := 0
+	for collection, docIDs := range collectionGroups {
+		if collection != collectionName {
+			printInfo(fmt.Sprintf("Deleting %d documents from collection '%s'", len(docIDs), collection))
+		}
+		deleteMultipleWeaviateDocuments(ctx, cfg, collection, docIDs)
+		totalDeleted += len(docIDs)
+	}
+
+	if totalDeleted > 1 {
+		printSuccess(fmt.Sprintf("Successfully deleted %d documents with name '%s'", totalDeleted, documentName))
+	}
+}
+
+// findAllDocumentsByName finds all documents that match the given name across related collections
+func findAllDocumentsByName(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, documentName string) ([]*DocumentWithCollection, error) {
+	ctx := context.Background()
+
+	client, err := createWeaviateClient(dbConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create client: %v", err)
+	}
+
+	var allMatches []*DocumentWithCollection
+
+	// Search in the specified collection first
+	matches, err := findAllInCollection(client, ctx, collectionName, documentName)
+	if err == nil {
+		for _, doc := range matches {
+			allMatches = append(allMatches, &DocumentWithCollection{Document: doc, Collection: collectionName})
+		}
+	}
+
+	// Search in related collections
+	relatedCollections := getRelatedCollections(collectionName)
+	for _, relatedCollection := range relatedCollections {
+		matches, err := findAllInCollection(client, ctx, relatedCollection, documentName)
+		if err == nil {
+			for _, doc := range matches {
+				allMatches = append(allMatches, &DocumentWithCollection{Document: doc, Collection: relatedCollection})
+			}
+		}
+	}
+
+	if len(allMatches) == 0 {
+		return nil, fmt.Errorf("no documents found with name '%s' in collection '%s' or related collections", documentName, collectionName)
+	}
+
+	return allMatches, nil
+}
+
+// findAllInCollection finds all documents in a specific collection that match the given name
+func findAllInCollection(client *weaviate.WeaveClient, ctx context.Context, collectionName, documentName string) ([]*weaviate.Document, error) {
+	// Get all documents from the collection
+	documents, err := client.ListDocuments(ctx, collectionName, 10000)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list documents from collection '%s': %v", collectionName, err)
+	}
+
+	var matches []*weaviate.Document
+	for _, doc := range documents {
+		if documentNameMatches(doc, documentName) {
+			matches = append(matches, &doc)
+		}
+	}
+
+	return matches, nil
 }
 
 // deleteMockDocumentByName deletes a mock document by its name
@@ -3371,20 +3462,23 @@ func deleteMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, c
 		return
 	}
 
-	// Search for document with matching name
-	var foundDoc *mock.Document
+	// Find all documents with matching name
+	var docIDs []string
 	for _, doc := range documents {
 		if mockDocumentNameMatches(doc, documentName) {
-			foundDoc = &doc
-			break
+			docIDs = append(docIDs, doc.ID)
 		}
 	}
 
-	if foundDoc == nil {
+	if len(docIDs) == 0 {
 		printError(fmt.Sprintf("Document with name '%s' not found", documentName))
 		return
 	}
 
-	// Delete the document
-	deleteMultipleMockDocuments(ctx, cfg, collectionName, []string{foundDoc.ID})
+	if len(docIDs) > 1 {
+		printInfo(fmt.Sprintf("Found %d documents with name '%s'", len(docIDs), documentName))
+	}
+
+	// Delete all matching documents
+	deleteMultipleMockDocuments(ctx, cfg, collectionName, docIDs)
 }
