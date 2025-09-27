@@ -3052,8 +3052,14 @@ func deleteMockDocumentsByPattern(ctx context.Context, dbConfig *config.VectorDB
 
 // Helper functions for document operations by name
 
+// DocumentWithCollection represents a document and the collection it was found in
+type DocumentWithCollection struct {
+	Document   *weaviate.Document
+	Collection string
+}
+
 // findDocumentByName finds a document by its filename/name
-func findDocumentByName(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, documentName string) (*weaviate.Document, error) {
+func findDocumentByName(cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, documentName string) (*DocumentWithCollection, error) {
 	ctx := context.Background()
 
 	client, err := createWeaviateClient(dbConfig)
@@ -3061,10 +3067,30 @@ func findDocumentByName(cfg *config.Config, dbConfig *config.VectorDBConfig, col
 		return nil, fmt.Errorf("failed to create client: %v", err)
 	}
 
-	// Get all documents from the collection
-	documents, err := client.ListDocuments(ctx, collectionName, 1000) // Get up to 1000 documents
+	// First, try the specified collection
+	doc, err := searchInCollection(client, ctx, collectionName, documentName)
+	if err == nil {
+		return &DocumentWithCollection{Document: doc, Collection: collectionName}, nil
+	}
+
+	// If not found, try related collections
+	relatedCollections := getRelatedCollections(collectionName)
+	for _, relatedCollection := range relatedCollections {
+		doc, err := searchInCollection(client, ctx, relatedCollection, documentName)
+		if err == nil {
+			return &DocumentWithCollection{Document: doc, Collection: relatedCollection}, nil
+		}
+	}
+
+	return nil, fmt.Errorf("document with name '%s' not found in collection '%s' or related collections", documentName, collectionName)
+}
+
+// searchInCollection searches for a document in a specific collection
+func searchInCollection(client *weaviate.WeaveClient, ctx context.Context, collectionName, documentName string) (*weaviate.Document, error) {
+	// Get all documents from the collection - use a higher limit to ensure we get all documents
+	documents, err := client.ListDocuments(ctx, collectionName, 10000) // Get up to 10000 documents
 	if err != nil {
-		return nil, fmt.Errorf("failed to list documents: %v", err)
+		return nil, fmt.Errorf("failed to list documents from collection '%s': %v", collectionName, err)
 	}
 
 	// Search for document with matching name
@@ -3074,7 +3100,49 @@ func findDocumentByName(cfg *config.Config, dbConfig *config.VectorDBConfig, col
 		}
 	}
 
-	return nil, fmt.Errorf("document with name '%s' not found", documentName)
+	return nil, fmt.Errorf("document with name '%s' not found in collection '%s'", documentName, collectionName)
+}
+
+// getRelatedCollections returns related collection names based on common patterns
+func getRelatedCollections(collectionName string) []string {
+	var related []string
+
+	// Common patterns for related collections
+	patterns := map[string][]string{
+		"Docs":   {"Images", "Images_test"},
+		"Images": {"Docs", "Docs_test"},
+		"_test":  {"_test"},
+	}
+
+	// Check for patterns and add related collections
+	for pattern, suffixes := range patterns {
+		if strings.Contains(collectionName, pattern) {
+			baseName := strings.ReplaceAll(collectionName, pattern, "")
+			for _, suffix := range suffixes {
+				relatedCollection := baseName + suffix
+				if relatedCollection != collectionName {
+					related = append(related, relatedCollection)
+				}
+			}
+		}
+	}
+
+	// Special cases for known collection pairs
+	specialCases := map[string][]string{
+		"RagMeDocs":       {"RagMeImages"},
+		"RagMeImages":     {"RagMeDocs"},
+		"NotesMaxDocs":    {"NotesMaxDocs_test"},
+		"CalendarMaxDocs": {"CalendarMaxDocs_test"},
+		"TODOsMaxDocs":    {"TODOsMaxDocs_test"},
+		"WeaveDocs":       {"WeaveImages"},
+		"WeaveImages":     {"WeaveDocs"},
+	}
+
+	if relatedCols, exists := specialCases[collectionName]; exists {
+		related = append(related, relatedCols...)
+	}
+
+	return related
 }
 
 // documentNameMatches checks if a document matches the given name
@@ -3117,15 +3185,21 @@ func documentNameMatches(doc weaviate.Document, name string) bool {
 
 // showWeaviateDocumentByName shows a Weaviate document by its name
 func showWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string, showLong bool, shortLines int) {
-	doc, err := findDocumentByName(nil, cfg, collectionName, documentName)
+	docWithCollection, err := findDocumentByName(nil, cfg, collectionName, documentName)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to find document: %v", err))
 		return
 	}
 
+	doc := docWithCollection.Document
+	actualCollection := docWithCollection.Collection
+
 	// Display document details
 	color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
-	fmt.Printf("Collection: %s\n", collectionName)
+	fmt.Printf("Collection: %s\n", actualCollection)
+	if actualCollection != collectionName {
+		fmt.Printf("Note: Document found in '%s' (searched in '%s')\n", actualCollection, collectionName)
+	}
 	fmt.Printf("Name: %s\n", documentName)
 	fmt.Println()
 
@@ -3256,14 +3330,22 @@ func mockDocumentNameMatches(doc mock.Document, name string) bool {
 
 // deleteWeaviateDocumentByName deletes a Weaviate document by its name
 func deleteWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentName string) {
-	doc, err := findDocumentByName(nil, cfg, collectionName, documentName)
+	docWithCollection, err := findDocumentByName(nil, cfg, collectionName, documentName)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to find document: %v", err))
 		return
 	}
 
-	// Delete the document
-	deleteMultipleWeaviateDocuments(ctx, cfg, collectionName, []string{doc.ID})
+	doc := docWithCollection.Document
+	actualCollection := docWithCollection.Collection
+
+	// Show info about where the document was found
+	if actualCollection != collectionName {
+		printInfo(fmt.Sprintf("Document found in collection '%s' (searched in '%s')", actualCollection, collectionName))
+	}
+
+	// Delete the document from the correct collection
+	deleteMultipleWeaviateDocuments(ctx, cfg, actualCollection, []string{doc.ID})
 }
 
 // deleteMockDocumentByName deletes a mock document by its name
