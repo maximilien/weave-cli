@@ -3356,7 +3356,7 @@ func deleteWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfi
 		collectionGroups[docWithCollection.Collection] = append(collectionGroups[docWithCollection.Collection], docWithCollection.Document.ID)
 	}
 
-	// Show info about what was found
+	// Show detailed info about what was found
 	if len(documentsWithCollections) == 1 {
 		doc := documentsWithCollections[0]
 		if doc.Collection != collectionName {
@@ -3364,23 +3364,64 @@ func deleteWeaviateDocumentByName(ctx context.Context, cfg *config.VectorDBConfi
 		}
 	} else {
 		printInfo(fmt.Sprintf("Found %d documents with name '%s' across %d collections", len(documentsWithCollections), documentName, len(collectionGroups)))
+
+		// Show detailed breakdown
 		for collection, docIDs := range collectionGroups {
-			fmt.Printf("  - %s: %d documents\n", collection, len(docIDs))
+			fmt.Printf("  - %s: %d documents", collection, len(docIDs))
+
+			// Determine document type for better user understanding
+			if strings.Contains(collection, "Images") || strings.Contains(collection, "Image") {
+				fmt.Printf(" (images in stack)")
+			} else if len(docIDs) > 1 {
+				fmt.Printf(" (chunks)")
+			}
+			fmt.Println()
 		}
+
+		// Show warning about complete deletion
+		fmt.Println()
+		color.New(color.FgYellow).Printf("⚠️  WARNING: This will delete ALL related documents including:\n")
+		for collection, docIDs := range collectionGroups {
+			if strings.Contains(collection, "Images") || strings.Contains(collection, "Image") {
+				fmt.Printf("   • %d images from the image stack in %s\n", len(docIDs), collection)
+			} else if len(docIDs) > 1 {
+				fmt.Printf("   • %d text chunks in %s\n", len(docIDs), collection)
+			} else {
+				fmt.Printf("   • 1 document in %s\n", collection)
+			}
+		}
+		fmt.Println()
 	}
 
-	// Delete documents from each collection
+	// Delete documents from each collection with individual progress
 	totalDeleted := 0
 	for collection, docIDs := range collectionGroups {
-		if collection != collectionName {
-			printInfo(fmt.Sprintf("Deleting %d documents from collection '%s'", len(docIDs), collection))
+		if len(docIDs) > 1 {
+			printInfo(fmt.Sprintf("Deleting %d documents from collection '%s'...", len(docIDs), collection))
+		} else {
+			printInfo(fmt.Sprintf("Deleting document from collection '%s'...", collection))
 		}
+
+		// Show individual deletion progress for better user experience
+		if len(docIDs) > 1 {
+			fmt.Printf("  Deleting documents: ")
+			for i, docID := range docIDs {
+				if i > 0 {
+					fmt.Printf(", ")
+				}
+				fmt.Printf("%s", docID[:8]+"...")
+			}
+			fmt.Println()
+		}
+
 		deleteMultipleWeaviateDocuments(ctx, cfg, collection, docIDs)
 		totalDeleted += len(docIDs)
 	}
 
 	if totalDeleted > 1 {
 		printSuccess(fmt.Sprintf("Successfully deleted %d documents with name '%s'", totalDeleted, documentName))
+	} else {
+		printSuccess(fmt.Sprintf("Successfully deleted document '%s'", documentName))
 	}
 }
 
@@ -3477,6 +3518,27 @@ func deleteMockDocumentByName(ctx context.Context, cfg *config.VectorDBConfig, c
 
 	if len(docIDs) > 1 {
 		printInfo(fmt.Sprintf("Found %d documents with name '%s'", len(docIDs), documentName))
+
+		// Show detailed breakdown for mock documents
+		if len(docIDs) > 1 {
+			fmt.Printf("  - %s: %d documents", collectionName, len(docIDs))
+			if strings.Contains(collectionName, "Images") || strings.Contains(collectionName, "Image") {
+				fmt.Printf(" (images in stack)")
+			} else {
+				fmt.Printf(" (chunks)")
+			}
+			fmt.Println()
+
+			// Show warning about complete deletion
+			fmt.Println()
+			color.New(color.FgYellow).Printf("⚠️  WARNING: This will delete ALL related documents including:\n")
+			if strings.Contains(collectionName, "Images") || strings.Contains(collectionName, "Image") {
+				fmt.Printf("   • %d images from the image stack in %s\n", len(docIDs), collectionName)
+			} else {
+				fmt.Printf("   • %d text chunks in %s\n", len(docIDs), collectionName)
+			}
+			fmt.Println()
+		}
 	}
 
 	// Delete all matching documents
