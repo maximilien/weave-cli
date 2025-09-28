@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.9-rc3] - 2025-09-28
+
+### Fixed
+
+- **Empty collection document listing**: Fixed Weaviate client `ListDocuments` method
+  to handle empty collections gracefully
+  - Resolved confusing "chunk_index" error when listing documents from empty
+    collections
+  - Added fallback mechanisms using aggregation API and simple queries
+  - Now shows clear "No documents found in collection 'X'" message instead of
+    cryptic Weaviate errors
+  - Maintains full backward compatibility with collections containing documents
+
+### Added
+
+- **Double confirmation for delete-schema**: Added double confirmation to `ds`
+  (delete-schema) command similar to `da` (delete-all)
+  - First confirmation: Standard y/N prompt asking for confirmation
+  - Second confirmation: Red warning with requirement to type "yes" exactly
+  - `--force` flag still works to skip both confirmations
+  - Consistent user experience across all destructive operations
+
+### Improved
+
+- **Error messages**: Enhanced error handling and user feedback throughout the CLI
+  - Better collection existence checks
+  - Clearer error messages for common failure scenarios
+  - Improved robustness of Weaviate client operations
+
 ## [0.1.9-rc2] - 2025-09-28
 
 ### Added

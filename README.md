@@ -97,12 +97,16 @@ weave health check
 # List collections
 weave collection list
 
-# Create a new collection
+# Create a new collection (defaults to text schema)
 weave collection create MyCollection
 
-# Create documents with required schema flags
-weave docs create MyTextCollection document.txt --text
-weave docs create MyImageCollection image.jpg --image
+# Create collection with specific schema
+weave collection create MyTextCollection --text
+weave collection create MyImageCollection --image
+
+# Create documents (no schema flags needed - uses collection's schema)
+weave docs create MyTextCollection document.txt
+weave docs create MyImageCollection image.jpg
 
 # List documents in a collection
 weave document list MyCollection
@@ -131,6 +135,29 @@ weave collection show MyCollection --expand-metadata
 # Show document with expanded metadata analysis
 weave document show MyCollection DOCUMENT_ID --expand-metadata
 ```
+
+### Destructive Operations
+
+Weave CLI includes safety features for destructive operations:
+
+```bash
+# Delete all documents from a collection (double confirmation required)
+weave docs delete-all MyCollection
+
+# Delete collection schema completely (double confirmation required)
+weave collection delete-schema MyCollection
+
+# Skip confirmations with --force flag
+weave docs delete-all MyCollection --force
+weave collection delete-schema MyCollection --force
+```
+
+**Safety Features:**
+- **Double confirmation**: Destructive operations require two confirmations
+  - First: Standard y/N prompt
+  - Second: Red warning requiring exact "yes" input
+- **Force flag**: Use `--force` to skip confirmations in scripts
+- **Clear error messages**: Better feedback for empty collections and errors
 
 ## Detailed Configuration
 
