@@ -172,72 +172,84 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 
 // createCollectionViaREST creates a collection using Weaviate's REST API
 func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
+	// Determine if this is an image collection
+	isImage := isImageCollection(collectionName)
+
 	// Build the class schema
 	classSchema := map[string]interface{}{
-		"class":      collectionName,
-		"vectorizer": "text2vec-openai",
-		"moduleConfig": map[string]interface{}{
+		"class": collectionName,
+	}
+
+	// Configure vectorizer based on collection type
+	if isImage {
+		// For image collections, disable vectorization to avoid issues with large base64 data
+		classSchema["vectorizer"] = "none"
+	} else {
+		// For text collections, use text2vec-openai
+		classSchema["vectorizer"] = "text2vec-openai"
+		classSchema["moduleConfig"] = map[string]interface{}{
 			"text2vec-openai": map[string]interface{}{
 				"model": embeddingModel,
 			},
+		}
+	}
+
+	classSchema["properties"] = []map[string]interface{}{
+		{
+			"name":     "content",
+			"dataType": []string{"text"},
 		},
-		"properties": []map[string]interface{}{
-			{
-				"name":     "content",
-				"dataType": []string{"text"},
-			},
-			{
-				"name":     "metadata",
-				"dataType": []string{"object"},
-				"nestedProperties": []map[string]interface{}{
-					{
-						"name":     "filename",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "file_size",
-						"dataType": []string{"number"},
-					},
-					{
-						"name":     "content_type",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "date_added",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "chunk_index",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "chunk_size",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "total_chunks",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "source_document",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "processed_by",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "processing_time",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "is_extracted_from_document",
-						"dataType": []string{"boolean"},
-					},
-					{
-						"name":     "file_extension",
-						"dataType": []string{"text"},
-					},
+		{
+			"name":     "metadata",
+			"dataType": []string{"object"},
+			"nestedProperties": []map[string]interface{}{
+				{
+					"name":     "filename",
+					"dataType": []string{"text"},
+				},
+				{
+					"name":     "file_size",
+					"dataType": []string{"number"},
+				},
+				{
+					"name":     "content_type",
+					"dataType": []string{"text"},
+				},
+				{
+					"name":     "date_added",
+					"dataType": []string{"text"},
+				},
+				{
+					"name":     "chunk_index",
+					"dataType": []string{"int"},
+				},
+				{
+					"name":     "chunk_size",
+					"dataType": []string{"int"},
+				},
+				{
+					"name":     "total_chunks",
+					"dataType": []string{"int"},
+				},
+				{
+					"name":     "source_document",
+					"dataType": []string{"text"},
+				},
+				{
+					"name":     "processed_by",
+					"dataType": []string{"text"},
+				},
+				{
+					"name":     "processing_time",
+					"dataType": []string{"int"},
+				},
+				{
+					"name":     "is_extracted_from_document",
+					"dataType": []string{"boolean"},
+				},
+				{
+					"name":     "file_extension",
+					"dataType": []string{"text"},
 				},
 			},
 		},
@@ -570,6 +582,8 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 
 // buildMetadataQuery dynamically discovers the metadata schema and builds the appropriate GraphQL query
 func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) (string, error) {
+	// Always check the actual schema first to determine metadata field type
+
 	// Get the collection schema via REST API to understand the metadata structure
 	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/v1/schema/%s", c.config.URL, collectionName), nil)
 	if err != nil {
@@ -610,6 +624,23 @@ func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) 
 		if prop.Name == "metadata" {
 			// Check if it's an object type
 			if len(prop.DataType) > 0 && prop.DataType[0] == "object" {
+				// Check if this collection has image-related fields (exif_data, image_index, etc.)
+				hasImageFields := false
+				if len(prop.NestedProperties) > 0 {
+					for _, nested := range prop.NestedProperties {
+						if nested.Name == "exif_data" || nested.Name == "image_index" || nested.Name == "source_document" {
+							hasImageFields = true
+							break
+						}
+					}
+				}
+
+				// For image collections or collections with image fields, use a simplified metadata query
+				if isImageCollection(collectionName) || hasImageFields {
+					// Provide basic sub-selection for metadata object, avoiding complex nested objects
+					return "\n\t\t\t\tmetadata {\n\t\t\t\t\tfilename\n\t\t\t\t\tfile_size\n\t\t\t\t\tcontent_type\n\t\t\t\t\tdate_added\n\t\t\t\t\tsource_document\n\t\t\t\t\timage_index\n\t\t\t\t\tis_extracted_from_document\n\t\t\t\t}", nil
+				}
+
 				// Build query with available nested properties
 				if len(prop.NestedProperties) > 0 {
 					var nestedFields []string
@@ -625,7 +656,7 @@ func (c *Client) buildMetadataQuery(ctx context.Context, collectionName string) 
 					return query, nil
 				}
 			}
-			// If it's not an object or has no nested properties, use simple metadata
+			// If it's not an object (e.g., string type) or has no nested properties, use simple metadata
 			return "\n\t\t\t\tmetadata", nil
 		}
 	}
@@ -1236,6 +1267,75 @@ type Document struct {
 	ImageData string                 `json:"image_data"`
 	URL       string                 `json:"url"`
 	Metadata  map[string]interface{} `json:"metadata"`
+}
+
+// CreateDocument creates a new document in the specified collection
+func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc Document) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Create the document using the Weaviate client
+	properties := map[string]interface{}{
+		"content":  doc.Content,
+		"image":    doc.Image,
+		"url":      doc.URL,
+		"metadata": doc.Metadata,
+	}
+
+	// Add PDF metadata fields as top-level properties for compatibility with RagMeDocs
+	if doc.Metadata != nil {
+		// Add PDF-specific fields as top-level properties (only if they have values)
+		if pdfTitle, ok := doc.Metadata["pdf_title"]; ok && pdfTitle != "" {
+			properties["Title"] = pdfTitle
+		}
+		if pdfCreator, ok := doc.Metadata["pdf_creator"]; ok && pdfCreator != "" {
+			properties["Creator"] = pdfCreator
+		}
+		if pdfProducer, ok := doc.Metadata["pdf_producer"]; ok && pdfProducer != "" {
+			properties["Producer"] = pdfProducer
+		}
+		if pdfCreationDate, ok := doc.Metadata["pdf_creation_date"]; ok && pdfCreationDate != "" {
+			properties["CreationDate"] = pdfCreationDate
+		}
+		if pdfModDate, ok := doc.Metadata["pdf_mod_date"]; ok && pdfModDate != "" {
+			properties["ModDate"] = pdfModDate
+		}
+
+		// Add other metadata fields as top-level properties
+		if aiSummary, ok := doc.Metadata["ai_summary"]; ok {
+			properties["ai_summary"] = aiSummary
+		}
+		if chunkSizes, ok := doc.Metadata["chunk_sizes"]; ok {
+			properties["chunk_sizes"] = chunkSizes
+		}
+		if originalFilename, ok := doc.Metadata["original_filename"]; ok {
+			properties["original_filename"] = originalFilename
+		}
+		if docType, ok := doc.Metadata["type"]; ok {
+			properties["type"] = docType
+		}
+		if filename, ok := doc.Metadata["filename"]; ok {
+			properties["filename"] = filename
+		}
+		if storagePath, ok := doc.Metadata["storage_path"]; ok {
+			properties["storage_path"] = storagePath
+		}
+		if dateAdded, ok := doc.Metadata["date_added"]; ok {
+			properties["date_added"] = dateAdded
+		}
+	}
+
+	_, err := c.client.Data().Creator().
+		WithClassName(collectionName).
+		WithID(doc.ID).
+		WithProperties(properties).
+		Do(ctx)
+
+	if err != nil {
+		return fmt.Errorf("failed to create document: %w", err)
+	}
+
+	return nil
 }
 
 // GetCollectionSchema returns the schema for a collection

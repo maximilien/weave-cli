@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -53,11 +54,22 @@ var collectionDeleteCmd = &cobra.Command{
 delete all documents in the specified collection(s). The collection
 schema will remain but will be empty. Use with caution!
 
+You can specify collections in multiple ways:
+1. By collection name(s): weave cols delete MyCollection
+2. By pattern: weave cols delete --pattern "WeaveDocs*"
+3. By multiple names: weave cols delete Collection1 Collection2 Collection3
+
+Pattern types (auto-detected):
+- Shell glob: WeaveDocs*, Test*, *Docs
+- Regex: WeaveDocs.*, ^Test.*$, .*Docs$
+
 Examples:
   weave cols delete MyCollection
   weave cols d Collection1 Collection2 Collection3
-  weave cols del MyCollection --force`,
-	Args: cobra.MinimumNArgs(1),
+  weave cols del MyCollection --force
+  weave cols delete --pattern "WeaveDocs*"
+  weave cols delete --pattern "Test.*" --force`,
+	Args: cobra.MinimumNArgs(0),
 	Run:  runCollectionDelete,
 }
 
@@ -88,8 +100,24 @@ This command will:
 
 ⚠️  WARNING: This operation cannot be undone!
 
+You can specify collections in multiple ways:
+1. By collection name(s): weave cols delete-schema MyCollection
+2. By pattern: weave cols delete-schema --pattern "WeaveDocs*"
+3. By multiple names: weave cols delete-schema Collection1 Collection2 Collection3
+
+Pattern types (auto-detected):
+- Shell glob: WeaveDocs*, Test*, *Docs
+- Regex: WeaveDocs.*, ^Test.*$, .*Docs$
+
+Examples:
+  weave cols delete-schema MyCollection
+  weave cols ds Collection1 Collection2 Collection3
+  weave cols delete-schema MyCollection --force
+  weave cols delete-schema --pattern "WeaveDocs*"
+  weave cols delete-schema --pattern "Test.*" --force
+
 Use --force to skip confirmation prompts.`,
-	Args: cobra.MinimumNArgs(1),
+	Args: cobra.MinimumNArgs(0),
 	Run:  runCollectionDeleteSchema,
 }
 
@@ -162,7 +190,9 @@ func init() {
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
 	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	collectionDeleteCmd.Flags().StringP("pattern", "p", "", "Delete collections matching pattern (auto-detects shell glob vs regex)")
 	collectionDeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	collectionDeleteSchemaCmd.Flags().StringP("pattern", "p", "", "Delete collection schemas matching pattern (auto-detects shell glob vs regex)")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
@@ -219,6 +249,7 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 
 func runCollectionDelete(cmd *cobra.Command, args []string) {
 	force, _ := cmd.Flags().GetBool("force")
+	pattern, _ := cmd.Flags().GetString("pattern")
 	collectionNames := args
 
 	// Load configuration
@@ -231,13 +262,62 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	printHeader("Delete Collection(s)")
 	fmt.Println()
 
-	if len(collectionNames) == 1 {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete all documents from collection '%s'!", collectionNames[0]))
+	// Validate arguments
+	if pattern == "" && len(collectionNames) == 0 {
+		printError("Either COLLECTION_NAME(s) or --pattern must be provided")
+		os.Exit(1)
+	}
+
+	if pattern != "" && len(collectionNames) > 0 {
+		printError("Cannot specify both COLLECTION_NAME(s) and --pattern")
+		os.Exit(1)
+	}
+
+	var finalCollectionNames []string
+
+	if pattern != "" {
+		// Pattern-based deletion
+		printInfo(fmt.Sprintf("Finding collections matching pattern '%s'...", pattern))
+
+		// Get default database
+		dbConfig, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get default database: %v", err))
+			os.Exit(1)
+		}
+
+		// Find matching collections
+		matchingCollections, err := findCollectionsByPattern(cfg, dbConfig, pattern)
+		if err != nil {
+			printError(fmt.Sprintf("Failed to find collections matching pattern: %v", err))
+			os.Exit(1)
+		}
+
+		if len(matchingCollections) == 0 {
+			printInfo(fmt.Sprintf("No collections found matching pattern '%s'", pattern))
+			return
+		}
+
+		printInfo(fmt.Sprintf("Found %d collections matching pattern '%s':", len(matchingCollections), pattern))
+		for i, name := range matchingCollections {
+			fmt.Printf("  %d. %s\n", i+1, name)
+		}
+		fmt.Println()
+
+		finalCollectionNames = matchingCollections
 	} else {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete all documents from %d collections!", len(collectionNames)))
+		// Direct collection name deletion
+		finalCollectionNames = collectionNames
+	}
+
+	// Show warning
+	if len(finalCollectionNames) == 1 {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete all documents from collection '%s'!", finalCollectionNames[0]))
+	} else {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete all documents from %d collections!", len(finalCollectionNames)))
 		fmt.Println()
 		printInfo("Collections to delete:")
-		for i, name := range collectionNames {
+		for i, name := range finalCollectionNames {
 			fmt.Printf("  %d. %s\n", i+1, name)
 		}
 	}
@@ -246,10 +326,10 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	// Confirm deletion unless --force is used
 	if !force {
 		var confirmMessage string
-		if len(collectionNames) == 1 {
-			confirmMessage = fmt.Sprintf("Are you sure you want to clear collection '%s'?", collectionNames[0])
+		if len(finalCollectionNames) == 1 {
+			confirmMessage = fmt.Sprintf("Are you sure you want to clear collection '%s'?", finalCollectionNames[0])
 		} else {
-			confirmMessage = fmt.Sprintf("Are you sure you want to clear %d collections?", len(collectionNames))
+			confirmMessage = fmt.Sprintf("Are you sure you want to clear %d collections?", len(finalCollectionNames))
 		}
 
 		if !confirmAction(confirmMessage) {
@@ -265,10 +345,10 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if len(collectionNames) == 1 {
-		color.New(color.FgCyan, color.Bold).Printf("Deleting collection '%s' in %s database...\n", collectionNames[0], dbConfig.Type)
+	if len(finalCollectionNames) == 1 {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting collection '%s' in %s database...\n", finalCollectionNames[0], dbConfig.Type)
 	} else {
-		color.New(color.FgCyan, color.Bold).Printf("Deleting %d collections in %s database...\n", len(collectionNames), dbConfig.Type)
+		color.New(color.FgCyan, color.Bold).Printf("Deleting %d collections in %s database...\n", len(finalCollectionNames), dbConfig.Type)
 	}
 	fmt.Println()
 
@@ -276,8 +356,8 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	successCount := 0
 	errorCount := 0
 
-	for i, collectionName := range collectionNames {
-		fmt.Printf("Deleting collection %d/%d: %s\n", i+1, len(collectionNames), collectionName)
+	for i, collectionName := range finalCollectionNames {
+		fmt.Printf("Deleting collection %d/%d: %s\n", i+1, len(finalCollectionNames), collectionName)
 
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud:
@@ -312,7 +392,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	}
 
 	// Summary
-	if len(collectionNames) > 1 {
+	if len(finalCollectionNames) > 1 {
 		if errorCount == 0 {
 			printSuccess(fmt.Sprintf("All %d collections cleared successfully!", successCount))
 		} else if successCount == 0 {
@@ -1670,6 +1750,7 @@ func createMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 
 func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 	force, _ := cmd.Flags().GetBool("force")
+	pattern, _ := cmd.Flags().GetString("pattern")
 	collectionNames := args
 
 	// Load configuration
@@ -1682,13 +1763,62 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 	printHeader("Delete Collection Schema(s)")
 	fmt.Println()
 
-	if len(collectionNames) == 1 {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete the schema for collection '%s'!", collectionNames[0]))
+	// Validate arguments
+	if pattern == "" && len(collectionNames) == 0 {
+		printError("Either COLLECTION_NAME(s) or --pattern must be provided")
+		os.Exit(1)
+	}
+
+	if pattern != "" && len(collectionNames) > 0 {
+		printError("Cannot specify both COLLECTION_NAME(s) and --pattern")
+		os.Exit(1)
+	}
+
+	var finalCollectionNames []string
+
+	if pattern != "" {
+		// Pattern-based deletion
+		printInfo(fmt.Sprintf("Finding collections matching pattern '%s'...", pattern))
+
+		// Get default database
+		dbConfig, err := cfg.GetDefaultDatabase()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get default database: %v", err))
+			os.Exit(1)
+		}
+
+		// Find matching collections
+		matchingCollections, err := findCollectionsByPattern(cfg, dbConfig, pattern)
+		if err != nil {
+			printError(fmt.Sprintf("Failed to find collections matching pattern: %v", err))
+			os.Exit(1)
+		}
+
+		if len(matchingCollections) == 0 {
+			printInfo(fmt.Sprintf("No collections found matching pattern '%s'", pattern))
+			return
+		}
+
+		printInfo(fmt.Sprintf("Found %d collections matching pattern '%s':", len(matchingCollections), pattern))
+		for i, name := range matchingCollections {
+			fmt.Printf("  %d. %s\n", i+1, name)
+		}
+		fmt.Println()
+
+		finalCollectionNames = matchingCollections
 	} else {
-		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete the schemas for %d collections!", len(collectionNames)))
+		// Direct collection name deletion
+		finalCollectionNames = collectionNames
+	}
+
+	// Show warning
+	if len(finalCollectionNames) == 1 {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete the schema for collection '%s'!", finalCollectionNames[0]))
+	} else {
+		printWarning(fmt.Sprintf("⚠️  WARNING: This will permanently delete the schemas for %d collections!", len(finalCollectionNames)))
 		fmt.Println()
 		printInfo("Collections to delete:")
-		for i, name := range collectionNames {
+		for i, name := range finalCollectionNames {
 			fmt.Printf("  %d. %s\n", i+1, name)
 		}
 	}
@@ -1697,10 +1827,10 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 	// Confirm deletion unless --force is used
 	if !force {
 		var confirmMessage string
-		if len(collectionNames) == 1 {
-			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schema for collection '%s'?", collectionNames[0])
+		if len(finalCollectionNames) == 1 {
+			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schema for collection '%s'?", finalCollectionNames[0])
 		} else {
-			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schemas for %d collections?", len(collectionNames))
+			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schemas for %d collections?", len(finalCollectionNames))
 		}
 
 		if !confirmAction(confirmMessage) {
@@ -1716,10 +1846,10 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	if len(collectionNames) == 1 {
-		color.New(color.FgCyan, color.Bold).Printf("Deleting schema for collection '%s' in %s database...\n", collectionNames[0], dbConfig.Type)
+	if len(finalCollectionNames) == 1 {
+		color.New(color.FgCyan, color.Bold).Printf("Deleting schema for collection '%s' in %s database...\n", finalCollectionNames[0], dbConfig.Type)
 	} else {
-		color.New(color.FgCyan, color.Bold).Printf("Deleting schemas for %d collections in %s database...\n", len(collectionNames), dbConfig.Type)
+		color.New(color.FgCyan, color.Bold).Printf("Deleting schemas for %d collections in %s database...\n", len(finalCollectionNames), dbConfig.Type)
 	}
 	fmt.Println()
 
@@ -1728,9 +1858,9 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 	errorCount := 0
 
 	// Delete each collection schema
-	for i, collectionName := range collectionNames {
-		if len(collectionNames) > 1 {
-			fmt.Printf("Deleting schema %d/%d: %s\n", i+1, len(collectionNames), collectionName)
+	for i, collectionName := range finalCollectionNames {
+		if len(finalCollectionNames) > 1 {
+			fmt.Printf("Deleting schema %d/%d: %s\n", i+1, len(finalCollectionNames), collectionName)
 		}
 
 		switch dbConfig.Type {
@@ -1753,7 +1883,7 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 	}
 
 	// Summary
-	if len(collectionNames) > 1 {
+	if len(finalCollectionNames) > 1 {
 		if errorCount == 0 {
 			printSuccess(fmt.Sprintf("All %d collection schemas deleted successfully!", successCount))
 		} else if successCount == 0 {
@@ -2266,4 +2396,59 @@ func sortFieldsByFrequency(fieldCounts map[string]int) []string {
 	}
 
 	return result
+}
+
+// findCollectionsByPattern finds collections matching a pattern
+func findCollectionsByPattern(cfg *config.Config, dbConfig *config.VectorDBConfig, pattern string) ([]string, error) {
+	ctx := context.Background()
+
+	// Auto-detect pattern type
+	var regex *regexp.Regexp
+	var err error
+
+	if isRegexPattern(pattern) {
+		// Compile as regex pattern
+		regex, err = regexp.Compile(pattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid regex pattern: %v", err)
+		}
+	} else {
+		// Convert glob pattern to regex
+		regexPattern := globToRegex(pattern)
+		regex, err = regexp.Compile(regexPattern)
+		if err != nil {
+			return nil, fmt.Errorf("invalid glob pattern: %v", err)
+		}
+	}
+
+	// Create client based on database type
+	var client weaviate.WeaveClient
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+		weaviateClient, err := createWeaviateClient(dbConfig)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Weaviate client: %v", err)
+		}
+		client = *weaviateClient
+	case config.VectorDBTypeMock:
+		return nil, fmt.Errorf("pattern deletion not yet supported for mock database")
+	default:
+		return nil, fmt.Errorf("unsupported database type: %s", dbConfig.Type)
+	}
+
+	// Get all collections
+	allCollections, err := client.ListCollections(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list collections: %v", err)
+	}
+
+	// Filter collections that match the pattern
+	var matchingCollections []string
+	for _, collectionName := range allCollections {
+		if regex.MatchString(collectionName) {
+			matchingCollections = append(matchingCollections, collectionName)
+		}
+	}
+
+	return matchingCollections, nil
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
+	"github.com/maximilien/weave-cli/src/pkg/pdf"
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"github.com/spf13/cobra"
 )
@@ -132,18 +133,26 @@ var documentCreateCmd = &cobra.Command{
 Supported file types:
 - Text files (.txt, .md, .json, etc.) - Content goes to 'text' field
 - Image files (.jpg, .jpeg, .png, .gif, etc.) - Base64 data goes to 'image_data' field
-- PDF files (.pdf) - Text extracted and chunked, goes to 'text' field
+- PDF files (.pdf) - Text extracted and chunked, images extracted separately
 
 The command will automatically:
 - Detect file type and process accordingly
 - Generate appropriate metadata
 - Chunk text content (default 1000 chars, configurable with --chunk-size)
+- Extract images from PDFs with OCR and EXIF data
 - Create documents following RagMeDocs/RagMeImages schema
+
+For PDF files with images:
+- Text chunks go to the main collection
+- Extracted images go to a separate collection (use --image-collection)
+- Images include OCR text, EXIF data, and captions when available
 
 Examples:
   weave docs create MyCollection document.txt
   weave docs create MyCollection image.jpg
-  weave docs create MyCollection document.pdf --chunk-size 500`,
+  weave docs create MyCollection document.pdf --chunk-size 500
+  weave docs create WeaveDocs document.pdf --image-collection WeaveImages
+  weave docs create WeaveDocs document.pdf --image-col RagMeImages`,
 	Args: cobra.ExactArgs(2),
 	Run:  runDocumentCreate,
 }
@@ -191,6 +200,11 @@ func init() {
 	documentShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information")
 
 	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
+	documentCreateCmd.Flags().StringP("image-collection", "", "", "Collection name for extracted PDF images (default: same as main collection)")
+	documentCreateCmd.Flags().StringP("image-col", "", "", "Alias for --image-collection")
+	documentCreateCmd.Flags().StringP("image-cols", "", "", "Alias for --image-collection")
+	documentCreateCmd.Flags().Bool("skip-small-images", false, "Skip small images when extracting from PDFs")
+	documentCreateCmd.Flags().Int("min-image-size", 10240, "Minimum image size in bytes (default: 10240 = 10KB)")
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
@@ -685,17 +699,88 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 	}
 
 	if virtual {
-		// For virtual mode, also get documents from the corresponding image collection
-		// to properly aggregate images with their source documents
+		// For virtual mode, check if we should aggregate from related collections
 		var allDocuments []weaviate.Document
 		allDocuments = append(allDocuments, documents...)
 
-		// Check if there's a corresponding image collection
-		imageCollectionName := getImageCollectionName(collectionName)
-		if imageCollectionName != "" {
-			imageDocuments, err := client.ListDocuments(ctx, imageCollectionName, queryLimit)
-			if err == nil && len(imageDocuments) > 0 {
-				allDocuments = append(allDocuments, imageDocuments...)
+		// Check if the current collection has mixed content (both text and images)
+		hasText := false
+		hasImages := false
+		for _, doc := range documents {
+			if metadata, ok := doc.Metadata["metadata"]; ok {
+				var metadataObj map[string]interface{}
+				if metadataStr, ok := metadata.(string); ok {
+					if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+						if contentType, ok := metadataObj["content_type"].(string); ok {
+							if contentType == "text" {
+								hasText = true
+							} else if contentType == "image" {
+								hasImages = true
+							}
+						}
+					}
+				} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
+					metadataObj = metadataMap
+					if contentType, ok := metadataObj["content_type"].(string); ok {
+						if contentType == "text" {
+							hasText = true
+						} else if contentType == "image" {
+							hasImages = true
+						}
+					}
+				}
+			}
+		}
+
+		// If the collection has mixed content, filter to show only text documents
+		// This ensures that when both text and images are in the same collection,
+		// the virtual view shows only the text documents (like RagMeDocs behavior)
+		if hasText && hasImages {
+			var textDocuments []weaviate.Document
+			for _, doc := range documents {
+				if metadata, ok := doc.Metadata["metadata"]; ok {
+					var metadataObj map[string]interface{}
+					if metadataStr, ok := metadata.(string); ok {
+						if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+							if contentType, ok := metadataObj["content_type"].(string); ok {
+								if contentType == "text" {
+									textDocuments = append(textDocuments, doc)
+								}
+							}
+						}
+					} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
+						metadataObj = metadataMap
+						if contentType, ok := metadataObj["content_type"].(string); ok {
+							if contentType == "text" {
+								textDocuments = append(textDocuments, doc)
+							}
+						}
+					}
+				}
+			}
+			allDocuments = textDocuments
+		} else {
+			// Only aggregate from related collections if there's no separate image collection
+			// When using --image-collection, we should respect collection boundaries
+			imageCollectionName := getImageCollectionName(collectionName)
+			hasSeparateImageCollection := false
+
+			if imageCollectionName != "" && imageCollectionName != collectionName {
+				// Check if the image collection exists and has documents
+				imageDocuments, err := client.ListDocuments(ctx, imageCollectionName, 1)
+				if err == nil && len(imageDocuments) > 0 {
+					hasSeparateImageCollection = true
+				}
+			}
+
+			// Only aggregate if there's no separate image collection
+			if !hasSeparateImageCollection {
+				if imageCollectionName != "" {
+					imageDocuments, err := client.ListDocuments(ctx, imageCollectionName, queryLimit)
+					if err == nil && len(imageDocuments) > 0 {
+						allDocuments = append(allDocuments, imageDocuments...)
+					}
+				}
 			}
 		}
 
@@ -1643,6 +1728,7 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 						if tc, ok := metadataObj["total_chunks"].(float64); ok {
 							totalChunks = int(tc)
 						}
+						// If total_chunks is not set, we'll calculate it from the actual chunks
 						docMap[filename] = &VirtualDocument{
 							OriginalFilename: filename,
 							TotalChunks:      totalChunks,
@@ -1720,9 +1806,66 @@ func aggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		}
 	}
 
-	// Convert map to slice
+	// Convert map to slice and calculate total chunks for documents that don't have it set
 	var virtualDocs []VirtualDocument
 	for _, vdoc := range docMap {
+		// If TotalChunks is 0 but we have chunks, determine if this is a text or image document
+		if vdoc.TotalChunks == 0 && len(vdoc.Chunks) > 0 {
+			// Check if this is an image document
+			isImageDoc := false
+			for _, chunk := range vdoc.Chunks {
+				if metadata, ok := chunk.Metadata["metadata"]; ok {
+					var metadataObj map[string]interface{}
+					if metadataStr, ok := metadata.(string); ok {
+						if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+							if contentType, ok := metadataObj["content_type"].(string); ok {
+								if contentType == "image" {
+									isImageDoc = true
+									break
+								}
+							}
+						}
+					} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
+						metadataObj = metadataMap
+						// Check for nested metadata
+						if nestedMetadata, ok := metadataObj["metadata"]; ok {
+							if nestedStr, ok := nestedMetadata.(string); ok {
+								if err := json.Unmarshal([]byte(nestedStr), &metadataObj); err == nil {
+									if contentType, ok := metadataObj["content_type"].(string); ok {
+										if contentType == "image" {
+											isImageDoc = true
+											break
+										}
+									}
+								}
+							} else if nestedMap, ok := nestedMetadata.(map[string]interface{}); ok {
+								metadataObj = nestedMap
+								if contentType, ok := metadataObj["content_type"].(string); ok {
+									if contentType == "image" {
+										isImageDoc = true
+										break
+									}
+								}
+							}
+						}
+					}
+				}
+				// Also check for direct image fields
+				if _, hasImage := chunk.Metadata["image"]; hasImage {
+					isImageDoc = true
+					break
+				}
+				if _, hasBase64Data := chunk.Metadata["base64_data"]; hasBase64Data {
+					isImageDoc = true
+					break
+				}
+			}
+			// Only set TotalChunks for text documents (not images)
+			// For image documents, TotalChunks should remain 0 so they show as "Images"
+			if !isImageDoc {
+				vdoc.TotalChunks = len(vdoc.Chunks)
+			}
+		}
 		virtualDocs = append(virtualDocs, *vdoc)
 	}
 
@@ -1756,6 +1899,116 @@ func isImageVirtualDocument(vdoc VirtualDocument) bool {
 		}
 	}
 	return false
+}
+
+// shouldAggregateFromRelatedCollections determines if we should aggregate documents from related collections
+func shouldAggregateFromRelatedCollections(client *weaviate.WeaveClient, ctx context.Context, collectionName string, documents []weaviate.Document) bool {
+	// Check if the current collection contains mixed content (both text and images)
+	hasText := false
+	hasImages := false
+
+	for _, doc := range documents {
+		if metadata, ok := doc.Metadata["metadata"]; ok {
+			var metadataObj map[string]interface{}
+
+			if metadataStr, ok := metadata.(string); ok {
+				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err != nil {
+					continue
+				}
+			} else if metadataMap, ok := metadata.(map[string]interface{}); ok {
+				metadataObj = metadataMap
+
+				// Check for nested metadata
+				if nestedMetadata, ok := metadataObj["metadata"]; ok {
+					if nestedStr, ok := nestedMetadata.(string); ok {
+						if err := json.Unmarshal([]byte(nestedStr), &metadataObj); err != nil {
+							continue
+						}
+					} else if nestedMap, ok := nestedMetadata.(map[string]interface{}); ok {
+						metadataObj = nestedMap
+					}
+				}
+			}
+
+			if contentType, ok := metadataObj["content_type"].(string); ok {
+				if contentType == "text" {
+					hasText = true
+				} else if contentType == "image" {
+					hasImages = true
+				}
+			}
+		}
+	}
+
+	// If the collection has mixed content (both text and images), don't aggregate
+	if hasText && hasImages {
+		return false
+	}
+
+	// If the collection is primarily images, don't aggregate
+	if hasImages && !hasText {
+		return false
+	}
+
+	// Check if there's a corresponding image collection that exists
+	imageCollectionName := getImageCollectionName(collectionName)
+	if imageCollectionName == "" || imageCollectionName == collectionName {
+		return false
+	}
+
+	// Check if the image collection actually exists and has documents
+	imageDocuments, err := client.ListDocuments(ctx, imageCollectionName, 1) // Just check if it exists
+	if err != nil || len(imageDocuments) == 0 {
+		return false
+	}
+
+	// Check if the image collection contains images from the same source document
+	// If it does, this suggests images were explicitly separated, so don't aggregate
+	if len(imageDocuments) > 0 {
+		imageDoc := imageDocuments[0]
+		if imageMetadata, ok := imageDoc.Metadata["metadata"]; ok {
+			var imageMetadataObj map[string]interface{}
+
+			if imageMetadataStr, ok := imageMetadata.(string); ok {
+				if err := json.Unmarshal([]byte(imageMetadataStr), &imageMetadataObj); err == nil {
+					if imageContentType, ok := imageMetadataObj["content_type"].(string); ok {
+						if imageContentType == "image" {
+							// Images are in a separate collection, don't aggregate
+							return false
+						}
+					}
+				}
+			} else if imageMetadataMap, ok := imageMetadata.(map[string]interface{}); ok {
+				imageMetadataObj = imageMetadataMap
+
+				// Check for nested metadata
+				if nestedImageMetadata, ok := imageMetadataObj["metadata"]; ok {
+					if nestedImageStr, ok := nestedImageMetadata.(string); ok {
+						if err := json.Unmarshal([]byte(nestedImageStr), &imageMetadataObj); err == nil {
+							if imageContentType, ok := imageMetadataObj["content_type"].(string); ok {
+								if imageContentType == "image" {
+									// Images are in a separate collection, don't aggregate
+									return false
+								}
+							}
+						}
+					} else if nestedImageMap, ok := nestedImageMetadata.(map[string]interface{}); ok {
+						imageMetadataObj = nestedImageMap
+						if imageContentType, ok := imageMetadataObj["content_type"].(string); ok {
+							if imageContentType == "image" {
+								// Images are in a separate collection, don't aggregate
+								return false
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Only aggregate if the current collection is primarily text and there's a separate image collection
+	// But only if the image collection doesn't contain actual images (legacy behavior)
+	return hasText && !hasImages
 }
 
 // getImageCollectionName returns the corresponding image collection name for a document collection
@@ -2541,9 +2794,23 @@ func deleteMockDocumentsByOriginalFilename(ctx context.Context, cfg *config.Vect
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
 	chunkSize, _ := cmd.Flags().GetInt("chunk-size")
+	imageCollection, _ := cmd.Flags().GetString("image-collection")
+	imageCol, _ := cmd.Flags().GetString("image-col")
+	imageCols, _ := cmd.Flags().GetString("image-cols")
+	skipSmallImages, _ := cmd.Flags().GetBool("skip-small-images")
+	minImageSize, _ := cmd.Flags().GetInt("min-image-size")
 
 	collectionName := args[0]
 	filePath := args[1]
+
+	// Determine image collection name (prioritize --image-collection, then aliases)
+	if imageCollection == "" {
+		if imageCol != "" {
+			imageCollection = imageCol
+		} else if imageCols != "" {
+			imageCollection = imageCols
+		}
+	}
 
 	// Load configuration
 	cfg, err := loadConfigWithOverrides()
@@ -2569,36 +2836,60 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	fmt.Println()
 
 	// Process the file based on its type
-	documents, err := processFile(filePath, chunkSize)
+	documents, err := processFile(filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to process file: %v", err))
 		os.Exit(1)
+	}
+
+	// Set collection names for documents
+	for i := range documents {
+		if documents[i].Collection == "" {
+			documents[i].Collection = collectionName
+		}
 	}
 
 	// Create documents in the database
 	ctx := context.Background()
 	successCount := 0
 	errorCount := 0
+	textCount := 0
+	imageCount := 0
 
 	for i, doc := range documents {
-		printInfo(fmt.Sprintf("Creating document %d/%d: %s", i+1, len(documents), doc.ID))
+		targetCollection := doc.Collection
+		if doc.IsImage {
+			imageCount++
+			printInfo(fmt.Sprintf("Creating image document %d/%d: %s (collection: %s)", i+1, len(documents), doc.ID, targetCollection))
+		} else {
+			textCount++
+			printInfo(fmt.Sprintf("Creating text document %d/%d: %s (collection: %s)", i+1, len(documents), doc.ID, targetCollection))
+		}
 
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-			if err := createWeaviateDocument(ctx, dbConfig, collectionName, doc); err != nil {
+			if err := createWeaviateDocument(ctx, dbConfig, targetCollection, doc); err != nil {
 				errorMsg := formatDocumentCreationError(doc.ID, err)
 				printError(errorMsg)
 				errorCount++
 			} else {
-				printSuccess(fmt.Sprintf("Successfully created document: %s", doc.ID))
+				if doc.IsImage {
+					printSuccess(fmt.Sprintf("Successfully created image document: %s", doc.ID))
+				} else {
+					printSuccess(fmt.Sprintf("Successfully created text document: %s", doc.ID))
+				}
 				successCount++
 			}
 		case config.VectorDBTypeMock:
-			if err := createMockDocument(ctx, dbConfig, collectionName, doc); err != nil {
+			if err := createMockDocument(ctx, dbConfig, targetCollection, doc); err != nil {
 				printError(fmt.Sprintf("Failed to create document '%s': %v", doc.ID, err))
 				errorCount++
 			} else {
-				printSuccess(fmt.Sprintf("Successfully created document: %s", doc.ID))
+				if doc.IsImage {
+					printSuccess(fmt.Sprintf("Successfully created image document: %s", doc.ID))
+				} else {
+					printSuccess(fmt.Sprintf("Successfully created text document: %s", doc.ID))
+				}
 				successCount++
 			}
 		default:
@@ -2610,11 +2901,19 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	// Summary
 	if len(documents) > 1 {
 		if errorCount == 0 {
-			printSuccess(fmt.Sprintf("All %d documents created successfully!", successCount))
+			if textCount > 0 && imageCount > 0 {
+				printSuccess(fmt.Sprintf("All %d documents created successfully! (%d text, %d images)", successCount, textCount, imageCount))
+			} else {
+				printSuccess(fmt.Sprintf("All %d documents created successfully!", successCount))
+			}
 		} else if successCount == 0 {
 			printError(fmt.Sprintf("Failed to create all %d documents", errorCount))
 		} else {
-			printWarning(fmt.Sprintf("Created %d documents successfully, %d failed", successCount, errorCount))
+			if textCount > 0 && imageCount > 0 {
+				printWarning(fmt.Sprintf("Created %d documents successfully (%d text, %d images), %d failed", successCount, textCount, imageCount, errorCount))
+			} else {
+				printWarning(fmt.Sprintf("Created %d documents successfully, %d failed", successCount, errorCount))
+			}
 		}
 	}
 }
@@ -2627,16 +2926,19 @@ type DocumentData struct {
 	ImageData string
 	URL       string
 	Metadata  map[string]interface{}
+	// For PDF image extraction
+	Collection string // Target collection for this document
+	IsImage    bool   // Whether this is an image document
 }
 
 // processFile processes a file and returns document data
-func processFile(filePath string, chunkSize int) ([]DocumentData, error) {
+func processFile(filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) ([]DocumentData, error) {
 	// Determine file type
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	switch ext {
 	case ".pdf":
-		return processPDFFile(filePath, chunkSize)
+		return processPDFFile(filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		return processImageFile(filePath)
 	default:
@@ -2669,10 +2971,12 @@ func processTextFile(filePath string, chunkSize int) ([]DocumentData, error) {
 		metadata := generateTextMetadata(filePath, i, len(chunks), len(chunk))
 
 		doc := DocumentData{
-			ID:       docID,
-			Content:  chunk,
-			URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
-			Metadata: metadata,
+			ID:         docID,
+			Content:    chunk,
+			URL:        fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+			Metadata:   metadata,
+			Collection: "", // Will be set by caller
+			IsImage:    false,
 		}
 
 		documents = append(documents, doc)
@@ -2703,20 +3007,59 @@ func processImageFile(filePath string) ([]DocumentData, error) {
 	metadata := generateImageMetadata(filePath, len(content))
 
 	doc := DocumentData{
-		ID:        docID,
-		Image:     fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data),
-		ImageData: base64Data,
-		URL:       fmt.Sprintf("file://%s", filePath),
-		Metadata:  metadata,
+		ID:         docID,
+		Image:      fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data),
+		ImageData:  base64Data,
+		URL:        fmt.Sprintf("file://%s", filePath),
+		Metadata:   metadata,
+		Collection: "", // Will be set by caller
+		IsImage:    true,
 	}
 
 	return []DocumentData{doc}, nil
 }
 
-// processPDFFile processes a PDF file (placeholder - will implement with pdfcpu)
-func processPDFFile(filePath string, chunkSize int) ([]DocumentData, error) {
-	// For now, return an error indicating PDF support is not yet implemented
-	return nil, fmt.Errorf("PDF processing not yet implemented - will add pdfcpu support")
+// processPDFFile processes a PDF file and extracts both text and images
+func processPDFFile(filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) ([]DocumentData, error) {
+	// Import the PDF processor
+	// Note: We need to import the pdf package at the top of the file
+
+	// Extract text and images from PDF
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract PDF content: %w", err)
+	}
+
+	var documents []DocumentData
+
+	// Convert text data to DocumentData
+	for _, textDoc := range textData {
+		doc := DocumentData{
+			ID:         textDoc.ID,
+			Content:    textDoc.Content,
+			URL:        textDoc.URL,
+			Metadata:   textDoc.Metadata,
+			Collection: "", // Will be set to main collection
+			IsImage:    false,
+		}
+		documents = append(documents, doc)
+	}
+
+	// Convert image data to DocumentData
+	for _, imageDoc := range imageData {
+		doc := DocumentData{
+			ID:         imageDoc.ID,
+			Image:      imageDoc.Image,
+			ImageData:  imageDoc.ImageData,
+			URL:        imageDoc.URL,
+			Metadata:   imageDoc.Metadata,
+			Collection: imageCollection, // Use specified image collection
+			IsImage:    true,
+		}
+		documents = append(documents, doc)
+	}
+
+	return documents, nil
 }
 
 // chunkText splits text into chunks of specified size
