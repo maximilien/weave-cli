@@ -985,7 +985,7 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		printError(fmt.Sprintf("Failed to list collections: %v", err))
 		return
 	}
-	
+
 	// Check if the specific collection exists
 	collectionExists := false
 	for _, existingCollection := range collections {
@@ -994,7 +994,7 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 			break
 		}
 	}
-	
+
 	if !collectionExists {
 		printError(fmt.Sprintf("Collection '%s' not found", collectionName))
 		return
@@ -2100,6 +2100,19 @@ func showCollectionMetadata(ctx context.Context, client *weaviate.WeaveClient, c
 	fmt.Println()
 	color.New(color.FgCyan, color.Bold).Printf("📊 Collection Metadata: %s\n", collectionName)
 	fmt.Println()
+
+	// First check document count to avoid unnecessary API calls for empty collections
+	documentCount, err := client.CountDocuments(ctx, collectionName)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get document count: %v", err))
+		return
+	}
+
+	if documentCount == 0 {
+		printStyledValueDimmed("No documents found to analyze metadata")
+		fmt.Println()
+		return
+	}
 
 	// Get sample documents to analyze metadata
 	documents, err := client.ListDocuments(ctx, collectionName, 100)
