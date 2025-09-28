@@ -6,9 +6,9 @@
 
 ## 🚀 Major New Features
 
-### Required Schema Flags for Document Creation
+### Required Schema Flags for Collection Creation
 
-Weave CLI now requires explicit schema specification when creating documents, ensuring proper collection setup and better data organization.
+Weave CLI now requires explicit schema specification when creating collections, ensuring proper collection setup and better data organization.
 
 #### New Required Flags
 
@@ -25,27 +25,27 @@ Weave CLI now requires explicit schema specification when creating documents, en
 #### Usage Examples
 
 ```bash
-# Create text documents
-weave docs create MyTextCollection document.txt --text
-weave docs create MyTextCollection document.pdf --text --chunk-size 500
+# Create text collections
+weave collection create MyTextCollection --text
+weave collection create MyTextCollection --text --embedding text-embedding-3-small
 
-# Create image documents
-weave docs create MyImageCollection image.jpg --image
-weave docs create MyImageCollection image.png --image
+# Create image collections
+weave collection create MyImageCollection --image
+weave collection create MyImageCollection --image --field title:text,content:text
 
-# PDF with both text and images
-weave docs create MyTextCollection document.pdf --text --image-collection MyImageCollection --image
+# Create multiple collections with same schema
+weave collection create Col1 Col2 Col3 --text
 
 # Using aliases
-weave docs c MyTextCollection document.txt --text
-weave docs c MyImageCollection image.jpg --image
+weave cols c MyTextCollection --text
+weave cols c MyImageCollection --image
 ```
 
 ## 🔧 Enhanced Features
 
-### Automatic Collection Creation
+### Schema-Aware Collection Creation
 
-- Collections are automatically created with the appropriate schema when documents are created
+- Collections are created with the appropriate schema based on the specified flag
 - Proper schema validation ensures data consistency
 - Enhanced error handling provides clear feedback
 
@@ -57,19 +57,19 @@ weave docs c MyImageCollection image.jpg --image
 
 ## ⚠️ Breaking Changes
 
-### Document Creation Workflow
+### Collection Creation Workflow
 
-**IMPORTANT**: Document creation now requires explicit schema specification.
+**IMPORTANT**: Collection creation now requires explicit schema specification.
 
 **Before (v0.1.9-rc1)**:
 ```bash
-weave docs create MyCollection document.txt  # Worked without flags
+weave collection create MyCollection  # Worked without flags
 ```
 
 **After (v0.1.9-rc2)**:
 ```bash
-weave docs create MyCollection document.txt --text   # Required --text flag
-weave docs create MyCollection image.jpg --image     # Required --image flag
+weave collection create MyCollection --text   # Required --text flag
+weave collection create MyCollection --image  # Required --image flag
 ```
 
 ### Error Handling
@@ -83,8 +83,8 @@ weave docs create MyCollection image.jpg --image     # Required --image flag
 ### New Functions
 
 - `CreateCollectionWithSchema()`: Schema-aware collection creation
-- `ensureCollectionExists()`: Automatic collection creation with proper schema
 - Enhanced `createCollectionViaREST()`: Support for explicit schema types
+- Updated `createWeaviateCollection()`: Schema-aware collection creation
 
 ### Schema Definitions
 
@@ -103,22 +103,22 @@ weave docs create MyCollection image.jpg --image     # Required --image flag
 
 ### For Existing Users
 
-1. **Update your scripts**: Add `--text` or `--image` flags to all `weave docs create` commands
+1. **Update your scripts**: Add `--text` or `--image` flags to all `weave collection create` commands
 2. **Review your workflows**: Ensure you're using the correct schema type for your data
-3. **Test with small files**: Verify the new behavior with test documents before bulk operations
+3. **Test with small collections**: Verify the new behavior with test collections before bulk operations
 
 ### Example Migration
 
 **Old workflow**:
 ```bash
-weave docs create MyCollection document.txt
-weave docs create MyCollection image.jpg
+weave collection create MyCollection
+weave collection create MyImageCollection
 ```
 
 **New workflow**:
 ```bash
-weave docs create MyCollection document.txt --text
-weave docs create MyCollection image.jpg --image
+weave collection create MyCollection --text
+weave collection create MyImageCollection --image
 ```
 
 ## 🧪 Testing

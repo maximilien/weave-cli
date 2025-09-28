@@ -267,30 +267,48 @@ weave cols c MyCollection
 weave cols create MyCollection --field title:text,author:text
 ```
 
-## Document Creation
+## Collection Creation
 
-**IMPORTANT**: Document creation now requires explicit schema specification using `--text` or `--image` flags:
+**IMPORTANT**: Collection creation now requires explicit schema specification using `--text` or `--image` flags:
 
 ```bash
-# Create text documents (RagMeDocs schema)
-weave docs create MyTextCollection document.txt --text
-weave docs create MyTextCollection document.pdf --text --chunk-size 500
+# Create text collections (RagMeDocs schema)
+weave collection create MyTextCollection --text
+weave collection create MyTextCollection --text --embedding text-embedding-3-small
 
-# Create image documents (RagMeImages schema)  
-weave docs create MyImageCollection image.jpg --image
-weave docs create MyImageCollection image.png --image
+# Create image collections (RagMeImages schema)  
+weave collection create MyImageCollection --image
+weave collection create MyImageCollection --image --field title:text,content:text
 
-# PDF with both text and images
-weave docs create MyTextCollection document.pdf --text --image-collection MyImageCollection --image
+# Create multiple collections with same schema
+weave collection create Col1 Col2 Col3 --text
 
 # Using aliases
-weave docs c MyTextCollection document.txt --text
-weave docs c MyImageCollection image.jpg --image
+weave cols c MyTextCollection --text
+weave cols c MyImageCollection --image
 ```
 
 **Schema Types:**
 - `--text`: Creates collection with text schema (RagMeDocs format) - Properties: `url`, `text`, `metadata`
 - `--image`: Creates collection with image schema (RagMeImages format) - Properties: `url`, `image`, `metadata`, `image_data`
+
+## Document Creation
+
+Document creation works with existing collections (no schema flags required):
+
+```bash
+# Create documents in existing collections
+weave docs create MyTextCollection document.txt
+weave docs create MyTextCollection document.pdf --chunk-size 500
+weave docs create MyImageCollection image.jpg
+
+# PDF with both text and images
+weave docs create MyTextCollection document.pdf --image-collection MyImageCollection
+
+# Using aliases
+weave docs c MyTextCollection document.txt
+weave docs c MyImageCollection image.jpg
+```
 
 **Supported Field Types:**
 

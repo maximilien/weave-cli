@@ -11,10 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Required schema flags for document creation**: Add `--text` and `--image` flags to `weave docs create` command
+- **Required schema flags for collection creation**: Add `--text` and `--image` flags to `weave collection create` command
   - `--text`: Creates collection with text schema (RagMeDocs format) - Properties: `url`, `text`, `metadata`
   - `--image`: Creates collection with image schema (RagMeImages format) - Properties: `url`, `image`, `metadata`, `image_data`
-  - Automatic collection creation with appropriate schema when documents are created
   - Enhanced schema validation and error handling
   - Backward compatibility maintained through explicit flag requirements
 
@@ -25,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Document creation workflow**: Document creation now requires explicit schema specification
-  - Breaking change: `weave docs create` commands now require `--text` or `--image` flag
+- **Collection creation workflow**: Collection creation now requires explicit schema specification
+  - Breaking change: `weave collection create` commands now require `--text` or `--image` flag
   - Improved collection creation with proper schema setup
   - Better error messages for missing or conflicting schema flags
 
@@ -39,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added `SchemaType` constants and `CreateCollectionWithSchema()` function
 - Enhanced `createCollectionViaREST()` to support explicit schema types
-- Updated `ensureCollectionExists()` function for automatic collection creation
+- Updated `createWeaviateCollection()` function for schema-aware collection creation
 - Improved validation logic for required schema flags
 - Enhanced error handling and user feedback
 

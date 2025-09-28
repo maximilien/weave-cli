@@ -128,14 +128,18 @@ var collectionCreateCmd = &cobra.Command{
 	Short:   "Create one or more collections",
 	Long: `Create one or more collections in the configured vector database.
 
-This command creates collections with default fields and embedding model.
+REQUIRED: You must specify either --text or --image to define the collection schema:
+- --text: Creates collection with text schema (RagMeDocs format)
+- --image: Creates collection with image schema (RagMeImages format)
+
 You can customize the collections by specifying custom fields and embedding model.
 
 Examples:
-  weave cols create MyCollection
-  weave cols create Col1 Col2 Col3
-  weave cols create MyCollection --embedding text-embedding-3-small
-  weave cols create MyCollection --field title:text,content:text,metadata:text`,
+  weave cols create MyTextCollection --text
+  weave cols create MyImageCollection --image
+  weave cols create Col1 Col2 Col3 --text
+  weave cols create MyCollection --text --embedding text-embedding-3-small
+  weave cols create MyCollection --image --field title:text,content:text,metadata:text`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runCollectionCreate,
 }
@@ -187,8 +191,13 @@ func init() {
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
 	collectionShowCmd.Flags().Bool("schema", false, "Show collection schema including metadata structure")
 	collectionShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information for collections and documents")
+	collectionCreateCmd.Flags().Bool("text", false, "Create collection with text schema (RagMeDocs format)")
+	collectionCreateCmd.Flags().Bool("image", false, "Create collection with image schema (RagMeImages format)")
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
+	
+	// Make schema type required
+	collectionCreateCmd.MarkFlagsOneRequired("text", "image")
 	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	collectionDeleteCmd.Flags().StringP("pattern", "p", "", "Delete collections matching pattern (auto-detects shell glob vs regex)")
 	collectionDeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -465,9 +474,33 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 }
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {
+	// Get schema type flags (required)
+	isTextSchema, _ := cmd.Flags().GetBool("text")
+	isImageSchema, _ := cmd.Flags().GetBool("image")
+	
 	collectionNames := args
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
 	customFields, _ := cmd.Flags().GetString("field")
+	
+	// Validate schema type selection
+	if !isTextSchema && !isImageSchema {
+		printError("You must specify either --text or --image to define the collection schema")
+		printInfo("Use --text for text collections (RagMeDocs schema) or --image for image collections (RagMeImages schema)")
+		os.Exit(1)
+	}
+	
+	if isTextSchema && isImageSchema {
+		printError("You cannot specify both --text and --image flags. Choose one schema type.")
+		os.Exit(1)
+	}
+	
+	// Determine schema type
+	var schemaType string
+	if isTextSchema {
+		schemaType = "text"
+	} else if isImageSchema {
+		schemaType = "image"
+	}
 
 	// Load configuration
 	cfg, err := loadConfigWithOverrides()
@@ -496,6 +529,13 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 			fmt.Printf("  %d. %s\n", i+1, name)
 		}
 	}
+	
+	// Show schema type information
+	if isTextSchema {
+		printInfo(fmt.Sprintf("Using text schema (RagMeDocs format) for all collections"))
+	} else if isImageSchema {
+		printInfo(fmt.Sprintf("Using image schema (RagMeImages format) for all collections"))
+	}
 	fmt.Println()
 
 	// Parse custom fields if provided
@@ -520,7 +560,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud:
-			if err := createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields); err != nil {
+			if err := createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields, schemaType); err != nil {
 				printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
 				errorCount++
 			} else {
@@ -528,7 +568,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 				successCount++
 			}
 		case config.VectorDBTypeLocal:
-			if err := createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields); err != nil {
+			if err := createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, fields, schemaType); err != nil {
 				printError(fmt.Sprintf("Failed to create collection '%s': %v", collectionName, err))
 				errorCount++
 			} else {
@@ -1688,14 +1728,14 @@ func isValidFieldType(fieldType string) bool {
 }
 
 // createWeaviateCollection creates a collection in Weaviate
-func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
+func createWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition, schemaType string) error {
 	client, err := createWeaviateClient(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create client: %w", err)
 	}
 
-	// Create the collection using Weaviate's REST API
-	err = client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
+	// Create the collection using Weaviate's REST API with schema type
+	err = client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, schemaType)
 	if err != nil {
 		return fmt.Errorf("failed to create collection '%s': %w", collectionName, err)
 	}
