@@ -100,6 +100,10 @@ weave collection list
 # Create a new collection
 weave collection create MyCollection
 
+# Create documents with required schema flags
+weave docs create MyTextCollection document.txt --text
+weave docs create MyImageCollection image.jpg --image
+
 # List documents in a collection
 weave document list MyCollection
 
@@ -262,6 +266,31 @@ weave collection create MyCollection --embedding text-embedding-ada-002 --field 
 weave cols c MyCollection
 weave cols create MyCollection --field title:text,author:text
 ```
+
+## Document Creation
+
+**IMPORTANT**: Document creation now requires explicit schema specification using `--text` or `--image` flags:
+
+```bash
+# Create text documents (RagMeDocs schema)
+weave docs create MyTextCollection document.txt --text
+weave docs create MyTextCollection document.pdf --text --chunk-size 500
+
+# Create image documents (RagMeImages schema)  
+weave docs create MyImageCollection image.jpg --image
+weave docs create MyImageCollection image.png --image
+
+# PDF with both text and images
+weave docs create MyTextCollection document.pdf --text --image-collection MyImageCollection --image
+
+# Using aliases
+weave docs c MyTextCollection document.txt --text
+weave docs c MyImageCollection image.jpg --image
+```
+
+**Schema Types:**
+- `--text`: Creates collection with text schema (RagMeDocs format) - Properties: `url`, `text`, `metadata`
+- `--image`: Creates collection with image schema (RagMeImages format) - Properties: `url`, `image`, `metadata`, `image_data`
 
 **Supported Field Types:**
 

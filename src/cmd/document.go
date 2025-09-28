@@ -130,6 +130,10 @@ var documentCreateCmd = &cobra.Command{
 	Short:   "Create a document from a file",
 	Long: `Create a document in a collection from a file.
 
+REQUIRED: You must specify either --text or --image to define the collection schema:
+- --text: Creates collection with text schema (RagMeDocs format)
+- --image: Creates collection with image schema (RagMeImages format)
+
 Supported file types:
 - Text files (.txt, .md, .json, etc.) - Content goes to 'text' field
 - Image files (.jpg, .jpeg, .png, .gif, etc.) - Base64 data goes to 'image_data' field
@@ -148,11 +152,11 @@ For PDF files with images:
 - Images include OCR text, EXIF data, and captions when available
 
 Examples:
-  weave docs create MyCollection document.txt
-  weave docs create MyCollection image.jpg
-  weave docs create MyCollection document.pdf --chunk-size 500
-  weave docs create WeaveDocs document.pdf --image-collection WeaveImages
-  weave docs create WeaveDocs document.pdf --image-col RagMeImages`,
+  weave docs create MyTextCollection document.txt --text
+  weave docs create MyImageCollection image.jpg --image
+  weave docs create MyPDFCollection document.pdf --text --chunk-size 500
+  weave docs create WeaveDocs document.pdf --text --image-collection WeaveImages --image
+  weave docs create WeaveDocs document.pdf --text --image-col RagMeImages`,
 	Args: cobra.ExactArgs(2),
 	Run:  runDocumentCreate,
 }
@@ -199,12 +203,17 @@ func init() {
 	documentShowCmd.Flags().Bool("schema", false, "Show document schema including metadata structure")
 	documentShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information")
 
+	documentCreateCmd.Flags().Bool("text", false, "Create collection with text schema (RagMeDocs format)")
+	documentCreateCmd.Flags().Bool("image", false, "Create collection with image schema (RagMeImages format)")
 	documentCreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
 	documentCreateCmd.Flags().StringP("image-collection", "", "", "Collection name for extracted PDF images (default: same as main collection)")
 	documentCreateCmd.Flags().StringP("image-col", "", "", "Alias for --image-collection")
 	documentCreateCmd.Flags().StringP("image-cols", "", "", "Alias for --image-collection")
 	documentCreateCmd.Flags().Bool("skip-small-images", false, "Skip small images when extracting from PDFs")
 	documentCreateCmd.Flags().Int("min-image-size", 10240, "Minimum image size in bytes (default: 10240 = 10KB)")
+
+	// Make schema type required
+	documentCreateCmd.MarkFlagsOneRequired("text", "image")
 
 	documentDeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	documentDeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
@@ -2793,6 +2802,10 @@ func deleteMockDocumentsByOriginalFilename(ctx context.Context, cfg *config.Vect
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
+	// Get schema type flags (required)
+	isTextSchema, _ := cmd.Flags().GetBool("text")
+	isImageSchema, _ := cmd.Flags().GetBool("image")
+
 	chunkSize, _ := cmd.Flags().GetInt("chunk-size")
 	imageCollection, _ := cmd.Flags().GetString("image-collection")
 	imageCol, _ := cmd.Flags().GetString("image-col")
@@ -2802,6 +2815,18 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	collectionName := args[0]
 	filePath := args[1]
+
+	// Validate schema type selection
+	if !isTextSchema && !isImageSchema {
+		printError("You must specify either --text or --image to define the collection schema")
+		printInfo("Use --text for text documents (RagMeDocs schema) or --image for image documents (RagMeImages schema)")
+		os.Exit(1)
+	}
+
+	if isTextSchema && isImageSchema {
+		printError("You cannot specify both --text and --image flags. Choose one schema type.")
+		os.Exit(1)
+	}
 
 	// Determine image collection name (prioritize --image-collection, then aliases)
 	if imageCollection == "" {
@@ -2835,6 +2860,23 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	printHeader("Create Document")
 	fmt.Println()
 
+	// Determine schema type for collection creation
+	var schemaType string
+	if isTextSchema {
+		schemaType = "text"
+		printInfo(fmt.Sprintf("Using text schema (RagMeDocs format) for collection: %s", collectionName))
+	} else if isImageSchema {
+		schemaType = "image"
+		printInfo(fmt.Sprintf("Using image schema (RagMeImages format) for collection: %s", collectionName))
+	}
+
+	// Create collection with appropriate schema if it doesn't exist
+	ctx := context.Background()
+	if err := ensureCollectionExists(ctx, dbConfig, collectionName, schemaType); err != nil {
+		printError(fmt.Sprintf("Failed to create collection: %v", err))
+		os.Exit(1)
+	}
+
 	// Process the file based on its type
 	documents, err := processFile(filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
 	if err != nil {
@@ -2850,7 +2892,6 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	}
 
 	// Create documents in the database
-	ctx := context.Background()
 	successCount := 0
 	errorCount := 0
 	textCount := 0
@@ -4277,4 +4318,56 @@ func showMockDocumentMetadata(doc mock.Document, collectionName string) {
 	printStyledValueDimmed(collectionName)
 	fmt.Println()
 	fmt.Println()
+}
+
+// ensureCollectionExists creates a collection with the specified schema if it doesn't exist
+func ensureCollectionExists(ctx context.Context, dbConfig *config.VectorDBConfig, collectionName, schemaType string) error {
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+		// Convert VectorDBConfig to weaviate.Config
+		weaviateConfig := &weaviate.Config{
+			URL:          dbConfig.URL,
+			APIKey:       dbConfig.APIKey,
+			OpenAIAPIKey: dbConfig.OpenAIAPIKey,
+		}
+
+		// Create Weaviate client
+		client, err := weaviate.NewWeaveClient(weaviateConfig)
+		if err != nil {
+			return fmt.Errorf("failed to create weaviate client: %w", err)
+		}
+
+		// Check if collection exists
+		collections, err := client.ListCollections(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to list collections: %w", err)
+		}
+
+		// Check if collection already exists
+		for _, existingCollection := range collections {
+			if existingCollection == collectionName {
+				printInfo(fmt.Sprintf("Collection '%s' already exists", collectionName))
+				return nil
+			}
+		}
+
+		// Create collection with appropriate schema
+		embeddingModel := "text-embedding-3-small" // Default embedding model
+
+		err = client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, nil, schemaType)
+		if err != nil {
+			return fmt.Errorf("failed to create collection '%s' with schema '%s': %w", collectionName, schemaType, err)
+		}
+
+		printSuccess(fmt.Sprintf("Created collection '%s' with %s schema", collectionName, schemaType))
+		return nil
+
+	case config.VectorDBTypeMock:
+		// For mock database, collections are created automatically
+		printInfo(fmt.Sprintf("Using mock database - collection '%s' will be created automatically", collectionName))
+		return nil
+
+	default:
+		return fmt.Errorf("unknown vector database type: %s", dbConfig.Type)
+	}
 }

@@ -144,8 +144,21 @@ func (c *Client) DeleteCollectionSchema(ctx context.Context, collectionName stri
 	return weaveClient.DeleteCollectionSchema(ctx, collectionName)
 }
 
+// SchemaType represents the type of collection schema
+type SchemaType string
+
+const (
+	SchemaTypeText  SchemaType = "text"
+	SchemaTypeImage SchemaType = "image"
+)
+
 // CreateCollection creates a new collection with the specified schema
 func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
+	return c.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, "")
+}
+
+// CreateCollectionWithSchema creates a new collection with the specified schema type
+func (c *Client) CreateCollectionWithSchema(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition, schemaType string) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
@@ -162,7 +175,7 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 	}
 
 	// Create the collection using Weaviate's REST API
-	err = c.createCollectionViaREST(ctx, collectionName, embeddingModel, customFields)
+	err = c.createCollectionViaREST(ctx, collectionName, embeddingModel, customFields, schemaType)
 	if err != nil {
 		return fmt.Errorf("failed to create collection '%s': %w", collectionName, err)
 	}
@@ -171,9 +184,16 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 }
 
 // createCollectionViaREST creates a collection using Weaviate's REST API
-func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition) error {
+func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition, schemaType string) error {
 	// Determine if this is an image collection
-	isImage := isImageCollection(collectionName)
+	var isImage bool
+	if schemaType != "" {
+		// Use explicit schema type if provided
+		isImage = (schemaType == "image")
+	} else {
+		// Fall back to name-based detection for backward compatibility
+		isImage = isImageCollection(collectionName)
+	}
 
 	// Build the class schema
 	classSchema := map[string]interface{}{
@@ -194,65 +214,131 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 		}
 	}
 
-	classSchema["properties"] = []map[string]interface{}{
-		{
-			"name":     "content",
-			"dataType": []string{"text"},
-		},
-		{
-			"name":     "metadata",
-			"dataType": []string{"object"},
-			"nestedProperties": []map[string]interface{}{
-				{
-					"name":     "filename",
-					"dataType": []string{"text"},
-				},
-				{
-					"name":     "file_size",
-					"dataType": []string{"number"},
-				},
-				{
-					"name":     "content_type",
-					"dataType": []string{"text"},
-				},
-				{
-					"name":     "date_added",
-					"dataType": []string{"text"},
-				},
-				{
-					"name":     "chunk_index",
-					"dataType": []string{"int"},
-				},
-				{
-					"name":     "chunk_size",
-					"dataType": []string{"int"},
-				},
-				{
-					"name":     "total_chunks",
-					"dataType": []string{"int"},
-				},
-				{
-					"name":     "source_document",
-					"dataType": []string{"text"},
-				},
-				{
-					"name":     "processed_by",
-					"dataType": []string{"text"},
-				},
-				{
-					"name":     "processing_time",
-					"dataType": []string{"int"},
-				},
-				{
-					"name":     "is_extracted_from_document",
-					"dataType": []string{"boolean"},
-				},
-				{
-					"name":     "file_extension",
-					"dataType": []string{"text"},
+	// Create schema based on type
+	if isImage {
+		// RagMeImages schema: url, image, metadata, image_data
+		classSchema["properties"] = []map[string]interface{}{
+			{
+				"name":     "url",
+				"dataType": []string{"text"},
+			},
+			{
+				"name":     "image",
+				"dataType": []string{"text"},
+			},
+			{
+				"name":     "image_data",
+				"dataType": []string{"text"},
+			},
+			{
+				"name":     "metadata",
+				"dataType": []string{"object"},
+				"nestedProperties": []map[string]interface{}{
+					{
+						"name":     "filename",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "file_size",
+						"dataType": []string{"number"},
+					},
+					{
+						"name":     "content_type",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "date_added",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "image_index",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "source_document",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "is_extracted_from_document",
+						"dataType": []string{"boolean"},
+					},
+					{
+						"name":     "ocr_content",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "has_ocr_text",
+						"dataType": []string{"boolean"},
+					},
 				},
 			},
-		},
+		}
+	} else {
+		// RagMeDocs schema: url, text, metadata
+		classSchema["properties"] = []map[string]interface{}{
+			{
+				"name":     "url",
+				"dataType": []string{"text"},
+			},
+			{
+				"name":     "text",
+				"dataType": []string{"text"},
+			},
+			{
+				"name":     "metadata",
+				"dataType": []string{"object"},
+				"nestedProperties": []map[string]interface{}{
+					{
+						"name":     "filename",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "file_size",
+						"dataType": []string{"number"},
+					},
+					{
+						"name":     "content_type",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "date_added",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "chunk_index",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "chunk_size",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "total_chunks",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "source_document",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "processed_by",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "processing_time",
+						"dataType": []string{"int"},
+					},
+					{
+						"name":     "is_extracted_from_document",
+						"dataType": []string{"boolean"},
+					},
+					{
+						"name":     "file_extension",
+						"dataType": []string{"text"},
+					},
+				},
+			},
+		}
 	}
 
 	// Add custom fields if provided

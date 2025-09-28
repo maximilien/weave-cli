@@ -692,6 +692,10 @@ func (wc *WeaveClient) CreateCollection(ctx context.Context, collectionName, emb
 	return wc.Client.CreateCollection(ctx, collectionName, embeddingModel, customFields)
 }
 
+func (wc *WeaveClient) CreateCollectionWithSchema(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition, schemaType string) error {
+	return wc.Client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, schemaType)
+}
+
 // CreateDocument creates a new document in the specified collection
 func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string, document Document) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)

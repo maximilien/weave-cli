@@ -216,6 +216,11 @@ weave collection delete-all
 ### Document Management
 
 ```bash
+# Create documents with required schema flags
+weave docs create MyTextCollection document.txt --text
+weave docs create MyImageCollection image.jpg --image
+weave docs create MyTextCollection document.pdf --text --chunk-size 500
+
 # List documents in a collection
 weave document list MyCollection
 
@@ -269,6 +274,57 @@ weave docs C MyCol      # Same as: weave document count MyCol
 weave docs C RagMeDocs RagMeImages  # Count multiple collections
 weave doc show MyCol ID # Same as: weave document show MyCol ID
 weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
+```
+
+## Document Create Command
+
+**IMPORTANT**: The `weave docs create` command now requires explicit schema specification using `--text` or `--image` flags to ensure proper collection setup.
+
+### Required Schema Flags
+
+You must specify either `--text` or `--image` when creating documents:
+
+```bash
+# Create text documents (RagMeDocs schema)
+weave docs create MyTextCollection document.txt --text
+weave docs create MyTextCollection document.pdf --text --chunk-size 500
+
+# Create image documents (RagMeImages schema)  
+weave docs create MyImageCollection image.jpg --image
+weave docs create MyImageCollection image.png --image
+
+# PDF with both text and images
+weave docs create MyTextCollection document.pdf --text --image-collection MyImageCollection --image
+
+# Using aliases
+weave docs c MyTextCollection document.txt --text
+weave docs c MyImageCollection image.jpg --image
+```
+
+### Schema Types
+
+#### Text Schema (`--text`)
+- **Format**: RagMeDocs compatible
+- **Properties**: `url`, `text`, `metadata`
+- **Use case**: Text documents, PDF text chunks
+- **Vectorization**: Enabled with text2vec-openai
+
+#### Image Schema (`--image`)
+- **Format**: RagMeImages compatible  
+- **Properties**: `url`, `image`, `metadata`, `image_data`
+- **Use case**: Image documents, PDF extracted images
+- **Vectorization**: Disabled (none) to avoid issues with large base64 data
+
+### Error Handling
+
+```bash
+# Missing required flag
+weave docs create MyCollection document.txt
+# Error: at least one of the flags in the group [text image] is required
+
+# Both flags specified
+weave docs create MyCollection document.txt --text --image
+# Error: You cannot specify both --text and --image flags. Choose one schema type.
 ```
 
 ## Collection Create Command
