@@ -979,17 +979,24 @@ func showWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		return
 	}
 
-	// Check if collection exists by trying to list documents
-	_, err = client.ListDocuments(ctx, collectionName, 1) // Just get 1 to check existence
+	// Check if collection exists by listing all collections
+	collections, err := client.ListCollections(ctx)
 	if err != nil {
-		if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			printError(fmt.Sprintf("Collection '%s' not found", collectionName))
-		} else {
-			printError(fmt.Sprintf("Collection '%s' not found or error accessing it: %v", collectionName, err))
+		printError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+	
+	// Check if the specific collection exists
+	collectionExists := false
+	for _, existingCollection := range collections {
+		if existingCollection == collectionName {
+			collectionExists = true
+			break
 		}
-		if verbose {
-			printWarning(fmt.Sprintf("Details: %v", err))
-		}
+	}
+	
+	if !collectionExists {
+		printError(fmt.Sprintf("Collection '%s' not found", collectionName))
 		return
 	}
 
