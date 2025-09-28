@@ -4278,4 +4278,3 @@ func showMockDocumentMetadata(doc mock.Document, collectionName string) {
 	fmt.Println()
 	fmt.Println()
 }
-

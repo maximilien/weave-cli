@@ -245,7 +245,7 @@ nano config.yaml
 - **Rotate API keys** regularly for production environments
 - **Use different keys** for development and production
 
-## Collection Creation
+## Collection Management
 
 Create new collections with custom fields and embedding models:
 
@@ -269,11 +269,13 @@ weave cols create MyCollection --field title:text,author:text
 
 ## Collection Creation
 
-**IMPORTANT**: Collection creation now requires explicit schema specification using `--text` or `--image` flags:
+**DEFAULT**: Collections are created with text schema (RagMeDocs format) unless
+`--image` is specified:
 
 ```bash
-# Create text collections (RagMeDocs schema)
-weave collection create MyTextCollection --text
+# Create text collections (RagMeDocs schema) - DEFAULT
+weave collection create MyTextCollection                    # Default: text schema
+weave collection create MyTextCollection --text             # Explicit: text schema
 weave collection create MyTextCollection --text --embedding text-embedding-3-small
 
 # Create image collections (RagMeImages schema)  
@@ -281,16 +283,19 @@ weave collection create MyImageCollection --image
 weave collection create MyImageCollection --image --field title:text,content:text
 
 # Create multiple collections with same schema
-weave collection create Col1 Col2 Col3 --text
+weave collection create Col1 Col2 Col3                      # Default: text
 
 # Using aliases
-weave cols c MyTextCollection --text
-weave cols c MyImageCollection --image
+weave cols c MyTextCollection                               # Default: text schema
+weave cols c MyImageCollection --image                      # Explicit: image schema
 ```
 
 **Schema Types:**
-- `--text`: Creates collection with text schema (RagMeDocs format) - Properties: `url`, `text`, `metadata`
-- `--image`: Creates collection with image schema (RagMeImages format) - Properties: `url`, `image`, `metadata`, `image_data`
+
+- **Default**: Creates collection with text schema (RagMeDocs format) -
+  Properties: `url`, `text`, `metadata`
+- `--image`: Creates collection with image schema (RagMeImages format) -
+  Properties: `url`, `image`, `metadata`, `image_data`
 
 ## Document Creation
 

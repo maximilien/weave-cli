@@ -278,15 +278,16 @@ weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
 
 ## Collection Create Command
 
-**IMPORTANT**: The `weave collection create` command now requires explicit schema specification using `--text` or `--image` flags to ensure proper collection setup.
+**DEFAULT**: Collections are created with text schema (RagMeDocs format) unless `--image` is specified.
 
-### Required Schema Flags
+### Schema Flags
 
-You must specify either `--text` or `--image` when creating collections:
+You can optionally specify `--text` or `--image` when creating collections:
 
 ```bash
-# Create text collections (RagMeDocs schema)
-weave collection create MyTextCollection --text
+# Create text collections (RagMeDocs schema) - DEFAULT
+weave collection create MyTextCollection                    # Default: text schema
+weave collection create MyTextCollection --text             # Explicit: text schema
 weave collection create MyTextCollection --text --embedding text-embedding-3-small
 
 # Create image collections (RagMeImages schema)  
@@ -294,11 +295,11 @@ weave collection create MyImageCollection --image
 weave collection create MyImageCollection --image --field title:text,content:text
 
 # Create multiple collections with same schema
-weave collection create Col1 Col2 Col3 --text
+weave collection create Col1 Col2 Col3                      # Default: text schema for all
 
 # Using aliases
-weave cols c MyTextCollection --text
-weave cols c MyImageCollection --image
+weave cols c MyTextCollection                               # Default: text schema
+weave cols c MyImageCollection --image                      # Explicit: image schema
 ```
 
 ### Schema Types
@@ -318,13 +319,13 @@ weave cols c MyImageCollection --image
 ### Error Handling
 
 ```bash
-# Missing required flag
-weave collection create MyCollection
-# Error: at least one of the flags in the group [text image] is required
-
-# Both flags specified
+# Both flags specified (conflict)
 weave collection create MyCollection --text --image
 # Error: You cannot specify both --text and --image flags. Choose one schema type.
+
+# No flags specified (works fine - defaults to text)
+weave collection create MyCollection
+# Success: Creates collection with text schema (default)
 ```
 
 ## Document Create Command

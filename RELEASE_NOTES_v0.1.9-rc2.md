@@ -8,7 +8,8 @@
 
 ### Required Schema Flags for Collection Creation
 
-Weave CLI now requires explicit schema specification when creating collections, ensuring proper collection setup and better data organization.
+Weave CLI now supports explicit schema specification when creating collections,
+ensuring proper collection setup and better data organization.
 
 #### New Required Flags
 
@@ -62,11 +63,13 @@ weave cols c MyImageCollection --image
 **IMPORTANT**: Collection creation now requires explicit schema specification.
 
 **Before (v0.1.9-rc1)**:
+
 ```bash
 weave collection create MyCollection  # Worked without flags
 ```
 
 **After (v0.1.9-rc2)**:
+
 ```bash
 weave collection create MyCollection --text   # Required --text flag
 weave collection create MyCollection --image  # Required --image flag
@@ -103,19 +106,24 @@ weave collection create MyCollection --image  # Required --image flag
 
 ### For Existing Users
 
-1. **Update your scripts**: Add `--text` or `--image` flags to all `weave collection create` commands
-2. **Review your workflows**: Ensure you're using the correct schema type for your data
-3. **Test with small collections**: Verify the new behavior with test collections before bulk operations
+1. **Update your scripts**: Add `--text` or `--image` flags to all
+   `weave collection create` commands
+2. **Review your workflows**: Ensure you're using the correct schema type for
+   your data
+3. **Test with small collections**: Verify the new behavior with test
+   collections before bulk operations
 
 ### Example Migration
 
 **Old workflow**:
+
 ```bash
 weave collection create MyCollection
 weave collection create MyImageCollection
 ```
 
 **New workflow**:
+
 ```bash
 weave collection create MyCollection --text
 weave collection create MyImageCollection --image
@@ -150,6 +158,8 @@ weave collection create MyImageCollection --image
 
 **Full Changelog**: See [CHANGELOG.md](CHANGELOG.md) for complete technical details.
 
-**Documentation**: Updated [README.md](README.md) and [docs/USER_GUIDE.md](docs/USER_GUIDE.md) with new usage examples.
+**Documentation**: Updated [README.md](README.md) and
+[docs/USER_GUIDE.md](docs/USER_GUIDE.md) with new usage examples.
 
-**Support**: For questions or issues, please open a GitHub issue or check the documentation.
+**Support**: For questions or issues, please open a GitHub issue or check the
+documentation.

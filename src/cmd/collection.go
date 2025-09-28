@@ -128,17 +128,18 @@ var collectionCreateCmd = &cobra.Command{
 	Short:   "Create one or more collections",
 	Long: `Create one or more collections in the configured vector database.
 
-REQUIRED: You must specify either --text or --image to define the collection schema:
-- --text: Creates collection with text schema (RagMeDocs format)
+DEFAULT: Collections are created with text schema (RagMeDocs format) unless --image is specified.
+- --text: Creates collection with text schema (RagMeDocs format) - DEFAULT
 - --image: Creates collection with image schema (RagMeImages format)
 
 You can customize the collections by specifying custom fields and embedding model.
 
 Examples:
-  weave cols create MyTextCollection --text
-  weave cols create MyImageCollection --image
-  weave cols create Col1 Col2 Col3 --text
-  weave cols create MyCollection --text --embedding text-embedding-3-small
+  weave cols create MyTextCollection                    # Default: text schema
+  weave cols create MyTextCollection --text             # Explicit: text schema
+  weave cols create MyImageCollection --image           # Explicit: image schema
+  weave cols create Col1 Col2 Col3                      # Default: text schema for all
+  weave cols create MyCollection --embedding text-embedding-3-small  # Default: text schema
   weave cols create MyCollection --image --field title:text,content:text,metadata:text`,
 	Args: cobra.MinimumNArgs(1),
 	Run:  runCollectionCreate,
@@ -191,13 +192,10 @@ func init() {
 	collectionShowCmd.Flags().IntP("short", "s", 10, "Show only first N lines of sample document metadata (default: 10)")
 	collectionShowCmd.Flags().Bool("schema", false, "Show collection schema including metadata structure")
 	collectionShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information for collections and documents")
-	collectionCreateCmd.Flags().Bool("text", false, "Create collection with text schema (RagMeDocs format)")
+	collectionCreateCmd.Flags().Bool("text", false, "Create collection with text schema (RagMeDocs format) - DEFAULT")
 	collectionCreateCmd.Flags().Bool("image", false, "Create collection with image schema (RagMeImages format)")
 	collectionCreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for the collection")
 	collectionCreateCmd.Flags().StringP("field", "f", "", "Custom fields for the collection (format: name1:type,name2:type)")
-	
-	// Make schema type required
-	collectionCreateCmd.MarkFlagsOneRequired("text", "image")
 	collectionDeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 	collectionDeleteCmd.Flags().StringP("pattern", "p", "", "Delete collections matching pattern (auto-detects shell glob vs regex)")
 	collectionDeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
@@ -477,29 +475,24 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	// Get schema type flags (required)
 	isTextSchema, _ := cmd.Flags().GetBool("text")
 	isImageSchema, _ := cmd.Flags().GetBool("image")
-	
+
 	collectionNames := args
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
 	customFields, _ := cmd.Flags().GetString("field")
-	
+
 	// Validate schema type selection
-	if !isTextSchema && !isImageSchema {
-		printError("You must specify either --text or --image to define the collection schema")
-		printInfo("Use --text for text collections (RagMeDocs schema) or --image for image collections (RagMeImages schema)")
-		os.Exit(1)
-	}
-	
 	if isTextSchema && isImageSchema {
 		printError("You cannot specify both --text and --image flags. Choose one schema type.")
 		os.Exit(1)
 	}
-	
-	// Determine schema type
+
+	// Determine schema type (default to text if no flags provided)
 	var schemaType string
-	if isTextSchema {
-		schemaType = "text"
-	} else if isImageSchema {
+	if isImageSchema {
 		schemaType = "image"
+	} else {
+		// Default to text schema (either --text flag or no flags)
+		schemaType = "text"
 	}
 
 	// Load configuration
@@ -529,12 +522,12 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 			fmt.Printf("  %d. %s\n", i+1, name)
 		}
 	}
-	
+
 	// Show schema type information
-	if isTextSchema {
-		printInfo(fmt.Sprintf("Using text schema (RagMeDocs format) for all collections"))
-	} else if isImageSchema {
+	if isImageSchema {
 		printInfo(fmt.Sprintf("Using image schema (RagMeImages format) for all collections"))
+	} else {
+		printInfo(fmt.Sprintf("Using text schema (RagMeDocs format) for all collections (default)"))
 	}
 	fmt.Println()
 

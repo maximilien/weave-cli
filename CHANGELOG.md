@@ -11,23 +11,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Required schema flags for collection creation**: Add `--text` and `--image` flags to `weave collection create` command
-  - `--text`: Creates collection with text schema (RagMeDocs format) - Properties: `url`, `text`, `metadata`
-  - `--image`: Creates collection with image schema (RagMeImages format) - Properties: `url`, `image`, `metadata`, `image_data`
+- **Schema flags for collection creation**: Add `--text` and `--image` flags to
+  `weave collection create` command
+  - **Default**: Collections are created with text schema (RagMeDocs format)
+    unless `--image` is specified
+  - `--text`: Creates collection with text schema (RagMeDocs format) -
+    Properties: `url`, `text`, `metadata`
+  - `--image`: Creates collection with image schema (RagMeImages format) -
+    Properties: `url`, `image`, `metadata`, `image_data`
   - Enhanced schema validation and error handling
-  - Backward compatibility maintained through explicit flag requirements
+  - Backward compatibility maintained through default text schema
 
-- **Enhanced collection schema management**: 
+- **Enhanced collection schema management**:
   - Explicit schema type selection for better data organization
   - Proper RagMeDocs and RagMeImages schema compatibility
   - Automatic vectorization configuration based on schema type
 
 ### Changed
 
-- **Collection creation workflow**: Collection creation now requires explicit schema specification
-  - Breaking change: `weave collection create` commands now require `--text` or `--image` flag
+- **Collection creation workflow**: Collection creation now supports explicit
+  schema specification with sensible defaults
+  - **Default behavior**: Collections are created with text schema unless
+    `--image` is specified
   - Improved collection creation with proper schema setup
-  - Better error messages for missing or conflicting schema flags
+  - Better error messages for conflicting schema flags
 
 - **Collection creation logic**: Enhanced to support explicit schema types
   - Added `CreateCollectionWithSchema()` function for schema-aware collection creation
@@ -44,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.9-rc1] - 2025-09-28
 
-### Added
+### Features Added
 
 - **Pattern-based collection deletion**: Add `--pattern` flag to `collection delete`
   command
@@ -63,7 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved metadata structure for better compatibility
   - Enhanced document creation with proper field mapping
 
-### Changed
+### Changes Made
 
 - **Collection commands**: Updated help text and examples for pattern support
 - **Document processing**: Improved metadata structure for better RagMeDocs
@@ -80,7 +87,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Document creation**: `weave docs create` commands may not produce documents
   fully compatible with RagMeDocs legacy system
 
-### Technical Details
+### Implementation Details
 
 - Added `findCollectionsByPattern()` function for pattern matching
 - Reused existing pattern matching logic from document deletion
