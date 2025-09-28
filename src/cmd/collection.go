@@ -1873,8 +1873,29 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 			confirmMessage = fmt.Sprintf("Are you sure you want to delete the schemas for %d collections?", len(finalCollectionNames))
 		}
 
+		// First confirmation
 		if !confirmAction(confirmMessage) {
 			printInfo("Operation cancelled by user")
+			return
+		}
+
+		// Second confirmation with red warning
+		fmt.Println()
+		color.New(color.FgRed, color.Bold).Println("🚨 FINAL WARNING: This operation CANNOT be undone!")
+		if len(finalCollectionNames) == 1 {
+			color.New(color.FgRed).Printf("The schema for collection '%s' will be permanently deleted.\n", finalCollectionNames[0])
+		} else {
+			color.New(color.FgRed).Printf("The schemas for %d collections will be permanently deleted.\n", len(finalCollectionNames))
+		}
+		fmt.Println()
+
+		// Require exact "yes" confirmation
+		fmt.Print("Type 'yes' to confirm deletion: ")
+		var response string
+		_, _ = fmt.Scanln(&response)
+
+		if response != "yes" {
+			printInfo("Operation cancelled - confirmation not received")
 			return
 		}
 	}

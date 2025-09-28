@@ -679,6 +679,27 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 		return
 	}
 
+	// Check if collection exists by listing all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+
+	// Check if the specific collection exists
+	collectionExists := false
+	for _, existingCollection := range collections {
+		if existingCollection == collectionName {
+			collectionExists = true
+			break
+		}
+	}
+
+	if !collectionExists {
+		printError(fmt.Sprintf("Collection '%s' not found", collectionName))
+		return
+	}
+
 	// For virtual mode, we need all documents to properly aggregate them
 	// For regular mode, we can use the provided limit
 	queryLimit := limit
@@ -689,7 +710,12 @@ func listWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 	// List documents
 	documents, err := client.ListDocuments(ctx, collectionName, queryLimit)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to list documents: %v", err))
+		// Check if this is the specific "chunk_index" error
+		if strings.Contains(err.Error(), "chunk_index") {
+			printError(fmt.Sprintf("Collection '%s' appears to have schema issues. Try recreating the collection.", collectionName))
+		} else {
+			printError(fmt.Sprintf("Failed to list documents: %v", err))
+		}
 		return
 	}
 
@@ -3180,6 +3206,7 @@ func createWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 	// Create document object
 	document := weaviate.Document{
 		ID:        doc.ID,
+		Text:      doc.Content, // Map content to text field for RagMeDocs compatibility
 		Content:   doc.Content,
 		Image:     doc.Image,
 		ImageData: doc.ImageData,

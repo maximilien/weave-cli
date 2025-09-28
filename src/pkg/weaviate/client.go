@@ -415,14 +415,75 @@ func mapWeaviateDataType(fieldType string) string {
 // Note: Currently shows document IDs only. To show actual document content/metadata,
 // we would need to implement dynamic schema discovery for each collection.
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]Document, error) {
-	// For image collections, use basic method with excluded fields for performance
-	if isImageCollection(collectionName) {
-		// Use basic method which dynamically discovers schema and excludes large fields
-		return c.listDocumentsBasic(ctx, collectionName, limit)
+	// Try the basic method first
+	documents, err := c.listDocumentsBasic(ctx, collectionName, limit)
+	if err != nil {
+		// If the basic method fails, try a simpler approach for empty collections
+		if strings.Contains(err.Error(), "chunk_index") || strings.Contains(err.Error(), "not found") {
+			// Try using the aggregation API to check if collection exists
+			aggregationQuery := fmt.Sprintf(`
+				{
+					Aggregate {
+						%s {
+							meta {
+								count
+							}
+						}
+					}
+				}
+			`, collectionName)
+
+			result, queryErr := c.client.GraphQL().Raw().WithQuery(aggregationQuery).Do(ctx)
+			if queryErr != nil {
+				// If aggregation also fails, try a different approach
+				// Use a query with limit 1 to see if collection exists
+				simpleQuery := fmt.Sprintf(`
+					{
+						Get {
+							%s(limit: 1) {
+								_additional {
+									id
+								}
+							}
+						}
+					}
+				`, collectionName)
+
+				result, queryErr = c.client.GraphQL().Raw().WithQuery(simpleQuery).Do(ctx)
+				if queryErr != nil {
+					// If even the simple query fails, return the original error
+					return nil, err
+				}
+
+				// Check if we got any results
+				if data, ok := result.Data["Get"].(map[string]interface{}); ok {
+					if _, ok := data[collectionName].([]interface{}); ok {
+						// Collection exists but is empty
+						return []Document{}, nil
+					}
+				}
+			} else {
+				// Aggregation worked, check the count
+				if data, ok := result.Data["Aggregate"].(map[string]interface{}); ok {
+					if collectionData, ok := data[collectionName].([]interface{}); ok {
+						if len(collectionData) > 0 {
+							if meta, ok := collectionData[0].(map[string]interface{}); ok {
+								if count, ok := meta["meta"].(map[string]interface{}); ok {
+									if countVal, ok := count["count"].(float64); ok && countVal == 0 {
+										// Collection exists but is empty
+										return []Document{}, nil
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return nil, err
 	}
 
-	// Use the basic method that works reliably for text collections
-	return c.listDocumentsBasic(ctx, collectionName, limit)
+	return documents, nil
 }
 
 // CountDocuments efficiently counts documents in a collection without fetching content
@@ -1348,6 +1409,7 @@ func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName stri
 // Document represents a document in Weaviate
 type Document struct {
 	ID        string                 `json:"id"`
+	Text      string                 `json:"text"`
 	Content   string                 `json:"content"`
 	Image     string                 `json:"image"`
 	ImageData string                 `json:"image_data"`
