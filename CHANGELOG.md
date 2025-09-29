@@ -11,13 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Complete E2E Testing Suite**: 35 comprehensive integration tests against real Weaviate instances
-- **Smart Configuration Detection**: Auto-detection of Weaviate Cloud availability with graceful fallback to mock database
-- **Enhanced Terminal Visibility**: Bold white text for maximum contrast on dark terminal backgrounds
-- **Complete Collection Operations**: Full implementation of all collection management functions
-- **Complete Document Operations**: Full implementation of all document management functions
-- **Non-interactive Testing**: All E2E tests run without user prompts using --force flags
-- **Isolated Test Collections**: Dedicated test collections (WeaveDocs_test, WeaveImages_test) with automatic cleanup
+- **Complete E2E Testing Suite**: 35 comprehensive integration tests
+  against real Weaviate instances
+- **Smart Configuration Detection**: Auto-detection of Weaviate Cloud
+  availability with graceful fallback to mock database
+- **Enhanced Terminal Visibility**: Bold white text for maximum contrast
+  on dark terminal backgrounds
+- **Complete Collection Operations**: Full implementation of all
+  collection management functions
+- **Complete Document Operations**: Full implementation of all document
+  management functions
+- **Non-interactive Testing**: All E2E tests run without user prompts
+  using --force flags
+- **Isolated Test Collections**: Dedicated test collections
+  (WeaveDocs_test, WeaveImages_test) with automatic cleanup
 
 ### Changed
 
@@ -36,12 +43,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Collection Deletion**: Implemented `DeleteWeaviateCollections` function
 - **Schema Management**: Implemented `DeleteWeaviateCollectionSchema` function
 - **Pattern Matching**: Added collection pattern matching for bulk operations
-- **Embedding Model**: Updated to use `text-embedding-3-small` for compatibility
+- **Embedding Model**: Updated to use `text-embedding-3-small` for
+  compatibility
 - **Confirmation Prompts**: Fixed hanging tests by implementing proper --force flag usage
 
 ### Technical Improvements
 
-- **Modular Architecture**: 
+- **Modular Architecture**:
   - `src/cmd/document/` (7 files) - Document operations
   - `src/cmd/collection/` (7 files) - Collection operations
   - `src/cmd/utils/` (7 files) - Shared utilities

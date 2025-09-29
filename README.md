@@ -11,7 +11,8 @@ applications.
 - **📁 Major Refactoring**: Modular codebase with 98% file size reduction
 - **🎨 Enhanced Visibility**: Bold white text for maximum contrast on dark terminals
 - **⚙️ Complete Functionality**: All collection and document operations implemented
-- **🔧 Smart Configuration**: Auto-detection of Weaviate availability with graceful fallback
+- **🔧 Smart Configuration**: Auto-detection of Weaviate availability
+  with graceful fallback
 
 ## Features
 
