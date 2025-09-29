@@ -22,7 +22,8 @@ important safety features for destructive operations.
 
 ```bash
 $ weave docs ls EmptyCollection
-❌ Failed to list documents: collection EmptyCollection does not exist. Did you mean "chunk_index"?
+❌ Failed to list documents: collection EmptyCollection does not exist.
+Did you mean "chunk_index"?
 ```
 
 **After:**
@@ -50,7 +51,8 @@ $ weave docs ls EmptyCollection
 $ weave cols ds MyCollection
 ⚠️  WARNING: This will permanently delete the schema for collection 'MyCollection'!
 
-Are you sure you want to delete the schema for collection 'MyCollection'? (y/N): y
+Are you sure you want to delete the schema for collection 'MyCollection'?
+(y/N): y
 
 🚨 FINAL WARNING: This operation CANNOT be undone!
 The schema for collection 'MyCollection' will be permanently deleted.
