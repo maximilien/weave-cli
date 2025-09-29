@@ -45,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pattern Matching**: Added collection pattern matching for bulk operations
 - **Embedding Model**: Updated to use `text-embedding-3-small` for
   compatibility
-- **Confirmation Prompts**: Fixed hanging tests by implementing proper --force flag usage
+- **Confirmation Prompts**: Fixed hanging tests by implementing proper
+  --force flag usage
 
 ### Technical Improvements
 
@@ -60,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.10] - 2025-01-27
 
-### Changed
+### Code Organization Changed
 
 - **Code organization refactoring**: Improved codebase structure and maintainability
   - Split `document.go` (4,307 lines) into 6 logical files:
@@ -84,7 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.9-rc3] - 2025-09-28
 
-### Fixed
+### Empty Collection Fixed
 
 - **Empty collection document listing**: Fixed Weaviate client `ListDocuments` method
   to handle empty collections gracefully
@@ -95,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     cryptic Weaviate errors
   - Maintains full backward compatibility with collections containing documents
 
-### Added
+### Safety Features Added
 
 - **Double confirmation for delete-schema**: Added double confirmation to `ds`
   (delete-schema) command similar to `da` (delete-all)

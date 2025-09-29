@@ -312,6 +312,12 @@ func TestFastMockVirtualDocumentDeletion(t *testing.T) {
 
 		// Clear the collection first to avoid interference
 		client.DeleteCollection(virtualCtx, "VirtualTestCollection")
+		
+		// Recreate the collection since DeleteCollection now actually deletes it
+		err := client.CreateCollection(virtualCtx, "VirtualTestCollection", "text-embedding-3-small", nil)
+		if err != nil {
+			t.Fatalf("Failed to recreate collection: %v", err)
+		}
 
 		// Add test documents with chunked metadata structure
 		testDocs := []mock.Document{
