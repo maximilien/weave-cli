@@ -241,6 +241,7 @@ cd weave-cli
 ### Open Source
 Built with ❤️ by [github.com/maximilien](https://github.com/maximilien)
 
+- **License**: MIT License - Free for commercial and personal use
 - **Repository**: https://github.com/maximilien/weave-cli
 - **Documentation**: https://github.com/maximilien/weave-cli/blob/main/README.md
 - **Issues**: https://github.com/maximilien/weave-cli/issues
@@ -266,7 +267,8 @@ Weave CLI 0.2.1
 ### Credits
 - **Weave CLI**: Vector database management made simple
 - **Weaviate**: Powerful vector database platform
-- **Open Source**: Community-driven development
+- **MIT License**: Open source, free for commercial use
+- **Community**: Built with ❤️ by the open source community
 
 **Thank you for watching!** 🚀
 

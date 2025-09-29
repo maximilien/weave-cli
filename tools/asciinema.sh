@@ -180,6 +180,7 @@ page_break "9"
 echo -e "${BLUE}💻 Getting Weave CLI${NC}"
 echo -e "${YELLOW}# Download from GitHub releases${NC}"
 echo -e "${YELLOW}# Build from source: git clone && ./build.sh${NC}"
+echo -e "${YELLOW}# MIT License - Free for commercial use${NC}"
 echo -e "${YELLOW}# Built with ❤️ by github.com/maximilien${NC}"
 echo ""
 
@@ -309,6 +310,7 @@ sleep 2
 
 echo -e "${GREEN}🎉 Quick demo completed!${NC}"
 echo -e "${BLUE}Repository: https://github.com/maximilien/weave-cli${NC}"
+echo -e "${BLUE}License: MIT - Free for commercial use${NC}"
 EOF
 
     chmod +x "$script_file"
