@@ -18,6 +18,9 @@ databases:
         - name: ${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}
           type: text
           description: Weaviate CLI text test collection
+        - name: ${WEAVIATE_COLLECTION_TEST_IMAGES:-WeaveImages_test}
+          type: image
+          description: Weaviate CLI image test collection
 
     # Uses the Weaviate (OSS) Vector DB environment
     - name: weaviate-local

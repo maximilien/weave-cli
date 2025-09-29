@@ -256,6 +256,12 @@ func TestMockClientVirtualDocumentDeletion(t *testing.T) {
 	// Clear the collection first to avoid interference
 	client.DeleteCollection(ctx, "VirtualTestCollection")
 
+	// Create the collection for testing
+	err := client.CreateCollection(ctx, "VirtualTestCollection", "text-embedding-3-small", []weaviate.FieldDefinition{})
+	if err != nil {
+		t.Errorf("Failed to create collection: %v", err)
+	}
+
 	// Add test documents with chunked metadata structure
 	testDocs := []mock.Document{
 		{
@@ -402,14 +408,14 @@ func TestMockClientCollectionOperations(t *testing.T) {
 		t.Errorf("Failed to delete collection: %v", err)
 	}
 
-	// Verify collection is empty
-	documents, err := client.ListDocuments(ctx, "test", 10)
-	if err != nil {
-		t.Errorf("Failed to list documents after collection deletion: %v", err)
+	// Verify collection is deleted (should return error for non-existent collection)
+	_, err = client.ListDocuments(ctx, "test", 10)
+	if err == nil {
+		t.Error("Expected error when listing documents from deleted collection")
 	}
 
-	if len(documents) != 0 {
-		t.Errorf("Expected 0 documents after collection deletion, got %d", len(documents))
+	if !strings.Contains(err.Error(), "does not exist") {
+		t.Errorf("Expected 'does not exist' error, got: %v", err)
 	}
 }
 

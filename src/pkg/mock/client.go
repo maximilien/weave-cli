@@ -84,7 +84,8 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 		return fmt.Errorf("collection %s does not exist", collectionName)
 	}
 
-	c.collections[collectionName] = []Document{}
+	// Actually delete the collection from the map
+	delete(c.collections, collectionName)
 	return nil
 }
 
