@@ -10,6 +10,18 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
+// isImageCollection checks if a collection name suggests it's an image collection
+func isImageCollection(collectionName string) bool {
+	imageKeywords := []string{"image", "img", "photo", "picture", "visual", "media"}
+	name := strings.ToLower(collectionName)
+	for _, keyword := range imageKeywords {
+		if strings.Contains(name, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
 // ParseFieldDefinitions parses field definitions from a string
 func ParseFieldDefinitions(fieldsStr string) ([]weaviate.FieldDefinition, error) {
 	PrintInfo("Field parsing not yet implemented in new structure")
@@ -62,28 +74,223 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 	}
 	fmt.Println()
 
-	for i, collection := range collections {
-		fmt.Printf("%d. %s\n", i+1, collection)
+	// Get collection information for each collection
+	type CollectionInfo struct {
+		Name        string
+		DocumentCount int
+		HasDocuments bool
+		IsImageCollection bool
+		SchemaType  string
+	}
 
-		if virtual {
-			// Show virtual structure summary
-			showCollectionVirtualSummary(ctx, client, collection)
-		} else {
-			// Show regular document count using efficient method
-			count, err := client.CountDocuments(ctx, collection)
-			if err == nil {
-				fmt.Printf("   Documents: %d\n", count)
-			} else {
-				fmt.Printf("   Documents: Unable to count\n")
+	var collectionInfos []CollectionInfo
+	for _, collection := range collections {
+		count, err := client.CountDocuments(ctx, collection)
+		hasDocuments := err == nil && count > 0
+		isImageCollection := isImageCollection(collection)
+		
+		// Try to get schema type
+		schemaType := "unknown"
+		if schema, err := client.GetCollectionSchema(ctx, collection); err == nil {
+			if len(schema) > 0 {
+				schemaType = "text"
+				// Check if it's an image collection based on schema
+				for _, field := range schema {
+					if strings.Contains(strings.ToLower(field), "image") {
+						schemaType = "image"
+						break
+					}
+				}
 			}
 		}
-		fmt.Println()
+
+		collectionInfos = append(collectionInfos, CollectionInfo{
+			Name:             collection,
+			DocumentCount:    count,
+			HasDocuments:     hasDocuments,
+			IsImageCollection: isImageCollection,
+			SchemaType:       schemaType,
+		})
+	}
+
+	// Display collections in compact format
+	for i, info := range collectionInfos {
+		// Color coding: green for collections with documents, yellow for empty collections
+		var nameColor string
+		if info.HasDocuments {
+			nameColor = GetStyledKeyProminent(info.Name)
+		} else {
+			nameColor = GetStyledKeyDimmed(info.Name)
+		}
+
+		// Document count with color
+		var countStr string
+		if info.HasDocuments {
+			countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.DocumentCount))
+		} else {
+			countStr = GetStyledValueDimmed("empty")
+		}
+
+		// Schema type indicator
+		var typeIndicator string
+		switch info.SchemaType {
+		case "image":
+			typeIndicator = GetStyledEmoji("🖼️")
+		case "text":
+			typeIndicator = GetStyledEmoji("📄")
+		default:
+			typeIndicator = GetStyledEmoji("❓")
+		}
+
+		// Collection type indicator
+		var collectionType string
+		if info.IsImageCollection {
+			collectionType = GetStyledValueDimmed("(image)")
+		}
+
+		// Compact single-line format
+		fmt.Printf("%2d. %s %s %s %s\n", 
+			i+1, 
+			nameColor, 
+			countStr, 
+			typeIndicator,
+			collectionType)
+
+		if virtual && info.HasDocuments {
+			// Show virtual structure summary for collections with documents
+			showCollectionVirtualSummary(ctx, client, info.Name)
+		}
 	}
 }
 
 // ListMockCollections lists mock collections
 func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool) {
-	PrintInfo("Mock collection listing not yet implemented in new structure")
+	client := CreateMockClient(cfg)
+
+	// List collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+
+	if len(collections) == 0 {
+		PrintWarning("No collections found in the database")
+		return
+	}
+
+	// Sort collections alphabetically
+	sort.Strings(collections)
+
+	// Apply limit if specified
+	if limit > 0 && len(collections) > limit {
+		collections = collections[:limit]
+	}
+
+	PrintSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
+	if limit > 0 && len(collections) == limit {
+		fmt.Printf("(showing first %d collections)\n", limit)
+	}
+	fmt.Println()
+
+	// Get collection information for each collection
+	type CollectionInfo struct {
+		Name        string
+		DocumentCount int
+		HasDocuments bool
+		IsImageCollection bool
+		SchemaType  string
+	}
+
+	var collectionInfos []CollectionInfo
+	for _, collection := range collections {
+		count, err := client.CountDocuments(ctx, collection)
+		hasDocuments := err == nil && count > 0
+		isImageCollection := isImageCollection(collection)
+		
+		// For mock collections, try to determine schema type from collection name or documents
+		schemaType := "unknown"
+		if hasDocuments {
+			// Sample a few documents to determine schema type
+			documents, err := client.ListDocuments(ctx, collection, 3)
+			if err == nil && len(documents) > 0 {
+				schemaType = "text" // Default to text
+				// Check if it's an image collection based on document metadata
+				for _, doc := range documents {
+					if metadata, ok := doc.Metadata["metadata"]; ok {
+						if metadataStr, ok := metadata.(string); ok {
+							if strings.Contains(strings.ToLower(metadataStr), "image") {
+								schemaType = "image"
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+
+		collectionInfos = append(collectionInfos, CollectionInfo{
+			Name:             collection,
+			DocumentCount:    count,
+			HasDocuments:     hasDocuments,
+			IsImageCollection: isImageCollection,
+			SchemaType:       schemaType,
+		})
+	}
+
+	// Display collections in compact format
+	for i, info := range collectionInfos {
+		// Color coding: green for collections with documents, yellow for empty collections
+		var nameColor string
+		if info.HasDocuments {
+			nameColor = GetStyledKeyProminent(info.Name)
+		} else {
+			nameColor = GetStyledKeyDimmed(info.Name)
+		}
+
+		// Document count with color
+		var countStr string
+		if info.HasDocuments {
+			countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.DocumentCount))
+		} else {
+			countStr = GetStyledValueDimmed("empty")
+		}
+
+		// Schema type indicator
+		var typeIndicator string
+		switch info.SchemaType {
+		case "image":
+			typeIndicator = GetStyledEmoji("🖼️")
+		case "text":
+			typeIndicator = GetStyledEmoji("📄")
+		default:
+			typeIndicator = GetStyledEmoji("❓")
+		}
+
+		// Collection type indicator
+		var collectionType string
+		if info.IsImageCollection {
+			collectionType = GetStyledValueDimmed("(image)")
+		}
+
+		// Mock indicator
+		mockIndicator := GetStyledValueDimmed("(mock)")
+
+		// Compact single-line format
+		fmt.Printf("%2d. %s %s %s %s %s\n", 
+			i+1, 
+			nameColor, 
+			countStr, 
+			typeIndicator,
+			collectionType,
+			mockIndicator)
+
+		if virtual && info.HasDocuments {
+			// Show virtual structure summary for collections with documents
+			// Note: Virtual summary not yet implemented for mock collections
+			fmt.Printf("   Virtual structure: Not implemented for mock collections\n")
+		}
+	}
 }
 
 // ShowWeaviateCollection shows Weaviate collection details

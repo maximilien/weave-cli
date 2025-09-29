@@ -137,9 +137,15 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 
 	// Show summary if requested
 	if summary {
-		fmt.Printf("📋 Summary: \n")
+		PrintStyledKeyValueProminentWithEmoji("Summary", "", "📋")
+		fmt.Println()
 		for i, vdoc := range virtualDocs {
-			fmt.Printf("   %d. %s - %d chunks\n", i+1, vdoc.OriginalFilename, vdoc.TotalChunks)
+			fmt.Printf("   %d. ", i+1)
+			PrintStyledFilename(vdoc.OriginalFilename)
+			fmt.Printf(" - ")
+			PrintStyledNumber(vdoc.TotalChunks)
+			fmt.Printf(" chunks")
+			fmt.Println()
 		}
 		fmt.Println()
 	}

@@ -108,3 +108,28 @@ func PrintStyledKeyNumberProminentWithEmoji(key string, num int, emoji string) {
 	fmt.Printf(": ")
 	PrintStyledNumber(num)
 }
+
+// GetStyledKeyProminent returns a styled key string
+func GetStyledKeyProminent(key string) string {
+	return color.New(color.FgCyan, color.Bold).Sprint(key)
+}
+
+// GetStyledKeyDimmed returns a dimmed styled key string
+func GetStyledKeyDimmed(key string) string {
+	return color.New(color.FgHiBlack).Sprint(key)
+}
+
+// GetStyledNumber returns a styled number string
+func GetStyledNumber(num interface{}) string {
+	return color.New(color.FgYellow).Sprint(num)
+}
+
+// GetStyledValueDimmed returns a dimmed styled value string
+func GetStyledValueDimmed(value string) string {
+	return color.New(color.FgHiBlack).Sprint(value)
+}
+
+// GetStyledEmoji returns a styled emoji string
+func GetStyledEmoji(emoji string) string {
+	return color.New(color.FgMagenta).Sprint(emoji)
+}

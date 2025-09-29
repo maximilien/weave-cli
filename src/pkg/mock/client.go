@@ -110,6 +110,22 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 	return documents, nil
 }
 
+// CountDocuments returns the number of documents in a collection
+func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int, error) {
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	documents, exists := c.collections[collectionName]
+	if !exists {
+		return 0, fmt.Errorf("collection %s does not exist", collectionName)
+	}
+
+	return len(documents), nil
+}
+
 // GetDocument retrieves a specific document by ID
 func (c *Client) GetDocument(ctx context.Context, collectionName, documentID string) (*Document, error) {
 	_, cancel := context.WithTimeout(ctx, 1*time.Second)
