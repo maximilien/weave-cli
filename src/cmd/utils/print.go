@@ -75,7 +75,7 @@ func PrintStyledNumber(num int) {
 
 // PrintStyledEmoji prints a styled emoji
 func PrintStyledEmoji(emoji string) {
-	color.New(color.FgMagenta).Print(emoji)
+	color.New(color.FgWhite, color.Bold).Print(emoji)
 }
 
 // PrintStyledKeyValueDimmed prints a dimmed key-value pair
@@ -131,5 +131,5 @@ func GetStyledValueDimmed(value string) string {
 
 // GetStyledEmoji returns a styled emoji string
 func GetStyledEmoji(emoji string) string {
-	return color.New(color.FgMagenta).Sprint(emoji)
+	return color.New(color.FgWhite, color.Bold).Sprint(emoji)
 }
