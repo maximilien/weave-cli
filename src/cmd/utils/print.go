@@ -87,7 +87,7 @@ func PrintStyledKeyValueDimmed(key, value string) {
 
 // PrintStyledKeyProminent prints a prominent styled key
 func PrintStyledKeyProminent(key string) {
-	color.New(color.FgCyan, color.Bold).Print(key)
+	color.New(color.FgWhite, color.Bold).Print(key)
 }
 
 // PrintStyledKeyValueProminentWithEmoji prints a prominent key-value pair with emoji
@@ -111,7 +111,7 @@ func PrintStyledKeyNumberProminentWithEmoji(key string, num int, emoji string) {
 
 // GetStyledKeyProminent returns a styled key string
 func GetStyledKeyProminent(key string) string {
-	return color.New(color.FgCyan, color.Bold).Sprint(key)
+	return color.New(color.FgWhite, color.Bold).Sprint(key)
 }
 
 // GetStyledKeyDimmed returns a dimmed styled key string
