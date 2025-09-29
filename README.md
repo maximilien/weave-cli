@@ -11,6 +11,7 @@ applications.
 - **🧹 Code Cleanup**: Removed unused functions from refactoring process
 - **🧪 Enhanced E2E Testing**: More reliable cleanup with 33 comprehensive tests
 - **✅ Quality Assurance**: All linting checks passing, improved error handling
+- **🎬 Demo Videos**: Interactive asciinema recordings showcasing all features
 
 ## 🚀 What's New in v0.2.0
 
@@ -20,6 +21,23 @@ applications.
 - **⚙️ Complete Functionality**: All collection and document operations implemented
 - **🔧 Smart Configuration**: Auto-detection of Weaviate availability
   with graceful fallback
+
+## 🎬 Demo
+
+Watch Weave CLI in action with our interactive demos:
+
+- **📹 Full Demo** (5 minutes): Complete feature showcase
+- **⚡ Quick Demo** (2 minutes): Rapid overview
+
+```bash
+# Record your own demo
+./tools/asciinema.sh demo
+
+# Upload to asciinema.org for sharing
+./tools/asciinema.sh upload
+```
+
+See `docs/DEMO.md` for the complete demo script and `videos/README.md` for recording details.
 
 ## Features
 

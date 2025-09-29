@@ -1,0 +1,428 @@
+#!/usr/bin/env bash
+
+# Weave CLI Asciinema Recording Tool
+# Usage: ./tools/asciinema.sh [command]
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+print_header() {
+    echo -e "${BLUE}[ASCII]${NC} $1"
+}
+
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+print_help() {
+    echo -e "${BLUE}Weave CLI Asciinema Recording Tool${NC}"
+    echo ""
+    echo "Usage: ./tools/asciinema.sh [COMMAND]"
+    echo ""
+    echo "Commands:"
+    echo "  demo        Record the full demo (5 minutes)"
+    echo "  quick       Record a quick 2-minute demo"
+    echo "  install     Install asciinema if not available"
+    echo "  upload      Upload latest recording to asciinema.org"
+    echo "  list        List available recordings"
+    echo "  clean       Clean up old recordings"
+    echo "  --help, -h  Show this help message"
+    echo ""
+    echo "Examples:"
+    echo "  ./tools/asciinema.sh demo     # Record full demo"
+    echo "  ./tools/asciinema.sh quick    # Record quick demo"
+    echo "  ./tools/asciinema.sh upload   # Upload to asciinema.org"
+    echo ""
+    echo "Prerequisites:"
+    echo "  • Weaviate Cloud instance configured"
+    echo "  • Test collections available (WeaveDocs, WeaveImages)"
+    echo "  • Demo documents in docs/ and images/ directories"
+}
+
+# Function to check if asciinema is installed
+check_asciinema() {
+    if ! command -v asciinema &> /dev/null; then
+        print_warning "asciinema is not installed"
+        echo "Install it with: ./tools/asciinema.sh install"
+        return 1
+    fi
+    return 0
+}
+
+# Function to install asciinema
+install_asciinema() {
+    print_header "Installing asciinema..."
+    
+    if command -v brew &> /dev/null; then
+        print_header "Installing via Homebrew..."
+        brew install asciinema
+    elif command -v pip3 &> /dev/null; then
+        print_header "Installing via pip3..."
+        pip3 install asciinema
+    elif command -v pip &> /dev/null; then
+        print_header "Installing via pip..."
+        pip install asciinema
+    else
+        print_error "No package manager found (brew, pip, pip3)"
+        echo "Please install asciinema manually: https://asciinema.org/docs/installation"
+        return 1
+    fi
+    
+    if check_asciinema; then
+        print_success "asciinema installed successfully!"
+    else
+        print_error "Failed to install asciinema"
+        return 1
+    fi
+}
+
+# Function to create demo script
+create_demo_script() {
+    local script_type="$1"
+    local script_file="/tmp/weave_demo_${script_type}.sh"
+    
+    cat > "$script_file" << 'EOF'
+#!/usr/bin/env bash
+
+# Weave CLI Demo Script for Asciinema Recording
+# This script runs the demo commands with proper timing
+
+# Colors
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# Function to run command with timing
+run_demo_cmd() {
+    local cmd="$1"
+    local description="$2"
+    local delay="${3:-2}"
+    
+    echo -e "${BLUE}💻 ${description}${NC}"
+    echo -e "${YELLOW}$ ${cmd}${NC}"
+    sleep 1
+    eval "$cmd"
+    echo ""
+    sleep "$delay"
+}
+
+# Function to add page break
+page_break() {
+    local page="$1"
+    echo ""
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}                    PAGE ${page}${NC}"
+    echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
+    echo ""
+    sleep 2
+}
+
+# Start demo
+echo -e "${GREEN}🚀 Weave CLI Demo Starting...${NC}"
+echo ""
+sleep 2
+
+# Page 1: Health Check & Configuration
+page_break "1"
+run_demo_cmd "./bin/weave health check" "Health Check"
+run_demo_cmd "./bin/weave config show" "Configuration Display"
+run_demo_cmd "./bin/weave --help | head -20" "Help Command"
+
+# Page 2: Create Collections
+page_break "2"
+run_demo_cmd "./bin/weave cols create WeaveDocs --schema-type ragmedocs --embedding-model text-embedding-3-small" "Create Text Collection"
+run_demo_cmd "./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small" "Create Image Collection"
+run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
+
+# Page 3: List Collections
+page_break "3"
+run_demo_cmd "./bin/weave cols ls" "List All Collections"
+
+# Page 4: Create Documents
+page_break "4"
+run_demo_cmd "./bin/weave docs create WeaveDocs docs/README.md" "Create Text Document"
+run_demo_cmd "./bin/weave docs create WeaveImages images/screenshot1.png 2>/dev/null || echo 'No images available'" "Create Image Document"
+
+# Page 5: Show Documents & Schema
+page_break "5"
+run_demo_cmd "./bin/weave docs show WeaveDocs README.md" "Show Document Details"
+run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Schema"
+
+# Page 6: List Documents
+page_break "6"
+run_demo_cmd "./bin/weave docs ls WeaveDocs" "Simple Document List"
+run_demo_cmd "./bin/weave docs ls WeaveDocs -w -S" "Virtual Document List with Summary"
+
+# Page 7: Delete Documents
+page_break "7"
+run_demo_cmd "./bin/weave docs delete WeaveDocs README.md --force" "Delete Document with Force"
+
+# Page 8: Cleanup Operations
+page_break "8"
+run_demo_cmd "./bin/weave docs delete-all WeaveDocs --force" "Delete All Documents"
+run_demo_cmd "./bin/weave cols delete-schema WeaveDocs --force" "Delete Collection Schema"
+
+# Page 9: Getting Weave CLI
+page_break "9"
+echo -e "${BLUE}💻 Getting Weave CLI${NC}"
+echo -e "${YELLOW}# Download from GitHub releases${NC}"
+echo -e "${YELLOW}# Build from source: git clone && ./build.sh${NC}"
+echo -e "${YELLOW}# Built with ❤️ by github.com/maximilien${NC}"
+echo ""
+
+# Page 10: Thank You
+page_break "10"
+run_demo_cmd "echo '🎉 Demo completed successfully!'" "Demo Complete"
+run_demo_cmd "./bin/weave --version" "Version Information"
+
+echo -e "${GREEN}🎉 Thank you for watching!${NC}"
+echo -e "${BLUE}Repository: https://github.com/maximilien/weave-cli${NC}"
+EOF
+
+    chmod +x "$script_file"
+    echo "$script_file"
+}
+
+# Function to record full demo
+record_demo() {
+    local demo_type="$1"
+    local output_file="videos/weave-cli-${demo_type}-demo.cast"
+    
+    print_header "Recording ${demo_type} demo..."
+    
+    if ! check_asciinema; then
+        return 1
+    fi
+    
+    # Create videos directory if it doesn't exist
+    mkdir -p videos
+    
+    # Create demo script
+    local script_file
+    script_file=$(create_demo_script "$demo_type")
+    
+    # Record the demo
+    print_header "Starting recording... (Press Ctrl+C to stop)"
+    echo "Recording will be saved to: $output_file"
+    echo ""
+    
+    asciinema rec "$output_file" --command "$script_file"
+    
+    # Clean up script
+    rm -f "$script_file"
+    
+    if [ -f "$output_file" ]; then
+        print_success "Demo recorded successfully: $output_file"
+        print_header "To play the recording:"
+        echo "  asciinema play $output_file"
+        echo ""
+        print_header "To upload to asciinema.org:"
+        echo "  asciinema upload $output_file"
+    else
+        print_error "Recording failed"
+        return 1
+    fi
+}
+
+# Function to record quick demo
+record_quick_demo() {
+    local output_file="videos/weave-cli-quick-demo.cast"
+    
+    print_header "Recording quick demo..."
+    
+    if ! check_asciinema; then
+        return 1
+    fi
+    
+    mkdir -p videos
+    
+    # Create quick demo script
+    local script_file="/tmp/weave_quick_demo.sh"
+    
+    cat > "$script_file" << 'EOF'
+#!/usr/bin/env bash
+
+# Quick Weave CLI Demo (2 minutes)
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+echo -e "${GREEN}🚀 Weave CLI Quick Demo${NC}"
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Health Check${NC}"
+echo -e "${YELLOW}$ ./bin/weave health check${NC}"
+sleep 1
+./bin/weave health check
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 List Collections${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols ls${NC}"
+sleep 1
+./bin/weave cols ls
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Create Collection${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols create DemoCollection --schema-type ragmedocs${NC}"
+sleep 1
+./bin/weave cols create DemoCollection --schema-type ragmedocs --embedding-model text-embedding-3-small
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Create Document${NC}"
+echo -e "${YELLOW}$ ./bin/weave docs create DemoCollection docs/README.md${NC}"
+sleep 1
+./bin/weave docs create DemoCollection docs/README.md
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 List Documents${NC}"
+echo -e "${YELLOW}$ ./bin/weave docs ls DemoCollection${NC}"
+sleep 1
+./bin/weave docs ls DemoCollection
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Cleanup${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols delete-schema DemoCollection --force${NC}"
+sleep 1
+./bin/weave cols delete-schema DemoCollection --force
+echo ""
+sleep 2
+
+echo -e "${GREEN}🎉 Quick demo completed!${NC}"
+echo -e "${BLUE}Repository: https://github.com/maximilien/weave-cli${NC}"
+EOF
+
+    chmod +x "$script_file"
+    
+    # Record the quick demo
+    print_header "Starting quick demo recording..."
+    asciinema rec "$output_file" --command "$script_file"
+    
+    # Clean up
+    rm -f "$script_file"
+    
+    if [ -f "$output_file" ]; then
+        print_success "Quick demo recorded: $output_file"
+    else
+        print_error "Quick demo recording failed"
+        return 1
+    fi
+}
+
+# Function to upload latest recording
+upload_recording() {
+    local latest_file
+    latest_file=$(find videos -name "*.cast" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+    
+    if [ -z "$latest_file" ]; then
+        print_error "No recordings found in videos/ directory"
+        return 1
+    fi
+    
+    print_header "Uploading latest recording: $latest_file"
+    
+    if ! check_asciinema; then
+        return 1
+    fi
+    
+    asciinema upload "$latest_file"
+}
+
+# Function to list recordings
+list_recordings() {
+    print_header "Available recordings:"
+    
+    if [ ! -d "videos" ] || [ -z "$(ls -A videos/*.cast 2>/dev/null)" ]; then
+        print_warning "No recordings found"
+        return 0
+    fi
+    
+    for file in videos/*.cast; do
+        if [ -f "$file" ]; then
+            local size
+            size=$(du -h "$file" | cut -f1)
+            local date
+            date=$(stat -f "%Sm" -t "%Y-%m-%d %H:%M" "$file" 2>/dev/null || stat -c "%y" "$file" | cut -d' ' -f1-2)
+            echo "  📹 $(basename "$file") (${size}, ${date})"
+        fi
+    done
+}
+
+# Function to clean old recordings
+clean_recordings() {
+    print_header "Cleaning old recordings..."
+    
+    if [ ! -d "videos" ]; then
+        print_warning "No videos directory found"
+        return 0
+    fi
+    
+    local count
+    count=$(find videos -name "*.cast" -type f | wc -l)
+    
+    if [ "$count" -eq 0 ]; then
+        print_warning "No recordings to clean"
+        return 0
+    fi
+    
+    print_header "Found $count recordings"
+    echo "This will remove all .cast files from videos/ directory"
+    read -p "Are you sure? (y/N): " -n 1 -r
+    echo
+    
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        rm -f videos/*.cast
+        print_success "Cleaned $count recordings"
+    else
+        print_warning "Cleanup cancelled"
+    fi
+}
+
+# Main script logic
+case "${1:-help}" in
+    "demo")
+        record_demo "full"
+        ;;
+    "quick")
+        record_quick_demo
+        ;;
+    "install")
+        install_asciinema
+        ;;
+    "upload")
+        upload_recording
+        ;;
+    "list")
+        list_recordings
+        ;;
+    "clean")
+        clean_recordings
+        ;;
+    "--help"|"-h"|"help")
+        print_help
+        ;;
+    *)
+        print_error "Unknown command: $1"
+        print_help
+        exit 1
+        ;;
+esac
