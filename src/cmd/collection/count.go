@@ -1,16 +1,17 @@
-package cmd
+package collection
 
 import (
 	"context"
 	"fmt"
 	"os"
 
+	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-// collectionCountCmd represents the collection count command
-var collectionCountCmd = &cobra.Command{
+// CountCmd represents the collection count command
+var CountCmd = &cobra.Command{
 	Use:     "count",
 	Aliases: []string{"c"},
 	Short:   "Count collections",
@@ -25,21 +26,21 @@ Example:
 }
 
 func init() {
-	collectionCmd.AddCommand(collectionCountCmd)
+	CollectionCmd.AddCommand(CountCmd)
 }
 
 func runCollectionCount(cmd *cobra.Command, args []string) {
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := utils.LoadConfigWithOverrides()
 	if err != nil {
-		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
 	}
 
 	// Get default database
 	dbConfig, err := cfg.GetDefaultDatabase()
 	if err != nil {
-		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to get default database: %v", err))
 		os.Exit(1)
 	}
 
@@ -48,19 +49,19 @@ func runCollectionCount(cmd *cobra.Command, args []string) {
 	var count int
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		count, err = countWeaviateCollections(ctx, dbConfig)
+		count, err = utils.CountWeaviateCollections(ctx, dbConfig)
 	case config.VectorDBTypeMock:
-		count, err = countMockCollections(ctx, dbConfig)
+		count, err = utils.CountMockCollections(ctx, dbConfig)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 
 	if err != nil {
-		printError(fmt.Sprintf("Failed to count collections: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to count collections: %v", err))
 		os.Exit(1)
 	}
 
-	printHeader("Collection Count")
+	utils.PrintHeader("Collection Count")
 	fmt.Printf("Total collections: %d\n", count)
 }

@@ -1,17 +1,18 @@
-package cmd
+package collection
 
 import (
 	"context"
 	"fmt"
 	"os"
 
+	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"github.com/spf13/cobra"
 )
 
-// collectionCreateCmd represents the collection create command
-var collectionCreateCmd = &cobra.Command{
+// CreateCmd represents the collection create command
+var CreateCmd = &cobra.Command{
 	Use:     "create COLLECTION_NAME",
 	Aliases: []string{"c"},
 	Short:   "Create a collection",
@@ -29,11 +30,11 @@ Examples:
 }
 
 func init() {
-	collectionCmd.AddCommand(collectionCreateCmd)
+	CollectionCmd.AddCommand(CreateCmd)
 
-	collectionCreateCmd.Flags().StringP("embedding-model", "e", "text-embedding-ada-002", "Embedding model to use")
-	collectionCreateCmd.Flags().StringP("fields", "f", "", "Custom fields (format: field1:type1,field2:type2)")
-	collectionCreateCmd.Flags().StringP("schema-type", "s", "default", "Schema type (default, ragmedocs, ragmeimages)")
+	CreateCmd.Flags().StringP("embedding-model", "e", "text-embedding-ada-002", "Embedding model to use")
+	CreateCmd.Flags().StringP("fields", "f", "", "Custom fields (format: field1:type1,field2:type2)")
+	CreateCmd.Flags().StringP("schema-type", "s", "default", "Schema type (default, ragmedocs, ragmeimages)")
 }
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {
@@ -45,25 +46,25 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	// Parse custom fields
 	var customFields []weaviate.FieldDefinition
 	if fieldsStr != "" {
-		fields, err := parseFieldDefinitions(fieldsStr)
+		fields, err := utils.ParseFieldDefinitions(fieldsStr)
 		if err != nil {
-			printError(fmt.Sprintf("Failed to parse fields: %v", err))
+			utils.PrintError(fmt.Sprintf("Failed to parse fields: %v", err))
 			os.Exit(1)
 		}
 		customFields = fields
 	}
 
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := utils.LoadConfigWithOverrides()
 	if err != nil {
-		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
 	}
 
 	// Get default database
 	dbConfig, err := cfg.GetDefaultDatabase()
 	if err != nil {
-		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to get default database: %v", err))
 		os.Exit(1)
 	}
 
@@ -71,18 +72,18 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		err = createWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, customFields, schemaType)
+		err = utils.CreateWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, customFields, schemaType)
 	case config.VectorDBTypeMock:
-		err = createMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
+		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 
 	if err != nil {
-		printError(fmt.Sprintf("Failed to create collection: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to create collection: %v", err))
 		os.Exit(1)
 	}
 
-	printSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+	utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
 }

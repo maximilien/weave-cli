@@ -153,6 +153,7 @@ weave collection delete-schema MyCollection --force
 ```
 
 **Safety Features:**
+
 - **Double confirmation**: Destructive operations require two confirmations
   - First: Standard y/N prompt
   - Second: Red warning requiring exact "yes" input
@@ -639,7 +640,17 @@ features, and usage examples.
 ```text
 weave-cli/
 ├── src/                    # Source code
-│   ├── cmd/               # CLI commands
+│   ├── cmd/               # CLI commands (organized by functionality)
+│   │   ├── document.go   # Main document command
+│   │   ├── collection.go  # Main collection command
+│   │   ├── list.go       # Document list command
+│   │   ├── show.go       # Document show command
+│   │   ├── count.go      # Document count command
+│   │   ├── create.go     # Document create command
+│   │   ├── delete.go     # Document delete command
+│   │   ├── delete_all.go # Document delete-all command
+│   │   ├── delete_schema.go # Collection delete-schema command
+│   │   └── [other command files...]
 │   ├── pkg/               # Public packages
 │   │   ├── config/       # Configuration management
 │   │   ├── weaviate/     # Weaviate client
@@ -650,6 +661,12 @@ weave-cli/
 ├── bin/                   # Built binaries
 └── README.md             # This file
 ```
+
+**Code Organization:**
+- Commands are organized into logical files by functionality
+- Each subcommand has its own file (e.g., `list.go`, `create.go`)
+- Main command files contain only the command definition
+- Helper functions remain in the original files for shared access
 
 ## Contributing
 

@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.10] - 2025-01-27
+
+### Changed
+
+- **Code organization refactoring**: Improved codebase structure and maintainability
+  - Split `document.go` (4,307 lines) into 6 logical files:
+    - `list.go` - Document list command
+    - `show.go` - Document show command
+    - `count.go` - Document count command
+    - `create.go` - Document create command
+    - `delete.go` - Document delete command
+    - `delete_all.go` - Document delete-all command
+  - Split `collection.go` (2,528 lines) into 7 logical files:
+    - `list.go` - Collection list command
+    - `create.go` - Collection create command
+    - `delete.go` - Collection delete command
+    - `delete_all.go` - Collection delete-all command
+    - `count.go` - Collection count command
+    - `show.go` - Collection show command
+    - `delete_schema.go` - Collection delete-schema command
+  - Updated main command files to contain only command definitions
+  - Preserved all existing functionality with no breaking changes
+  - Enhanced developer experience with better file organization
+
 ## [0.1.9-rc3] - 2025-09-28
 
 ### Fixed

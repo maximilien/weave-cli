@@ -1,16 +1,17 @@
-package cmd
+package collection
 
 import (
 	"context"
 	"fmt"
 	"os"
 
+	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-// collectionShowCmd represents the collection show command
-var collectionShowCmd = &cobra.Command{
+// ShowCmd represents the collection show command
+var ShowCmd = &cobra.Command{
 	Use:     "show COLLECTION_NAME",
 	Aliases: []string{"s"},
 	Short:   "Show collection details",
@@ -29,13 +30,13 @@ Example:
 }
 
 func init() {
-	collectionCmd.AddCommand(collectionShowCmd)
-
-	collectionShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
-	collectionShowCmd.Flags().BoolP("no-truncate", "n", false, "Don't truncate long content")
-	collectionShowCmd.Flags().BoolP("verbose", "v", false, "Show verbose information")
-	collectionShowCmd.Flags().BoolP("schema", "", false, "Show collection schema")
-	collectionShowCmd.Flags().BoolP("metadata", "", false, "Show collection metadata")
+	CollectionCmd.AddCommand(ShowCmd)
+	
+	ShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
+	ShowCmd.Flags().BoolP("no-truncate", "n", false, "Don't truncate long content")
+	ShowCmd.Flags().BoolP("verbose", "", false, "Show verbose information")
+	ShowCmd.Flags().BoolP("schema", "", false, "Show collection schema")
+	ShowCmd.Flags().BoolP("metadata", "", false, "Show collection metadata")
 }
 
 func runCollectionShow(cmd *cobra.Command, args []string) {
@@ -47,16 +48,16 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	showMetadata, _ := cmd.Flags().GetBool("metadata")
 
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := utils.LoadConfigWithOverrides()
 	if err != nil {
-		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
 	}
 
 	// Get default database
 	dbConfig, err := cfg.GetDefaultDatabase()
 	if err != nil {
-		printError(fmt.Sprintf("Failed to get default database: %v", err))
+		utils.PrintError(fmt.Sprintf("Failed to get default database: %v", err))
 		os.Exit(1)
 	}
 
@@ -64,11 +65,11 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		showWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
+		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
 	case config.VectorDBTypeMock:
-		showMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
+		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
 	default:
-		printError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
 }
