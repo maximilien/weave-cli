@@ -100,10 +100,10 @@ cleanup_collections() {
     
     # Delete collections
     echo -e "${YELLOW}Deleting collection $TEXT_COLLECTION...${NC}"
-    printf "y\nyes\n" | ./bin/weave cols del "$TEXT_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --quiet || true
+    ./bin/weave cols del "$TEXT_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --force --quiet || true
     
     echo -e "${YELLOW}Deleting collection $IMAGE_COLLECTION...${NC}"
-    printf "y\nyes\n" | ./bin/weave cols del "$IMAGE_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --quiet || true
+    ./bin/weave cols del "$IMAGE_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --force --quiet || true
     
     # Delete schemas
     echo -e "${YELLOW}Deleting schema for $TEXT_COLLECTION...${NC}"
