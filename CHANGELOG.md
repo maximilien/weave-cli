@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-09-29
+
+### Added
+
+- **SPDX License Headers**: Added proper license headers to all 44 Go source files
+- **License Management Tool**: Created `tools/add_license_headers.sh` for automated license header management
+- **Legal Compliance**: Industry-standard SPDX license identification throughout codebase
+
+### Technical Details
+
+- **License Format**: `// SPDX-License-Identifier: MIT`
+- **Copyright**: `// Copyright (c) 2025 dr.max`
+- **Files Updated**: All source files in `src/`, `tests/`, and `scripts/` directories
+- **Automation**: Script for future license header updates and management
+
+### Quality Assurance
+
+- **Linting**: All golangci-lint, go vet, go fmt checks passing
+- **Tests**: All unit tests passing (100%)
+- **E2E Tests**: All 34 E2E tests passing
+- **Code Formatting**: Automatically fixed by linter
+
 ## [0.2.1] - 2025-09-29
 
 ### Fixed
