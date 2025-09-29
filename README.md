@@ -37,7 +37,8 @@ Watch Weave CLI in action with our interactive demos:
 ./tools/asciinema.sh upload
 ```
 
-See `docs/DEMO.md` for the complete demo script and `videos/README.md` for recording details.
+See `docs/DEMO.md` for the complete demo script and `videos/README.md` for
+recording details.
 
 ## Features
 
