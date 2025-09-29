@@ -93,10 +93,10 @@ cleanup_collections() {
     
     # Delete documents from collections
     echo -e "${YELLOW}Deleting documents from $TEXT_COLLECTION...${NC}"
-    printf "y\nyes\n" | ./bin/weave docs delete-all "$TEXT_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --quiet || true
+    ./bin/weave docs delete-all "$TEXT_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --force --quiet || true
     
     echo -e "${YELLOW}Deleting documents from $IMAGE_COLLECTION...${NC}"
-    printf "y\nyes\n" | ./bin/weave docs delete-all "$IMAGE_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --quiet || true
+    ./bin/weave docs delete-all "$IMAGE_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --force --quiet || true
     
     # Delete collections
     echo -e "${YELLOW}Deleting collection $TEXT_COLLECTION...${NC}"
@@ -107,10 +107,10 @@ cleanup_collections() {
     
     # Delete schemas
     echo -e "${YELLOW}Deleting schema for $TEXT_COLLECTION...${NC}"
-    printf "y\nyes\n" | ./bin/weave cols delete-schema "$TEXT_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --quiet || true
+    ./bin/weave cols delete-schema "$TEXT_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --force --quiet || true
     
     echo -e "${YELLOW}Deleting schema for $IMAGE_COLLECTION...${NC}"
-    printf "y\nyes\n" | ./bin/weave cols delete-schema "$IMAGE_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --quiet || true
+    ./bin/weave cols delete-schema "$IMAGE_COLLECTION" --vector-db-type "$VECTOR_DB_TYPE" --force --quiet || true
 }
 
 # Function to print final results
@@ -266,8 +266,8 @@ main() {
     fi
     
     # Delete all documents
-    run_test "Delete all documents from text collection" "printf 'y\nyes\n' | ./bin/weave docs delete-all '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
-    run_test "Delete all documents from image collection" "printf 'y\nyes\n' | ./bin/weave docs delete-all '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
+    run_test "Delete all documents from text collection" "./bin/weave docs delete-all '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
+    run_test "Delete all documents from image collection" "./bin/weave docs delete-all '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
     
     # Step 8: Collection Deletion Tests
     print_section "Step 8: Collection Deletion Tests"
@@ -277,8 +277,8 @@ main() {
     run_test "Delete image collection" "./bin/weave cols del '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
     
     # Delete schemas
-    run_test "Delete text collection schema" "printf 'y\nyes\n' | ./bin/weave cols delete-schema '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
-    run_test "Delete image collection schema" "printf 'y\nyes\n' | ./bin/weave cols delete-schema '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
+    run_test "Delete text collection schema" "./bin/weave cols delete-schema '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
+    run_test "Delete image collection schema" "./bin/weave cols delete-schema '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
     
     # Final verification
     run_test "List collections (final - should be clean)" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"

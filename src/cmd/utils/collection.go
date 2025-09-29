@@ -603,8 +603,17 @@ func DeleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 
 // DeleteWeaviateCollectionSchema deletes Weaviate collection schema
 func DeleteWeaviateCollectionSchema(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) error {
-	PrintInfo("Weaviate collection schema deletion not yet implemented in new structure")
-	return fmt.Errorf("collection schema deletion not yet implemented")
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	err = client.DeleteCollectionSchema(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("failed to delete collection schema: %v", err)
+	}
+
+	return nil
 }
 
 // showCollectionVirtualSummary shows virtual structure summary for a collection
