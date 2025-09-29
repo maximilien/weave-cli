@@ -252,7 +252,197 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 }
 
 func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool) {
-	PrintInfo("Weaviate collection show not yet implemented in new structure")
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Check if collection exists by listing all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+
+	// Check if the specific collection exists
+	collectionExists := false
+	for _, existingCollection := range collections {
+		if existingCollection == collectionName {
+			collectionExists = true
+			break
+		}
+	}
+
+	if !collectionExists {
+		PrintError(fmt.Sprintf("Collection '%s' not found", collectionName))
+		return
+	}
+
+	// Get document count using efficient method
+	documentCount, err := client.CountDocuments(ctx, collectionName)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to get document count: %v", err))
+		return
+	}
+
+	// Display collection information with styling
+	PrintStyledEmoji("📊")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Collection")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(collectionName)
+	fmt.Println()
+
+	PrintStyledKeyProminent("Database Type")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(string(cfg.Type))
+	fmt.Println()
+
+	PrintStyledKeyProminent("Document Count")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(fmt.Sprintf("%d", documentCount))
+	fmt.Println()
+	fmt.Println()
+
+	// Show collection properties if available
+	PrintStyledEmoji("🔧")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Collection Properties")
+	fmt.Println()
+	PrintStyledKeyProminent("  Vector Database")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(string(cfg.Type))
+	fmt.Println()
+	PrintStyledKeyProminent("  URL")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(cfg.URL)
+	fmt.Println()
+	if cfg.APIKey != "" {
+		PrintStyledKeyProminent("  API Key")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed("[CONFIGURED]")
+		fmt.Println()
+	} else {
+		PrintStyledKeyProminent("  API Key")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed("[NOT CONFIGURED]")
+		fmt.Println()
+	}
+	fmt.Println()
+
+	if documentCount > 0 {
+		// Get sample document for metadata analysis (just one document)
+		sampleDocuments, err := client.ListDocuments(ctx, collectionName, 1)
+		if err != nil {
+			PrintWarning(fmt.Sprintf("Could not retrieve sample document: %v", err))
+		} else if len(sampleDocuments) > 0 {
+			// Get the actual document with full data using GetDocument
+			sampleDoc, err := client.GetDocument(ctx, collectionName, sampleDocuments[0].ID)
+			if err != nil {
+				PrintWarning(fmt.Sprintf("Could not retrieve full sample document: %v", err))
+				// Fall back to the basic document from ListDocuments
+				sampleDoc = &sampleDocuments[0]
+			}
+			PrintStyledEmoji("📋")
+			fmt.Printf(" ")
+			PrintStyledKeyProminent("Sample Document Metadata")
+			fmt.Println()
+			if len(sampleDoc.Metadata) > 0 {
+				metadataCount := 0
+				for key, value := range sampleDoc.Metadata {
+					if metadataCount >= shortLines {
+						remainingFields := len(sampleDoc.Metadata) - shortLines
+						fmt.Printf("... (truncated, %d more metadata fields)\n", remainingFields)
+						break
+					}
+
+					var displayValue string
+					if noTruncate {
+						displayValue = fmt.Sprintf("%v", value)
+					} else {
+						displayValue = TruncateMetadataValue(value, 100) // Limit each value to 100 chars
+					}
+
+					// Style the key-value pair directly
+					fmt.Printf("  - ")
+					PrintStyledKeyProminent(key)
+					fmt.Printf(": ")
+					if key == "id" {
+						PrintStyledID(displayValue)
+					} else {
+						PrintStyledValueDimmed(displayValue)
+					}
+					fmt.Println()
+					metadataCount++
+				}
+			} else {
+				PrintStyledKey("  No metadata available")
+				fmt.Println()
+			}
+			fmt.Println()
+
+			// Show sample content
+			if len(sampleDoc.Content) > 0 {
+				PrintStyledEmoji("📄")
+				fmt.Printf(" ")
+				PrintStyledKeyProminent("Sample Document Content")
+				fmt.Println()
+
+				// Check if this is image content (base64 data)
+				if IsImageContent(sampleDoc.Content) {
+					fmt.Printf("  📷 Image Document (Base64 encoded)\n")
+					fmt.Printf("  📏 Content Size: %d characters\n", len(sampleDoc.Content))
+					fmt.Printf("  🔍 Preview: %s...\n", sampleDoc.Content[:min(50, len(sampleDoc.Content))])
+					if len(sampleDoc.Content) > 50 {
+						fmt.Printf("  ℹ️  Full base64 data available (use --no-truncate to see all)\n")
+					}
+				} else {
+					// Regular text content
+					if noTruncate {
+						fmt.Printf("%s\n", sampleDoc.Content)
+					} else {
+						contentLines := strings.Split(sampleDoc.Content, "\n")
+						maxLines := shortLines
+						if len(contentLines) > maxLines {
+							for i := 0; i < maxLines; i++ {
+								fmt.Printf("%s\n", contentLines[i])
+							}
+							fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
+						} else {
+							fmt.Printf("%s\n", sampleDoc.Content)
+						}
+					}
+				}
+				fmt.Println()
+			} else {
+				// No content, but show if it's an image document based on metadata
+				if IsImageDocument(sampleDoc.Metadata) {
+					PrintStyledEmoji("📄")
+					fmt.Printf(" ")
+					PrintStyledKeyProminent("Sample Document Content")
+					fmt.Println()
+					fmt.Printf("  📷 Image Document (no text content)\n")
+					fmt.Printf("  ℹ️  Image data stored in metadata fields\n")
+					fmt.Println()
+				}
+			}
+		}
+	}
+
+	// Show schema if requested
+	if showSchema {
+		// ShowCollectionSchema(ctx, client, collectionName) // TODO: Implement
+		PrintInfo("Collection schema display not yet implemented")
+	}
+
+	// Show expanded metadata if requested
+	if showMetadata {
+		// ShowCollectionMetadata(ctx, client, collectionName) // TODO: Implement
+		PrintInfo("Collection metadata display not yet implemented")
+	}
+
+	PrintSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
 }
 
 func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool) {
@@ -336,20 +526,45 @@ func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 		fmt.Println()
 
 		for i, doc := range documents {
-			fmt.Printf("Document %d:\n", i+1)
-			fmt.Printf("  ID: %s\n", doc.ID)
-
-			if showLong {
-				fmt.Printf("  Content: %s\n", doc.Content)
-			} else {
-				preview := TruncateStringByLines(doc.Content, shortLines)
-				fmt.Printf("  Content: %s\n", preview)
+			if i > 0 {
+				fmt.Println(strings.Repeat("=", 80))
+				fmt.Println()
 			}
 
-			if len(doc.Metadata) > 0 {
-				fmt.Printf("  Metadata: %v\n", doc.Metadata)
+			// Display document details (matching original format)
+			color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
+			fmt.Printf("Collection: %s\n", collectionName)
+			fmt.Println()
+
+			fmt.Printf("Content:\n")
+			if showLong {
+				fmt.Printf("%s\n", doc.Content)
+			} else {
+				// Use shortLines to limit content by lines instead of characters
+				preview := TruncateStringByLines(doc.Content, shortLines)
+				fmt.Printf("%s\n", preview)
 			}
 			fmt.Println()
+
+			if len(doc.Metadata) > 0 {
+				fmt.Printf("Metadata:\n")
+				for key, value := range doc.Metadata {
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := SmartTruncate(valueStr, key, shortLines)
+					fmt.Printf("  %s: %s\n", key, truncatedValue)
+				}
+			}
+
+			// Show schema if requested (only for first document to avoid repetition)
+			if showSchema && i == 0 {
+				ShowDocumentSchema(doc, collectionName)
+			}
+
+			// Show expanded metadata if requested (only for first document to avoid repetition)
+			if expandMetadata && i == 0 {
+				ShowDocumentMetadata(doc, collectionName)
+			}
 		}
 	} else {
 		// Show specific documents by ID
@@ -360,19 +575,40 @@ func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 				continue
 			}
 
-			fmt.Printf("Document ID: %s\n", doc.ID)
+			// Display document details (matching original format)
+			color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
+			fmt.Printf("Collection: %s\n", collectionName)
+			fmt.Println()
 
+			fmt.Printf("Content:\n")
 			if showLong {
-				fmt.Printf("Content: %s\n", doc.Content)
+				fmt.Printf("%s\n", doc.Content)
 			} else {
+				// Use shortLines to limit content by lines instead of characters
 				preview := TruncateStringByLines(doc.Content, shortLines)
-				fmt.Printf("Content: %s\n", preview)
-			}
-
-			if len(doc.Metadata) > 0 {
-				fmt.Printf("Metadata: %v\n", doc.Metadata)
+				fmt.Printf("%s\n", preview)
 			}
 			fmt.Println()
+
+			if len(doc.Metadata) > 0 {
+				fmt.Printf("Metadata:\n")
+				for key, value := range doc.Metadata {
+					// Truncate value based on shortLines directive
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := SmartTruncate(valueStr, key, shortLines)
+					fmt.Printf("  %s: %s\n", key, truncatedValue)
+				}
+			}
+
+			// Show schema if requested
+			if showSchema {
+				ShowDocumentSchema(*doc, collectionName)
+			}
+
+			// Show expanded metadata if requested
+			if expandMetadata {
+				ShowDocumentMetadata(*doc, collectionName)
+			}
 		}
 	}
 }
@@ -885,6 +1121,240 @@ func PrintStyledKeyNumberProminentWithEmoji(key string, num int, emoji string) {
 	PrintStyledKeyProminent(key)
 	fmt.Printf(": ")
 	PrintStyledNumber(num)
+}
+
+// Helper functions for collection and document analysis
+func TruncateMetadataValue(value interface{}, maxLength int) string {
+	valueStr := fmt.Sprintf("%v", value)
+	if len(valueStr) > maxLength {
+		return valueStr[:maxLength] + "..."
+	}
+	return valueStr
+}
+
+func IsImageContent(content string) bool {
+	// Check if content looks like base64 image data
+	if len(content) < 100 {
+		return false
+	}
+	// Simple heuristic: base64 image data is usually very long and contains base64 characters
+	base64Chars := "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+	base64Count := 0
+	for _, char := range content[:min(200, len(content))] {
+		if strings.ContainsRune(base64Chars, char) {
+			base64Count++
+		}
+	}
+	return float64(base64Count)/float64(min(200, len(content))) > 0.8
+}
+
+func IsImageDocument(metadata map[string]interface{}) bool {
+	// Check if metadata indicates this is an image document
+	if metadata == nil {
+		return false
+	}
+	
+	// Check for image-related metadata fields
+	imageFields := []string{"image", "image_data", "base64_data", "content_type"}
+	for _, field := range imageFields {
+		if _, exists := metadata[field]; exists {
+			return true
+		}
+	}
+	
+	// Check nested metadata
+	if metadataField, ok := metadata["metadata"]; ok {
+		if metadataStr, ok := metadataField.(string); ok {
+			var metadataObj map[string]interface{}
+			if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+				if contentType, ok := metadataObj["content_type"].(string); ok {
+					return contentType == "image"
+				}
+			}
+		}
+	}
+	
+	return false
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// Document schema and metadata functions
+func ShowDocumentSchema(doc weaviate.Document, collectionName string) {
+	fmt.Println()
+	color.New(color.FgYellow, color.Bold).Printf("📋 Document Schema: %s\n", collectionName)
+	fmt.Println()
+
+	// Document structure
+	PrintStyledEmoji("🏗️")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Document Structure")
+	fmt.Println()
+
+	fmt.Printf("  • ")
+	PrintStyledKeyProminent("id")
+	fmt.Printf(" (")
+	PrintStyledValueDimmed("string")
+	fmt.Printf(") - Unique document identifier")
+	fmt.Println()
+
+	fmt.Printf("  • ")
+	PrintStyledKeyProminent("content")
+	fmt.Printf(" (")
+	PrintStyledValueDimmed("text")
+	fmt.Printf(") - Document text content")
+	fmt.Println()
+
+	// Metadata fields
+	if len(doc.Metadata) > 0 {
+		fmt.Printf("  • ")
+		PrintStyledKeyProminent("metadata")
+		fmt.Printf(" (")
+		PrintStyledValueDimmed("object")
+		fmt.Printf(") - Document metadata")
+		fmt.Println()
+
+		// Show metadata field types
+		PrintStyledEmoji("📊")
+		fmt.Printf(" ")
+		PrintStyledKeyProminent("Metadata Fields")
+		fmt.Println()
+
+		for key, value := range doc.Metadata {
+			fmt.Printf("    • ")
+			PrintStyledKeyProminent(key)
+			fmt.Printf(" (")
+			PrintStyledValueDimmed(GetValueType(value))
+			fmt.Printf(")")
+			fmt.Println()
+		}
+	} else {
+		fmt.Printf("  • ")
+		PrintStyledKeyProminent("metadata")
+		fmt.Printf(" (")
+		PrintStyledValueDimmed("object")
+		fmt.Printf(") - No metadata fields")
+		fmt.Println()
+	}
+
+	fmt.Println()
+}
+
+func ShowDocumentMetadata(doc weaviate.Document, collectionName string) {
+	fmt.Println()
+	color.New(color.FgCyan, color.Bold).Printf("📊 Document Metadata: %s\n", collectionName)
+	fmt.Println()
+
+	if len(doc.Metadata) == 0 {
+		PrintStyledValueDimmed("No metadata available for this document")
+		fmt.Println()
+		return
+	}
+
+	// Display metadata analysis
+	PrintStyledEmoji("📈")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Metadata Analysis")
+	fmt.Println()
+
+	fmt.Printf("  • Total Metadata Fields: ")
+	PrintStyledValueDimmed(fmt.Sprintf("%d", len(doc.Metadata)))
+	fmt.Println()
+
+	fmt.Printf("  • Document ID: ")
+	PrintStyledValueDimmed(doc.ID)
+	fmt.Println()
+
+	fmt.Println()
+
+	// Show detailed metadata fields
+	PrintStyledEmoji("🔍")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Metadata Fields")
+	fmt.Println()
+
+	// Sort fields alphabetically for consistent display
+	var sortedKeys []string
+	for key := range doc.Metadata {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, key := range sortedKeys {
+		value := doc.Metadata[key]
+
+		fmt.Printf("  • ")
+		PrintStyledKeyProminent(key)
+		fmt.Printf(" (")
+		PrintStyledValueDimmed(GetValueType(value))
+		fmt.Printf(")")
+		fmt.Println()
+
+		// Show the actual value
+		valueStr := fmt.Sprintf("%v", value)
+		if len(valueStr) > 200 {
+			valueStr = valueStr[:197] + "..."
+		}
+
+		fmt.Printf("    Value: ")
+		PrintStyledValueDimmed(valueStr)
+		fmt.Println()
+		fmt.Println()
+	}
+
+	// Show metadata statistics
+	PrintStyledEmoji("📊")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Metadata Statistics")
+	fmt.Println()
+
+	// Calculate field type distribution
+	typeCounts := make(map[string]int)
+	for _, value := range doc.Metadata {
+		typeCounts[GetValueType(value)]++
+	}
+
+	fmt.Printf("  • Field Type Distribution: ")
+	var typeDist []string
+	for fieldType, count := range typeCounts {
+		typeDist = append(typeDist, fmt.Sprintf("%s (%d)", fieldType, count))
+	}
+	PrintStyledValueDimmed(strings.Join(typeDist, ", "))
+	fmt.Println()
+
+	fmt.Printf("  • Average Value Length: ")
+	totalLength := 0
+	for _, value := range doc.Metadata {
+		valueStr := fmt.Sprintf("%v", value)
+		totalLength += len(valueStr)
+	}
+	avgLength := float64(totalLength) / float64(len(doc.Metadata))
+	PrintStyledValueDimmed(fmt.Sprintf("%.1f characters", avgLength))
+	fmt.Println()
+}
+
+func GetValueType(value interface{}) string {
+	switch value.(type) {
+	case string:
+		return "string"
+	case int, int8, int16, int32, int64:
+		return "integer"
+	case float32, float64:
+		return "float"
+	case bool:
+		return "boolean"
+	case []interface{}:
+		return "array"
+	case map[string]interface{}:
+		return "object"
+	default:
+		return "unknown"
+	}
 }
 
 func showCollectionVirtualSummary(ctx context.Context, client *weaviate.Client, collectionName string) {
