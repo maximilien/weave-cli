@@ -1,9 +1,16 @@
-# Weave CLI v0.2.1
+# Weave CLI v0.2.2
 
 A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases, independently of specific
 applications.
+
+## 🚀 What's New in v0.2.2
+
+- **📄 SPDX License Headers**: Added proper license headers to all 44 Go source files
+- **⚖️ Legal Compliance**: Industry-standard SPDX license identification
+- **🛠️ License Tool**: Automated script for managing license headers
+- **✅ Quality Assurance**: All tests passing (34/34 E2E tests)
 
 ## 🚀 What's New in v0.2.1
 

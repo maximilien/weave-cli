@@ -28,6 +28,7 @@ Use the asciinema recording tool:
 ## Prerequisites
 
 1. **Install asciinema**:
+
    ```bash
    ./tools/asciinema.sh install
    ```
@@ -76,6 +77,7 @@ Once uploaded to asciinema.org, you'll get a shareable URL like:
 `https://asciinema.org/a/abc123`
 
 Perfect for:
+
 - Documentation
 - Presentations
 - Social media

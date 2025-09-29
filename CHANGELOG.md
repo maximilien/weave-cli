@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2025-09-29
+
+### Added
+
+- **SPDX License Headers**: Added proper license headers to all 44 Go source
+  files
+- **License Management Tool**: Created `tools/add_license_headers.sh` for
+  automated license header management
+- **Legal Compliance**: Industry-standard SPDX license identification
+  throughout codebase
+
+### License Technical Details
+
+- **License Format**: `// SPDX-License-Identifier: MIT`
+- **Copyright**: `// Copyright (c) 2025 dr.max`
+- **Files Updated**: All source files in `src/`, `tests/`, and `scripts/`
+  directories
+- **Automation**: Script for future license header updates and management
+
+### Quality Assurance
+
+- **Linting**: All golangci-lint, go vet, go fmt checks passing
+- **Tests**: All unit tests passing (100%)
+- **E2E Tests**: All 34 E2E tests passing
+- **Code Formatting**: Automatically fixed by linter
+
 ## [0.2.1] - 2025-09-29
 
 ### Fixed
@@ -20,13 +46,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Rely on schema deletion for reliable cleanup
   - Reduced test count from 35 to 33 (removed unreliable collection deletion tests)
 
-### Improved
+### Test Reliability Improved
 
 - **Test Reliability**: E2E tests now more robust with better error handling
 - **Code Quality**: All linting checks passing, proper code formatting
 - **CI/CD Pipeline**: Clean builds with no warnings or errors
 
-### Technical Details
+### Quality Technical Details
 
 - **Linting**: All golangci-lint, go vet, go fmt checks passing
 - **Tests**: All unit and E2E tests passing
@@ -35,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0] - 2025-09-29
 
-### Added
+### E2E Testing Added
 
 - **Complete E2E Testing Suite**: 35 comprehensive integration tests
   against real Weaviate instances
@@ -63,7 +89,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Better Error Handling**: More descriptive error messages and graceful fallbacks
 - **Improved Documentation**: Updated README and CHANGELOG with v0.2.0 features
 
-### Fixed
+### Collection Operations Fixed
 
 - **Collection Creation**: Implemented `CreateWeaviateCollection` function
 - **Collection Deletion**: Implemented `DeleteWeaviateCollections` function
