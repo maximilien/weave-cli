@@ -76,11 +76,11 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 
 	// Get collection information for each collection
 	type CollectionInfo struct {
-		Name        string
-		DocumentCount int
-		HasDocuments bool
+		Name              string
+		DocumentCount     int
+		HasDocuments      bool
 		IsImageCollection bool
-		SchemaType  string
+		SchemaType        string
 	}
 
 	var collectionInfos []CollectionInfo
@@ -88,7 +88,7 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		count, err := client.CountDocuments(ctx, collection)
 		hasDocuments := err == nil && count > 0
 		isImageCollection := isImageCollection(collection)
-		
+
 		// Try to get schema type
 		schemaType := "unknown"
 		if schema, err := client.GetCollectionSchema(ctx, collection); err == nil {
@@ -105,11 +105,11 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		}
 
 		collectionInfos = append(collectionInfos, CollectionInfo{
-			Name:             collection,
-			DocumentCount:    count,
-			HasDocuments:     hasDocuments,
+			Name:              collection,
+			DocumentCount:     count,
+			HasDocuments:      hasDocuments,
 			IsImageCollection: isImageCollection,
-			SchemaType:       schemaType,
+			SchemaType:        schemaType,
 		})
 	}
 
@@ -149,10 +149,10 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		}
 
 		// Compact single-line format
-		fmt.Printf("%2d. %s %s %s %s\n", 
-			i+1, 
-			nameColor, 
-			countStr, 
+		fmt.Printf("%2d. %s %s %s %s\n",
+			i+1,
+			nameColor,
+			countStr,
 			typeIndicator,
 			collectionType)
 
@@ -195,11 +195,11 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 
 	// Get collection information for each collection
 	type CollectionInfo struct {
-		Name        string
-		DocumentCount int
-		HasDocuments bool
+		Name              string
+		DocumentCount     int
+		HasDocuments      bool
 		IsImageCollection bool
-		SchemaType  string
+		SchemaType        string
 	}
 
 	var collectionInfos []CollectionInfo
@@ -207,7 +207,7 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 		count, err := client.CountDocuments(ctx, collection)
 		hasDocuments := err == nil && count > 0
 		isImageCollection := isImageCollection(collection)
-		
+
 		// For mock collections, try to determine schema type from collection name or documents
 		schemaType := "unknown"
 		if hasDocuments {
@@ -230,11 +230,11 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 		}
 
 		collectionInfos = append(collectionInfos, CollectionInfo{
-			Name:             collection,
-			DocumentCount:    count,
-			HasDocuments:     hasDocuments,
+			Name:              collection,
+			DocumentCount:     count,
+			HasDocuments:      hasDocuments,
 			IsImageCollection: isImageCollection,
-			SchemaType:       schemaType,
+			SchemaType:        schemaType,
 		})
 	}
 
@@ -277,10 +277,10 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 		mockIndicator := GetStyledValueDimmed("(mock)")
 
 		// Compact single-line format
-		fmt.Printf("%2d. %s %s %s %s %s\n", 
-			i+1, 
-			nameColor, 
-			countStr, 
+		fmt.Printf("%2d. %s %s %s %s %s\n",
+			i+1,
+			nameColor,
+			countStr,
 			typeIndicator,
 			collectionType,
 			mockIndicator)

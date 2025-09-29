@@ -65,7 +65,7 @@ func PrintStyledID(id string) {
 
 // PrintStyledFilename prints a styled filename
 func PrintStyledFilename(filename string) {
-	color.New(color.FgBlue).Print(filename)
+	color.New(color.FgWhite).Print(filename)
 }
 
 // PrintStyledNumber prints a styled number
