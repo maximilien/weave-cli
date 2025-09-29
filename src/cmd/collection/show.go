@@ -31,7 +31,7 @@ Example:
 
 func init() {
 	CollectionCmd.AddCommand(ShowCmd)
-	
+
 	ShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	ShowCmd.Flags().BoolP("no-truncate", "n", false, "Don't truncate long content")
 	ShowCmd.Flags().BoolP("verbose", "", false, "Show verbose information")

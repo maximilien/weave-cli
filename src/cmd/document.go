@@ -17,7 +17,7 @@ This command provides subcommands to list, show, and delete documents.`,
 
 func init() {
 	rootCmd.AddCommand(documentCmd)
-	
+
 	// Add all document subcommands
 	documentCmd.AddCommand(document.ListCmd)
 	documentCmd.AddCommand(document.ShowCmd)

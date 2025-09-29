@@ -37,7 +37,7 @@ Example:
 
 func init() {
 	CollectionCmd.AddCommand(DeleteSchemaCmd)
-	
+
 	DeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
@@ -67,7 +67,7 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 			fmt.Println("Operation cancelled")
 			return
 		}
-		
+
 		// Second confirmation
 		if !utils.ConfirmAction("This will permanently delete the schema. Type 'yes' to confirm: ") {
 			fmt.Println("Operation cancelled")

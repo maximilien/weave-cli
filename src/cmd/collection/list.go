@@ -29,7 +29,7 @@ Use 'weave config list' to see all available databases.`,
 
 func init() {
 	CollectionCmd.AddCommand(ListCmd)
-	
+
 	ListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
 	ListCmd.Flags().BoolP("virtual", "", false, "Show collections in virtual structure")
 }

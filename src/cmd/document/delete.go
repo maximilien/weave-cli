@@ -51,7 +51,7 @@ delete the specified documents. Use with caution!`,
 
 func init() {
 	DocumentCmd.AddCommand(DeleteCmd)
-	
+
 	DeleteCmd.Flags().StringSliceP("metadata", "m", []string{}, "Delete documents matching metadata filter (format: key=value)")
 	DeleteCmd.Flags().BoolP("virtual", "w", false, "Delete all chunks and images associated with the original filename")
 	DeleteCmd.Flags().StringP("pattern", "p", "", "Delete documents matching pattern (auto-detects shell glob vs regex)")
@@ -104,7 +104,7 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		} else {
 			message = fmt.Sprintf("Are you sure you want to delete documents from collection '%s'?", collectionName)
 		}
-		
+
 		if !utils.ConfirmAction(message) {
 			fmt.Println("Operation cancelled")
 			return

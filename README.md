@@ -663,6 +663,7 @@ weave-cli/
 ```
 
 **Code Organization:**
+
 - Commands are organized into logical files by functionality
 - Each subcommand has its own file (e.g., `list.go`, `create.go`)
 - Main command files contain only the command definition

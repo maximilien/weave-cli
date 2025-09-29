@@ -36,7 +36,7 @@ Use --expand-metadata to show expanded metadata information.`,
 
 func init() {
 	DocumentCmd.AddCommand(ShowCmd)
-	
+
 	ShowCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	ShowCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	ShowCmd.Flags().StringSliceP("metadata", "m", []string{}, "Show documents matching metadata filter (format: key=value)")

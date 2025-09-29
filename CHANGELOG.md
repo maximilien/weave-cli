@@ -62,7 +62,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.9-rc2] - 2025-09-28
 
-### Added
+### Schema Management Added
 
 - **Schema flags for collection creation**: Add `--text` and `--image` flags to
   `weave collection create` command
@@ -80,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proper RagMeDocs and RagMeImages schema compatibility
   - Automatic vectorization configuration based on schema type
 
-### Changed
+### Schema Workflow Changed
 
 - **Collection creation workflow**: Collection creation now supports explicit
   schema specification with sensible defaults

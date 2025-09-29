@@ -40,7 +40,7 @@ Examples:
 
 func init() {
 	CollectionCmd.AddCommand(DeleteCmd)
-	
+
 	DeleteCmd.Flags().StringP("pattern", "p", "", "Delete collections matching pattern (auto-detects shell glob vs regex)")
 	DeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
@@ -73,7 +73,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		} else {
 			message = fmt.Sprintf("Are you sure you want to delete collection(s) %v? This action cannot be undone.", args)
 		}
-		
+
 		if !utils.ConfirmAction(message) {
 			fmt.Println("Operation cancelled")
 			return

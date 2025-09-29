@@ -34,7 +34,7 @@ Example:
 
 func init() {
 	DocumentCmd.AddCommand(DeleteAllCmd)
-	
+
 	DeleteAllCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
@@ -64,7 +64,7 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 			fmt.Println("Operation cancelled")
 			return
 		}
-		
+
 		// Second confirmation
 		if !utils.ConfirmAction("This will permanently delete ALL documents. Type 'yes' to confirm: ") {
 			fmt.Println("Operation cancelled")

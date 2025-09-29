@@ -17,7 +17,7 @@ This command provides subcommands to list, view, and delete collections.`,
 
 func init() {
 	rootCmd.AddCommand(collectionCmd)
-	
+
 	// Add all collection subcommands
 	collectionCmd.AddCommand(collection.ListCmd)
 	collectionCmd.AddCommand(collection.ShowCmd)
