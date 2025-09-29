@@ -1,9 +1,16 @@
-# Weave CLI v0.2.0
+# Weave CLI v0.2.1
 
 A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases, independently of specific
 applications.
+
+## 🚀 What's New in v0.2.1
+
+- **🔧 CI/CD Fixes**: Resolved all linting issues and improved test reliability
+- **🧹 Code Cleanup**: Removed unused functions from refactoring process
+- **🧪 Enhanced E2E Testing**: More reliable cleanup with 33 comprehensive tests
+- **✅ Quality Assurance**: All linting checks passing, improved error handling
 
 ## 🚀 What's New in v0.2.0
 
