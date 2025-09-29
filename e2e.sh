@@ -162,10 +162,10 @@ main() {
     run_test "List collections (initial)" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"
     
     # Create text collection
-    run_test "Create text collection" "./bin/weave cols create '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmedocs"
+    run_test "Create text collection" "./bin/weave cols create '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmedocs --embedding-model text-embedding-3-small"
     
     # Create image collection
-    run_test "Create image collection" "./bin/weave cols create '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmeimages"
+    run_test "Create image collection" "./bin/weave cols create '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmeimages --embedding-model text-embedding-3-small"
     
     # List collections (should show our test collections)
     run_test "List collections (after creation)" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"
@@ -254,14 +254,14 @@ main() {
     if [ -d "docs" ] && [ "$(find docs -name "*.md" | wc -l)" -gt 0 ]; then
         first_doc=$(find docs -name "*.md" | head -1)
         if [ -n "$first_doc" ]; then
-            run_test "Delete document: $(basename "$first_doc")" "./bin/weave docs delete '$TEXT_COLLECTION' '$(basename "$first_doc")' --vector-db-type $VECTOR_DB_TYPE"
+            run_test "Delete document: $(basename "$first_doc")" "./bin/weave docs delete '$TEXT_COLLECTION' '$(basename "$first_doc")' --vector-db-type $VECTOR_DB_TYPE --force"
         fi
     fi
     
     if [ -d "images" ] && [ "$(find images -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" | wc -l)" -gt 0 ]; then
         first_img=$(find images -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" | head -1)
         if [ -n "$first_img" ]; then
-            run_test "Delete image document: $(basename "$first_img")" "./bin/weave docs delete '$IMAGE_COLLECTION' '$(basename "$first_img")' --vector-db-type $VECTOR_DB_TYPE"
+            run_test "Delete image document: $(basename "$first_img")" "./bin/weave docs delete '$IMAGE_COLLECTION' '$(basename "$first_img")' --vector-db-type $VECTOR_DB_TYPE --force"
         fi
     fi
     
@@ -273,8 +273,8 @@ main() {
     print_section "Step 8: Collection Deletion Tests"
     
     # Delete collections
-    run_test "Delete text collection" "printf 'y\nyes\n' | ./bin/weave cols del '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
-    run_test "Delete image collection" "printf 'y\nyes\n' | ./bin/weave cols del '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
+    run_test "Delete text collection" "./bin/weave cols del '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
+    run_test "Delete image collection" "./bin/weave cols del '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
     
     # Delete schemas
     run_test "Delete text collection schema" "printf 'y\nyes\n' | ./bin/weave cols delete-schema '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"

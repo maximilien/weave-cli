@@ -30,8 +30,17 @@ func ParseFieldDefinitions(fieldsStr string) ([]weaviate.FieldDefinition, error)
 
 // CreateWeaviateCollection creates a Weaviate collection
 func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition, schemaType string) error {
-	PrintInfo("Weaviate collection creation not yet implemented in new structure")
-	return fmt.Errorf("collection creation not yet implemented")
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	err = client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, schemaType)
+	if err != nil {
+		return fmt.Errorf("failed to create collection: %v", err)
+	}
+
+	return nil
 }
 
 // CreateMockCollection creates a mock collection
@@ -516,8 +525,19 @@ func CountMockCollections(ctx context.Context, cfg *config.VectorDBConfig) (int,
 
 // DeleteWeaviateCollections deletes Weaviate collections
 func DeleteWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string) error {
-	PrintInfo("Weaviate collection deletion not yet implemented in new structure")
-	return fmt.Errorf("collection deletion not yet implemented")
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	for _, collectionName := range collectionNames {
+		err = client.DeleteCollection(ctx, collectionName)
+		if err != nil {
+			return fmt.Errorf("failed to delete collection %s: %v", collectionName, err)
+		}
+	}
+
+	return nil
 }
 
 // DeleteMockCollections deletes mock collections
@@ -528,8 +548,41 @@ func DeleteMockCollections(ctx context.Context, cfg *config.VectorDBConfig, coll
 
 // DeleteWeaviateCollectionsByPattern deletes Weaviate collections by pattern
 func DeleteWeaviateCollectionsByPattern(ctx context.Context, cfg *config.VectorDBConfig, pattern string) error {
-	PrintInfo("Weaviate collection pattern deletion not yet implemented in new structure")
-	return fmt.Errorf("collection pattern deletion not yet implemented")
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	// Get all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list collections: %v", err)
+	}
+
+	// Filter collections by pattern
+	var matchingCollections []string
+	for _, collection := range collections {
+		if matchPattern(collection, pattern) {
+			matchingCollections = append(matchingCollections, collection)
+		}
+	}
+
+	// Delete matching collections
+	for _, collectionName := range matchingCollections {
+		err = client.DeleteCollection(ctx, collectionName)
+		if err != nil {
+			return fmt.Errorf("failed to delete collection %s: %v", collectionName, err)
+		}
+	}
+
+	return nil
+}
+
+// matchPattern checks if a string matches a pattern (shell glob or regex)
+func matchPattern(str, pattern string) bool {
+	// Simple shell glob matching for now
+	// TODO: Add regex support
+	return strings.Contains(str, strings.TrimSuffix(strings.TrimPrefix(pattern, "*"), "*"))
 }
 
 // DeleteMockCollectionsByPattern deletes mock collections by pattern
