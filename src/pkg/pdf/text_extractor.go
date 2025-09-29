@@ -109,24 +109,6 @@ func generateReasonablePDFContent(fileName string, fileSize int64, metadata map[
 	}
 }
 
-// generateRealisticPDFContent generates more realistic content for PDFs
-func generateRealisticPDFContent(fileName string, fileSize int64) string {
-	// Generate more realistic content based on filename patterns
-	fileName = strings.ToLower(fileName)
-
-	if strings.Contains(fileName, "report") {
-		return fmt.Sprintf("Report: %s\n\nThis document contains a comprehensive report with detailed analysis and findings. The report includes multiple sections covering various aspects of the subject matter.", fileName)
-	} else if strings.Contains(fileName, "manual") {
-		return fmt.Sprintf("Manual: %s\n\nThis document serves as a user manual or guide, providing step-by-step instructions and detailed explanations for using a product or service.", fileName)
-	} else if strings.Contains(fileName, "contract") {
-		return fmt.Sprintf("Contract: %s\n\nThis document contains contractual terms and conditions, outlining the agreement between parties with specific terms and obligations.", fileName)
-	} else if strings.Contains(fileName, "invoice") {
-		return fmt.Sprintf("Invoice: %s\n\nThis document contains billing information, including itemized charges, payment terms, and transaction details.", fileName)
-	} else {
-		return fmt.Sprintf("Document: %s\n\nThis PDF document contains various types of content including text, images, and other elements. The document appears to be well-structured and contains substantial information.", fileName)
-	}
-}
-
 // chunkText splits text into chunks of specified size
 func chunkText(text string, chunkSize int) []string {
 	if chunkSize <= 0 {
