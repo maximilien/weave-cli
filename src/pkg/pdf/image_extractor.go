@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
 // extractPDFImages extracts images from a PDF file
@@ -22,7 +21,7 @@ func extractPDFImages(filePath string, skipSmallImages bool, minImageSize int) (
 	defer os.RemoveAll(tempDir)
 
 	// Extract images using pdfcpu
-	err = api.ExtractImagesFile(filePath, tempDir, nil)
+	err = api.ExtractImagesFile(filePath, tempDir, []string{}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("pdfcpu image extraction failed: %w", err)
 	}
@@ -85,7 +84,7 @@ func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFIma
 	// Generate metadata
 	metadata := map[string]interface{}{
 		"type":         "image",
-		"source_pdf":  sourcePDF,
+		"source_pdf":   sourcePDF,
 		"image_index":  imageIndex,
 		"image_format": strings.ToLower(filepath.Ext(imagePath)),
 		"image_size":   len(imageBytes),
