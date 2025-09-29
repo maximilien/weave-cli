@@ -135,6 +135,17 @@ echo -e "${GREEN}🚀 Weave CLI Demo Starting...${NC}"
 echo ""
 sleep 2
 
+# Pre-demo cleanup
+echo -e "${BLUE}💻 Pre-demo cleanup${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols delete-schema WeaveDocs --force 2>/dev/null || true${NC}"
+sleep 1
+./bin/weave cols delete-schema WeaveDocs --force 2>/dev/null || true
+echo -e "${YELLOW}$ ./bin/weave cols delete-schema WeaveImages --force 2>/dev/null || true${NC}"
+sleep 1
+./bin/weave cols delete-schema WeaveImages --force 2>/dev/null || true
+echo ""
+sleep 2
+
 # Page 1: Health Check & Configuration
 page_break "1"
 run_demo_cmd "./bin/weave health check" "Health Check"
@@ -143,8 +154,8 @@ run_demo_cmd "./bin/weave --help | head -20" "Help Command"
 
 # Page 2: Create Collections
 page_break "2"
-run_demo_cmd "./bin/weave cols create WeaveDocs --schema-type ragmedocs --embedding-model text-embedding-3-small" "Create Text Collection"
-run_demo_cmd "./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small" "Create Image Collection"
+run_demo_cmd "./bin/weave cols create WeaveDocs --schema-type ragmedocs --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
+run_demo_cmd "./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Image Collection"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
 
 # Page 3: List Collections
@@ -153,12 +164,12 @@ run_demo_cmd "./bin/weave cols ls" "List All Collections"
 
 # Page 4: Create Documents
 page_break "4"
-run_demo_cmd "./bin/weave docs create WeaveDocs docs/README.md" "Create Text Document"
+run_demo_cmd "./bin/weave docs create WeaveDocs docs/README.md || echo 'Document already exists or file not found'" "Create Text Document"
 run_demo_cmd "./bin/weave docs create WeaveImages images/screenshot1.png 2>/dev/null || echo 'No images available'" "Create Image Document"
 
 # Page 5: Show Documents & Schema
 page_break "5"
-run_demo_cmd "./bin/weave docs show WeaveDocs README.md" "Show Document Details"
+run_demo_cmd "./bin/weave docs show WeaveDocs README.md || echo 'Document not found - will show collection info instead'" "Show Document Details"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Schema"
 
 # Page 6: List Documents

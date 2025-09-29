@@ -54,6 +54,7 @@ Available Commands:
 ✅ Successfully created collection: WeaveDocs
 📄 Schema Type: ragmedocs (text documents)
 ```
+*Note: If collection already exists, command will show "Collection already exists"*
 
 ### Create Image Collection
 ```bash
@@ -64,6 +65,7 @@ Available Commands:
 ✅ Successfully created collection: WeaveImages
 🖼️ Schema Type: ragmeimages (image documents)
 ```
+*Note: If collection already exists, command will show "Collection already exists"*
 
 ### Show Collection Structure
 ```bash
