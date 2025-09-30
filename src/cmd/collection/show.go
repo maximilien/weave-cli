@@ -41,6 +41,10 @@ func init() {
 	ShowCmd.Flags().BoolP("schema", "", false, "Show collection schema")
 	ShowCmd.Flags().BoolP("metadata", "", false, "Show collection metadata")
 	ShowCmd.Flags().BoolP("expand-metadata", "", false, "Show expanded metadata information")
+	ShowCmd.Flags().BoolP("yaml", "", false, "Output schema/metadata as YAML")
+	ShowCmd.Flags().BoolP("json", "", false, "Output schema/metadata as JSON")
+	ShowCmd.Flags().StringP("yaml-file", "", "", "Write schema/metadata to YAML file")
+	ShowCmd.Flags().StringP("json-file", "", "", "Write schema/metadata to JSON file")
 }
 
 func runCollectionShow(cmd *cobra.Command, args []string) {
@@ -51,6 +55,10 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	showSchema, _ := cmd.Flags().GetBool("schema")
 	showMetadata, _ := cmd.Flags().GetBool("metadata")
 	expandMetadata, _ := cmd.Flags().GetBool("expand-metadata")
+	outputYAML, _ := cmd.Flags().GetBool("yaml")
+	outputJSON, _ := cmd.Flags().GetBool("json")
+	yamlFile, _ := cmd.Flags().GetString("yaml-file")
+	jsonFile, _ := cmd.Flags().GetString("json-file")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -70,9 +78,9 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata)
+		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile)
 	case config.VectorDBTypeMock:
-		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata)
+		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)

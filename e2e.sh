@@ -284,7 +284,43 @@ main() {
     # Delete all documents
     run_test "Delete all documents from text collection" "./bin/weave docs delete-all '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
     run_test "Delete all documents from image collection" "./bin/weave docs delete-all '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
-    
+
+    # Step 7.5: Schema Export and Import Tests
+    print_section "Step 7.5: Schema Export and Import Round-trip Tests"
+
+    # Export schema to YAML
+    run_test "Export text collection schema to YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml-file /tmp/${TEXT_COLLECTION}_schema.yaml --vector-db-type $VECTOR_DB_TYPE"
+
+    # Export schema to JSON
+    run_test "Export text collection schema to JSON" "./bin/weave cols show '$TEXT_COLLECTION' --schema --json-file /tmp/${TEXT_COLLECTION}_schema.json --vector-db-type $VECTOR_DB_TYPE"
+
+    # Display YAML schema to stdout
+    run_test "Display schema as YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml --vector-db-type $VECTOR_DB_TYPE"
+
+    # Display JSON schema to stdout
+    run_test "Display schema as JSON" "./bin/weave cols show '$TEXT_COLLECTION' --schema --json --vector-db-type $VECTOR_DB_TYPE"
+
+    # Create new collection from exported schema
+    SCHEMA_TEST_COLLECTION="${TEXT_COLLECTION}_SchemaRoundTrip"
+    run_test "Create collection from YAML schema file" "./bin/weave cols create '$SCHEMA_TEST_COLLECTION' --schema-yaml-file /tmp/${TEXT_COLLECTION}_schema.yaml --vector-db-type $VECTOR_DB_TYPE"
+
+    # Export schema from newly created collection
+    run_test "Export schema from round-trip collection" "./bin/weave cols show '$SCHEMA_TEST_COLLECTION' --schema --yaml-file /tmp/${SCHEMA_TEST_COLLECTION}_schema.yaml --vector-db-type $VECTOR_DB_TYPE"
+
+    # Verify schemas match (ignoring collection name and metadata occurrences)
+    echo -e "${YELLOW}Verifying schema round-trip integrity...${NC}"
+    if diff <(grep -A 50 "^schema:" /tmp/${TEXT_COLLECTION}_schema.yaml | grep -v "occurrences" | sed "s/${TEXT_COLLECTION}/${SCHEMA_TEST_COLLECTION}/g") <(grep -A 50 "^schema:" /tmp/${SCHEMA_TEST_COLLECTION}_schema.yaml | grep -v "occurrences") > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Schema round-trip verified: Schemas match!${NC}"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ Schema round-trip failed: Schemas do not match${NC}"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
+    # Delete the schema test collection
+    run_test "Delete schema round-trip test collection" "./bin/weave cols delete-schema '$SCHEMA_TEST_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
+
     # Step 8: Collection Deletion Tests
     print_section "Step 8: Collection Deletion Tests"
     

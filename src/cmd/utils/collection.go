@@ -46,6 +46,40 @@ func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 	return nil
 }
 
+// CreateWeaviateCollectionFromSchemaFile creates a Weaviate collection from a schema file
+func CreateWeaviateCollectionFromSchemaFile(ctx context.Context, cfg *config.VectorDBConfig, collectionName, schemaFilePath string) error {
+	// Load schema from file
+	schemaExport, err := LoadSchemaFromYAMLFile(schemaFilePath)
+	if err != nil {
+		return fmt.Errorf("failed to load schema file: %v", err)
+	}
+
+	// Validate that the schema has the required data
+	if schemaExport.Schema == nil {
+		return fmt.Errorf("schema file does not contain valid schema information")
+	}
+
+	// Override the collection name if specified
+	if collectionName != "" && collectionName != schemaExport.Name {
+		PrintInfo(fmt.Sprintf("Using specified collection name '%s' instead of schema name '%s'", collectionName, schemaExport.Name))
+		schemaExport.Schema.Class = collectionName
+	}
+
+	// Create the client
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	// Create collection from schema
+	err = client.CreateCollectionFromSchema(ctx, schemaExport.Schema)
+	if err != nil {
+		return fmt.Errorf("failed to create collection from schema: %v", err)
+	}
+
+	return nil
+}
+
 // CreateMockCollection creates a mock collection
 func CreateMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
 	PrintInfo("Mock collection creation not yet implemented in new structure")
@@ -306,7 +340,7 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 }
 
 // ShowWeaviateCollection shows Weaviate collection details
-func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool) {
+func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -485,6 +519,73 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		}
 	}
 
+	// Handle export requests
+	if outputYAML || outputJSON || yamlFile != "" || jsonFile != "" {
+		// Determine if metadata should be included
+		includeMetadata := showMetadata || expandMetadata || outputYAML || outputJSON || yamlFile != "" || jsonFile != ""
+
+		// Export collection schema and metadata
+		export, err := ExportCollectionSchemaAndMetadata(ctx, client, collectionName, includeMetadata, expandMetadata)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to export collection data: %v", err))
+			return
+		}
+
+		// Handle YAML output
+		if outputYAML {
+			yamlContent, err := ExportAsYAML(export)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to generate YAML: %v", err))
+				return
+			}
+			fmt.Println()
+			fmt.Println(yamlContent)
+		}
+
+		// Handle JSON output
+		if outputJSON {
+			jsonContent, err := ExportAsJSON(export)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to generate JSON: %v", err))
+				return
+			}
+			fmt.Println()
+			fmt.Println(jsonContent)
+		}
+
+		// Handle YAML file output
+		if yamlFile != "" {
+			yamlContent, err := ExportAsYAML(export)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to generate YAML: %v", err))
+				return
+			}
+			err = WriteToFile(yamlFile, yamlContent)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to write YAML file: %v", err))
+				return
+			}
+			PrintSuccess(fmt.Sprintf("Schema and metadata exported to YAML file: %s", yamlFile))
+		}
+
+		// Handle JSON file output
+		if jsonFile != "" {
+			jsonContent, err := ExportAsJSON(export)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to generate JSON: %v", err))
+				return
+			}
+			err = WriteToFile(jsonFile, jsonContent)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to write JSON file: %v", err))
+				return
+			}
+			PrintSuccess(fmt.Sprintf("Schema and metadata exported to JSON file: %s", jsonFile))
+		}
+
+		return
+	}
+
 	// Show schema if requested
 	if showSchema {
 		ShowCollectionSchema(ctx, client, collectionName)
@@ -499,7 +600,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 }
 
 // ShowMockCollection shows mock collection details
-func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool) {
+func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string) {
 	PrintInfo("Mock collection show not yet implemented in new structure")
 }
 

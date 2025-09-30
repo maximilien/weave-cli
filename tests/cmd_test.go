@@ -1252,6 +1252,214 @@ This command displays:
 			})
 		}
 	})
+
+	t.Run("Collection Show with YAML Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "show",
+			Aliases: []string{"s"},
+			Run: func(cmd *cobra.Command, args []string) {
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+				if args[0] != "TestCollection" {
+					t.Errorf("Expected 'TestCollection', got %s", args[0])
+				}
+
+				outputYAML, _ := cmd.Flags().GetBool("yaml")
+				if !outputYAML {
+					t.Errorf("Expected yaml flag to be true")
+				}
+			},
+		}
+
+		cmd.Flags().BoolP("yaml", "", false, "Output schema/metadata as YAML")
+		cmd.SetArgs([]string{"TestCollection", "--yaml"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Show with JSON Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "show",
+			Aliases: []string{"s"},
+			Run: func(cmd *cobra.Command, args []string) {
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+				if args[0] != "TestCollection" {
+					t.Errorf("Expected 'TestCollection', got %s", args[0])
+				}
+
+				outputJSON, _ := cmd.Flags().GetBool("json")
+				if !outputJSON {
+					t.Errorf("Expected json flag to be true")
+				}
+			},
+		}
+
+		cmd.Flags().BoolP("json", "", false, "Output schema/metadata as JSON")
+		cmd.SetArgs([]string{"TestCollection", "--json"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Show with YAML File Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "show",
+			Aliases: []string{"s"},
+			Run: func(cmd *cobra.Command, args []string) {
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+
+				yamlFile, _ := cmd.Flags().GetString("yaml-file")
+				if yamlFile != "schema.yaml" {
+					t.Errorf("Expected yaml-file to be 'schema.yaml', got %s", yamlFile)
+				}
+			},
+		}
+
+		cmd.Flags().StringP("yaml-file", "", "", "Write schema/metadata to YAML file")
+		cmd.SetArgs([]string{"TestCollection", "--yaml-file", "schema.yaml"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Show with JSON File Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "show",
+			Aliases: []string{"s"},
+			Run: func(cmd *cobra.Command, args []string) {
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+
+				jsonFile, _ := cmd.Flags().GetString("json-file")
+				if jsonFile != "schema.json" {
+					t.Errorf("Expected json-file to be 'schema.json', got %s", jsonFile)
+				}
+			},
+		}
+
+		cmd.Flags().StringP("json-file", "", "", "Write schema/metadata to JSON file")
+		cmd.SetArgs([]string{"TestCollection", "--json-file", "schema.json"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Show with Schema and YAML Flags", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "show",
+			Aliases: []string{"s"},
+			Run: func(cmd *cobra.Command, args []string) {
+				showSchema, _ := cmd.Flags().GetBool("schema")
+				outputYAML, _ := cmd.Flags().GetBool("yaml")
+
+				if !showSchema {
+					t.Errorf("Expected schema flag to be true")
+				}
+				if !outputYAML {
+					t.Errorf("Expected yaml flag to be true")
+				}
+			},
+		}
+
+		cmd.Flags().BoolP("schema", "", false, "Show collection schema")
+		cmd.Flags().BoolP("yaml", "", false, "Output schema/metadata as YAML")
+		cmd.SetArgs([]string{"TestCollection", "--schema", "--yaml"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+}
+
+// TestCollectionCreateFromSchema tests creating collections from schema files
+func TestCollectionCreateFromSchema(t *testing.T) {
+	t.Run("Collection Create with Schema YAML File Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create",
+			Aliases: []string{"c"},
+			Run: func(cmd *cobra.Command, args []string) {
+				if len(args) != 1 {
+					t.Errorf("Expected 1 argument, got %d", len(args))
+				}
+				if args[0] != "TestCollection" {
+					t.Errorf("Expected 'TestCollection', got %s", args[0])
+				}
+
+				schemaYAMLFile, _ := cmd.Flags().GetString("schema-yaml-file")
+				if schemaYAMLFile != "schema.yaml" {
+					t.Errorf("Expected schema-yaml-file to be 'schema.yaml', got %s", schemaYAMLFile)
+				}
+			},
+		}
+
+		cmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
+		cmd.SetArgs([]string{"TestCollection", "--schema-yaml-file", "schema.yaml"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Create without Schema File", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create",
+			Aliases: []string{"c"},
+			Run: func(cmd *cobra.Command, args []string) {
+				schemaYAMLFile, _ := cmd.Flags().GetString("schema-yaml-file")
+				if schemaYAMLFile != "" {
+					t.Errorf("Expected schema-yaml-file to be empty, got %s", schemaYAMLFile)
+				}
+			},
+		}
+
+		cmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
+		cmd.SetArgs([]string{"TestCollection"})
+
+		err := cmd.Execute()
+		if err != nil {
+			t.Errorf("Command execution failed: %v", err)
+		}
+	})
+
+	t.Run("Collection Create Help Text with Schema File Flag", func(t *testing.T) {
+		cmd := &cobra.Command{
+			Use:     "create COLLECTION_NAME",
+			Aliases: []string{"c"},
+			Short:   "Create a collection",
+			Long: `Create a new collection in the vector database.
+
+This command creates a collection with the specified name and schema.
+You can specify custom fields and embedding model or load from a schema file.`,
+		}
+
+		cmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
+
+		// Just verify the flag was added correctly
+		flag := cmd.Flags().Lookup("schema-yaml-file")
+		if flag == nil {
+			t.Errorf("Expected 'schema-yaml-file' flag to be defined")
+		}
+		if flag != nil && flag.Usage != "Create collection from YAML schema file" {
+			t.Errorf("Expected flag usage to be 'Create collection from YAML schema file', got: %s", flag.Usage)
+		}
+	})
 }
 
 func TestDocumentDeleteVirtualFlag(t *testing.T) {
