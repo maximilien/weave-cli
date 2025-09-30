@@ -340,7 +340,7 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 }
 
 // ShowWeaviateCollection shows Weaviate collection details
-func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string) {
+func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string, compact bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -525,7 +525,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		includeMetadata := showMetadata || expandMetadata || outputYAML || outputJSON || yamlFile != "" || jsonFile != ""
 
 		// Export collection schema and metadata
-		export, err := ExportCollectionSchemaAndMetadata(ctx, client, collectionName, includeMetadata, expandMetadata)
+		export, err := ExportCollectionSchemaAndMetadata(ctx, client, collectionName, includeMetadata, expandMetadata, compact)
 		if err != nil {
 			PrintError(fmt.Sprintf("Failed to export collection data: %v", err))
 			return
@@ -600,7 +600,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 }
 
 // ShowMockCollection shows mock collection details
-func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string) {
+func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string, compact bool) {
 	PrintInfo("Mock collection show not yet implemented in new structure")
 }
 

@@ -23,12 +23,12 @@ type CollectionExport struct {
 // MetadataFieldInfo represents metadata field information
 type MetadataFieldInfo struct {
 	Type        string      `json:"type" yaml:"type"`
-	Occurrences int         `json:"occurrences" yaml:"occurrences"`
+	Occurrences int         `json:"occurrences,omitempty" yaml:"occurrences,omitempty"`
 	Sample      interface{} `json:"sample,omitempty" yaml:"sample,omitempty"`
 }
 
 // ExportCollectionSchemaAndMetadata exports collection schema and metadata
-func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Client, collectionName string, includeMetadata bool, expandMetadata bool) (*CollectionExport, error) {
+func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Client, collectionName string, includeMetadata bool, expandMetadata bool, compact bool) (*CollectionExport, error) {
 	export := &CollectionExport{
 		Name: collectionName,
 	}
@@ -38,6 +38,12 @@ func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Cli
 	if err != nil {
 		return nil, fmt.Errorf("failed to get collection schema: %w", err)
 	}
+
+	// Apply compact mode if requested
+	if compact {
+		schema = compactSchema(schema)
+	}
+
 	export.Schema = schema
 
 	// Get metadata if requested
@@ -83,7 +89,63 @@ func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Cli
 		}
 	}
 
+	// In compact mode, keep metadata but remove occurrences and samples
+	if compact && export.Metadata != nil {
+		compactMetadata := make(map[string]MetadataFieldInfo)
+		for name, info := range export.Metadata {
+			compactMetadata[name] = MetadataFieldInfo{
+				Type: info.Type,
+				// Omit Occurrences and Sample in compact mode
+			}
+		}
+		export.Metadata = compactMetadata
+	}
+
 	return export, nil
+}
+
+// compactSchema removes empty nested properties from schema
+func compactSchema(schema *weaviate.CollectionSchema) *weaviate.CollectionSchema {
+	if schema == nil {
+		return schema
+	}
+
+	// Create a new schema with compacted properties
+	compactedSchema := &weaviate.CollectionSchema{
+		Class:      schema.Class,
+		Vectorizer: schema.Vectorizer,
+		Properties: make([]weaviate.SchemaProperty, 0, len(schema.Properties)),
+	}
+
+	for _, prop := range schema.Properties {
+		compactedProp := compactSchemaProperty(prop)
+		compactedSchema.Properties = append(compactedSchema.Properties, compactedProp)
+	}
+
+	return compactedSchema
+}
+
+// compactSchemaProperty recursively removes empty nested properties
+func compactSchemaProperty(prop weaviate.SchemaProperty) weaviate.SchemaProperty {
+	compactedProp := weaviate.SchemaProperty{
+		Name:        prop.Name,
+		DataType:    prop.DataType,
+		Description: prop.Description,
+	}
+
+	// Only include nested properties if they exist and are non-empty
+	if len(prop.NestedProperties) > 0 {
+		compactedNested := make([]weaviate.SchemaProperty, 0, len(prop.NestedProperties))
+		for _, nested := range prop.NestedProperties {
+			compactedNested = append(compactedNested, compactSchemaProperty(nested))
+		}
+		compactedProp.NestedProperties = compactedNested
+	} else {
+		// Explicitly set to nil so omitempty works in YAML
+		compactedProp.NestedProperties = nil
+	}
+
+	return compactedProp
 }
 
 // ExportAsYAML exports collection data as YAML

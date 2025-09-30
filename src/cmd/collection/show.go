@@ -45,6 +45,7 @@ func init() {
 	ShowCmd.Flags().BoolP("json", "", false, "Output schema/metadata as JSON")
 	ShowCmd.Flags().StringP("yaml-file", "", "", "Write schema/metadata to YAML file")
 	ShowCmd.Flags().StringP("json-file", "", "", "Write schema/metadata to JSON file")
+	ShowCmd.Flags().BoolP("compact", "", false, "Remove occurrences, samples, and empty nested properties from output")
 }
 
 func runCollectionShow(cmd *cobra.Command, args []string) {
@@ -59,6 +60,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	outputJSON, _ := cmd.Flags().GetBool("json")
 	yamlFile, _ := cmd.Flags().GetString("yaml-file")
 	jsonFile, _ := cmd.Flags().GetString("json-file")
+	compact, _ := cmd.Flags().GetBool("compact")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -78,9 +80,9 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile)
+		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	case config.VectorDBTypeMock:
-		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile)
+		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)

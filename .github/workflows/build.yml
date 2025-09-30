@@ -50,7 +50,8 @@ jobs:
         shell: bash
         run: |
           # Build for Windows using the build script approach
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null \
+            || echo "dev")
           if [[ $VERSION == v* ]]; then
               VERSION=${VERSION#v}
           fi
@@ -122,7 +123,8 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
-          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null \
+            || echo "dev")
           if [[ $VERSION == v* ]]; then
               VERSION=${VERSION#v}
           fi
