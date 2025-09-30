@@ -1,0 +1,150 @@
+---
+name: Build
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-matrix:
+    name: Build - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        go-version: ['1.24']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build (Unix)
+        if: runner.os != 'Windows'
+        run: ./build.sh
+
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # Build for Windows using the build script approach
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+          if [[ $VERSION == v* ]]; then
+              VERSION=${VERSION#v}
+          fi
+          GIT_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          VERSION_PKG="github.com/maximilien/weave-cli/src/pkg/version"
+          LDFLAGS="-X $VERSION_PKG.Version=$VERSION"
+          LDFLAGS="$LDFLAGS -X $VERSION_PKG.GitCommit=$GIT_COMMIT"
+          LDFLAGS="$LDFLAGS -X $VERSION_PKG.BuildTime=$BUILD_TIME"
+
+          mkdir -p bin
+          go build -ldflags "$LDFLAGS" -o bin/weave.exe ./src
+
+      - name: Verify build artifact (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          ls -lh bin/weave
+          ./bin/weave --version
+
+      - name: Verify build artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          ls -lh bin/weave.exe
+          ./bin/weave.exe --version
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: weave-${{ matrix.os }}-${{ matrix.go-version }}
+          path: bin/
+          retention-days: 7
+
+  cross-compile:
+    name: Cross-compile Verification
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+        exclude:
+          # Windows ARM64 is not commonly used
+          - goos: windows
+            goarch: arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Cross-compile for ${{ matrix.goos }}/${{ matrix.goarch }}
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          VERSION=$(git describe --tags --always --dirty 2>/dev/null || echo "dev")
+          if [[ $VERSION == v* ]]; then
+              VERSION=${VERSION#v}
+          fi
+          GIT_COMMIT=$(git rev-parse HEAD)
+          BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          VERSION_PKG="github.com/maximilien/weave-cli/src/pkg/version"
+          LDFLAGS="-X $VERSION_PKG.Version=$VERSION"
+          LDFLAGS="$LDFLAGS -X $VERSION_PKG.GitCommit=$GIT_COMMIT"
+          LDFLAGS="$LDFLAGS -X $VERSION_PKG.BuildTime=$BUILD_TIME"
+
+          OUTPUT="weave-${{ matrix.goos }}-${{ matrix.goarch }}"
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            OUTPUT="${OUTPUT}.exe"
+          fi
+
+          go build -ldflags "$LDFLAGS" -o "$OUTPUT" ./src
+          ls -lh "$OUTPUT"
+
+      - name: Upload cross-compiled artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-compile-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: weave-*
+          retention-days: 7

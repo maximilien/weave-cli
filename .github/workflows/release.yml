@@ -5,14 +5,45 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v0.2.4)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
 
 jobs:
-  release:
-    name: Release
+  prepare:
+    name: Prepare Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.tag }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: prepare
 
     steps:
       - name: Checkout code
@@ -61,42 +92,62 @@ jobs:
           cd dist
           sha256sum * > checksums.txt
 
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION=${{ needs.prepare.outputs.version }}
+          echo "## Weave CLI ${VERSION}" > release_notes.md
+          echo "" >> release_notes.md
+
+          # Get commit messages since last tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "### Changes since ${PREV_TAG}" >> release_notes.md
+            git log ${PREV_TAG}..HEAD --pretty=format:"- %s" >> release_notes.md
+          fi
+
+          cat >> release_notes.md << 'EOF'
+
+          ### Downloads
+
+          - **Linux AMD64**: `weave-linux-amd64`
+          - **Linux ARM64**: `weave-linux-arm64`
+          - **macOS AMD64**: `weave-darwin-amd64`
+          - **macOS ARM64**: `weave-darwin-arm64`
+          - **Windows AMD64**: `weave-windows-amd64.exe`
+
+          ### Installation
+
+          Download the appropriate binary for your platform and make it executable:
+
+          ```bash
+          # Linux/macOS
+          chmod +x weave-linux-amd64
+          mv weave-linux-amd64 /usr/local/bin/weave
+          weave --help
+
+          # Windows
+          weave-windows-amd64.exe --help
+          ```
+
+          ### Verification
+
+          Verify the integrity of the downloaded binary:
+
+          ```bash
+          sha256sum -c checksums.txt
+          ```
+          EOF
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.prepare.outputs.version }}
+          name: Release ${{ needs.prepare.outputs.version }}
+          body_path: release_notes.md
           files: |
             dist/*
-          body: |
-            ## Weave CLI ${{ github.ref_name }}
-
-            ### Downloads
-
-            - **Linux AMD64**: `weave-linux-amd64`
-            - **Linux ARM64**: `weave-linux-arm64`
-            - **macOS AMD64**: `weave-darwin-amd64`
-            - **macOS ARM64**: `weave-darwin-arm64`
-            - **Windows AMD64**: `weave-windows-amd64.exe`
-
-            ### Installation
-
-            Download the appropriate binary for your platform and make it
-            executable:
-
-            ```bash
-            # Linux/macOS
-            chmod +x weave-linux-amd64
-            ./weave-linux-amd64 --help
-
-            # Windows
-            weave-windows-amd64.exe --help
-            ```
-
-            ### Verification
-
-            Verify the integrity of the downloaded binary:
-
-            ```bash
-            sha256sum -c checksums.txt
-            ```
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
