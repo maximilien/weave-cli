@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // extractPDFText extracts text content from a PDF file
@@ -51,7 +53,7 @@ func extractPDFText(filePath string, chunkSize int) ([]PDFTextData, error) {
 	var textData []PDFTextData
 	for i, chunk := range chunks {
 		textData = append(textData, PDFTextData{
-			ID:         fmt.Sprintf("%s-chunk-%d", filepath.Base(filePath), i),
+			ID:         uuid.New().String(),
 			Content:    chunk,
 			URL:        fmt.Sprintf("file://%s#chunk-%d", filePath, i),
 			Metadata:   metadata,

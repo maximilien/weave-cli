@@ -72,12 +72,13 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	if !force {
 		var message string
 		if pattern != "" {
-			message = fmt.Sprintf("Are you sure you want to delete collections matching pattern '%s'? This action cannot be undone.", pattern)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete collections matching pattern '%s'? This action cannot be undone.", pattern)
 		} else {
-			message = fmt.Sprintf("Are you sure you want to delete collection(s) %v? This action cannot be undone.", args)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete collection(s) %v? This action cannot be undone.", args)
 		}
 
-		if !utils.ConfirmAction(message) {
+		utils.PrintWarning(message)
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}

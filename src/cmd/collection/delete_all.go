@@ -63,13 +63,15 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 
 	// Confirmation prompt
 	if !force {
-		if !utils.ConfirmAction("Are you sure you want to delete ALL documents from ALL collections? This action cannot be undone.") {
+		utils.PrintWarning("⚠️  Are you sure you want to delete ALL documents from ALL collections? This action cannot be undone.")
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}
 
-		// Second confirmation
-		if !utils.ConfirmAction("This will permanently delete ALL documents. Type 'yes' to confirm: ") {
+		// Second confirmation with prominent red warning
+		utils.PrintError("🚨 This will permanently delete ALL documents. Type 'yes' to confirm:")
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}

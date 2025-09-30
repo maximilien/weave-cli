@@ -30,19 +30,34 @@ var rootCmd = &cobra.Command{
 	Short: "Weave VDB Management Tool",
 	Long: `Weave is a command-line tool for managing Weaviate vector databases.
 
-This tool provides commands following a consistent pattern:
+📁 COLLECTION MANAGEMENT:
+  weave cols ls                        # List all collections
+  weave cols create COLLECTION         # Create a collection
+  weave cols show COLLECTION           # Show collection details
+  weave cols count                     # Count collections
+  weave cols del COLLECTION            # Delete all documents in collection
+  weave cols da                        # Delete all documents in all collections
+  weave cols ds COLLECTION             # Delete collection schema (⚠️ destructive)
+
+📄 DOCUMENT MANAGEMENT:
+  weave docs ls COLLECTION             # List documents in collection
+  weave docs show COLLECTION ID        # Show specific document
+  weave docs show COLLECTION --name FILE # Show document by filename
+  weave docs create COLLECTION FILE    # Create document from file
+  weave docs count COLLECTION          # Count documents in collection
+  weave docs del COLLECTION [ID...]    # Delete specific documents
+  weave docs del COLLECTION --name FILE # Delete document by filename
+  weave docs da COLLECTION             # Delete all documents in collection
+
+⚙️ CONFIGURATION & HEALTH:
   weave config show                    # Show current configuration
+  weave config list                    # List all configured databases
   weave health check                   # Check database health
-  weave collection list                # List all collections
-  weave collection create COLLECTION [COLLECTION...]  # Create one or more collections
-  weave collection delete COLLECTION [COLLECTION...] # Clear one or more collections (delete all documents)
-  weave collection delete-all          # Clear all collections (double confirmation)
-  weave document list COLLECTION      # List documents in collection
-  weave document show COLLECTION ID   # Show specific document
-  weave document show COLLECTION --name filename.pdf  # Show document by filename
-  weave document delete COLLECTION [ID] [ID...] # Delete one or more documents
-  weave document delete COLLECTION --name filename.pdf  # Delete document by filename
-  weave document delete-all COLLECTION # Delete all documents in collection (double confirmation)
+
+🔧 FILE SUPPORT:
+  - Text files (.txt, .md, .json) → chunked text content
+  - Image files (.jpg, .png, .gif) → base64 image data
+  - PDF files (.pdf) → extracted text + images
 
 The tool uses ./config.yaml and ./.env files by default, or you can specify
 custom locations with --config and --env flags. Environment variables can be

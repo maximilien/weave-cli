@@ -763,3 +763,8 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 
 	return nil
 }
+
+// DeleteAllDocuments deletes all documents in a collection
+func (wc *WeaveClient) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	return wc.Client.DeleteAllDocuments(ctx, collectionName)
+}

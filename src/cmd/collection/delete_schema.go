@@ -66,13 +66,15 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 
 	// Confirmation prompt
 	if !force {
-		if !utils.ConfirmAction(fmt.Sprintf("Are you sure you want to delete the schema for collection '%s'?", collectionName)) {
+		utils.PrintWarning(fmt.Sprintf("⚠️  Are you sure you want to delete the schema for collection '%s'?", collectionName))
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}
 
-		// Second confirmation
-		if !utils.ConfirmAction("This will permanently delete the schema. Type 'yes' to confirm: ") {
+		// Second confirmation with prominent red warning
+		utils.PrintError("🚨 This will permanently delete the schema. Type 'yes' to confirm:")
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}

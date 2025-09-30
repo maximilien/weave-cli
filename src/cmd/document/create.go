@@ -28,7 +28,7 @@ Supported file types:
 The command will automatically:
 - Detect file type and process accordingly
 - Generate appropriate metadata
-- Chunk text content (default 1000 chars, configurable with --chunk-size)
+- Chunk text content (default 5000 chars, configurable with --chunk-size)
 - Extract images from PDFs with OCR and EXIF data
 - Create documents following RagMeDocs/RagMeImages schema
 
@@ -50,7 +50,7 @@ Examples:
 func init() {
 	DocumentCmd.AddCommand(CreateCmd)
 
-	CreateCmd.Flags().IntP("chunk-size", "s", 1000, "Chunk size for text content (default: 1000 characters)")
+	CreateCmd.Flags().IntP("chunk-size", "s", 5000, "Chunk size for text content (default: 5000 characters)")
 	CreateCmd.Flags().StringP("image-collection", "", "", "Collection name for extracted PDF images (default: same as main collection)")
 	CreateCmd.Flags().StringP("image-col", "", "", "Alias for --image-collection")
 	CreateCmd.Flags().StringP("image-cols", "", "", "Alias for --image-collection")
@@ -94,7 +94,10 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
+		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize); err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to create Weaviate document: %v", err))
+			os.Exit(1)
+		}
 	case config.VectorDBTypeMock:
 		utils.CreateMockDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
 	default:

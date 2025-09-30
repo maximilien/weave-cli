@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
@@ -100,7 +101,7 @@ func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFIma
 	}
 
 	return &PDFImageData{
-		ID:         fmt.Sprintf("%s-image-%d", filepath.Base(sourcePDF), imageIndex),
+		ID:         uuid.New().String(),
 		ImageData:  base64Data,
 		Image:      dataURL,
 		URL:        fmt.Sprintf("file://%s#image-%d", sourcePDF, imageIndex),

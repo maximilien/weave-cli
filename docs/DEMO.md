@@ -100,12 +100,12 @@ Available Commands:
 
 ### Create Text Documents
 ```bash
-./bin/weave docs create WeaveDocs docs/README.md docs/CHANGELOG.md
+./bin/weave docs create WeaveDocs README.md docs/DEMO.md
 ```
 **Expected Output:**
 ```
-✅ Successfully created document: README.md (3 chunks)
-✅ Successfully created document: CHANGELOG.md (5 chunks)
+✅ Successfully created document: README.md (24 chunks)
+✅ Successfully created document: DEMO.md (7 chunks)
 ```
 
 ### Create Image Documents
@@ -124,7 +124,7 @@ Available Commands:
 
 ### Show Document Details
 ```bash
-./bin/weave docs show WeaveDocs README.md
+./bin/weave docs show WeaveDocs --name README.md
 ```
 **Expected Output:**
 ```
@@ -133,6 +133,37 @@ Available Commands:
   Chunks: 3
   Content: [truncated preview]
   Metadata: {"original_filename": "README.md", "is_chunked": true}
+```
+
+### Show Collection Schema
+```bash
+./bin/weave cols show WeaveDocs
+```
+
+## Page 6: List Documents
+
+### Simple Document List
+```bash
+./bin/weave docs ls WeaveDocs
+```
+
+### Virtual Document View with Summary
+```bash
+./bin/weave docs ls WeaveDocs -w -S
+```
+**Expected Output:**
+```
+✅ Found 1 virtual documents in collection 'WeaveDocs' (aggregated from 3 total documents):
+
+1. 📄 Document: README.md
+   📝 Chunks: 3
+   📋 Metadata
+     original_filename: README.md
+     type: text
+     is_chunked: true
+
+📋 Summary
+   1. README.md - 3 chunks
 ```
 
 ### Show Collection Schema

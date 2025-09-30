@@ -594,14 +594,90 @@ func DeleteMockCollectionsByPattern(ctx context.Context, cfg *config.VectorDBCon
 	return fmt.Errorf("collection pattern deletion not yet implemented")
 }
 
-// DeleteAllWeaviateCollections deletes all Weaviate collections
+// DeleteAllWeaviateCollections deletes all documents from all Weaviate collections
 func DeleteAllWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
-	PrintInfo("Weaviate collection deletion all not yet implemented in new structure")
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		return
+	}
+
+	// Get all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+
+	if len(collections) == 0 {
+		PrintInfo("No collections found to delete")
+		return
+	}
+
+	PrintInfo(fmt.Sprintf("Found %d collections to clear", len(collections)))
+
+	// Delete all documents from each collection
+	successCount := 0
+	for _, collectionName := range collections {
+		PrintInfo(fmt.Sprintf("Clearing collection: %s", collectionName))
+
+		// Delete all documents in the collection
+		err := client.DeleteAllDocuments(ctx, collectionName)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to clear collection '%s': %v", collectionName, err))
+			continue
+		}
+
+		successCount++
+		PrintSuccess(fmt.Sprintf("✅ Cleared collection: %s", collectionName))
+	}
+
+	if successCount > 0 {
+		PrintSuccess(fmt.Sprintf("Successfully cleared %d collections", successCount))
+	} else {
+		PrintError("Failed to clear any collections")
+	}
 }
 
-// DeleteAllMockCollections deletes all mock collections
+// DeleteAllMockCollections deletes all documents from all mock collections
 func DeleteAllMockCollections(ctx context.Context, cfg *config.VectorDBConfig) {
-	PrintInfo("Mock collection deletion all not yet implemented in new structure")
+	client := CreateMockClient(cfg)
+
+	// Get all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+
+	if len(collections) == 0 {
+		PrintInfo("No collections found to delete")
+		return
+	}
+
+	PrintInfo(fmt.Sprintf("Found %d collections to clear", len(collections)))
+
+	// Delete all documents from each collection
+	successCount := 0
+	for _, collectionName := range collections {
+		PrintInfo(fmt.Sprintf("Clearing collection: %s", collectionName))
+
+		// Delete all documents in the collection
+		err := client.DeleteAllDocuments(ctx, collectionName)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to clear collection '%s': %v", collectionName, err))
+			continue
+		}
+
+		successCount++
+		PrintSuccess(fmt.Sprintf("✅ Cleared collection: %s", collectionName))
+	}
+
+	if successCount > 0 {
+		PrintSuccess(fmt.Sprintf("Successfully cleared %d collections", successCount))
+	} else {
+		PrintError("Failed to clear any collections")
+	}
 }
 
 // DeleteWeaviateCollectionSchema deletes Weaviate collection schema

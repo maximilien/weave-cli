@@ -289,57 +289,7 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 			},
 			{
 				"name":     "metadata",
-				"dataType": []string{"object"},
-				"nestedProperties": []map[string]interface{}{
-					{
-						"name":     "filename",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "file_size",
-						"dataType": []string{"number"},
-					},
-					{
-						"name":     "content_type",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "date_added",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "chunk_index",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "chunk_size",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "total_chunks",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "source_document",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "processed_by",
-						"dataType": []string{"text"},
-					},
-					{
-						"name":     "processing_time",
-						"dataType": []string{"int"},
-					},
-					{
-						"name":     "is_extracted_from_document",
-						"dataType": []string{"boolean"},
-					},
-					{
-						"name":     "file_extension",
-						"dataType": []string{"text"},
-					},
-				},
+				"dataType": []string{"text"}, // Store as JSON string for compatibility
 			},
 		}
 	}
@@ -1280,6 +1230,40 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	return deletedCount, nil
 }
 
+// DeleteAllDocuments deletes all documents in a collection
+func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	ctx, cancel := context.WithTimeout(ctx, 120*time.Second)
+	defer cancel()
+
+	// First, get all document IDs in the collection
+	documents, err := c.ListDocuments(ctx, collectionName, 10000) // Large limit to get all documents
+	if err != nil {
+		return fmt.Errorf("failed to list documents in collection %s: %w", collectionName, err)
+	}
+
+	if len(documents) == 0 {
+		return nil // No documents to delete
+	}
+
+	// Extract document IDs
+	documentIDs := make([]string, len(documents))
+	for i, doc := range documents {
+		documentIDs[i] = doc.ID
+	}
+
+	// Delete all documents using bulk deletion
+	deletedCount, err := c.DeleteDocumentsBulk(ctx, collectionName, documentIDs)
+	if err != nil {
+		return fmt.Errorf("failed to delete documents from collection %s: %w", collectionName, err)
+	}
+
+	if deletedCount != len(documentIDs) {
+		return fmt.Errorf("failed to delete all documents: deleted %d of %d", deletedCount, len(documentIDs))
+	}
+
+	return nil
+}
+
 // queryDocumentsByMetadata queries for documents matching metadata filters using GraphQL
 func (c *Client) queryDocumentsByMetadata(ctx context.Context, collectionName string, filters map[string]string) ([]Document, error) {
 	// Build the where clause for metadata filtering
@@ -1426,11 +1410,22 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 	defer cancel()
 
 	// Create the document using the Weaviate client
+	// Convert metadata to JSON string for compatibility with existing collections
+	var metadataJSON string
+	if doc.Metadata != nil {
+		metadataBytes, err := json.Marshal(doc.Metadata)
+		if err != nil {
+			return fmt.Errorf("failed to marshal metadata: %w", err)
+		}
+		metadataJSON = string(metadataBytes)
+	}
+
 	properties := map[string]interface{}{
-		"content":  doc.Content,
+		"text":     doc.Content, // Use 'text' field for ragmedocs schema compatibility
+		"content":  doc.Content, // Keep 'content' for backward compatibility
 		"image":    doc.Image,
 		"url":      doc.URL,
-		"metadata": doc.Metadata,
+		"metadata": metadataJSON, // Store as JSON string for compatibility
 	}
 
 	// Add PDF metadata fields as top-level properties for compatibility with RagMeDocs

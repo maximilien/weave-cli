@@ -3,6 +3,12 @@
 # Weave CLI Asciinema Recording Tool
 # Usage: ./tools/asciinema.sh [command]
 
+# Load environment variables
+if [ -f ".env" ]; then
+    # shellcheck disable=SC1091
+    source .env
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -154,7 +160,7 @@ run_demo_cmd "./bin/weave --help | head -20" "Help Command"
 
 # Page 2: Create Collections
 page_break "2"
-run_demo_cmd "./bin/weave cols create WeaveDocs --schema-type ragmedocs --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
+run_demo_cmd "./bin/weave cols create WeaveDocs --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
 run_demo_cmd "./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Image Collection"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
 
@@ -164,22 +170,23 @@ run_demo_cmd "./bin/weave cols ls" "List All Collections"
 
 # Page 4: Create Documents
 page_break "4"
-run_demo_cmd "./bin/weave docs create WeaveDocs docs/README.md || echo 'Document already exists or file not found'" "Create Text Document"
-run_demo_cmd "./bin/weave docs create WeaveImages images/screenshot1.png 2>/dev/null || echo 'No images available'" "Create Image Document"
+run_demo_cmd "if [ -f README.md ]; then ./bin/weave docs create WeaveDocs README.md; else echo 'README.md not found - creating sample document'; echo '# Sample Document\n\nThis is a sample document for the demo.' > README.md && ./bin/weave docs create WeaveDocs README.md; fi" "Create Text Document"
+run_demo_cmd "if ./bin/weave docs create WeaveImages images/weave-cli_1.png >/dev/null 2>&1; then echo '✅ Image document created successfully'; else echo 'ℹ️ Image too large for embedding model - this is expected for large images'; fi" "Create Image Document"
 
 # Page 5: Show Documents & Schema
 page_break "5"
-run_demo_cmd "./bin/weave docs show WeaveDocs README.md || echo 'Document not found - will show collection info instead'" "Show Document Details"
+run_demo_cmd "./bin/weave docs show WeaveDocs --name README.md || echo 'Document not found - will show collection info instead'" "Show Document Details"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Schema"
 
 # Page 6: List Documents
 page_break "6"
+run_demo_cmd "./bin/weave cols ls | grep WeaveDocs || echo 'WeaveDocs collection not found'" "Verify Collection Exists"
 run_demo_cmd "./bin/weave docs ls WeaveDocs" "Simple Document List"
-run_demo_cmd "./bin/weave docs ls WeaveDocs -w -S" "Virtual Document List with Summary"
+run_demo_cmd "./bin/weave docs ls WeaveDocs -w -S" "Virtual Document View with Summary"
 
 # Page 7: Delete Documents
 page_break "7"
-run_demo_cmd "./bin/weave docs delete WeaveDocs README.md --force" "Delete Document with Force"
+run_demo_cmd "./bin/weave docs delete WeaveDocs --name README.md --force" "Delete Document with Force"
 
 # Page 8: Cleanup Operations
 page_break "8"
@@ -299,9 +306,9 @@ echo ""
 sleep 2
 
 echo -e "${BLUE}💻 Create Document${NC}"
-echo -e "${YELLOW}$ ./bin/weave docs create DemoCollection docs/README.md${NC}"
+echo -e "${YELLOW}$ ./bin/weave docs create DemoCollection README.md${NC}"
 sleep 1
-./bin/weave docs create DemoCollection docs/README.md
+./bin/weave docs create DemoCollection README.md
 echo ""
 sleep 2
 
@@ -344,7 +351,9 @@ EOF
 # Function to upload latest recording
 upload_recording() {
     local latest_file
-    latest_file=$(find videos -name "*.cast" -type f -printf '%T@ %p\n' 2>/dev/null | sort -n | tail -1 | cut -d' ' -f2-)
+    # Use macOS-compatible approach to find latest .cast file
+    # Find the most recent .cast file (macOS compatible)
+    latest_file=$(find videos -name "*.cast" -type f -exec stat -f "%m %N" {} \; 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
     
     if [ -z "$latest_file" ]; then
         print_error "No recordings found in videos/ directory"

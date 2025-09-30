@@ -63,13 +63,15 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 
 	// Confirmation prompt
 	if !force {
-		if !utils.ConfirmAction(fmt.Sprintf("Are you sure you want to delete ALL documents from collection '%s'? This action cannot be undone.", collectionName)) {
+		utils.PrintWarning(fmt.Sprintf("⚠️  Are you sure you want to delete ALL documents from collection '%s'? This action cannot be undone.", collectionName))
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}
 
-		// Second confirmation
-		if !utils.ConfirmAction("This will permanently delete ALL documents. Type 'yes' to confirm: ") {
+		// Second confirmation with prominent red warning
+		utils.PrintError("🚨 This will permanently delete ALL documents. Type 'yes' to confirm:")
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}
@@ -84,6 +86,4 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
-
-	utils.PrintSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
 }

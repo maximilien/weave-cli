@@ -15,8 +15,9 @@ import (
 func CreateWeaviateClient(cfg *config.VectorDBConfig) (*weaviate.Client, error) {
 	// Convert VectorDBConfig to weaviate.Config
 	weaviateConfig := &weaviate.Config{
-		URL:    cfg.URL,
-		APIKey: cfg.APIKey,
+		URL:          cfg.URL,
+		APIKey:       cfg.APIKey,
+		OpenAIAPIKey: cfg.OpenAIAPIKey,
 	}
 
 	client, err := weaviate.NewClient(weaviateConfig)

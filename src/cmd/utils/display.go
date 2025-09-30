@@ -163,14 +163,45 @@ func AggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		var originalFilename string
 		var metadata map[string]interface{}
 
-		// Check if this is a chunked document
-		if metadataField, ok := doc.Metadata["metadata"]; ok {
-			if metadataStr, ok := metadataField.(string); ok {
-				var metadataObj map[string]interface{}
-				if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
-					if filename, ok := metadataObj["original_filename"].(string); ok {
-						originalFilename = filename
-						metadata = metadataObj
+		// First, check if original_filename is directly in the metadata
+		if filename, ok := doc.Metadata["original_filename"].(string); ok {
+			originalFilename = filename
+			metadata = doc.Metadata
+		} else if filename, ok := doc.Metadata["filename"].(string); ok {
+			// Fallback to filename if original_filename is not available
+			originalFilename = filename
+			metadata = doc.Metadata
+		} else {
+			// Check if this is a chunked document with nested metadata
+			if metadataField, ok := doc.Metadata["metadata"]; ok {
+				if metadataStr, ok := metadataField.(string); ok {
+					var metadataObj map[string]interface{}
+					if err := json.Unmarshal([]byte(metadataStr), &metadataObj); err == nil {
+						// Check if there's another nested metadata field that needs parsing
+						if nestedMetadataStr, ok := metadataObj["metadata"].(string); ok {
+							var nestedMetadataObj map[string]interface{}
+							if err := json.Unmarshal([]byte(nestedMetadataStr), &nestedMetadataObj); err == nil {
+								// Look for filename in the nested metadata (this is the current structure)
+								if filename, ok := nestedMetadataObj["filename"].(string); ok {
+									originalFilename = filename
+									metadata = nestedMetadataObj
+								} else if filename, ok := nestedMetadataObj["original_filename"].(string); ok {
+									// Fallback to original_filename if available
+									originalFilename = filename
+									metadata = nestedMetadataObj
+								}
+							}
+						} else {
+							// Look for filename in the parsed metadata (this is the current structure)
+							if filename, ok := metadataObj["filename"].(string); ok {
+								originalFilename = filename
+								metadata = metadataObj
+							} else if filename, ok := metadataObj["original_filename"].(string); ok {
+								// Fallback to original_filename if available
+								originalFilename = filename
+								metadata = metadataObj
+							}
+						}
 					}
 				}
 			}

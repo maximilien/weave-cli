@@ -446,3 +446,20 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 	c.collections[collectionName] = append(c.collections[collectionName], document)
 	return nil
 }
+
+// DeleteAllDocuments deletes all documents in a collection
+func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	_, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	if _, exists := c.collections[collectionName]; !exists {
+		return fmt.Errorf("collection %s does not exist", collectionName)
+	}
+
+	// Clear all documents from the collection
+	c.collections[collectionName] = []Document{}
+	return nil
+}

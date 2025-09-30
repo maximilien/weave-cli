@@ -97,18 +97,19 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	if !force {
 		var message string
 		if len(args) > 1 {
-			message = fmt.Sprintf("Are you sure you want to delete document(s) %v from collection '%s'?", args[1:], collectionName)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete document(s) %v from collection '%s'?", args[1:], collectionName)
 		} else if pattern != "" {
-			message = fmt.Sprintf("Are you sure you want to delete documents matching pattern '%s' from collection '%s'?", pattern, collectionName)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete documents matching pattern '%s' from collection '%s'?", pattern, collectionName)
 		} else if name != "" {
-			message = fmt.Sprintf("Are you sure you want to delete document '%s' from collection '%s'?", name, collectionName)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete document '%s' from collection '%s'?", name, collectionName)
 		} else if len(metadataFilters) > 0 {
-			message = fmt.Sprintf("Are you sure you want to delete documents matching metadata %v from collection '%s'?", metadataFilters, collectionName)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete documents matching metadata %v from collection '%s'?", metadataFilters, collectionName)
 		} else {
-			message = fmt.Sprintf("Are you sure you want to delete documents from collection '%s'?", collectionName)
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete documents from collection '%s'?", collectionName)
 		}
 
-		if !utils.ConfirmAction(message) {
+		utils.PrintWarning(message)
+		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}
