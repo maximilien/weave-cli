@@ -22,6 +22,21 @@ type FieldDefinition struct {
 	Type string
 }
 
+// CollectionSchema represents a collection schema
+type CollectionSchema struct {
+	Class      string           `json:"class"`
+	Vectorizer string           `json:"vectorizer,omitempty"`
+	Properties []SchemaProperty `json:"properties"`
+}
+
+// SchemaProperty represents a property in a collection schema
+type SchemaProperty struct {
+	Name             string           `json:"name"`
+	DataType         []string         `json:"dataType"`
+	Description      string           `json:"description,omitempty"`
+	NestedProperties []SchemaProperty `json:"nestedProperties,omitempty"`
+}
+
 // Client wraps the Weaviate client with additional functionality
 type Client struct {
 	client *weaviate.Client
@@ -1506,4 +1521,50 @@ func (c *Client) GetCollectionSchema(ctx context.Context, collectionName string)
 	}
 
 	return properties, nil
+}
+
+// GetFullCollectionSchema returns the full schema for a collection
+func (c *Client) GetFullCollectionSchema(ctx context.Context, collectionName string) (*CollectionSchema, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Get the schema using the REST API
+	schema, err := c.client.Schema().Getter().Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get schema: %w", err)
+	}
+
+	for _, class := range schema.Classes {
+		if class.Class == collectionName {
+			// Convert to our schema format
+			result := &CollectionSchema{
+				Class:      class.Class,
+				Vectorizer: class.Vectorizer,
+				Properties: make([]SchemaProperty, len(class.Properties)),
+			}
+
+			for i, prop := range class.Properties {
+				result.Properties[i] = SchemaProperty{
+					Name:        prop.Name,
+					DataType:    prop.DataType,
+					Description: prop.Description,
+				}
+				
+				// Convert nested properties if available
+				if len(prop.NestedProperties) > 0 {
+					result.Properties[i].NestedProperties = make([]SchemaProperty, len(prop.NestedProperties))
+					for j, nested := range prop.NestedProperties {
+						result.Properties[i].NestedProperties[j] = SchemaProperty{
+							Name:     nested.Name,
+							DataType: nested.DataType,
+						}
+					}
+				}
+			}
+
+			return result, nil
+		}
+	}
+
+	return nil, fmt.Errorf("collection '%s' not found in schema", collectionName)
 }

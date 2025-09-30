@@ -306,7 +306,7 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 }
 
 // ShowWeaviateCollection shows Weaviate collection details
-func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool) {
+func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -487,21 +487,19 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 
 	// Show schema if requested
 	if showSchema {
-		// ShowCollectionSchema(ctx, client, collectionName) // TODO: Implement
-		PrintInfo("Collection schema display not yet implemented")
+		ShowCollectionSchema(ctx, client, collectionName)
 	}
 
 	// Show expanded metadata if requested
-	if showMetadata {
-		// ShowCollectionMetadata(ctx, client, collectionName) // TODO: Implement
-		PrintInfo("Collection metadata display not yet implemented")
+	if showMetadata || expandMetadata {
+		ShowCollectionMetadata(ctx, client, collectionName, expandMetadata)
 	}
 
 	PrintSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
 }
 
 // ShowMockCollection shows mock collection details
-func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool) {
+func ShowMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool) {
 	PrintInfo("Mock collection show not yet implemented in new structure")
 }
 
@@ -700,4 +698,186 @@ func showCollectionVirtualSummary(ctx context.Context, client *weaviate.Client, 
 	// This is a simplified implementation
 	// In the real implementation, this would show virtual structure summary
 	fmt.Printf("   Virtual structure: Not implemented yet\n")
+}
+
+// ShowCollectionSchema displays the collection schema with styling
+func ShowCollectionSchema(ctx context.Context, client *weaviate.Client, collectionName string) {
+	fmt.Println()
+	PrintStyledEmoji("🏗️")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Collection Schema")
+	fmt.Println()
+	
+	// Get collection schema from Weaviate
+	schema, err := client.GetFullCollectionSchema(ctx, collectionName)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to get collection schema: %v", err))
+		return
+	}
+	
+	if schema == nil {
+		PrintWarning("No schema information available")
+		return
+	}
+	
+	// Display schema information with styling
+	PrintStyledKeyProminent("  Collection Name")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(schema.Class)
+	fmt.Println()
+	
+	if schema.Vectorizer != "" {
+		PrintStyledKeyProminent("  Vectorizer")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed(schema.Vectorizer)
+		fmt.Println()
+	}
+	
+	// Note: ModuleConfig is not available in the current schema structure
+	// This would need to be added to the CollectionSchema type if needed
+	
+	// Display properties
+	if len(schema.Properties) > 0 {
+		PrintStyledKeyProminent("  Properties")
+		fmt.Printf(": ")
+		fmt.Println()
+		for i, prop := range schema.Properties {
+			fmt.Printf("    %d. ", i+1)
+			PrintStyledKeyProminent(prop.Name)
+			fmt.Printf(" (")
+			if len(prop.DataType) > 0 {
+				PrintStyledValueDimmed(strings.Join(prop.DataType, ", "))
+			}
+			fmt.Printf(")")
+			if prop.Description != "" {
+				fmt.Printf(" - %s", prop.Description)
+			}
+			fmt.Println()
+			
+			// Show nested properties if available
+			if len(prop.NestedProperties) > 0 {
+				for j, nested := range prop.NestedProperties {
+					fmt.Printf("      %d.%d. ", i+1, j+1)
+					PrintStyledKey(nested.Name)
+					fmt.Printf(" (")
+					if len(nested.DataType) > 0 {
+						PrintStyledValueDimmed(strings.Join(nested.DataType, ", "))
+					}
+					fmt.Printf(")")
+					fmt.Println()
+				}
+			}
+		}
+	} else {
+		PrintStyledKey("    No properties defined")
+		fmt.Println()
+	}
+	
+	fmt.Println()
+}
+
+// ShowCollectionMetadata displays collection metadata with styling
+func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collectionName string, expandMetadata bool) {
+	fmt.Println()
+	PrintStyledEmoji("📊")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Collection Metadata")
+	fmt.Println()
+	
+	// Get all documents to analyze metadata patterns
+	documents, err := client.ListDocuments(ctx, collectionName, 100) // Get up to 100 documents for analysis
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to get documents for metadata analysis: %v", err))
+		return
+	}
+	
+	if len(documents) == 0 {
+		PrintWarning("No documents found to analyze metadata")
+		return
+	}
+	
+	// Analyze metadata patterns
+	metadataFields := make(map[string]int)
+	metadataTypes := make(map[string]string)
+	
+	for _, doc := range documents {
+		// Get full document to access metadata
+		fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
+		if err != nil {
+			continue // Skip documents that can't be retrieved
+		}
+		
+		for key, value := range fullDoc.Metadata {
+			metadataFields[key]++
+			if metadataTypes[key] == "" {
+				metadataTypes[key] = fmt.Sprintf("%T", value)
+			}
+		}
+	}
+	
+	// Display metadata analysis
+	PrintStyledKeyProminent("  Metadata Fields Analysis")
+	fmt.Printf(" (from %d documents):", len(documents))
+	fmt.Println()
+	
+	if len(metadataFields) == 0 {
+		PrintStyledKey("    No metadata fields found")
+		fmt.Println()
+		return
+	}
+	
+	// Sort fields by frequency
+	type fieldInfo struct {
+		name  string
+		count int
+		typ   string
+	}
+	
+	var fields []fieldInfo
+	for name, count := range metadataFields {
+		fields = append(fields, fieldInfo{name, count, metadataTypes[name]})
+	}
+	
+	// Sort by count (descending)
+	for i := 0; i < len(fields)-1; i++ {
+		for j := i + 1; j < len(fields); j++ {
+			if fields[i].count < fields[j].count {
+				fields[i], fields[j] = fields[j], fields[i]
+			}
+		}
+	}
+	
+	// Display fields
+	for i, field := range fields {
+		fmt.Printf("    %d. ", i+1)
+		PrintStyledKeyProminent(field.name)
+		fmt.Printf(" (")
+		PrintStyledValueDimmed(field.typ)
+		fmt.Printf(") - ")
+		PrintStyledValueDimmed(fmt.Sprintf("%d occurrences", field.count))
+		fmt.Println()
+		
+		// Show sample values if expandMetadata is true
+		if expandMetadata && field.count > 0 {
+			// Find a sample document with this field
+			for _, doc := range documents {
+				fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
+				if err != nil {
+					continue
+				}
+				if value, exists := fullDoc.Metadata[field.name]; exists {
+					fmt.Printf("      Sample: ")
+					sampleValue := fmt.Sprintf("%v", value)
+					if len(sampleValue) > 100 {
+						sampleValue = sampleValue[:100] + "..."
+					}
+					PrintStyledValueDimmed(sampleValue)
+					fmt.Println()
+					break
+				}
+			}
+		}
+	}
+	
+	fmt.Println()
 }

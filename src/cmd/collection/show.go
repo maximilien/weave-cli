@@ -40,6 +40,7 @@ func init() {
 	ShowCmd.Flags().BoolP("verbose", "", false, "Show verbose information")
 	ShowCmd.Flags().BoolP("schema", "", false, "Show collection schema")
 	ShowCmd.Flags().BoolP("metadata", "", false, "Show collection metadata")
+	ShowCmd.Flags().BoolP("expand-metadata", "", false, "Show expanded metadata information")
 }
 
 func runCollectionShow(cmd *cobra.Command, args []string) {
@@ -49,6 +50,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	showSchema, _ := cmd.Flags().GetBool("schema")
 	showMetadata, _ := cmd.Flags().GetBool("metadata")
+	expandMetadata, _ := cmd.Flags().GetBool("expand-metadata")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -68,9 +70,9 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
+		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata)
 	case config.VectorDBTypeMock:
-		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata)
+		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
