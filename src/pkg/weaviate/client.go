@@ -1549,7 +1549,7 @@ func (c *Client) GetFullCollectionSchema(ctx context.Context, collectionName str
 					DataType:    prop.DataType,
 					Description: prop.Description,
 				}
-				
+
 				// Convert nested properties if available
 				if len(prop.NestedProperties) > 0 {
 					result.Properties[i].NestedProperties = make([]SchemaProperty, len(prop.NestedProperties))

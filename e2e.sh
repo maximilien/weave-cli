@@ -67,20 +67,28 @@ run_test() {
     echo -e "\n${YELLOW}Test $TOTAL_TESTS: $test_name${NC}"
     echo -e "${YELLOW}Command: $command${NC}"
     
-    if eval "$command" > /dev/null 2>&1; then
-        if [ $? -eq "$expected_exit_code" ]; then
+    # Capture both stdout and stderr
+    local output
+    local exit_code
+    
+    if output=$(eval "$command" 2>&1); then
+        exit_code=$?
+        if [ $exit_code -eq "$expected_exit_code" ]; then
             echo -e "${GREEN}✅ PASSED${NC}"
             PASSED_TESTS=$((PASSED_TESTS + 1))
         else
-            echo -e "${RED}❌ FAILED (wrong exit code)${NC}"
+            echo -e "${RED}❌ FAILED (wrong exit code: $exit_code, expected: $expected_exit_code)${NC}"
+            echo -e "${RED}Output: $output${NC}"
             FAILED_TESTS=$((FAILED_TESTS + 1))
         fi
     else
-        if [ $? -eq "$expected_exit_code" ]; then
+        exit_code=$?
+        if [ $exit_code -eq "$expected_exit_code" ]; then
             echo -e "${GREEN}✅ PASSED${NC}"
             PASSED_TESTS=$((PASSED_TESTS + 1))
         else
-            echo -e "${RED}❌ FAILED${NC}"
+            echo -e "${RED}❌ FAILED (exit code: $exit_code)${NC}"
+            echo -e "${RED}Output: $output${NC}"
             FAILED_TESTS=$((FAILED_TESTS + 1))
         fi
     fi
@@ -175,6 +183,12 @@ main() {
     # Show image collection
     run_test "Show image collection" "./bin/weave cols show '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
     
+    # Show collection schema
+    run_test "Show collection schema" "./bin/weave cols show '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema"
+    
+    # Show collection metadata
+    run_test "Show collection metadata" "./bin/weave cols show '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --metadata"
+    
     # Count collections
     run_test "Count collections" "./bin/weave cols count --vector-db-type $VECTOR_DB_TYPE"
     
@@ -201,6 +215,9 @@ main() {
     # List documents with virtual structure
     run_test "List documents with virtual structure" "./bin/weave docs ls '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE -w -S"
     
+    # Show expanded metadata analysis
+    run_test "Show expanded metadata analysis" "./bin/weave cols show '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --expand-metadata"
+    
     # Count documents
     run_test "Count documents in text collection" "./bin/weave docs count '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
     
@@ -218,15 +235,15 @@ main() {
     # List documents (should be empty)
     run_test "List documents in image collection (empty)" "./bin/weave docs ls '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE"
     
-    # Create documents from images/ directory
-    if [ -d "images" ] && [ "$(ls -A images)" ]; then
-        for img_file in images/*.png images/*.jpg images/*.jpeg; do
+    # Create documents from test images directory (small images for reliable testing)
+    if [ -d "tests/images" ] && [ "$(ls -A tests/images)" ]; then
+        for img_file in tests/images/*.png tests/images/*.jpg tests/images/*.jpeg; do
             if [ -f "$img_file" ]; then
                 run_test "Create image document: $(basename "$img_file")" "./bin/weave docs create '$IMAGE_COLLECTION' '$img_file' --vector-db-type $VECTOR_DB_TYPE"
             fi
         done
     else
-        echo -e "${YELLOW}⚠️  No images found in images/ directory${NC}"
+        echo -e "${YELLOW}⚠️  No test images found in tests/images/ directory${NC}"
     fi
     
     # List documents (should show created image documents)

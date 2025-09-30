@@ -707,35 +707,35 @@ func ShowCollectionSchema(ctx context.Context, client *weaviate.Client, collecti
 	fmt.Printf(" ")
 	PrintStyledKeyProminent("Collection Schema")
 	fmt.Println()
-	
+
 	// Get collection schema from Weaviate
 	schema, err := client.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to get collection schema: %v", err))
 		return
 	}
-	
+
 	if schema == nil {
 		PrintWarning("No schema information available")
 		return
 	}
-	
+
 	// Display schema information with styling
 	PrintStyledKeyProminent("  Collection Name")
 	fmt.Printf(": ")
 	PrintStyledValueDimmed(schema.Class)
 	fmt.Println()
-	
+
 	if schema.Vectorizer != "" {
 		PrintStyledKeyProminent("  Vectorizer")
 		fmt.Printf(": ")
 		PrintStyledValueDimmed(schema.Vectorizer)
 		fmt.Println()
 	}
-	
+
 	// Note: ModuleConfig is not available in the current schema structure
 	// This would need to be added to the CollectionSchema type if needed
-	
+
 	// Display properties
 	if len(schema.Properties) > 0 {
 		PrintStyledKeyProminent("  Properties")
@@ -753,7 +753,7 @@ func ShowCollectionSchema(ctx context.Context, client *weaviate.Client, collecti
 				fmt.Printf(" - %s", prop.Description)
 			}
 			fmt.Println()
-			
+
 			// Show nested properties if available
 			if len(prop.NestedProperties) > 0 {
 				for j, nested := range prop.NestedProperties {
@@ -772,7 +772,7 @@ func ShowCollectionSchema(ctx context.Context, client *weaviate.Client, collecti
 		PrintStyledKey("    No properties defined")
 		fmt.Println()
 	}
-	
+
 	fmt.Println()
 }
 
@@ -783,30 +783,30 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 	fmt.Printf(" ")
 	PrintStyledKeyProminent("Collection Metadata")
 	fmt.Println()
-	
+
 	// Get all documents to analyze metadata patterns
 	documents, err := client.ListDocuments(ctx, collectionName, 100) // Get up to 100 documents for analysis
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to get documents for metadata analysis: %v", err))
 		return
 	}
-	
+
 	if len(documents) == 0 {
 		PrintWarning("No documents found to analyze metadata")
 		return
 	}
-	
+
 	// Analyze metadata patterns
 	metadataFields := make(map[string]int)
 	metadataTypes := make(map[string]string)
-	
+
 	for _, doc := range documents {
 		// Get full document to access metadata
 		fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
 		if err != nil {
 			continue // Skip documents that can't be retrieved
 		}
-		
+
 		for key, value := range fullDoc.Metadata {
 			metadataFields[key]++
 			if metadataTypes[key] == "" {
@@ -814,30 +814,30 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 			}
 		}
 	}
-	
+
 	// Display metadata analysis
 	PrintStyledKeyProminent("  Metadata Fields Analysis")
 	fmt.Printf(" (from %d documents):", len(documents))
 	fmt.Println()
-	
+
 	if len(metadataFields) == 0 {
 		PrintStyledKey("    No metadata fields found")
 		fmt.Println()
 		return
 	}
-	
+
 	// Sort fields by frequency
 	type fieldInfo struct {
 		name  string
 		count int
 		typ   string
 	}
-	
+
 	var fields []fieldInfo
 	for name, count := range metadataFields {
 		fields = append(fields, fieldInfo{name, count, metadataTypes[name]})
 	}
-	
+
 	// Sort by count (descending)
 	for i := 0; i < len(fields)-1; i++ {
 		for j := i + 1; j < len(fields); j++ {
@@ -846,7 +846,7 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 			}
 		}
 	}
-	
+
 	// Display fields
 	for i, field := range fields {
 		fmt.Printf("    %d. ", i+1)
@@ -856,7 +856,7 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 		fmt.Printf(") - ")
 		PrintStyledValueDimmed(fmt.Sprintf("%d occurrences", field.count))
 		fmt.Println()
-		
+
 		// Show sample values if expandMetadata is true
 		if expandMetadata && field.count > 0 {
 			// Find a sample document with this field
@@ -878,6 +878,6 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 			}
 		}
 	}
-	
+
 	fmt.Println()
 }
