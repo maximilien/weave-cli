@@ -163,6 +163,7 @@ page_break "2"
 run_demo_cmd "./bin/weave cols create WeaveDocs --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
 run_demo_cmd "./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Image Collection"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
+run_demo_cmd "./bin/weave cols show WeaveImages --schema" "Show Image Collection Schema"
 
 # Page 3: List Collections
 page_break "3"
@@ -176,7 +177,8 @@ run_demo_cmd "if ./bin/weave docs create WeaveImages images/weave-cli_1.png >/de
 # Page 5: Show Documents & Schema
 page_break "5"
 run_demo_cmd "./bin/weave docs show WeaveDocs --name README.md || echo 'Document not found - will show collection info instead'" "Show Document Details"
-run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Schema"
+run_demo_cmd "./bin/weave cols show WeaveDocs --schema" "Show Collection Schema"
+run_demo_cmd "./bin/weave cols show WeaveDocs --expand-metadata" "Show Collection Metadata Analysis"
 
 # Page 6: List Documents
 page_break "6"
