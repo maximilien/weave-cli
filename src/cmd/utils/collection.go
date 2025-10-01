@@ -1148,10 +1148,43 @@ func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinitio
 			case int, int8, int16, int32, int64, float32, float64:
 				property.DataType = []string{"number"}
 			case []interface{}:
-				property.DataType = []string{"string[]"}
+				// For arrays, check if it's a simple type array or complex
+				if len(fieldValue.([]interface{})) > 0 {
+					switch fieldValue.([]interface{})[0].(type) {
+					case string:
+						property.DataType = []string{"string[]"}
+					case int, int8, int16, int32, int64, float32, float64:
+						property.DataType = []string{"number[]"}
+					case bool:
+						property.DataType = []string{"boolean[]"}
+					default:
+						property.DataType = []string{"string[]"}
+					}
+				} else {
+					property.DataType = []string{"string[]"}
+				}
 			case map[string]interface{}:
-				// Handle complex objects - convert to string for now
-				property.DataType = []string{"string"}
+				// Handle complex objects - check for special array definitions
+				fieldMap := fieldValue.(map[string]interface{})
+				if fieldType, ok := fieldMap["type"].(string); ok && fieldType == "array" {
+					if items, ok := fieldMap["items"].(string); ok {
+						switch items {
+						case "integer", "number":
+							property.DataType = []string{"number[]"}
+						case "string":
+							property.DataType = []string{"string[]"}
+						case "boolean":
+							property.DataType = []string{"boolean[]"}
+						default:
+							property.DataType = []string{"string[]"}
+						}
+					} else {
+						property.DataType = []string{"string[]"}
+					}
+				} else {
+					// Handle complex objects - convert to string for now
+					property.DataType = []string{"string"}
+				}
 			default:
 				// Default to string for unknown types
 				property.DataType = []string{"string"}
