@@ -300,6 +300,18 @@ sleep 1
 echo ""
 sleep 2
 
+echo -e "${BLUE}🧹 Cleanup${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols delete-schema DemoCollection --force${NC}"
+sleep 1
+# Check if collection exists before trying to delete
+if ./bin/weave cols show DemoCollection --vector-db-type weaviate-cloud >/dev/null 2>&1; then
+    ./bin/weave cols delete-schema DemoCollection --force 2>/dev/null || true
+else
+    echo "Collection DemoCollection does not exist, skipping cleanup"
+fi
+echo ""
+sleep 2
+
 echo -e "${BLUE}💻 Create Collection${NC}"
 echo -e "${YELLOW}$ ./bin/weave cols create DemoCollection --text --flat-metadata${NC}"
 sleep 1
