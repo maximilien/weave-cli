@@ -43,8 +43,12 @@ func TestLoadSchemasFromDirectory(t *testing.T) {
 	schema1Data, _ := yaml.Marshal(schema1)
 	schema2Data, _ := yaml.Marshal(schema2)
 
-	os.WriteFile(filepath.Join(tmpDir, "schema1.yaml"), schema1Data, 0644)
-	os.WriteFile(filepath.Join(tmpDir, "schema2.yml"), schema2Data, 0644)
+	if err := os.WriteFile(filepath.Join(tmpDir, "schema1.yaml"), schema1Data, 0644); err != nil {
+		t.Fatalf("Failed to write schema1.yaml: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "schema2.yml"), schema2Data, 0644); err != nil {
+		t.Fatalf("Failed to write schema2.yml: %v", err)
+	}
 
 	// Create config with schemas_dir
 	config := &Config{
@@ -93,7 +97,9 @@ func TestLoadSchemasFromDirectory_Precedence(t *testing.T) {
 	}
 
 	dirSchemaData, _ := yaml.Marshal(dirSchema)
-	os.WriteFile(filepath.Join(tmpDir, "override.yaml"), dirSchemaData, 0644)
+	if err := os.WriteFile(filepath.Join(tmpDir, "override.yaml"), dirSchemaData, 0644); err != nil {
+		t.Fatalf("Failed to write override.yaml: %v", err)
+	}
 
 	// Create config with inline schema with same name
 	inlineSchema := SchemaDefinition{
@@ -175,6 +181,7 @@ func TestGetSchema(t *testing.T) {
 	}
 	if schema == nil {
 		t.Error("Expected schema, got nil")
+		return
 	}
 	if schema.Name != "TestSchema" {
 		t.Errorf("Expected schema name 'TestSchema', got '%s'", schema.Name)
