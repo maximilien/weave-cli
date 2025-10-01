@@ -457,16 +457,17 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 		var document weaviate.Document
 		if isWeaveDocs {
 			if metadataMode == "flat" {
-				// Use flat metadata structure - individual fields ONLY, no metadata field
+				// Use flat metadata structure - individual fields ONLY, ignore auto-generated metadata field
+				now := time.Now().Format(time.RFC3339)
 				document = weaviate.Document{
 					ID:      docID,
 					Content: chunk,
 					URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
 					Metadata: map[string]interface{}{
 						"id":                docID,
-						"added_date":        time.Now().Format(time.RFC3339),
-						"creation_date":     time.Now().Format(time.RFC3339),
-						"modified_date":     time.Now().Format(time.RFC3339),
+						"added_date":        now,
+						"creation_date":     now,
+						"modified_date":     now,
 						"creator":           "",
 						"producer":          "",
 						"title":             filepath.Base(filePath),
@@ -479,15 +480,17 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 						"original_filename": filepath.Base(filePath),
 						"storage_path":      filePath,
 						"type":              "text",
+						"content":           chunk, // Use content field as per Weaviate's expectation
 					},
 				}
 			} else {
 				// Use JSON metadata structure - single metadata field ONLY
+				now := time.Now().Format(time.RFC3339)
 				metadataJSON := map[string]interface{}{
 					"id":                docID,
-					"added_date":        time.Now().Format(time.RFC3339),
-					"creation_date":     time.Now().Format(time.RFC3339),
-					"modified_date":     time.Now().Format(time.RFC3339),
+					"added_date":        now,
+					"creation_date":     now,
+					"modified_date":     now,
 					"creator":           "",
 					"producer":          "",
 					"title":             filepath.Base(filePath),
@@ -500,6 +503,7 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 					"original_filename": filepath.Base(filePath),
 					"storage_path":      filePath,
 					"type":              "text",
+					"content":           chunk, // Use content field as per Weaviate's expectation
 				}
 				metadataJSONStr, _ := json.Marshal(metadataJSON)
 				document = weaviate.Document{
@@ -579,6 +583,7 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 
 	if isWeaveImages {
 		// Use WeaveImages schema (flat metadata structure)
+		now := time.Now().Format(time.RFC3339)
 		document = weaviate.Document{
 			ID:        docID,
 			Image:     dataURL,
@@ -586,9 +591,9 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 			URL:       fmt.Sprintf("file://%s", filePath),
 			Metadata: map[string]interface{}{
 				"id":                docID,
-				"added_date":        time.Now().Format(time.RFC3339),
-				"creation_date":     time.Now().Format(time.RFC3339),
-				"modified_date":     time.Now().Format(time.RFC3339),
+				"added_date":        now,
+				"creation_date":     now,
+				"modified_date":     now,
 				"creator":           "",
 				"producer":          "",
 				"title":             filepath.Base(filePath),
@@ -604,6 +609,7 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 				"file_size":         fileInfo.Size(),
 				"image_format":      strings.ToLower(filepath.Ext(filePath)),
 				"image_size":        len(imageBytes),
+				"content":           "", // Images don't have text content
 			},
 		}
 	} else {
