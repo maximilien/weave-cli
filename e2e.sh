@@ -262,7 +262,26 @@ main() {
             run_test "Show image document: $(basename "$first_img")" "./bin/weave docs show '$IMAGE_COLLECTION' '$(basename "$first_img")' --vector-db-type $VECTOR_DB_TYPE"
         fi
     fi
-    
+
+    # Step 6.5: Compact Schema Tests (before documents are deleted)
+    print_section "Step 6.5: Compact Schema Tests (with documents)"
+
+    # Test compact flag - should show metadata but remove occurrences/samples
+    run_test "Export schema with compact flag to YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml-file /tmp/${TEXT_COLLECTION}_schema_compact.yaml --compact --vector-db-type $VECTOR_DB_TYPE"
+    run_test "Export schema with compact flag to JSON" "./bin/weave cols show '$TEXT_COLLECTION' --schema --json-file /tmp/${TEXT_COLLECTION}_schema_compact.json --compact --vector-db-type $VECTOR_DB_TYPE"
+    run_test "Display compact schema as YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml --compact --vector-db-type $VECTOR_DB_TYPE"
+
+    # Verify compact output has metadata but no occurrences/samples, and no empty nestedproperties
+    echo -e "${YELLOW}Verifying compact mode...${NC}"
+    if grep -q "metadata:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "occurrences:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "sample:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "nestedproperties: \[\]" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
+        echo -e "${GREEN}✅ Compact mode verified: Has metadata but no occurrences/samples or empty nested properties${NC}"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ Compact mode failed: Missing metadata or has occurrences/samples/empty nested properties${NC}"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
     # Step 7: Document Deletion Tests
     print_section "Step 7: Document Deletion Tests"
     
@@ -299,22 +318,6 @@ main() {
 
     # Display JSON schema to stdout
     run_test "Display schema as JSON" "./bin/weave cols show '$TEXT_COLLECTION' --schema --json --vector-db-type $VECTOR_DB_TYPE"
-
-    # Test compact flag - should remove metadata and empty nested properties
-    run_test "Export schema with compact flag to YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml-file /tmp/${TEXT_COLLECTION}_schema_compact.yaml --compact --vector-db-type $VECTOR_DB_TYPE"
-    run_test "Export schema with compact flag to JSON" "./bin/weave cols show '$TEXT_COLLECTION' --schema --json-file /tmp/${TEXT_COLLECTION}_schema_compact.json --compact --vector-db-type $VECTOR_DB_TYPE"
-    run_test "Display compact schema as YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml --compact --vector-db-type $VECTOR_DB_TYPE"
-
-    # Verify compact output has metadata but no occurrences/samples, and no empty nestedproperties
-    echo -e "${YELLOW}Verifying compact mode...${NC}"
-    if grep -q "metadata:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "occurrences:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "sample:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "nestedproperties: \[\]" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
-        echo -e "${GREEN}✅ Compact mode verified: Has metadata but no occurrences/samples or empty nested properties${NC}"
-        PASSED_TESTS=$((PASSED_TESTS + 1))
-    else
-        echo -e "${RED}❌ Compact mode failed: Missing metadata or has occurrences/samples/empty nested properties${NC}"
-        FAILED_TESTS=$((FAILED_TESTS + 1))
-    fi
-    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 
     # Create new collection from exported schema
     SCHEMA_TEST_COLLECTION="${TEXT_COLLECTION}_SchemaRoundTrip"
