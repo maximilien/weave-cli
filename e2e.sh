@@ -293,13 +293,38 @@ main() {
     run_test "Export schema with compact flag to JSON" "./bin/weave cols show '$TEXT_COLLECTION' --schema --json-file /tmp/${TEXT_COLLECTION}_schema_compact.json --compact --vector-db-type $VECTOR_DB_TYPE"
     run_test "Display compact schema as YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml --compact --vector-db-type $VECTOR_DB_TYPE"
 
-    # Verify compact output has metadata but no occurrences/samples, and no empty nestedproperties
+    # Verify compact output has metadata fields but no occurrences/samples, and no empty nestedproperties
     echo -e "${YELLOW}Verifying compact mode...${NC}"
-    if grep -q "metadata:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "occurrences:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "sample:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml && ! grep -q "nestedproperties: \[\]" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
-        echo -e "${GREEN}✅ Compact mode verified: Has metadata but no occurrences/samples or empty nested properties${NC}"
+    # Check for metadata fields (either single metadata field or individual metadata properties)
+    if grep -q "metadata:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml || grep -q "name: added_date" /tmp/${TEXT_COLLECTION}_schema_compact.yaml || grep -q "name: creation_date" /tmp/${TEXT_COLLECTION}_schema_compact.yaml || grep -q "name: filename" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
+        has_metadata=true
+    else
+        has_metadata=false
+    fi
+    
+    if ! grep -q "occurrences:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
+        no_occurrences=true
+    else
+        no_occurrences=false
+    fi
+    
+    if ! grep -q "sample:" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
+        no_samples=true
+    else
+        no_samples=false
+    fi
+    
+    if ! grep -q "nestedproperties: \[\]" /tmp/${TEXT_COLLECTION}_schema_compact.yaml; then
+        no_empty_nested=true
+    else
+        no_empty_nested=false
+    fi
+    
+    if [ "$has_metadata" = "true" ] && [ "$no_occurrences" = "true" ] && [ "$no_samples" = "true" ] && [ "$no_empty_nested" = "true" ]; then
+        echo -e "${GREEN}✅ Compact mode verified: Has metadata fields but no occurrences/samples or empty nested properties${NC}"
         PASSED_TESTS=$((PASSED_TESTS + 1))
     else
-        echo -e "${RED}❌ Compact mode failed: Missing metadata or has occurrences/samples/empty nested properties${NC}"
+        echo -e "${RED}❌ Compact mode failed: Missing metadata fields or has occurrences/samples/empty nested properties${NC}"
         FAILED_TESTS=$((FAILED_TESTS + 1))
     fi
     TOTAL_TESTS=$((TOTAL_TESTS + 1))
