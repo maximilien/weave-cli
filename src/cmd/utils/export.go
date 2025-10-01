@@ -16,9 +16,10 @@ import (
 
 // CollectionExport represents the combined schema and metadata for export
 type CollectionExport struct {
-	Name     string                       `json:"name" yaml:"name"`
-	Schema   *weaviate.CollectionSchema   `json:"schema,omitempty" yaml:"schema,omitempty"`
-	Metadata map[string]MetadataFieldInfo `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Name           string                       `json:"name" yaml:"name"`
+	Schema         *weaviate.CollectionSchema   `json:"schema,omitempty" yaml:"schema,omitempty"`
+	SchemaMetadata map[string]interface{}       `json:"schema_metadata,omitempty" yaml:"metadata,omitempty"`
+	Metadata       map[string]MetadataFieldInfo `json:"metadata,omitempty" yaml:"runtime_metadata,omitempty"`
 }
 
 // MetadataFieldInfo represents metadata field information
@@ -198,6 +199,15 @@ func compactYAMLArrays(yamlStr string) string {
 	for i < len(lines) {
 		line := lines[i]
 
+		// Fix invalid YAML syntax for array types
+		if strings.Contains(line, "datatype:") && strings.Contains(line, "[") {
+			// Convert Weaviate array types to valid YAML string format
+			line = strings.ReplaceAll(line, "[number[]]", "[\"number[]\"]")
+			line = strings.ReplaceAll(line, "[text[]]", "[\"text[]\"]")
+			line = strings.ReplaceAll(line, "[int[]]", "[\"int[]\"]")
+			line = strings.ReplaceAll(line, "[boolean[]]", "[\"boolean[]\"]")
+		}
+
 		// Check if this line contains "datatype:" followed by array items
 		if strings.Contains(line, "datatype:") && !strings.Contains(line, "[") {
 			// Find the indentation level
@@ -307,13 +317,51 @@ func LoadSchemaFromYAMLFile(filePath string) (*CollectionExport, error) {
 		return nil, fmt.Errorf("failed to read file: %w", err)
 	}
 
+	// Preprocess the YAML to fix invalid array syntax
+	yamlContent := string(data)
+	yamlContent = strings.ReplaceAll(yamlContent, "[number[]]", "[\"number[]\"]")
+	yamlContent = strings.ReplaceAll(yamlContent, "[text[]]", "[\"text[]\"]")
+	yamlContent = strings.ReplaceAll(yamlContent, "[int[]]", "[\"int[]\"]")
+	yamlContent = strings.ReplaceAll(yamlContent, "[boolean[]]", "[\"boolean[]\"]")
+
 	var export CollectionExport
-	err = yaml.Unmarshal(data, &export)
+	err = yaml.Unmarshal([]byte(yamlContent), &export)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse YAML: %w", err)
 	}
 
+	// Post-process to convert quoted array types back to proper Weaviate format
+	if export.Schema != nil {
+		for i := range export.Schema.Properties {
+			export.Schema.Properties[i] = convertQuotedArrayTypes(export.Schema.Properties[i])
+		}
+	}
+
 	return &export, nil
+}
+
+// convertQuotedArrayTypes converts quoted array types back to proper Weaviate format
+func convertQuotedArrayTypes(prop weaviate.SchemaProperty) weaviate.SchemaProperty {
+	// Convert quoted array types back to proper format
+	for i, dataType := range prop.DataType {
+		switch dataType {
+		case "number[]":
+			prop.DataType[i] = "number[]"
+		case "text[]":
+			prop.DataType[i] = "text[]"
+		case "int[]":
+			prop.DataType[i] = "int[]"
+		case "boolean[]":
+			prop.DataType[i] = "boolean[]"
+		}
+	}
+
+	// Recursively process nested properties
+	for i := range prop.NestedProperties {
+		prop.NestedProperties[i] = convertQuotedArrayTypes(prop.NestedProperties[i])
+	}
+
+	return prop
 }
 
 // LoadSchemaFromJSONFile loads a collection schema from a JSON file
