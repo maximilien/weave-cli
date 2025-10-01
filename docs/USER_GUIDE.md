@@ -227,7 +227,7 @@ Each schema file should contain a single schema definition:
 name: TestSchema
 schema:
   class: TestSchema
-  vectorizer: text2vec-transformers
+  vectorizer: text2vec-weaviate
   properties:
     - name: title
       datatype: [text]
