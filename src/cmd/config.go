@@ -129,6 +129,29 @@ func runConfigShow(cmd *cobra.Command, args []string) {
 	printHeader("Configuration Sources")
 	fmt.Printf("Config file: %s\n", config.GetConfigFile())
 	fmt.Printf("Env file: %s\n", config.GetEnvFile())
+
+	// Display schema configuration
+	fmt.Println()
+	printHeader("Schema Configuration")
+	if cfg.SchemasDir != "" {
+		fmt.Printf("Schemas directory: %s\n", cfg.SchemasDir)
+	} else {
+		fmt.Printf("Schemas directory: not configured\n")
+	}
+
+	schemaCount := len(cfg.GetAllSchemas())
+	if schemaCount > 0 {
+		fmt.Printf("Configured schemas: %d\n", schemaCount)
+		fmt.Println()
+		schemaNames := cfg.ListSchemas()
+		for i, name := range schemaNames {
+			fmt.Printf("  %d. %s\n", i+1, name)
+		}
+		fmt.Println()
+		color.New(color.FgCyan).Printf("💡 Use 'weave config show-schema <name>' to view schema details\n")
+	} else {
+		fmt.Printf("Configured schemas: 0\n")
+	}
 }
 
 func runConfigList(cmd *cobra.Command, args []string) {
@@ -316,37 +339,37 @@ func runConfigShowSchema(cmd *cobra.Command, args []string) {
 
 	// Display properties
 	if properties, ok := schemaMap["properties"].([]interface{}); ok && len(properties) > 0 {
-			color.New(color.FgGreen, color.Bold).Printf("🏗️  Properties:\n")
-			fmt.Println()
+		color.New(color.FgGreen, color.Bold).Printf("🏗️  Properties:\n")
+		fmt.Println()
 
-			for i, prop := range properties {
-				if propMap, ok := prop.(map[string]interface{}); ok {
-					name := propMap["name"]
-					datatype := propMap["datatype"]
-					description := propMap["description"]
+		for i, prop := range properties {
+			if propMap, ok := prop.(map[string]interface{}); ok {
+				name := propMap["name"]
+				datatype := propMap["datatype"]
+				description := propMap["description"]
 
-					fmt.Printf("  %d. ", i+1)
-					color.New(color.FgYellow).Printf("%v", name)
-					fmt.Printf("\n")
+				fmt.Printf("  %d. ", i+1)
+				color.New(color.FgYellow).Printf("%v", name)
+				fmt.Printf("\n")
 
-					if datatype != nil {
-						fmt.Printf("     Type: %v\n", datatype)
-					}
-
-					if description != nil && description != "" {
-						fmt.Printf("     Description: %v\n", description)
-					}
-
-					// Display JSON schema if present
-					if jsonSchema, ok := propMap["json_schema"].(map[string]interface{}); ok && len(jsonSchema) > 0 {
-						fmt.Printf("     JSON Schema:\n")
-						displayJSONSchemaFields(jsonSchema, "       ")
-					}
-
-					fmt.Println()
+				if datatype != nil {
+					fmt.Printf("     Type: %v\n", datatype)
 				}
+
+				if description != nil && description != "" {
+					fmt.Printf("     Description: %v\n", description)
+				}
+
+				// Display JSON schema if present
+				if jsonSchema, ok := propMap["json_schema"].(map[string]interface{}); ok && len(jsonSchema) > 0 {
+					fmt.Printf("     JSON Schema:\n")
+					displayJSONSchemaFields(jsonSchema, "       ")
+				}
+
+				fmt.Println()
 			}
 		}
+	}
 
 	// Display metadata if present
 	if metadata, ok := schema.Schema["metadata"].(map[string]interface{}); ok && len(metadata) > 0 {

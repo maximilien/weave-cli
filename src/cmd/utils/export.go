@@ -180,6 +180,9 @@ func ExportAsYAML(export *CollectionExport) (string, error) {
 	// Post-process to make datatype arrays more compact
 	result := compactYAMLArrays(string(data))
 
+	// Fix json_schema indentation (should be 2 spaces deeper than json_schema:)
+	result = fixJSONSchemaIndentation(result)
+
 	// Add YAML document separator at the beginning for valid YAML format
 	result = "---\n" + result
 
@@ -416,4 +419,65 @@ func analyzeJSONFields(documents []weaviate.Document, ctx context.Context, clien
 	}
 
 	return jsonSchemas
+}
+
+// fixJSONSchemaIndentation fixes the indentation of json_schema fields
+// YAML library indents nested maps inconsistently, so we ensure
+// json_schema contents are indented with exactly 2 more spaces than json_schema: line
+func fixJSONSchemaIndentation(yamlStr string) string {
+	lines := strings.Split(yamlStr, "\n")
+	result := make([]string, 0, len(lines))
+	i := 0
+
+	for i < len(lines) {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		// Check if this is a json_schema: line
+		if trimmed == "json_schema:" {
+			// Get the indentation of the json_schema: line
+			jsonSchemaIndent := len(line) - len(strings.TrimLeft(line, " "))
+			// YAML linting requires +4 spaces for nested maps in lists (not +2)
+			expectedChildIndent := jsonSchemaIndent + 4
+			result = append(result, line)
+			i++
+
+			// Collect all children of json_schema (until we hit same/lower indentation)
+			firstChildIndent := -1
+			for i < len(lines) {
+				childLine := lines[i]
+				childTrimmed := strings.TrimSpace(childLine)
+
+				if childTrimmed == "" {
+					result = append(result, childLine)
+					i++
+					continue
+				}
+
+				childIndent := len(childLine) - len(strings.TrimLeft(childLine, " "))
+
+				// If child has same or less indentation than json_schema:, we're done
+				if childIndent <= jsonSchemaIndent {
+					break
+				}
+
+				// Track first child's indentation
+				if firstChildIndent == -1 {
+					firstChildIndent = childIndent
+				}
+
+				// Calculate the indentation delta
+				indentDelta := childIndent - firstChildIndent
+				correctedIndent := expectedChildIndent + indentDelta
+				correctedLine := strings.Repeat(" ", correctedIndent) + childTrimmed
+				result = append(result, correctedLine)
+				i++
+			}
+		} else {
+			result = append(result, line)
+			i++
+		}
+	}
+
+	return strings.Join(result, "\n")
 }

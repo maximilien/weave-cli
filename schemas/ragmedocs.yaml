@@ -14,22 +14,22 @@ schema:
           datatype: [text]
           description: additional metadata in JSON format
           json_schema:
-            /CreationDate: string
-            /Creator: string
-            /ModDate: string
-            /Producer: string
-            /Title: string
-            ai_summary: string
-            chunk_index: integer
-            chunk_sizes: array[integer]
-            date_added: string
-            filename: string
-            is_chunked: boolean
-            original_filename: string
-            storage_path: string
-            total_chunks: integer
-            type: string
-            url: string
+              /CreationDate: string
+              /Creator: string
+              /ModDate: string
+              /Producer: string
+              /Title: string
+              ai_summary: string
+              chunk_index: integer
+              chunk_sizes: array[integer]
+              date_added: string
+              filename: string
+              is_chunked: boolean
+              original_filename: string
+              storage_path: string
+              total_chunks: integer
+              type: string
+              url: string
 metadata:
     id: string
     metadata:
