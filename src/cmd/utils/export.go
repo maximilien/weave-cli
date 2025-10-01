@@ -182,7 +182,7 @@ func ExportAsYAML(export *CollectionExport) (string, error) {
 	return result, nil
 }
 
-// compactYAMLArrays converts multi-line YAML arrays to inline format for simple cases
+// compactYAMLArrays converts multi-line YAML arrays to inline format and simplifies metadata
 func compactYAMLArrays(yamlStr string) string {
 	lines := strings.Split(yamlStr, "\n")
 	result := make([]string, 0, len(lines))
@@ -221,6 +221,43 @@ func compactYAMLArrays(yamlStr string) string {
 				result = append(result, compactLine)
 				i = j // Skip the array items we processed
 				continue
+			}
+		}
+
+		// Check if this is a simple metadata field (field_name: \n type: string)
+		// Pattern: line with field name ending with ":", next line is "type: <value>", no other nested fields
+		trimmed := strings.TrimSpace(line)
+		if strings.HasSuffix(trimmed, ":") && !strings.Contains(line, "metadata:") &&
+		   !strings.Contains(line, "schema:") && !strings.Contains(line, "properties:") &&
+		   i+1 < len(lines) {
+			indent := len(line) - len(strings.TrimLeft(line, " "))
+			nextLine := lines[i+1]
+			nextIndent := len(nextLine) - len(strings.TrimLeft(nextLine, " "))
+			nextTrimmed := strings.TrimSpace(nextLine)
+
+			// Check if next line is "type: <value>" and is indented more than current
+			if nextIndent > indent && strings.HasPrefix(nextTrimmed, "type: ") {
+				typeValue := strings.TrimSpace(strings.TrimPrefix(nextTrimmed, "type:"))
+
+				// Look ahead to see if there are more nested fields (like json_schema)
+				hasMoreFields := false
+				if i+2 < len(lines) {
+					thirdLine := lines[i+2]
+					thirdIndent := len(thirdLine) - len(strings.TrimLeft(thirdLine, " "))
+					thirdTrimmed := strings.TrimSpace(thirdLine)
+					// If there's another field at the same or greater indentation, keep expanded
+					if thirdIndent >= nextIndent && thirdTrimmed != "" {
+						hasMoreFields = true
+					}
+				}
+
+				// Only compact if it's just a simple "type: value" with no other fields
+				if !hasMoreFields {
+					compactLine := strings.Repeat(" ", indent) + trimmed + " " + typeValue
+					result = append(result, compactLine)
+					i += 2 // Skip both lines
+					continue
+				}
 			}
 		}
 
