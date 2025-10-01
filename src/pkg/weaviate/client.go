@@ -28,10 +28,11 @@ type CollectionSchema struct {
 
 // SchemaProperty represents a property in a collection schema
 type SchemaProperty struct {
-	Name             string           `json:"name" yaml:"name"`
-	DataType         []string         `json:"dataType" yaml:"datatype"`
-	Description      string           `json:"description,omitempty" yaml:"description,omitempty"`
-	NestedProperties []SchemaProperty `json:"nestedProperties,omitempty" yaml:"nestedproperties,omitempty"`
+	Name             string                 `json:"name" yaml:"name"`
+	DataType         []string               `json:"dataType" yaml:"datatype"`
+	Description      string                 `json:"description,omitempty" yaml:"description,omitempty"`
+	NestedProperties []SchemaProperty       `json:"nestedProperties,omitempty" yaml:"nestedproperties,omitempty"`
+	JSONSchema       map[string]interface{} `json:"json_schema,omitempty" yaml:"json_schema,omitempty"`
 }
 
 // Client wraps the Weaviate client with additional functionality

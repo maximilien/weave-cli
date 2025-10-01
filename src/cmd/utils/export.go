@@ -47,58 +47,64 @@ func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Cli
 
 	export.Schema = schema
 
-	// Get metadata if requested
-	if includeMetadata {
-		documents, err := client.ListDocuments(ctx, collectionName, 100)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get documents for metadata analysis: %w", err)
+	// Get documents for JSON field analysis and metadata
+	var jsonSchemas map[string]map[string]interface{}
+	documents, err := client.ListDocuments(ctx, collectionName, 100)
+	if err == nil && len(documents) > 0 {
+		// Analyze JSON fields across all documents
+		jsonSchemas = analyzeJSONFields(documents, ctx, client, collectionName)
+
+		// Update schema properties with JSON structure info
+		for i := range export.Schema.Properties {
+			prop := &export.Schema.Properties[i]
+			if jsonSchema, isJSON := jsonSchemas[prop.Name]; isJSON {
+				prop.JSONSchema = jsonSchema
+			}
 		}
+	}
 
-		if len(documents) > 0 {
-			metadataFields := make(map[string]int)
-			metadataTypes := make(map[string]string)
-			metadataSamples := make(map[string]interface{})
+	// Get metadata if requested
+	if includeMetadata && len(documents) > 0 {
+		metadataFields := make(map[string]int)
+		metadataTypes := make(map[string]string)
+		metadataSamples := make(map[string]interface{})
 
-			// Analyze JSON fields across documents
-			jsonSchemas := analyzeJSONFields(documents, ctx, client, collectionName)
+		for _, doc := range documents {
+			fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
+			if err != nil {
+				continue
+			}
 
-			for _, doc := range documents {
-				fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
-				if err != nil {
-					continue
-				}
-
-				for key, value := range fullDoc.Metadata {
-					metadataFields[key]++
-					if metadataTypes[key] == "" {
-						// Check if this is a JSON field
-						if _, isJSON := jsonSchemas[key]; isJSON {
-							metadataTypes[key] = "json"
-						} else {
-							metadataTypes[key] = fmt.Sprintf("%T", value)
-						}
-						if expandMetadata {
-							metadataSamples[key] = value
-						}
+			for key, value := range fullDoc.Metadata {
+				metadataFields[key]++
+				if metadataTypes[key] == "" {
+					// Check if this is a JSON field
+					if _, isJSON := jsonSchemas[key]; isJSON {
+						metadataTypes[key] = "json"
+					} else {
+						metadataTypes[key] = fmt.Sprintf("%T", value)
+					}
+					if expandMetadata {
+						metadataSamples[key] = value
 					}
 				}
 			}
+		}
 
-			export.Metadata = make(map[string]MetadataFieldInfo)
-			for name, count := range metadataFields {
-				info := MetadataFieldInfo{
-					Type:        metadataTypes[name],
-					Occurrences: count,
-				}
-				if expandMetadata {
-					info.Sample = metadataSamples[name]
-				}
-				// Add JSON schema if this is a JSON field
-				if jsonSchema, isJSON := jsonSchemas[name]; isJSON {
-					info.JSONSchema = jsonSchema
-				}
-				export.Metadata[name] = info
+		export.Metadata = make(map[string]MetadataFieldInfo)
+		for name, count := range metadataFields {
+			info := MetadataFieldInfo{
+				Type:        metadataTypes[name],
+				Occurrences: count,
 			}
+			if expandMetadata {
+				info.Sample = metadataSamples[name]
+			}
+			// Add JSON schema if this is a JSON field
+			if jsonSchema, isJSON := jsonSchemas[name]; isJSON {
+				info.JSONSchema = jsonSchema
+			}
+			export.Metadata[name] = info
 		}
 	}
 
