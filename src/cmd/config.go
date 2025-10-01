@@ -53,10 +53,42 @@ This command displays:
 	Run: runConfigList,
 }
 
+// configListSchemasCmd represents the config list-schemas command
+var configListSchemasCmd = &cobra.Command{
+	Use:     "list-schemas",
+	Aliases: []string{"ls-schemas"},
+	Short:   "List all configured schemas",
+	Long: `List all configured schemas defined in config.yaml.
+
+This command displays:
+- All configured schema names
+- Schema class names
+- Schema vectorizer types`,
+	Run: runConfigListSchemas,
+}
+
+// configShowSchemaCmd represents the config show-schema command
+var configShowSchemaCmd = &cobra.Command{
+	Use:   "show-schema SCHEMA_NAME",
+	Short: "Show a specific schema configuration",
+	Long: `Show detailed information about a specific schema.
+
+This command displays:
+- Schema name and class
+- Vectorizer configuration
+- All properties and their types
+- JSON schema structures if present
+- Metadata field definitions`,
+	Args: cobra.ExactArgs(1),
+	Run:  runConfigShowSchema,
+}
+
 func init() {
 	rootCmd.AddCommand(configCmd)
 	configCmd.AddCommand(configShowCmd)
 	configCmd.AddCommand(configListCmd)
+	configCmd.AddCommand(configListSchemasCmd)
+	configCmd.AddCommand(configShowSchemaCmd)
 }
 
 func runConfigShow(cmd *cobra.Command, args []string) {
@@ -189,5 +221,163 @@ func displayMockConfig(cfg *config.VectorDBConfig) {
 		for _, collection := range cfg.Collections {
 			fmt.Printf("    - %s (%s): %s\n", collection.Name, collection.Type, collection.Description)
 		}
+	}
+}
+
+func runConfigListSchemas(cmd *cobra.Command, args []string) {
+	// Load configuration
+	cfg, err := loadConfigWithOverrides()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	printHeader("Configured Schemas")
+	fmt.Println()
+
+	schemas := cfg.GetAllSchemas()
+	if len(schemas) == 0 {
+		printWarning("No schemas configured in config.yaml")
+		fmt.Println()
+		fmt.Println("Add schemas to the 'databases.schemas' section in config.yaml")
+		return
+	}
+
+	for i, schemaDef := range schemas {
+		// Extract schema class and vectorizer
+		schemaClass := "unknown"
+		vectorizer := "unknown"
+
+		// Schema can be either directly in Schema map or under Schema["schema"]
+		var schemaMap map[string]interface{}
+		if innerSchema, ok := schemaDef.Schema["schema"].(map[string]interface{}); ok {
+			schemaMap = innerSchema
+		} else {
+			schemaMap = schemaDef.Schema
+		}
+
+		if class, ok := schemaMap["class"].(string); ok {
+			schemaClass = class
+		}
+		if vec, ok := schemaMap["vectorizer"].(string); ok {
+			vectorizer = vec
+		}
+
+		color.New(color.FgCyan, color.Bold).Printf("%d. %s\n", i+1, schemaDef.Name)
+		fmt.Printf("   Class: %s\n", schemaClass)
+		fmt.Printf("   Vectorizer: %s\n", vectorizer)
+		fmt.Println()
+	}
+
+	color.New(color.FgGreen).Printf("✅ Found %d schema(s)\n", len(schemas))
+}
+
+func runConfigShowSchema(cmd *cobra.Command, args []string) {
+	schemaName := args[0]
+
+	// Load configuration
+	cfg, err := loadConfigWithOverrides()
+	if err != nil {
+		printError(fmt.Sprintf("Failed to load configuration: %v", err))
+		os.Exit(1)
+	}
+
+	// Get the schema
+	schema, err := cfg.GetSchema(schemaName)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to get schema '%s': %v", schemaName, err))
+		os.Exit(1)
+	}
+
+	printHeader(fmt.Sprintf("Schema: %s", schemaName))
+	fmt.Println()
+
+	// Extract schema details
+	// Schema can be either directly in Schema map or under Schema["schema"]
+	var schemaMap map[string]interface{}
+	if innerSchema, ok := schema.Schema["schema"].(map[string]interface{}); ok {
+		schemaMap = innerSchema
+	} else {
+		schemaMap = schema.Schema
+	}
+
+	// Display class and vectorizer
+	if class, ok := schemaMap["class"].(string); ok {
+		color.New(color.FgCyan).Printf("📋 Class: ")
+		fmt.Printf("%s\n", class)
+	}
+
+	if vectorizer, ok := schemaMap["vectorizer"].(string); ok {
+		color.New(color.FgCyan).Printf("🔧 Vectorizer: ")
+		fmt.Printf("%s\n", vectorizer)
+	}
+
+	fmt.Println()
+
+	// Display properties
+	if properties, ok := schemaMap["properties"].([]interface{}); ok && len(properties) > 0 {
+			color.New(color.FgGreen, color.Bold).Printf("🏗️  Properties:\n")
+			fmt.Println()
+
+			for i, prop := range properties {
+				if propMap, ok := prop.(map[string]interface{}); ok {
+					name := propMap["name"]
+					datatype := propMap["datatype"]
+					description := propMap["description"]
+
+					fmt.Printf("  %d. ", i+1)
+					color.New(color.FgYellow).Printf("%v", name)
+					fmt.Printf("\n")
+
+					if datatype != nil {
+						fmt.Printf("     Type: %v\n", datatype)
+					}
+
+					if description != nil && description != "" {
+						fmt.Printf("     Description: %v\n", description)
+					}
+
+					// Display JSON schema if present
+					if jsonSchema, ok := propMap["json_schema"].(map[string]interface{}); ok && len(jsonSchema) > 0 {
+						fmt.Printf("     JSON Schema:\n")
+						displayJSONSchemaFields(jsonSchema, "       ")
+					}
+
+					fmt.Println()
+				}
+			}
+		}
+
+	// Display metadata if present
+	if metadata, ok := schema.Schema["metadata"].(map[string]interface{}); ok && len(metadata) > 0 {
+		color.New(color.FgBlue, color.Bold).Printf("📊 Metadata Fields:\n")
+		fmt.Println()
+
+		for key, value := range metadata {
+			fmt.Printf("  • ")
+			color.New(color.FgYellow).Printf("%s", key)
+
+			if valueMap, ok := value.(map[string]interface{}); ok {
+				if fieldType, ok := valueMap["type"].(string); ok {
+					fmt.Printf(": %s", fieldType)
+				}
+
+				// Display JSON schema if present
+				if jsonSchema, ok := valueMap["json_schema"].(map[string]interface{}); ok && len(jsonSchema) > 0 {
+					fmt.Printf("\n    JSON Schema:\n")
+					displayJSONSchemaFields(jsonSchema, "      ")
+				}
+			} else {
+				fmt.Printf(": %v", value)
+			}
+
+			fmt.Println()
+		}
+	}
+}
+
+func displayJSONSchemaFields(jsonSchema map[string]interface{}, indent string) {
+	for field, fieldType := range jsonSchema {
+		fmt.Printf("%s%s: %v\n", indent, field, fieldType)
 	}
 }

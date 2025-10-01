@@ -348,3 +348,8 @@ func (c *Config) ListSchemas() []string {
 
 	return names
 }
+
+// GetAllSchemas returns all configured schema definitions
+func (c *Config) GetAllSchemas() []SchemaDefinition {
+	return c.Databases.Schemas
+}

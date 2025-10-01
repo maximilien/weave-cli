@@ -115,6 +115,56 @@ databases:
         - name: "WeaveImages"
           type: "image"
           description: "Mock image documents collection"
+
+  # Collection Schemas - define reusable schema templates
+  schemas:
+    - name: RagMeDocs
+      schema:
+        class: RagMeDocs
+        vectorizer: text2vec-weaviate
+        properties:
+          - name: url
+            datatype: [text]
+            description: the source URL of the webpage
+          - name: text
+            datatype: [text]
+            description: the content of the webpage
+          - name: metadata
+            datatype: [text]
+            description: additional metadata in JSON format
+            json_schema:
+              filename: string
+              type: string
+              date_added: string
+      metadata:
+        id: string
+        url: string
+        text: string
+        metadata:
+          type: json
+          json_schema:
+            filename: string
+            type: string
+            date_added: string
+
+    - name: RagMeImages
+      schema:
+        class: RagMeImages
+        vectorizer: text2vec-weaviate
+        properties:
+          - name: url
+            datatype: [text]
+            description: the source URL or filename of the image
+          - name: image
+            datatype: [text]
+            description: the image reference (truncated base64 or URL)
+          - name: metadata
+            datatype: [text]
+            description: additional metadata in JSON format
+            json_schema:
+              filename: string
+              format: string
+              source: string
 ```
 
 #### .env
@@ -152,6 +202,75 @@ WEAVIATE_API_KEY="your-api-key"
 - **Connection**: In-memory
 - **Use Case**: Testing, development, demonstrations
 
+### Schema Configuration
+
+Weave CLI supports defining reusable schemas in `config.yaml`. These schemas can be used to create collections with predefined structures.
+
+#### Defining Schemas
+
+Schemas are defined in the `databases.schemas` section of `config.yaml`:
+
+```yaml
+databases:
+  schemas:
+    - name: RagMeDocs
+      schema:
+        class: RagMeDocs
+        vectorizer: text2vec-weaviate
+        properties:
+          - name: url
+            datatype: [text]
+            description: the source URL of the webpage
+          - name: text
+            datatype: [text]
+            description: the content of the webpage
+          - name: metadata
+            datatype: [text]
+            description: additional metadata in JSON format
+            json_schema:
+              filename: string
+              type: string
+              date_added: string
+```
+
+#### Viewing Configured Schemas
+
+```bash
+# List all configured schemas
+weave config list-schemas
+
+# Show details of a specific schema
+weave config show-schema RagMeDocs
+
+# Output shows:
+# - Schema class name
+# - Vectorizer type
+# - All properties with types and descriptions
+# - JSON schema structures for complex fields
+```
+
+#### Using Schemas
+
+```bash
+# Create a collection using a named schema
+weave collection create MyDocs --schema RagMeDocs
+
+# Create an image collection using a named schema
+weave collection create MyImages --schema RagMeImages
+```
+
+#### Schema Export and Import
+
+You can export existing collection schemas and use them as templates:
+
+```bash
+# Export a collection's schema with JSON field inference
+weave collection show MyCollection --schema --compact --yaml-file schema.yaml
+
+# Create new collection from exported schema
+weave collection create NewCollection --schema-yaml-file schema.yaml
+```
+
 ## Basic Commands
 
 ### Command Structure
@@ -167,6 +286,16 @@ weave config show
 
 # Show configuration with custom files
 weave config show --config /path/to/config.yaml --env /path/to/.env
+
+# List all configured schemas
+weave config list-schemas
+
+# Show details of a specific schema
+weave config show-schema RagMeDocs
+weave config show-schema RagMeImages
+
+# Using aliases
+weave config ls-schemas
 ```
 
 ### Health Management
