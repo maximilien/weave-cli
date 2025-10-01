@@ -1014,11 +1014,8 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 
 // convertSchemaDefinitionToCollectionSchema converts a config.SchemaDefinition to weaviate.CollectionSchema
 func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinition, collectionName string) (*weaviate.CollectionSchema, error) {
-	// Extract schema map
-	schemaMap, ok := schemaDef.Schema.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid schema format in config")
-	}
+	// Extract schema map (already map[string]interface{} type)
+	schemaMap := schemaDef.Schema
 
 	// Create the collection schema
 	schema := &weaviate.CollectionSchema{}
