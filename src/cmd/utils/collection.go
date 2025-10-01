@@ -172,11 +172,22 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			if len(schema) > 0 {
 				schemaType = "text"
 				// Check if it's an image collection based on schema
+				// Look for specific image-related fields that indicate it's truly an image collection
+				hasImageData := false
+				hasImageField := false
 				for _, field := range schema {
-					if strings.Contains(strings.ToLower(field), "image") {
-						schemaType = "image"
-						break
+					fieldLower := strings.ToLower(field)
+					if fieldLower == "image_data" || fieldLower == "imageData" {
+						hasImageData = true
 					}
+					if fieldLower == "image" {
+						hasImageField = true
+					}
+				}
+				// Only consider it an image collection if it has both image_data and image fields
+				// This distinguishes between auto-generated image fields and true image collections
+				if hasImageData && hasImageField {
+					schemaType = "image"
 				}
 			}
 		}
@@ -293,10 +304,16 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 			if err == nil && len(documents) > 0 {
 				schemaType = "text" // Default to text
 				// Check if it's an image collection based on document metadata
+				// Look for specific image-related fields that indicate it's truly an image collection
 				for _, doc := range documents {
 					if metadata, ok := doc.Metadata["metadata"]; ok {
 						if metadataStr, ok := metadata.(string); ok {
-							if strings.Contains(strings.ToLower(metadataStr), "image") {
+							metadataLower := strings.ToLower(metadataStr)
+							// Check for specific image collection indicators
+							if strings.Contains(metadataLower, "image_data") || 
+							   strings.Contains(metadataLower, "imagedata") ||
+							   strings.Contains(metadataLower, "imageformat") ||
+							   strings.Contains(metadataLower, "image_size") {
 								schemaType = "image"
 								break
 							}
