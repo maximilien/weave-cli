@@ -446,6 +446,9 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 	// Determine if this is a WeaveDocs collection (new schema) or RagMeDocs (legacy)
 	isWeaveDocs := isWeaveDocsCollection(collectionName)
 
+	// Get the collection metadata mode - use the same client that will be used for document creation
+	metadataMode := getCollectionMetadataMode(ctx, client, collectionName)
+
 	// Create documents for each chunk
 	successCount := 0
 	for i, chunk := range chunks {
@@ -453,12 +456,34 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 
 		var document weaviate.Document
 		if isWeaveDocs {
-			// Use WeaveDocs schema (flat metadata structure)
-			document = weaviate.Document{
-				ID:      docID,
-				Content: chunk,
-				URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
-				Metadata: map[string]interface{}{
+			if metadataMode == "flat" {
+				// Use flat metadata structure - individual fields ONLY, no metadata field
+				document = weaviate.Document{
+					ID:      docID,
+					Content: chunk,
+					URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+					Metadata: map[string]interface{}{
+						"id":                docID,
+						"added_date":        time.Now().Format(time.RFC3339),
+						"creation_date":     time.Now().Format(time.RFC3339),
+						"modified_date":     time.Now().Format(time.RFC3339),
+						"creator":           "",
+						"producer":          "",
+						"title":             filepath.Base(filePath),
+						"ai_summary":        "",
+						"filename":          filepath.Base(filePath),
+						"is_chunked":        len(chunks) > 1,
+						"total_chunks":      len(chunks),
+						"chunk_index":       i,
+						"chunk_sizes":       getChunkSizes(chunks),
+						"original_filename": filepath.Base(filePath),
+						"storage_path":      filePath,
+						"type":              "text",
+					},
+				}
+			} else {
+				// Use JSON metadata structure - single metadata field ONLY
+				metadataJSON := map[string]interface{}{
 					"id":                docID,
 					"added_date":        time.Now().Format(time.RFC3339),
 					"creation_date":     time.Now().Format(time.RFC3339),
@@ -475,7 +500,16 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 					"original_filename": filepath.Base(filePath),
 					"storage_path":      filePath,
 					"type":              "text",
-				},
+				}
+				metadataJSONStr, _ := json.Marshal(metadataJSON)
+				document = weaviate.Document{
+					ID:      docID,
+					Content: chunk,
+					URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+					Metadata: map[string]interface{}{
+						"metadata": string(metadataJSONStr),
+					},
+				}
 			}
 		} else {
 			// Use RagMeDocs schema (nested metadata structure for backward compatibility)
@@ -717,6 +751,39 @@ func isWeaveDocsCollection(collectionName string) bool {
 
 	// Default to new WeaveDocs schema
 	return true
+}
+
+// getCollectionMetadataMode determines if a collection uses flat or JSON metadata
+func getCollectionMetadataMode(ctx context.Context, client *weaviate.Client, collectionName string) string {
+	// Get the collection schema
+	schema, err := client.GetFullCollectionSchema(ctx, collectionName)
+	if err != nil {
+		// If we can't get the schema, default to flat metadata
+		return "flat"
+	}
+
+	// Check if the collection has individual metadata fields
+	hasFlatMetadataFields := false
+	for _, prop := range schema.Properties {
+		if prop.Name == "is_chunked" || prop.Name == "total_chunks" || prop.Name == "chunk_index" {
+			hasFlatMetadataFields = true
+			break
+		}
+	}
+
+	if hasFlatMetadataFields {
+		return "flat"
+	}
+
+	// Check if it has a metadata field (JSON metadata)
+	for _, prop := range schema.Properties {
+		if prop.Name == "metadata" {
+			return "json"
+		}
+	}
+
+	// Default to flat metadata
+	return "flat"
 }
 
 // isWeaveImagesCollection determines if a collection uses the WeaveImages schema
