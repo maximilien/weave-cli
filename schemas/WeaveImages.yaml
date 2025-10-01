@@ -2,7 +2,7 @@
 name: WeaveImages
 schema:
     class: WeaveImages
-    vectorizer: text2vec-weaviate
+    vectorizer: none
     properties:
         - name: url
           datatype: [text]
