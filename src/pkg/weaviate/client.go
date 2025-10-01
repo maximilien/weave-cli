@@ -76,15 +76,23 @@ func NewClient(config *Config) (*Client, error) {
 
 	if config.APIKey != "" {
 		// Use API key authentication for Weaviate Cloud
+		headers := map[string]string{
+			"X-Openai-Api-Key": config.OpenAIAPIKey,
+		}
+
+		// Add cluster URL header for Weaviate Cloud Serverless (text2vec-weaviate vectorizer)
+		// The cluster URL is the full URL including scheme
+		if scheme == "https" {
+			headers["X-Weaviate-Cluster-Url"] = scheme + "://" + host
+		}
+
 		client, err = weaviate.NewClient(weaviate.Config{
 			Host:   host,
 			Scheme: scheme,
 			AuthConfig: auth.ApiKey{
 				Value: config.APIKey,
 			},
-			Headers: map[string]string{
-				"X-Openai-Api-Key": config.OpenAIAPIKey,
-			},
+			Headers: headers,
 		})
 	} else {
 		// Use no authentication for local Weaviate
