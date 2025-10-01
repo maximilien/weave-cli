@@ -58,10 +58,18 @@ type VectorDBConfig struct {
 	Collections        []Collection `yaml:"collections"`
 }
 
+// SchemaDefinition represents a named schema that can be used to create collections
+type SchemaDefinition struct {
+	Name     string                 `yaml:"name"`
+	Schema   map[string]interface{} `yaml:"schema"`
+	Metadata map[string]interface{} `yaml:"metadata,omitempty"`
+}
+
 // DatabasesConfig holds multiple databases configuration
 type DatabasesConfig struct {
-	Default         string           `yaml:"default"`
-	VectorDatabases []VectorDBConfig `yaml:"vector_databases"`
+	Default         string              `yaml:"default"`
+	VectorDatabases []VectorDBConfig    `yaml:"vector_databases"`
+	Schemas         []SchemaDefinition  `yaml:"schemas,omitempty"`
 }
 
 // Config holds the complete application configuration
@@ -307,6 +315,35 @@ func (c *Config) GetDatabaseNames() map[string]VectorDBType {
 	names := make(map[string]VectorDBType)
 	for _, db := range c.Databases.VectorDatabases {
 		names[db.Name] = db.Type
+	}
+
+	return names
+}
+
+// GetSchema returns a specific schema definition by name
+func (c *Config) GetSchema(name string) (*SchemaDefinition, error) {
+	if len(c.Databases.Schemas) == 0 {
+		return nil, fmt.Errorf("no schemas configured")
+	}
+
+	for i := range c.Databases.Schemas {
+		if c.Databases.Schemas[i].Name == name {
+			return &c.Databases.Schemas[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("schema '%s' not found in config.yaml", name)
+}
+
+// ListSchemas returns a list of all configured schema names
+func (c *Config) ListSchemas() []string {
+	if len(c.Databases.Schemas) == 0 {
+		return []string{}
+	}
+
+	names := make([]string, len(c.Databases.Schemas))
+	for i, schema := range c.Databases.Schemas {
+		names[i] = schema.Name
 	}
 
 	return names

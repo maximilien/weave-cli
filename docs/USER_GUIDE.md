@@ -278,11 +278,39 @@ weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
 
 ## Collection Create Command
 
-**DEFAULT**: Collections are created with text schema (RagMeDocs format) unless `--image` is specified.
+Collections can be created using named schemas from `config.yaml`, schema files, or with default/custom settings.
 
-### Schema Flags
+### Creating Collections with Named Schemas
 
-You can optionally specify `--text` or `--image` when creating collections:
+The easiest way to create collections is to use a named schema defined in your `config.yaml`:
+
+```bash
+# Create collection using RagMeDocs schema from config.yaml
+weave collection create MyDocsCol --schema RagMeDocs
+
+# Create collection using RagMeImages schema from config.yaml
+weave collection create MyImagesCol --schema RagMeImages
+
+# Using aliases
+weave cols c MyDocsCol --schema RagMeDocs
+weave cols c MyImagesCol --schema RagMeImages
+```
+
+### Creating Collections from Schema Files
+
+You can also create collections from exported schema YAML files:
+
+```bash
+# First, export an existing collection's schema
+weave collection show ExistingCollection --yaml-file schema.yaml --compact
+
+# Then create a new collection from that schema
+weave collection create NewCollection --schema-yaml-file schema.yaml
+```
+
+### Default Collection Creation
+
+**DEFAULT**: Collections are created with text schema (RagMeDocs format) unless otherwise specified.
 
 ```bash
 # Create text collections (RagMeDocs schema) - DEFAULT
@@ -290,42 +318,51 @@ weave collection create MyTextCollection                    # Default: text sche
 weave collection create MyTextCollection --text             # Explicit: text schema
 weave collection create MyTextCollection --text --embedding text-embedding-3-small
 
-# Create image collections (RagMeImages schema)  
+# Create image collections (RagMeImages schema)
 weave collection create MyImageCollection --image
 weave collection create MyImageCollection --image --field title:text,content:text
-
-# Create multiple collections with same schema
-weave collection create Col1 Col2 Col3                      # Default: text schema for all
-
-# Using aliases
-weave cols c MyTextCollection                               # Default: text schema
-weave cols c MyImageCollection --image                      # Explicit: image schema
 ```
 
 ### Schema Types
 
-#### Text Schema (`--text`)
-- **Format**: RagMeDocs compatible
+#### RagMeDocs Schema (Text Documents)
 - **Properties**: `url`, `text`, `metadata`
-- **Use case**: Text documents, PDF text chunks
-- **Vectorization**: Enabled with text2vec-openai
+- **Use case**: Text documents, PDF text chunks, web pages
+- **Vectorization**: Enabled with text2vec-weaviate
+- **Usage**: `--schema RagMeDocs` or default behavior
 
-#### Image Schema (`--image`)
-- **Format**: RagMeImages compatible  
+#### RagMeImages Schema (Image Documents)
 - **Properties**: `url`, `image`, `metadata`, `image_data`
 - **Use case**: Image documents, PDF extracted images
-- **Vectorization**: Disabled (none) to avoid issues with large base64 data
+- **Vectorization**: Enabled with text2vec-weaviate
+- **Usage**: `--schema RagMeImages` or `--image` flag
 
-### Error Handling
+### Defining Custom Schemas in config.yaml
+
+Add custom schemas to your `config.yaml` file under the `databases.schemas` section:
+
+```yaml
+databases:
+  schemas:
+    - name: MyCustomSchema
+      schema:
+        class: MyCustomSchema
+        vectorizer: text2vec-weaviate
+        properties:
+          - name: title
+            datatype:
+              - text
+            description: the document title
+          - name: content
+            datatype:
+              - text
+            description: the document content
+```
+
+Then use it:
 
 ```bash
-# Both flags specified (conflict)
-weave collection create MyCollection --text --image
-# Error: You cannot specify both --text and --image flags. Choose one schema type.
-
-# No flags specified (works fine - defaults to text)
-weave collection create MyCollection
-# Success: Creates collection with text schema (default)
+weave collection create MyCollection --schema MyCustomSchema
 ```
 
 ## Document Create Command

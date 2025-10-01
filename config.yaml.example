@@ -57,6 +57,72 @@ databases:
           type: image
           description: Mock image documents collection
 
+  # Collection Schemas
+  # Define named schemas that can be used to create collections
+  # Use: weave collection create MyCollection --schema RagMeDocs
+  schemas:
+    # Text document schema optimized for RAG (Retrieval-Augmented Generation)
+    - name: RagMeDocs
+      schema:
+        class: RagMeDocs
+        vectorizer: text2vec-weaviate
+        properties:
+          - name: url
+            datatype:
+              - text
+            description: the source URL of the webpage
+          - name: text
+            datatype:
+              - text
+            description: the content of the webpage
+          - name: metadata
+            datatype:
+              - text
+            description: additional metadata in JSON format
+      metadata:
+        id:
+          type: string
+        metadata:
+          type: string
+        text:
+          type: string
+        url:
+          type: string
+
+    # Image document schema optimized for RAG
+    - name: RagMeImages
+      schema:
+        class: RagMeImages
+        vectorizer: text2vec-weaviate
+        properties:
+          - name: url
+            datatype:
+              - text
+            description: the source URL or filename of the image
+          - name: image
+            datatype:
+              - text
+            description: the image reference (truncated base64 or URL)
+          - name: metadata
+            datatype:
+              - text
+            description: additional metadata in JSON format
+          - name: image_data
+            datatype:
+              - text
+            description: full image data or reference
+      metadata:
+        id:
+          type: string
+        image:
+          type: string
+        image_data:
+          type: string
+        metadata:
+          type: string
+        url:
+          type: string
+
 # Environment Variables Reference:
 # VECTOR_DB_TYPE: Database type to use (weaviate-cloud, weaviate-local, mock)
 # WEAVIATE_URL: Your Weaviate Cloud URL

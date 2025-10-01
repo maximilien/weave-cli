@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2025-09-30
+
+### Added
+
+- **Named Schema Support**: Collections can now be created using named schemas from `config.yaml`
+  - New `--schema` flag for `weave collection create` command
+  - Example: `weave cols c MyDocsCol --schema RagMeDocs`
+  - Schemas defined in `databases.schemas` section of config.yaml
+- **Schema Configuration**: Added schema definitions to config.yaml and config.yaml.example
+  - RagMeDocs schema for text documents
+  - RagMeImages schema for image documents
+  - Support for custom user-defined schemas
+- **Config Schema Structure**: New `SchemaDefinition` type in config package
+  - Methods: `GetSchema(name)`, `ListSchemas()`
+  - Conversion from config schema to Weaviate CollectionSchema
+- **Documentation Updates**: Updated USER_GUIDE.md with schema usage examples
+  - Creating collections with named schemas
+  - Defining custom schemas in config.yaml
+  - Using schema files vs named schemas
+
+### Technical Details
+
+- **Files Modified**:
+  - `src/pkg/config/config.go`: Added SchemaDefinition struct and methods
+  - `src/cmd/collection/create.go`: Added --schema flag support
+  - `src/cmd/utils/collection.go`: Added CreateWeaviateCollectionFromConfigSchema()
+  - `config.yaml.example`: Added schemas section with RagMeDocs and RagMeImages examples
+  - `docs/USER_GUIDE.md`: Updated collection creation documentation
+
+### Usage
+
+```bash
+# Create collection using named schema
+weave collection create MyDocsCol --schema RagMeDocs
+
+# Create collection using schema file
+weave collection create MyCol --schema-yaml-file schema.yaml
+
+# Traditional method still works
+weave collection create MyCol
+```
+
 ## [0.2.2] - 2025-09-29
 
 ### Added

@@ -46,6 +46,35 @@ func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 	return nil
 }
 
+// CreateWeaviateCollectionFromConfigSchema creates a Weaviate collection from a named schema in config.yaml
+func CreateWeaviateCollectionFromConfigSchema(ctx context.Context, cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, schemaName string) error {
+	// Get the schema definition from config
+	schemaDef, err := cfg.GetSchema(schemaName)
+	if err != nil {
+		return err
+	}
+
+	// Convert schema definition to CollectionSchema
+	schema, err := convertSchemaDefinitionToCollectionSchema(schemaDef, collectionName)
+	if err != nil {
+		return fmt.Errorf("failed to convert schema definition: %v", err)
+	}
+
+	// Create the client
+	client, err := CreateWeaviateClient(dbConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	// Create collection from schema
+	err = client.CreateCollectionFromSchema(ctx, schema)
+	if err != nil {
+		return fmt.Errorf("failed to create collection from schema: %v", err)
+	}
+
+	return nil
+}
+
 // CreateWeaviateCollectionFromSchemaFile creates a Weaviate collection from a schema file
 func CreateWeaviateCollectionFromSchemaFile(ctx context.Context, cfg *config.VectorDBConfig, collectionName, schemaFilePath string) error {
 	// Load schema from file
@@ -981,4 +1010,99 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 	}
 
 	fmt.Println()
+}
+
+// convertSchemaDefinitionToCollectionSchema converts a config.SchemaDefinition to weaviate.CollectionSchema
+func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinition, collectionName string) (*weaviate.CollectionSchema, error) {
+	// Extract schema map
+	schemaMap, ok := schemaDef.Schema.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid schema format in config")
+	}
+
+	// Create the collection schema
+	schema := &weaviate.CollectionSchema{}
+
+	// Set collection name (use provided name or class name from schema)
+	if collectionName != "" {
+		schema.Class = collectionName
+	} else if className, ok := schemaMap["class"].(string); ok {
+		schema.Class = className
+	} else {
+		return nil, fmt.Errorf("no collection name provided and no class name in schema")
+	}
+
+	// Set vectorizer
+	if vectorizer, ok := schemaMap["vectorizer"].(string); ok {
+		schema.Vectorizer = vectorizer
+	}
+
+	// Convert properties
+	if props, ok := schemaMap["properties"].([]interface{}); ok {
+		schema.Properties = make([]weaviate.SchemaProperty, len(props))
+		for i, prop := range props {
+			propMap, ok := prop.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			property := weaviate.SchemaProperty{}
+
+			// Set property name
+			if name, ok := propMap["name"].(string); ok {
+				property.Name = name
+			}
+
+			// Set data type
+			if dataType, ok := propMap["datatype"].([]interface{}); ok {
+				property.DataType = make([]string, len(dataType))
+				for j, dt := range dataType {
+					if dtStr, ok := dt.(string); ok {
+						property.DataType[j] = dtStr
+					}
+				}
+			}
+
+			// Set description
+			if description, ok := propMap["description"].(string); ok {
+				property.Description = description
+			}
+
+			// Handle nested properties
+			if nestedProps, ok := propMap["nestedProperties"].([]interface{}); ok {
+				property.NestedProperties = make([]weaviate.SchemaProperty, len(nestedProps))
+				for j, nested := range nestedProps {
+					nestedMap, ok := nested.(map[string]interface{})
+					if !ok {
+						continue
+					}
+
+					nestedProp := weaviate.SchemaProperty{}
+
+					if name, ok := nestedMap["name"].(string); ok {
+						nestedProp.Name = name
+					}
+
+					if dataType, ok := nestedMap["datatype"].([]interface{}); ok {
+						nestedProp.DataType = make([]string, len(dataType))
+						for k, dt := range dataType {
+							if dtStr, ok := dt.(string); ok {
+								nestedProp.DataType[k] = dtStr
+							}
+						}
+					}
+
+					if description, ok := nestedMap["description"].(string); ok {
+						nestedProp.Description = description
+					}
+
+					property.NestedProperties[j] = nestedProp
+				}
+			}
+
+			schema.Properties[i] = property
+		}
+	}
+
+	return schema, nil
 }
