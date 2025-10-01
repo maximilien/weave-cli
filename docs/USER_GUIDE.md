@@ -365,6 +365,56 @@ Then use it:
 weave collection create MyCollection --schema MyCustomSchema
 ```
 
+### Schema Export with JSON Field Inference
+
+When exporting collection schemas, the CLI automatically detects and infers
+the structure of JSON-encoded string fields in metadata. This provides
+accurate, detailed schema specifications for collections with structured data.
+
+```bash
+# Export schema to YAML with JSON structure inference
+weave cols show RagMeDocs --schema --yaml --vector-db-type weaviate-cloud
+
+# Export schema to JSON format
+weave cols show RagMeDocs --schema --json --vector-db-type weaviate-cloud
+
+# Export to file in compact mode (no samples/occurrences)
+weave cols show RagMeDocs --schema --yaml-file schema.yaml --compact
+
+# Export to JSON file
+weave cols show RagMeDocs --schema --json-file schema.json
+```
+
+#### JSON Field Detection
+
+The CLI analyzes metadata fields across multiple documents and automatically:
+- Detects JSON-encoded string fields
+- Infers field types (string, integer, number, boolean, array, object)
+- Merges schemas across documents to capture all possible fields
+- Adds `json_schema` property with field specifications
+
+#### Example Output
+
+For a collection with JSON metadata like `{"type": "pdf", "filename": "doc.pdf"}`:
+
+```yaml
+metadata:
+  metadata:
+    type: json
+    json_schema:
+      type: string
+      filename: string
+      date_added: string
+      chunk_index: integer
+      is_chunked: boolean
+      total_chunks: integer
+```
+
+This makes it easy to:
+- Understand the structure of your metadata
+- Create accurate schema definitions for new collections
+- Document your collection schemas comprehensively
+
 ## Document Create Command
 
 Document creation works with existing collections (no schema flags required):
