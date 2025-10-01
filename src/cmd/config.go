@@ -4,12 +4,15 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
+	yaml "gopkg.in/yaml.v3"
 )
 
 // configCmd represents the config command
@@ -89,6 +92,10 @@ func init() {
 	configCmd.AddCommand(configListCmd)
 	configCmd.AddCommand(configListSchemasCmd)
 	configCmd.AddCommand(configShowSchemaCmd)
+
+	// Add flags for show-schema command
+	configShowSchemaCmd.Flags().Bool("yaml", false, "Output schema as YAML")
+	configShowSchemaCmd.Flags().Bool("json", false, "Output schema as JSON")
 }
 
 func runConfigShow(cmd *cobra.Command, args []string) {
@@ -298,6 +305,10 @@ func runConfigListSchemas(cmd *cobra.Command, args []string) {
 func runConfigShowSchema(cmd *cobra.Command, args []string) {
 	schemaName := args[0]
 
+	// Get flags
+	yamlOutput, _ := cmd.Flags().GetBool("yaml")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
 	// Load configuration
 	cfg, err := loadConfigWithOverrides()
 	if err != nil {
@@ -312,6 +323,18 @@ func runConfigShowSchema(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// Handle output formats
+	if yamlOutput {
+		outputSchemaAsYAML(schema)
+		return
+	}
+
+	if jsonOutput {
+		outputSchemaAsJSON(schema)
+		return
+	}
+
+	// Default: formatted output
 	printHeader(fmt.Sprintf("Schema: %s", schemaName))
 	fmt.Println()
 
@@ -403,4 +426,91 @@ func displayJSONSchemaFields(jsonSchema map[string]interface{}, indent string) {
 	for field, fieldType := range jsonSchema {
 		fmt.Printf("%s%s: %v\n", indent, field, fieldType)
 	}
+}
+
+func outputSchemaAsYAML(schema *config.SchemaDefinition) {
+	// Use the same export function from utils package
+	data, err := yaml.Marshal(schema)
+	if err != nil {
+		printError(fmt.Sprintf("Failed to marshal schema to YAML: %v", err))
+		os.Exit(1)
+	}
+
+	// Fix json_schema indentation for YAML linting
+	result := fixSchemaJSONIndentation(string(data))
+
+	// Add YAML document separator and print
+	fmt.Println("---")
+	fmt.Print(result)
+}
+
+func outputSchemaAsJSON(schema *config.SchemaDefinition) {
+	// Use json.MarshalIndent for pretty printing
+	data, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		printError(fmt.Sprintf("Failed to marshal schema to JSON: %v", err))
+		os.Exit(1)
+	}
+
+	fmt.Println(string(data))
+}
+
+// fixSchemaJSONIndentation fixes json_schema indentation in YAML output
+// Similar to the function in utils/export.go but for schema output
+func fixSchemaJSONIndentation(yamlStr string) string {
+	lines := strings.Split(yamlStr, "\n")
+	result := make([]string, 0, len(lines))
+	i := 0
+
+	for i < len(lines) {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
+		// Check if this is a json_schema: line
+		if trimmed == "json_schema:" {
+			// Get the indentation of the json_schema: line
+			jsonSchemaIndent := len(line) - len(strings.TrimLeft(line, " "))
+			// YAML linting requires +4 spaces for nested maps in lists (not +2)
+			expectedChildIndent := jsonSchemaIndent + 4
+			result = append(result, line)
+			i++
+
+			// Collect all children of json_schema
+			firstChildIndent := -1
+			for i < len(lines) {
+				childLine := lines[i]
+				childTrimmed := strings.TrimSpace(childLine)
+
+				if childTrimmed == "" {
+					result = append(result, childLine)
+					i++
+					continue
+				}
+
+				childIndent := len(childLine) - len(strings.TrimLeft(childLine, " "))
+
+				// If child has same or less indentation than json_schema:, we're done
+				if childIndent <= jsonSchemaIndent {
+					break
+				}
+
+				// Track first child's indentation
+				if firstChildIndent == -1 {
+					firstChildIndent = childIndent
+				}
+
+				// Calculate the indentation delta
+				indentDelta := childIndent - firstChildIndent
+				correctedIndent := expectedChildIndent + indentDelta
+				correctedLine := strings.Repeat(" ", correctedIndent) + childTrimmed
+				result = append(result, correctedLine)
+				i++
+			}
+		} else {
+			result = append(result, line)
+			i++
+		}
+	}
+
+	return strings.Join(result, "\n")
 }

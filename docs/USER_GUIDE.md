@@ -331,6 +331,10 @@ weave config list-schemas
 weave config show-schema RagMeDocs
 weave config show-schema RagMeImages
 
+# Output schema in YAML or JSON format
+weave config show-schema RagMeDocs --yaml
+weave config show-schema RagMeDocs --json
+
 # Using aliases
 weave config ls-schemas
 ```
