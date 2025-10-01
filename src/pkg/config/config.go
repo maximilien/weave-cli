@@ -67,9 +67,9 @@ type SchemaDefinition struct {
 
 // DatabasesConfig holds multiple databases configuration
 type DatabasesConfig struct {
-	Default         string              `yaml:"default"`
-	VectorDatabases []VectorDBConfig    `yaml:"vector_databases"`
-	Schemas         []SchemaDefinition  `yaml:"schemas,omitempty"`
+	Default         string             `yaml:"default"`
+	VectorDatabases []VectorDBConfig   `yaml:"vector_databases"`
+	Schemas         []SchemaDefinition `yaml:"schemas,omitempty"`
 }
 
 // Config holds the complete application configuration
