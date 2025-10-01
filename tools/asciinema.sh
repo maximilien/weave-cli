@@ -160,8 +160,8 @@ run_demo_cmd "./bin/weave --help | head -20" "Help Command"
 
 # Page 2: Create Collections
 page_break "2"
-run_demo_cmd "./bin/weave cols create WeaveDocs --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
-run_demo_cmd "./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Image Collection"
+run_demo_cmd "./bin/weave cols create WeaveDocs --text --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
+run_demo_cmd "./bin/weave cols create WeaveImages --image --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Image Collection"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
 run_demo_cmd "./bin/weave cols show WeaveImages --schema" "Show Image Collection Schema"
 
@@ -301,9 +301,9 @@ echo ""
 sleep 2
 
 echo -e "${BLUE}💻 Create Collection${NC}"
-echo -e "${YELLOW}$ ./bin/weave cols create DemoCollection --schema-type ragmedocs${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols create DemoCollection --text --flat-metadata${NC}"
 sleep 1
-./bin/weave cols create DemoCollection --schema-type ragmedocs --embedding-model text-embedding-3-small
+./bin/weave cols create DemoCollection --text --flat-metadata --embedding-model text-embedding-3-small
 echo ""
 sleep 2
 
