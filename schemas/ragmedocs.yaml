@@ -1,0 +1,55 @@
+---
+name: RagMeDocs
+schema:
+    class: RagMeDocs
+    vectorizer: text2vec-weaviate
+    properties:
+        - name: url
+          datatype: [text]
+          description: the source URL of the webpage
+        - name: text
+          datatype: [text]
+          description: the content of the webpage
+        - name: metadata
+          datatype: [text]
+          description: additional metadata in JSON format
+          json_schema:
+            /CreationDate: string
+            /Creator: string
+            /ModDate: string
+            /Producer: string
+            /Title: string
+            ai_summary: string
+            chunk_index: integer
+            chunk_sizes: array[integer]
+            date_added: string
+            filename: string
+            is_chunked: boolean
+            original_filename: string
+            storage_path: string
+            total_chunks: integer
+            type: string
+            url: string
+metadata:
+    id: string
+    metadata:
+        type: json
+        json_schema:
+            /CreationDate: string
+            /Creator: string
+            /ModDate: string
+            /Producer: string
+            /Title: string
+            ai_summary: string
+            chunk_index: integer
+            chunk_sizes: array[integer]
+            date_added: string
+            filename: string
+            is_chunked: boolean
+            original_filename: string
+            storage_path: string
+            total_chunks: integer
+            type: string
+            url: string
+    text: string
+    url: string

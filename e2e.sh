@@ -161,7 +161,25 @@ main() {
     # Step 3: Config Tests
     print_section "Step 3: Configuration Tests"
     run_test "Show config" "./bin/weave config show --vector-db-type $VECTOR_DB_TYPE"
-    
+
+    # Step 3a: Schema Configuration Tests
+    print_section "Step 3a: Schema Configuration Tests"
+    run_test "List configured schemas" "./bin/weave config list-schemas"
+    run_test "Show RagMeDocs schema" "./bin/weave config show-schema RagMeDocs"
+    run_test "Show RagMeImages schema" "./bin/weave config show-schema RagMeImages"
+    run_test "Show TestSchema from directory" "./bin/weave config show-schema TestSchema"
+
+    # Test error handling for non-existent schema
+    echo -e "${YELLOW}Testing error handling for non-existent schema...${NC}"
+    if ! ./bin/weave config show-schema NonExistentSchema > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Correctly returned error for non-existent schema${NC}"
+        PASSED_TESTS=$((PASSED_TESTS + 1))
+    else
+        echo -e "${RED}❌ Should have errored for non-existent schema${NC}"
+        FAILED_TESTS=$((FAILED_TESTS + 1))
+    fi
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
+
     # Step 4: Collection Tests
     print_section "Step 4: Collection Management Tests"
     
@@ -173,7 +191,11 @@ main() {
     
     # Create image collection
     run_test "Create image collection" "./bin/weave cols create '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmeimages --embedding-model text-embedding-3-small"
-    
+
+    # Test creating collection from named schema in directory
+    TEST_SCHEMA_COLLECTION="TestSchemaCollection"
+    run_test "Create collection from directory schema" "./bin/weave cols create '$TEST_SCHEMA_COLLECTION' --schema TestSchema --vector-db-type $VECTOR_DB_TYPE"
+
     # List collections (should show our test collections)
     run_test "List collections (after creation)" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"
     
@@ -346,7 +368,8 @@ main() {
     # Delete schemas (more reliable than collection deletion)
     run_test "Delete text collection schema" "./bin/weave cols delete-schema '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
     run_test "Delete image collection schema" "./bin/weave cols delete-schema '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
-    
+    run_test "Delete test schema collection" "./bin/weave cols delete-schema '$TEST_SCHEMA_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --force"
+
     # Note: Collection deletion is skipped as schema deletion is sufficient for cleanup
     # and collection deletion can fail if collections don't exist or have dependencies
     

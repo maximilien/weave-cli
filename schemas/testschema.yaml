@@ -1,0 +1,16 @@
+---
+name: TestSchema
+schema:
+  class: TestSchema
+  vectorizer: text2vec-transformers
+  properties:
+    - name: title
+      datatype: [text]
+      description: the title of the document
+    - name: content
+      datatype: [text]
+      description: the main content
+metadata:
+  id: string
+  title: string
+  content: string

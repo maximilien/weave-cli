@@ -74,7 +74,8 @@ type DatabasesConfig struct {
 
 // Config holds the complete application configuration
 type Config struct {
-	Databases DatabasesConfig `yaml:"databases"`
+	Databases  DatabasesConfig `yaml:"databases"`
+	SchemasDir string          `yaml:"schemas_dir,omitempty"`
 }
 
 // LoadConfig loads configuration from files and environment variables
@@ -159,6 +160,13 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	var config Config
 	if err := yaml.Unmarshal(yamlData, &config); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal interpolated config: %w", err)
+	}
+
+	// Load schemas from directory if schemas_dir is specified
+	if config.SchemasDir != "" {
+		if err := config.loadSchemasFromDirectory(); err != nil {
+			return nil, fmt.Errorf("failed to load schemas from directory: %w", err)
+		}
 	}
 
 	return &config, nil
@@ -352,4 +360,53 @@ func (c *Config) ListSchemas() []string {
 // GetAllSchemas returns all configured schema definitions
 func (c *Config) GetAllSchemas() []SchemaDefinition {
 	return c.Databases.Schemas
+}
+
+// loadSchemasFromDirectory loads schema files from the schemas directory
+// Schemas defined in config.yaml take precedence over directory schemas with same name
+func (c *Config) loadSchemasFromDirectory() error {
+	// Check if directory exists
+	if _, err := os.Stat(c.SchemasDir); os.IsNotExist(err) {
+		// Directory doesn't exist, skip loading
+		return nil
+	}
+
+	// Read all YAML files in the directory
+	files, err := filepath.Glob(filepath.Join(c.SchemasDir, "*.yaml"))
+	if err != nil {
+		return fmt.Errorf("failed to glob schema files: %w", err)
+	}
+
+	// Also check for .yml extension
+	ymlFiles, err := filepath.Glob(filepath.Join(c.SchemasDir, "*.yml"))
+	if err != nil {
+		return fmt.Errorf("failed to glob schema files: %w", err)
+	}
+	files = append(files, ymlFiles...)
+
+	// Build a map of existing schema names for precedence checking
+	existingSchemas := make(map[string]bool)
+	for _, schema := range c.Databases.Schemas {
+		existingSchemas[schema.Name] = true
+	}
+
+	// Load each schema file
+	for _, file := range files {
+		schemaData, err := os.ReadFile(file)
+		if err != nil {
+			return fmt.Errorf("failed to read schema file %s: %w", file, err)
+		}
+
+		var schemaDef SchemaDefinition
+		if err := yaml.Unmarshal(schemaData, &schemaDef); err != nil {
+			return fmt.Errorf("failed to parse schema file %s: %w", file, err)
+		}
+
+		// Only add if not already defined in config.yaml (precedence)
+		if !existingSchemas[schemaDef.Name] {
+			c.Databases.Schemas = append(c.Databases.Schemas, schemaDef)
+		}
+	}
+
+	return nil
 }

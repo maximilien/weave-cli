@@ -2,6 +2,11 @@
 # Copy this file to config.yaml and update with your values
 
 ---
+# Collection Schemas Directory
+# Directory containing schema YAML files (one schema per file)
+# Schemas defined inline in databases.schemas take precedence over directory schemas
+schemas_dir: ./schemas
+
 # Database Configuration
 databases:
   # Default database type to use
@@ -57,9 +62,10 @@ databases:
           type: image
           description: Mock image documents collection
 
-  # Collection Schemas
-  # Define named schemas that can be used to create collections
+  # Collection Schemas (inline)
+  # Define named schemas inline that can be used to create collections
   # Use: weave collection create MyCollection --schema RagMeDocs
+  # Note: Inline schemas take precedence over schemas in schemas_dir
   schemas:
     # Text document schema optimized for RAG (Retrieval-Augmented Generation)
     - name: RagMeDocs

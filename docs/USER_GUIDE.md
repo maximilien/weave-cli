@@ -204,15 +204,50 @@ WEAVIATE_API_KEY="your-api-key"
 
 ### Schema Configuration
 
-Weave CLI supports defining reusable schemas in `config.yaml`. These schemas can be used to create collections with predefined structures.
+Weave CLI supports defining reusable schemas in two ways:
+1. **Inline** in `config.yaml` under `databases.schemas`
+2. **Directory-based** with individual YAML files in a schemas directory
 
-#### Defining Schemas
+**Note:** Inline schemas take precedence over directory schemas with the same name.
 
-Schemas are defined in the `databases.schemas` section of `config.yaml`:
+#### Schemas Directory
+
+Configure a schemas directory to store schema files separately:
 
 ```yaml
+# config.yaml
+schemas_dir: ./schemas
+```
+
+Each schema file should contain a single schema definition:
+
+```yaml
+# schemas/testschema.yaml
+---
+name: TestSchema
+schema:
+  class: TestSchema
+  vectorizer: text2vec-transformers
+  properties:
+    - name: title
+      datatype: [text]
+      description: the title
+metadata:
+  id: string
+  title: string
+```
+
+#### Defining Inline Schemas
+
+Schemas can also be defined inline in the `databases.schemas` section of `config.yaml`:
+
+```yaml
+# config.yaml
+schemas_dir: ./schemas  # Optional: load schemas from directory
+
 databases:
   schemas:
+    # Inline schemas (these take precedence over directory schemas)
     - name: RagMeDocs
       schema:
         class: RagMeDocs
@@ -232,6 +267,8 @@ databases:
               type: string
               date_added: string
 ```
+
+**Schema Precedence:** If a schema named "RagMeDocs" exists both in `./schemas/ragmedocs.yaml` and inline in `config.yaml`, the inline version will be used.
 
 #### Viewing Configured Schemas
 
