@@ -1,0 +1,29 @@
+---
+name: WeaveDocs
+schema:
+    class: WeaveDocs
+    vectorizer: text2vec-weaviate
+    properties:
+        - name: url
+          datatype: [text]
+          description: the source URL of the document
+        - name: text
+          datatype: [text]
+          description: the content of the document
+metadata:
+    id: string
+    added_date: string
+    creation_date: string
+    modified_date: string
+    creator: string
+    producer: string
+    title: string
+    ai_summary: string
+    filename: string
+    is_chunked: boolean
+    total_chunks: integer
+    chunk_index: integer
+    chunk_sizes: array[integer]
+    original_filename: string
+    storage_path: string
+    type: string

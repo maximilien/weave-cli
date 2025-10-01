@@ -1,0 +1,39 @@
+---
+name: WeaveImages
+schema:
+    class: WeaveImages
+    vectorizer: text2vec-weaviate
+    properties:
+        - name: url
+          datatype: [text]
+          description: the source URL or filename of the image
+        - name: image
+          datatype: [text]
+          description: the image reference (truncated base64 or URL)
+        - name: image_data
+          datatype: [text]
+          description: the base64 for the image
+metadata:
+    id: string
+    image: string
+    image_data: string
+    ai_summary: string
+    classification: object
+    date_added: string
+    error: string
+    exif: object
+    extraction_timestamp: string
+    file_size: integer
+    filename: string
+    format: string
+    mime_type: string
+    ocr_content: object
+    pdf_filename: string
+    pdf_image_name: string
+    pdf_page_number: integer
+    pdf_storage_path: string
+    processing_timestamp: string
+    source: string
+    source_type: string
+    storage_path: string
+    type: string

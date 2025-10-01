@@ -31,14 +31,14 @@ func ParseFieldDefinitions(fieldsStr string) ([]weaviate.FieldDefinition, error)
 	return nil, fmt.Errorf("field parsing not yet implemented")
 }
 
-// CreateWeaviateCollection creates a Weaviate collection
-func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition, schemaType string) error {
+// CreateWeaviateCollection creates a Weaviate collection with default schema
+func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create Weaviate client: %v", err)
 	}
 
-	err = client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, schemaType)
+	err = client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, "default")
 	if err != nil {
 		return fmt.Errorf("failed to create collection: %v", err)
 	}

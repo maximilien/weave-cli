@@ -186,11 +186,11 @@ main() {
     # List collections (should be empty initially)
     run_test "List collections (initial)" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"
     
-    # Create text collection
-    run_test "Create text collection" "./bin/weave cols create '$TEXT_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmedocs --embedding-model text-embedding-3-small"
-    
-    # Create image collection
-    run_test "Create image collection" "./bin/weave cols create '$IMAGE_COLLECTION' --vector-db-type $VECTOR_DB_TYPE --schema-type ragmeimages --embedding-model text-embedding-3-small"
+    # Create text collection using WeaveDocs schema
+    run_test "Create text collection" "./bin/weave collection create '$TEXT_COLLECTION' --text --vector-db-type $VECTOR_DB_TYPE"
+
+    # Create image collection using WeaveImages schema
+    run_test "Create image collection" "./bin/weave collection create '$IMAGE_COLLECTION' --image --vector-db-type $VECTOR_DB_TYPE"
 
     # Test creating collection from named schema in directory
     TEST_SCHEMA_COLLECTION="TestSchemaCollection"

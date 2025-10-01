@@ -22,18 +22,25 @@ var CreateCmd = &cobra.Command{
 	Long: `Create a new collection in the vector database.
 
 This command creates a collection with the specified name and schema.
-You can use a named schema from config.yaml, specify a schema file,
-or use custom fields and embedding model.
+You can use the --text or --image flags for standard schemas, use a named
+schema from config.yaml/schemas_dir, specify a schema file, or use custom
+fields and embedding model.
 
 Examples:
-  # Create collection using a named schema from config.yaml
+  # Create text collection using WeaveDocs schema (recommended)
+  weave collection create MyDocsCol --text
+
+  # Create image collection using WeaveImages schema (recommended)
+  weave collection create MyImagesCol --image
+
+  # Create collection using a named schema from config.yaml or schemas_dir
   weave collection create MyDocsCol --schema RagMeDocs
-  weave collection create MyImagesCol --schema RagMeImages
+  weave collection create MyDocsCol --schema TestSchema
 
   # Create collection from a YAML schema file
   weave collection create MyCollection --schema-yaml-file schema.yaml
 
-  # Create collection with default schema
+  # Create collection with default schema and custom options
   weave collection create MyCollection
   weave collection create MyCollection --embedding-model text-embedding-ada-002
   weave collection create MyCollection --fields "title:string,description:text"`,
@@ -46,18 +53,20 @@ func init() {
 
 	CreateCmd.Flags().StringP("embedding-model", "e", "text-embedding-ada-002", "Embedding model to use")
 	CreateCmd.Flags().StringP("fields", "f", "", "Custom fields (format: field1:type1,field2:type2)")
-	CreateCmd.Flags().StringP("schema-type", "s", "default", "Schema type (default, ragmedocs, ragmeimages)")
 	CreateCmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
-	CreateCmd.Flags().String("schema", "", "Use a named schema from config.yaml (e.g., RagMeDocs, RagMeImages)")
+	CreateCmd.Flags().String("schema", "", "Use a named schema from config.yaml or schemas_dir (e.g., RagMeDocs, WeaveDocs, WeaveImages)")
+	CreateCmd.Flags().Bool("text", false, "Create text collection using WeaveDocs schema (same as --schema WeaveDocs)")
+	CreateCmd.Flags().Bool("image", false, "Create image collection using WeaveImages schema (same as --schema WeaveImages)")
 }
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {
 	collectionName := args[0]
 	embeddingModel, _ := cmd.Flags().GetString("embedding-model")
 	fieldsStr, _ := cmd.Flags().GetString("fields")
-	schemaType, _ := cmd.Flags().GetString("schema-type")
 	schemaYAMLFile, _ := cmd.Flags().GetString("schema-yaml-file")
 	schemaName, _ := cmd.Flags().GetString("schema")
+	useTextSchema, _ := cmd.Flags().GetBool("text")
+	useImageSchema, _ := cmd.Flags().GetBool("image")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -75,8 +84,42 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	ctx := context.Background()
 
-	// Handle named schema from config.yaml
+	// Handle --text flag (use WeaveDocs schema)
+	if useTextSchema {
+		if schemaName != "" || useImageSchema {
+			utils.PrintError("Cannot use --text with --schema or --image flags")
+			os.Exit(1)
+		}
+		schemaName = "WeaveDocs"
+	}
+
+	// Handle --image flag (use WeaveImages schema)
+	if useImageSchema {
+		if schemaName != "" || useTextSchema {
+			utils.PrintError("Cannot use --image with --schema or --text flags")
+			os.Exit(1)
+		}
+		schemaName = "WeaveImages"
+	}
+
+	// Handle named schema from config.yaml or schemas_dir
 	if schemaName != "" {
+		// Validate that the schema exists
+		_, err := cfg.GetSchema(schemaName)
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Schema '%s' not found in config.yaml or schemas_dir: %v", schemaName, err))
+			utils.PrintInfo("Available schemas:")
+			schemaNames := cfg.ListSchemas()
+			if len(schemaNames) == 0 {
+				utils.PrintInfo("  (none)")
+			} else {
+				for _, name := range schemaNames {
+					utils.PrintInfo(fmt.Sprintf("  - %s", name))
+				}
+			}
+			os.Exit(1)
+		}
+
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			err = utils.CreateWeaviateCollectionFromConfigSchema(ctx, cfg, dbConfig, collectionName, schemaName)
@@ -132,7 +175,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		err = utils.CreateWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, customFields, schemaType)
+		err = utils.CreateWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	case config.VectorDBTypeMock:
 		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	default:
