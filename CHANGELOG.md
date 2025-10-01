@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Named Schema Support**: Collections can now be created using named schemas from `config.yaml`
+- **Named Schema Support**: Collections can now be created using named
+  schemas from `config.yaml`
   - New `--schema` flag for `weave collection create` command
   - Example: `weave cols c MyDocsCol --schema RagMeDocs`
   - Schemas defined in `databases.schemas` section of config.yaml
