@@ -13,6 +13,9 @@ schema:
         - name: image_data
           datatype: [text]
           description: the base64 for the image
+        - name: metadata
+          datatype: [text]
+          description: the metadata of the document
 metadata:
     id: string
     image: string

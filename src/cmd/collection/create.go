@@ -26,12 +26,19 @@ You can use the --text or --image flags for standard schemas, use a named
 schema from config.yaml/schemas_dir, specify a schema file, or use custom
 fields and embedding model.
 
-Examples:
-  # Create text collection using WeaveDocs schema (recommended)
-  weave collection create MyDocsCol --text
+For --text and --image collections, you must specify how to handle metadata:
+- --flat-metadata: Flatten metadata fields into individual properties
+- --json-metadata: Keep metadata as a single JSON field
 
-  # Create image collection using WeaveImages schema (recommended)
-  weave collection create MyImagesCol --image
+Examples:
+  # Create text collection with flattened metadata (recommended)
+  weave collection create MyDocsCol --text --flat-metadata
+
+  # Create text collection with JSON metadata
+  weave collection create MyDocsCol --text --json-metadata
+
+  # Create image collection with flattened metadata
+  weave collection create MyImagesCol --image --flat-metadata
 
   # Create collection using a named schema from config.yaml or schemas_dir
   weave collection create MyDocsCol --schema RagMeDocs
@@ -57,6 +64,8 @@ func init() {
 	CreateCmd.Flags().String("schema", "", "Use a named schema from config.yaml or schemas_dir (e.g., RagMeDocs, WeaveDocs, WeaveImages)")
 	CreateCmd.Flags().Bool("text", false, "Create text collection using WeaveDocs schema (same as --schema WeaveDocs)")
 	CreateCmd.Flags().Bool("image", false, "Create image collection using WeaveImages schema (same as --schema WeaveImages)")
+	CreateCmd.Flags().Bool("flat-metadata", false, "Flatten metadata fields into individual properties (requires --text or --image)")
+	CreateCmd.Flags().Bool("json-metadata", false, "Keep metadata as a single JSON field (requires --text or --image)")
 }
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {
@@ -67,6 +76,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	schemaName, _ := cmd.Flags().GetString("schema")
 	useTextSchema, _ := cmd.Flags().GetBool("text")
 	useImageSchema, _ := cmd.Flags().GetBool("image")
+	useFlatMetadata, _ := cmd.Flags().GetBool("flat-metadata")
+	useJsonMetadata, _ := cmd.Flags().GetBool("json-metadata")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -84,6 +95,12 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	ctx := context.Background()
 
+	// Validate metadata flags
+	if useFlatMetadata && useJsonMetadata {
+		utils.PrintError("Cannot use both --flat-metadata and --json-metadata flags")
+		os.Exit(1)
+	}
+
 	// Handle --text flag (use WeaveDocs schema)
 	if useTextSchema {
 		if schemaName != "" || useImageSchema {
@@ -100,6 +117,18 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 		schemaName = "WeaveImages"
+	}
+
+	// Validate metadata flags are only used with --text or --image
+	if (useFlatMetadata || useJsonMetadata) && !useTextSchema && !useImageSchema {
+		utils.PrintError("--flat-metadata and --json-metadata flags require --text or --image")
+		os.Exit(1)
+	}
+
+	// Require metadata flag when using --text or --image
+	if (useTextSchema || useImageSchema) && !useFlatMetadata && !useJsonMetadata {
+		utils.PrintError("--text and --image collections require either --flat-metadata or --json-metadata")
+		os.Exit(1)
 	}
 
 	// Handle named schema from config.yaml or schemas_dir
@@ -120,9 +149,17 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 
+		// Determine metadata handling mode
+		metadataMode := "json" // default
+		if useFlatMetadata {
+			metadataMode = "flat"
+		} else if useJsonMetadata {
+			metadataMode = "json"
+		}
+
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-			err = utils.CreateWeaviateCollectionFromConfigSchema(ctx, cfg, dbConfig, collectionName, schemaName)
+			err = utils.CreateWeaviateCollectionFromConfigSchema(ctx, cfg, dbConfig, collectionName, schemaName, metadataMode)
 		case config.VectorDBTypeMock:
 			utils.PrintError("Schema creation from config.yaml not yet supported for mock database")
 			os.Exit(1)

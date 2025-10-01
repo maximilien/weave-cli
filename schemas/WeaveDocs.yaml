@@ -10,6 +10,9 @@ schema:
         - name: text
           datatype: [text]
           description: the content of the document
+        - name: metadata
+          datatype: [text]
+          description: the metadata of the document
 metadata:
     id: string
     added_date: string
@@ -23,7 +26,9 @@ metadata:
     is_chunked: boolean
     total_chunks: integer
     chunk_index: integer
-    chunk_sizes: array[integer]
+    chunk_sizes:
+        type: array
+        items: integer
     original_filename: string
     storage_path: string
     type: string

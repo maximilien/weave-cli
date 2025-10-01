@@ -47,7 +47,7 @@ func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 }
 
 // CreateWeaviateCollectionFromConfigSchema creates a Weaviate collection from a named schema in config.yaml
-func CreateWeaviateCollectionFromConfigSchema(ctx context.Context, cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, schemaName string) error {
+func CreateWeaviateCollectionFromConfigSchema(ctx context.Context, cfg *config.Config, dbConfig *config.VectorDBConfig, collectionName, schemaName, metadataMode string) error {
 	// Get the schema definition from config
 	schemaDef, err := cfg.GetSchema(schemaName)
 	if err != nil {
@@ -55,7 +55,7 @@ func CreateWeaviateCollectionFromConfigSchema(ctx context.Context, cfg *config.C
 	}
 
 	// Convert schema definition to CollectionSchema
-	schema, err := convertSchemaDefinitionToCollectionSchema(schemaDef, collectionName)
+	schema, err := convertSchemaDefinitionToCollectionSchema(schemaDef, collectionName, metadataMode)
 	if err != nil {
 		return fmt.Errorf("failed to convert schema definition: %v", err)
 	}
@@ -1013,7 +1013,7 @@ func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collec
 }
 
 // convertSchemaDefinitionToCollectionSchema converts a config.SchemaDefinition to weaviate.CollectionSchema
-func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinition, collectionName string) (*weaviate.CollectionSchema, error) {
+func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinition, collectionName, metadataMode string) (*weaviate.CollectionSchema, error) {
 	// Extract schema map (already map[string]interface{} type)
 	schemaMap := schemaDef.Schema
 
@@ -1034,12 +1034,17 @@ func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinitio
 		schema.Vectorizer = vectorizer
 	}
 
-	// Convert properties
+	// Start with properties from schema section
+	var properties []weaviate.SchemaProperty
 	if props, ok := schemaMap["properties"].([]interface{}); ok {
-		schema.Properties = make([]weaviate.SchemaProperty, len(props))
-		for i, prop := range props {
+		for _, prop := range props {
 			propMap, ok := prop.(map[string]interface{})
 			if !ok {
+				continue
+			}
+
+			// Skip the metadata property if we're flattening metadata fields
+			if name, ok := propMap["name"].(string); ok && name == "metadata" && metadataMode == "flat" && schemaDef.Metadata != nil {
 				continue
 			}
 
@@ -1097,9 +1102,103 @@ func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinitio
 				}
 			}
 
-			schema.Properties[i] = property
+			properties = append(properties, property)
 		}
 	}
 
+	// Add metadata fields as flat properties (only when metadataMode is "flat")
+	if metadataMode == "flat" && schemaDef.Metadata != nil {
+		// Reserved property names in Weaviate
+		reservedNames := map[string]bool{
+			"id":     true,
+			"_id":    true,
+			"_meta":  true,
+			"_class": true,
+		}
+
+		for fieldName, fieldValue := range schemaDef.Metadata {
+			// Skip reserved property names
+			if reservedNames[fieldName] {
+				continue
+			}
+
+			// Skip if this field is already defined in schema properties
+			alreadyExists := false
+			for _, existingProp := range properties {
+				if existingProp.Name == fieldName {
+					alreadyExists = true
+					break
+				}
+			}
+			if alreadyExists {
+				continue
+			}
+
+			// Create property from metadata field
+			property := weaviate.SchemaProperty{
+				Name: fieldName,
+			}
+
+			// Determine data type from field value
+			switch fieldValue.(type) {
+			case string:
+				property.DataType = []string{"string"}
+			case bool:
+				property.DataType = []string{"boolean"}
+			case int, int8, int16, int32, int64, float32, float64:
+				property.DataType = []string{"number"}
+			case []interface{}:
+				property.DataType = []string{"string[]"}
+			case map[string]interface{}:
+				// Handle complex objects - convert to string for now
+				property.DataType = []string{"string"}
+			default:
+				// Default to string for unknown types
+				property.DataType = []string{"string"}
+			}
+
+			// Add description based on field name
+			switch fieldName {
+			case "id":
+				property.Description = "unique identifier for the document"
+			case "added_date":
+				property.Description = "date when the document was added to the collection"
+			case "creation_date":
+				property.Description = "date when the document was originally created"
+			case "modified_date":
+				property.Description = "date when the document was last modified"
+			case "creator":
+				property.Description = "person or system that created the document"
+			case "producer":
+				property.Description = "software or system that produced the document"
+			case "title":
+				property.Description = "title of the document"
+			case "ai_summary":
+				property.Description = "AI-generated summary of the document content"
+			case "filename":
+				property.Description = "name of the file"
+			case "is_chunked":
+				property.Description = "whether the document has been chunked"
+			case "total_chunks":
+				property.Description = "total number of chunks if document is chunked"
+			case "chunk_index":
+				property.Description = "index of this chunk if document is chunked"
+			case "chunk_sizes":
+				property.Description = "array of chunk sizes if document is chunked"
+			case "original_filename":
+				property.Description = "original filename before processing"
+			case "storage_path":
+				property.Description = "path where the document is stored"
+			case "type":
+				property.Description = "type of the document"
+			default:
+				property.Description = fmt.Sprintf("metadata field: %s", fieldName)
+			}
+
+			properties = append(properties, property)
+		}
+	}
+
+	schema.Properties = properties
 	return schema, nil
 }
