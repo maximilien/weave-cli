@@ -47,7 +47,8 @@ databases:
         - name: WeaveImages
           type: image
           description: Mock image documents collection
-  # Collection of known schemas
+
+  # Collection Schemas - define reusable schema templates
   schemas:
     - name: RagMeDocs
       schema:
@@ -55,55 +56,118 @@ databases:
         vectorizer: text2vec-weaviate
         properties:
           - name: url
-            datatype:
-              - text
+            datatype: [text]
             description: the source URL of the webpage
           - name: text
-            datatype:
-              - text
+            datatype: [text]
             description: the content of the webpage
           - name: metadata
-            datatype:
-              - text
+            datatype: [text]
             description: additional metadata in JSON format
+            json_schema:
+              /CreationDate: string
+              /Creator: string
+              /ModDate: string
+              /Producer: string
+              /Title: string
+              ai_summary: string
+              chunk_index: integer
+              chunk_sizes: array[integer]
+              date_added: string
+              filename: string
+              is_chunked: boolean
+              original_filename: string
+              storage_path: string
+              total_chunks: integer
+              type: string
+              url: string
       metadata:
-        id:
-          type: string
+        id: string
         metadata:
-          type: string
-        text:
-          type: string
-        url:
-          type: string
+          type: json
+          json_schema:
+            /CreationDate: string
+            /Creator: string
+            /ModDate: string
+            /Producer: string
+            /Title: string
+            ai_summary: string
+            chunk_index: integer
+            chunk_sizes: array[integer]
+            date_added: string
+            filename: string
+            is_chunked: boolean
+            original_filename: string
+            storage_path: string
+            total_chunks: integer
+            type: string
+            url: string
+        text: string
+        url: string
+
     - name: RagMeImages
       schema:
         class: RagMeImages
         vectorizer: text2vec-weaviate
         properties:
           - name: url
-            datatype:
-              - text
+            datatype: [text]
             description: the source URL or filename of the image
           - name: image
-            datatype:
-              - text
+            datatype: [text]
             description: the image reference (truncated base64 or URL)
           - name: metadata
-            datatype:
-              - text
+            datatype: [text]
             description: additional metadata in JSON format
+            json_schema:
+              ai_summary: string
+              classification: object
+              date_added: string
+              error: string
+              exif: object
+              extraction_timestamp: string
+              file_size: integer
+              filename: string
+              format: string
+              mime_type: string
+              ocr_content: object
+              pdf_filename: string
+              pdf_image_name: string
+              pdf_page_number: integer
+              pdf_storage_path: string
+              processing_timestamp: string
+              source: string
+              source_type: string
+              storage_path: string
+              type: string
           - name: image_data
-            datatype:
-              - text
-            description: Weaviate auto-schema property
+            datatype: [text]
+            description: auto-schema property
       metadata:
-        id:
-          type: string
-        image:
-          type: string
-        image_data:
-          type: string
+        id: string
+        image: string
+        image_data: string
         metadata:
-          type: string
-        url:
-          type: string
+          type: json
+          json_schema:
+            ai_summary: string
+            classification: object
+            date_added: string
+            error: string
+            exif: object
+            extraction_timestamp: string
+            file_size: integer
+            filename: string
+            format: string
+            mime_type: string
+            ocr_content: object
+            pdf_filename: string
+            pdf_image_name: string
+            pdf_page_number: integer
+            pdf_storage_path: string
+            processing_timestamp: string
+            source: string
+            source_type: string
+            storage_path: string
+            type: string
+        url: string
