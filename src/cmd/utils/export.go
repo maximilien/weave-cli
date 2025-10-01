@@ -22,9 +22,10 @@ type CollectionExport struct {
 
 // MetadataFieldInfo represents metadata field information
 type MetadataFieldInfo struct {
-	Type        string      `json:"type" yaml:"type"`
-	Occurrences int         `json:"occurrences,omitempty" yaml:"occurrences,omitempty"`
-	Sample      interface{} `json:"sample,omitempty" yaml:"sample,omitempty"`
+	Type        string                 `json:"type" yaml:"type"`
+	Occurrences int                    `json:"occurrences,omitempty" yaml:"occurrences,omitempty"`
+	Sample      interface{}            `json:"sample,omitempty" yaml:"sample,omitempty"`
+	JSONSchema  map[string]interface{} `json:"json_schema,omitempty" yaml:"json_schema,omitempty"`
 }
 
 // ExportCollectionSchemaAndMetadata exports collection schema and metadata
@@ -58,6 +59,9 @@ func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Cli
 			metadataTypes := make(map[string]string)
 			metadataSamples := make(map[string]interface{})
 
+			// Analyze JSON fields across documents
+			jsonSchemas := analyzeJSONFields(documents, ctx, client, collectionName)
+
 			for _, doc := range documents {
 				fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
 				if err != nil {
@@ -67,7 +71,12 @@ func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Cli
 				for key, value := range fullDoc.Metadata {
 					metadataFields[key]++
 					if metadataTypes[key] == "" {
-						metadataTypes[key] = fmt.Sprintf("%T", value)
+						// Check if this is a JSON field
+						if _, isJSON := jsonSchemas[key]; isJSON {
+							metadataTypes[key] = "json"
+						} else {
+							metadataTypes[key] = fmt.Sprintf("%T", value)
+						}
 						if expandMetadata {
 							metadataSamples[key] = value
 						}
@@ -84,17 +93,22 @@ func ExportCollectionSchemaAndMetadata(ctx context.Context, client *weaviate.Cli
 				if expandMetadata {
 					info.Sample = metadataSamples[name]
 				}
+				// Add JSON schema if this is a JSON field
+				if jsonSchema, isJSON := jsonSchemas[name]; isJSON {
+					info.JSONSchema = jsonSchema
+				}
 				export.Metadata[name] = info
 			}
 		}
 	}
 
-	// In compact mode, keep metadata but remove occurrences and samples
+	// In compact mode, keep metadata and JSON schema but remove occurrences and samples
 	if compact && export.Metadata != nil {
 		compactMetadata := make(map[string]MetadataFieldInfo)
 		for name, info := range export.Metadata {
 			compactMetadata[name] = MetadataFieldInfo{
-				Type: info.Type,
+				Type:       info.Type,
+				JSONSchema: info.JSONSchema,
 				// Omit Occurrences and Sample in compact mode
 			}
 		}
@@ -212,4 +226,93 @@ func LoadSchemaFromJSONFile(filePath string) (*CollectionExport, error) {
 	}
 
 	return &export, nil
+}
+
+// inferJSONStructure attempts to infer the structure of a JSON string
+func inferJSONStructure(value interface{}) (map[string]interface{}, bool) {
+	// Try to parse as JSON string
+	var jsonStr string
+	switch v := value.(type) {
+	case string:
+		jsonStr = v
+	default:
+		return nil, false
+	}
+
+	// Try to unmarshal as JSON object
+	var jsonObj map[string]interface{}
+	if err := json.Unmarshal([]byte(jsonStr), &jsonObj); err == nil {
+		// Successfully parsed as JSON object
+		schema := make(map[string]interface{})
+		for key, val := range jsonObj {
+			schema[key] = inferValueType(val)
+		}
+		return schema, true
+	}
+
+	return nil, false
+}
+
+// inferValueType infers the type of a value
+func inferValueType(value interface{}) string {
+	if value == nil {
+		return "null"
+	}
+
+	switch v := value.(type) {
+	case bool:
+		return "boolean"
+	case float64:
+		// Check if it's an integer
+		if v == float64(int64(v)) {
+			return "integer"
+		}
+		return "number"
+	case string:
+		return "string"
+	case []interface{}:
+		if len(v) > 0 {
+			return fmt.Sprintf("array[%s]", inferValueType(v[0]))
+		}
+		return "array"
+	case map[string]interface{}:
+		return "object"
+	default:
+		return fmt.Sprintf("%T", value)
+	}
+}
+
+// analyzeJSONFields analyzes metadata fields across multiple documents to find JSON fields
+func analyzeJSONFields(documents []weaviate.Document, ctx context.Context, client *weaviate.Client, collectionName string) map[string]map[string]interface{} {
+	jsonSchemas := make(map[string]map[string]interface{})
+	jsonFieldSamples := make(map[string][]interface{})
+
+	// Collect samples from multiple documents
+	for _, doc := range documents {
+		fullDoc, err := client.GetDocument(ctx, collectionName, doc.ID)
+		if err != nil {
+			continue
+		}
+
+		for key, value := range fullDoc.Metadata {
+			if schema, isJSON := inferJSONStructure(value); isJSON {
+				// Collect samples for this field
+				jsonFieldSamples[key] = append(jsonFieldSamples[key], value)
+
+				// Merge schemas (union of fields)
+				if existing, ok := jsonSchemas[key]; ok {
+					// Merge the schemas
+					for field, fieldType := range schema {
+						if _, exists := existing[field]; !exists {
+							existing[field] = fieldType
+						}
+					}
+				} else {
+					jsonSchemas[key] = schema
+				}
+			}
+		}
+	}
+
+	return jsonSchemas
 }
