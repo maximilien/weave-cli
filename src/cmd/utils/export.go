@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 	"gopkg.in/yaml.v3"
@@ -168,13 +169,66 @@ func compactSchemaProperty(prop weaviate.SchemaProperty) weaviate.SchemaProperty
 	return compactedProp
 }
 
-// ExportAsYAML exports collection data as YAML
+// ExportAsYAML exports collection data as YAML with compact formatting
 func ExportAsYAML(export *CollectionExport) (string, error) {
+	// Marshal to YAML first
 	data, err := yaml.Marshal(export)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal to YAML: %w", err)
 	}
-	return string(data), nil
+
+	// Post-process to make datatype arrays more compact
+	result := compactYAMLArrays(string(data))
+	return result, nil
+}
+
+// compactYAMLArrays converts multi-line YAML arrays to inline format for simple cases
+func compactYAMLArrays(yamlStr string) string {
+	lines := strings.Split(yamlStr, "\n")
+	result := make([]string, 0, len(lines))
+	i := 0
+
+	for i < len(lines) {
+		line := lines[i]
+
+		// Check if this line contains "datatype:" followed by array items
+		if strings.Contains(line, "datatype:") && !strings.Contains(line, "[") {
+			// Find the indentation level
+			indent := len(line) - len(strings.TrimLeft(line, " "))
+
+			// Collect array items
+			arrayItems := []string{}
+			j := i + 1
+			for j < len(lines) {
+				nextLine := lines[j]
+				nextIndent := len(nextLine) - len(strings.TrimLeft(nextLine, " "))
+
+				// Check if it's an array item at the right indentation
+				trimmed := strings.TrimSpace(nextLine)
+				if nextIndent > indent && strings.HasPrefix(trimmed, "- ") {
+					// Extract the value after "- "
+					value := strings.TrimSpace(trimmed[2:])
+					arrayItems = append(arrayItems, value)
+					j++
+				} else {
+					break
+				}
+			}
+
+			// If we found array items, convert to inline format
+			if len(arrayItems) > 0 {
+				compactLine := strings.Repeat(" ", indent) + "datatype: [" + strings.Join(arrayItems, ", ") + "]"
+				result = append(result, compactLine)
+				i = j // Skip the array items we processed
+				continue
+			}
+		}
+
+		result = append(result, line)
+		i++
+	}
+
+	return strings.Join(result, "\n")
 }
 
 // ExportAsJSON exports collection data as JSON
