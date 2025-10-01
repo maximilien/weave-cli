@@ -41,7 +41,7 @@ print_help() {
     echo "  demo        Record the full demo (5 minutes)"
     echo "  quick       Record a quick 2-minute demo"
     echo "  install     Install asciinema if not available"
-    echo "  upload      Upload latest recording to asciinema.org"
+    echo "  upload [FILE] Upload recording to asciinema.org (or latest if no file specified)"
     echo "  list        List available recordings"
     echo "  clean       Clean up old recordings"
     echo "  --help, -h  Show this help message"
@@ -49,7 +49,8 @@ print_help() {
     echo "Examples:"
     echo "  ./tools/asciinema.sh demo     # Record full demo"
     echo "  ./tools/asciinema.sh quick    # Record quick demo"
-    echo "  ./tools/asciinema.sh upload   # Upload to asciinema.org"
+    echo "  ./tools/asciinema.sh upload   # Upload latest recording to asciinema.org"
+    echo "  ./tools/asciinema.sh upload videos/weave-cli-quick-demo.cast  # Upload specific file"
     echo ""
     echo "Prerequisites:"
     echo "  • Weaviate Cloud instance configured"
@@ -362,25 +363,37 @@ EOF
     fi
 }
 
-# Function to upload latest recording
+# Function to upload recording
 upload_recording() {
-    local latest_file
-    # Use macOS-compatible approach to find latest .cast file
-    # Find the most recent .cast file (macOS compatible)
-    latest_file=$(find videos -name "*.cast" -type f -exec stat -f "%m %N" {} \; 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+    local file_to_upload="$1"
     
-    if [ -z "$latest_file" ]; then
-        print_error "No recordings found in videos/ directory"
-        return 1
+    # If no file specified, find the latest recording
+    if [ -z "$file_to_upload" ]; then
+        # Use macOS-compatible approach to find latest .cast file
+        # Find the most recent .cast file (macOS compatible)
+        file_to_upload=$(find videos -name "*.cast" -type f -exec stat -f "%m %N" {} \; 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
+        
+        if [ -z "$file_to_upload" ]; then
+            print_error "No recordings found in videos/ directory"
+            return 1
+        fi
+        
+        print_header "Uploading latest recording: $file_to_upload"
+    else
+        # Check if the specified file exists
+        if [ ! -f "$file_to_upload" ]; then
+            print_error "File not found: $file_to_upload"
+            return 1
+        fi
+        
+        print_header "Uploading specified recording: $file_to_upload"
     fi
-    
-    print_header "Uploading latest recording: $latest_file"
     
     if ! check_asciinema; then
         return 1
     fi
     
-    asciinema upload "$latest_file"
+    asciinema upload "$file_to_upload"
 }
 
 # Function to list recordings
@@ -445,7 +458,7 @@ case "${1:-help}" in
         install_asciinema
         ;;
     "upload")
-        upload_recording
+        upload_recording "$2"
         ;;
     "list")
         list_recordings
