@@ -310,10 +310,10 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 						if metadataStr, ok := metadata.(string); ok {
 							metadataLower := strings.ToLower(metadataStr)
 							// Check for specific image collection indicators
-							if strings.Contains(metadataLower, "image_data") || 
-							   strings.Contains(metadataLower, "imagedata") ||
-							   strings.Contains(metadataLower, "imageformat") ||
-							   strings.Contains(metadataLower, "image_size") {
+							if strings.Contains(metadataLower, "image_data") ||
+								strings.Contains(metadataLower, "imagedata") ||
+								strings.Contains(metadataLower, "imageformat") ||
+								strings.Contains(metadataLower, "image_size") {
 								schemaType = "image"
 								break
 							}

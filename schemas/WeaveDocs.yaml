@@ -7,7 +7,7 @@ schema:
         - name: url
           datatype: [text]
           description: the source URL of the document
-        - name: text
+        - name: content
           datatype: [text]
           description: the content of the document
         - name: metadata

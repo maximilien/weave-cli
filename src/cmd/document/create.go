@@ -30,7 +30,7 @@ The command will automatically:
 - Generate appropriate metadata
 - Chunk text content (default 5000 chars, configurable with --chunk-size)
 - Extract images from PDFs with OCR and EXIF data
-- Create documents following RagMeDocs/RagMeImages schema
+- Create documents following WeaveDocs/WeaveImages schema (default) or RagMeDocs/RagMeImages (legacy)
 
 For PDF files with images:
 - Text chunks go to the main collection
@@ -42,7 +42,7 @@ Examples:
   weave docs create MyCollection image.jpg
   weave docs create MyCollection document.pdf --chunk-size 500
   weave docs create WeaveDocs document.pdf --image-collection WeaveImages
-  weave docs create WeaveDocs document.pdf --image-col RagMeImages`,
+  weave docs create RagMeDocs document.pdf --image-col RagMeImages`,
 	Args: cobra.ExactArgs(2),
 	Run:  runDocumentCreate,
 }

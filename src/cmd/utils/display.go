@@ -163,7 +163,7 @@ func AggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		var originalFilename string
 		var metadata map[string]interface{}
 
-		// First, check if original_filename is directly in the metadata
+		// Check for WeaveDocs schema first (flat metadata structure)
 		if filename, ok := doc.Metadata["original_filename"].(string); ok {
 			originalFilename = filename
 			metadata = doc.Metadata
@@ -172,7 +172,7 @@ func AggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 			originalFilename = filename
 			metadata = doc.Metadata
 		} else {
-			// Check if this is a chunked document with nested metadata
+			// Check if this is a RagMeDocs document with nested metadata (legacy structure)
 			if metadataField, ok := doc.Metadata["metadata"]; ok {
 				if metadataStr, ok := metadataField.(string); ok {
 					var metadataObj map[string]interface{}
@@ -181,7 +181,7 @@ func AggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 						if nestedMetadataStr, ok := metadataObj["metadata"].(string); ok {
 							var nestedMetadataObj map[string]interface{}
 							if err := json.Unmarshal([]byte(nestedMetadataStr), &nestedMetadataObj); err == nil {
-								// Look for filename in the nested metadata (this is the current structure)
+								// Look for filename in the nested metadata (legacy RagMeDocs structure)
 								if filename, ok := nestedMetadataObj["filename"].(string); ok {
 									originalFilename = filename
 									metadata = nestedMetadataObj
@@ -192,7 +192,7 @@ func AggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 								}
 							}
 						} else {
-							// Look for filename in the parsed metadata (this is the current structure)
+							// Look for filename in the parsed metadata (legacy RagMeDocs structure)
 							if filename, ok := metadataObj["filename"].(string); ok {
 								originalFilename = filename
 								metadata = metadataObj

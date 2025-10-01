@@ -341,7 +341,22 @@ func TestCLIWithMockClient(t *testing.T) {
 			ID:      "test-doc-1",
 			Content: "Test document content",
 			Metadata: map[string]interface{}{
-				"test": true,
+				"id":              "test-doc-1",
+				"added_date":      "2025-01-01T00:00:00Z",
+				"creation_date":   "2025-01-01T00:00:00Z",
+				"modified_date":   "2025-01-01T00:00:00Z",
+				"creator":         "",
+				"producer":        "",
+				"title":           "test.txt",
+				"ai_summary":      "",
+				"filename":        "test.txt",
+				"is_chunked":      false,
+				"total_chunks":    1,
+				"chunk_index":     0,
+				"chunk_sizes":     []int{20},
+				"original_filename": "test.txt",
+				"storage_path":    "/path/to/test.txt",
+				"type":            "text",
 			},
 		}
 
@@ -1864,14 +1879,29 @@ func TestDocumentCreateMockClient(t *testing.T) {
 		// Create mock client
 		client := mock.NewClient(mockConfig)
 
-		// Test document creation
+		// Test document creation with WeaveDocs schema
 		ctx := context.Background()
 		document := mock.Document{
 			ID:       "test-doc-1",
 			Content:  "This is a test document",
 			URL:      "file://test.txt",
 			Metadata: map[string]interface{}{
-				"metadata": `{"filename": "test.txt", "content_type": "text"}`,
+				"id":              "test-doc-1",
+				"added_date":      "2025-01-01T00:00:00Z",
+				"creation_date":   "2025-01-01T00:00:00Z",
+				"modified_date":   "2025-01-01T00:00:00Z",
+				"creator":         "",
+				"producer":        "",
+				"title":           "test.txt",
+				"ai_summary":      "",
+				"filename":        "test.txt",
+				"is_chunked":      false,
+				"total_chunks":    1,
+				"chunk_index":     0,
+				"chunk_sizes":     []int{25},
+				"original_filename": "test.txt",
+				"storage_path":    "/path/to/test.txt",
+				"type":            "text",
 			},
 		}
 
@@ -1923,7 +1953,22 @@ func TestDocumentCreateMockClient(t *testing.T) {
 			Content:  "First document",
 			URL:      "file://test1.txt",
 			Metadata: map[string]interface{}{
-				"metadata": `{"filename": "test1.txt"}`,
+				"id":              "duplicate-doc",
+				"added_date":      "2025-01-01T00:00:00Z",
+				"creation_date":   "2025-01-01T00:00:00Z",
+				"modified_date":   "2025-01-01T00:00:00Z",
+				"creator":         "",
+				"producer":        "",
+				"title":           "test1.txt",
+				"ai_summary":      "",
+				"filename":        "test1.txt",
+				"is_chunked":      false,
+				"total_chunks":    1,
+				"chunk_index":     0,
+				"chunk_sizes":     []int{14},
+				"original_filename": "test1.txt",
+				"storage_path":    "/path/to/test1.txt",
+				"type":            "text",
 			},
 		}
 
@@ -1960,7 +2005,22 @@ func TestDocumentCreateMockClient(t *testing.T) {
 			Content:  "Test content",
 			URL:      "file://test.txt",
 			Metadata: map[string]interface{}{
-				"metadata": `{"filename": "test.txt"}`,
+				"id":              "test-doc",
+				"added_date":      "2025-01-01T00:00:00Z",
+				"creation_date":   "2025-01-01T00:00:00Z",
+				"modified_date":   "2025-01-01T00:00:00Z",
+				"creator":         "",
+				"producer":        "",
+				"title":           "test.txt",
+				"ai_summary":      "",
+				"filename":        "test.txt",
+				"is_chunked":      false,
+				"total_chunks":    1,
+				"chunk_index":     0,
+				"chunk_sizes":     []int{12},
+				"original_filename": "test.txt",
+				"storage_path":    "/path/to/test.txt",
+				"type":            "text",
 			},
 		}
 
@@ -2407,7 +2467,19 @@ func TestDocumentByNameOperations(t *testing.T) {
 				expected:  true,
 			},
 			{
-				name: "Nested metadata filename match",
+				name: "WeaveDocs schema filename match",
+				doc: mock.Document{
+					ID: "test-id",
+					Metadata: map[string]interface{}{
+						"filename": "test_image.png",
+						"original_filename": "test_image.png",
+					},
+				},
+				searchName: "test_image.png",
+				expected:  true,
+			},
+			{
+				name: "Nested metadata filename match (legacy RagMeDocs)",
 				doc: mock.Document{
 					ID: "test-id",
 					Metadata: map[string]interface{}{
@@ -2418,7 +2490,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 				expected:  true,
 			},
 			{
-				name: "Nested metadata original_filename match",
+				name: "Nested metadata original_filename match (legacy RagMeDocs)",
 				doc: mock.Document{
 					ID: "test-id",
 					Metadata: map[string]interface{}{
