@@ -37,8 +37,14 @@ Examples:
   weave collection delete MyCollection
   weave collection delete Collection1 Collection2 Collection3
   weave collection delete --pattern "WeaveDocs*"`,
-	Args: cobra.MinimumNArgs(1),
-	Run:  runCollectionDelete,
+	Args: func(cmd *cobra.Command, args []string) error {
+		pattern, _ := cmd.Flags().GetString("pattern")
+		if pattern == "" && len(args) == 0 {
+			return fmt.Errorf("requires at least 1 collection name or --pattern flag")
+		}
+		return nil
+	},
+	Run: runCollectionDelete,
 }
 
 func init() {

@@ -6,6 +6,8 @@ package utils
 import (
 	"context"
 	"fmt"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -711,9 +713,74 @@ func DeleteWeaviateCollectionsByPattern(ctx context.Context, cfg *config.VectorD
 
 // matchPattern checks if a string matches a pattern (shell glob or regex)
 func matchPattern(str, pattern string) bool {
-	// Simple shell glob matching for now
-	// TODO: Add regex support
-	return strings.Contains(str, strings.TrimSuffix(strings.TrimPrefix(pattern, "*"), "*"))
+	// Check if pattern looks like regex (contains regex metacharacters)
+	if isRegexPattern(pattern) {
+		// Try to compile as regex
+		regex, err := regexp.Compile(pattern)
+		if err != nil {
+			// If regex compilation fails, fall back to glob
+			return matchGlobPattern(str, pattern)
+		}
+		return regex.MatchString(str)
+	}
+
+	// Treat as shell glob pattern
+	return matchGlobPattern(str, pattern)
+}
+
+// isRegexPattern checks if a pattern looks like regex
+func isRegexPattern(pattern string) bool {
+	// Check for common regex metacharacters
+	regexChars := []string{"^", "$", "\\", "[", "]", "(", ")", "{", "}", "|", "+", "?", "."}
+	for _, char := range regexChars {
+		if strings.Contains(pattern, char) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchGlobPattern matches shell glob patterns
+func matchGlobPattern(str, pattern string) bool {
+	// Use filepath.Match for proper glob matching
+	matched, err := filepath.Match(pattern, str)
+	if err != nil {
+		// If glob matching fails, fall back to simple contains
+		return strings.Contains(str, strings.TrimSuffix(strings.TrimPrefix(pattern, "*"), "*"))
+	}
+	return matched
+}
+
+// DeleteWeaviateCollectionSchemasByPattern deletes Weaviate collection schemas by pattern
+func DeleteWeaviateCollectionSchemasByPattern(ctx context.Context, cfg *config.VectorDBConfig, pattern string) error {
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Weaviate client: %v", err)
+	}
+
+	// Get all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list collections: %v", err)
+	}
+
+	// Filter collections by pattern
+	var matchingCollections []string
+	for _, collection := range collections {
+		if matchPattern(collection, pattern) {
+			matchingCollections = append(matchingCollections, collection)
+		}
+	}
+
+	// Delete schemas of matching collections
+	for _, collectionName := range matchingCollections {
+		err = client.DeleteCollectionSchema(ctx, collectionName)
+		if err != nil {
+			return fmt.Errorf("failed to delete schema for collection %s: %v", collectionName, err)
+		}
+	}
+
+	return nil
 }
 
 // DeleteMockCollectionsByPattern deletes mock collections by pattern

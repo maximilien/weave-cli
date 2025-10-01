@@ -32,21 +32,42 @@ This command requires double confirmation:
 
 Use --force to skip confirmations in scripts.
 
-Example:
-  weave collection delete-schema MyCollection`,
-	Args: cobra.ExactArgs(1),
-	Run:  runCollectionDeleteSchema,
+You can specify collections in multiple ways:
+1. By collection name: weave cols delete-schema MyCollection
+2. By pattern: weave cols delete-schema --pattern "Test*"
+
+Pattern types (auto-detected):
+- Shell glob: Test*, WeaveDocs*, *Docs
+- Regex: Test.*, ^WeaveDocs.*$, .*Docs$
+
+Examples:
+  weave collection delete-schema MyCollection
+  weave collection delete-schema --pattern "Test*"`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		pattern, _ := cmd.Flags().GetString("pattern")
+		if pattern == "" && len(args) == 0 {
+			return fmt.Errorf("requires collection name or --pattern flag")
+		}
+		return nil
+	},
+	Run: runCollectionDeleteSchema,
 }
 
 func init() {
 	CollectionCmd.AddCommand(DeleteSchemaCmd)
 
+	DeleteSchemaCmd.Flags().StringP("pattern", "p", "", "Delete schemas of collections matching pattern (auto-detects shell glob vs regex)")
 	DeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
 }
 
 func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
-	collectionName := args[0]
+	pattern, _ := cmd.Flags().GetString("pattern")
 	force, _ := cmd.Flags().GetBool("force")
+
+	var collectionName string
+	if len(args) > 0 {
+		collectionName = args[0]
+	}
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -66,14 +87,20 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 
 	// Confirmation prompt
 	if !force {
-		utils.PrintWarning(fmt.Sprintf("⚠️  Are you sure you want to delete the schema for collection '%s'?", collectionName))
+		var message string
+		if pattern != "" {
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete schemas for collections matching pattern '%s'?", pattern)
+		} else {
+			message = fmt.Sprintf("⚠️  Are you sure you want to delete the schema for collection '%s'?", collectionName)
+		}
+		utils.PrintWarning(message)
 		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
 		}
 
 		// Second confirmation with prominent red warning
-		utils.PrintError("🚨 This will permanently delete the schema. Type 'yes' to confirm:")
+		utils.PrintError("🚨 This will permanently delete the schema(s). Type 'yes' to confirm:")
 		if !utils.ConfirmAction("") {
 			fmt.Println("Operation cancelled")
 			return
@@ -82,7 +109,11 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		err = utils.DeleteWeaviateCollectionSchema(ctx, dbConfig, collectionName)
+		if pattern != "" {
+			err = utils.DeleteWeaviateCollectionSchemasByPattern(ctx, dbConfig, pattern)
+		} else {
+			err = utils.DeleteWeaviateCollectionSchema(ctx, dbConfig, collectionName)
+		}
 	case config.VectorDBTypeMock:
 		// Mock collections don't have separate schemas
 		utils.PrintWarning("Mock collections don't have separate schemas to delete")

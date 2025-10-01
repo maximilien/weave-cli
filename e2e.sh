@@ -397,7 +397,28 @@ main() {
 
     # Note: Collection deletion is skipped as schema deletion is sufficient for cleanup
     # and collection deletion can fail if collections don't exist or have dependencies
+
+    # Step 9: Pattern Matching Tests
+    print_section "Step 9: Pattern Matching Tests"
     
+    # Create test collections with different patterns
+    PATTERN_TEST_COLLECTIONS=("PatternTest1" "PatternTest2" "TestPattern3" "OtherCollection")
+    for collection in "${PATTERN_TEST_COLLECTIONS[@]}"; do
+        run_test "Create pattern test collection: $collection" "./bin/weave cols create '$collection' --text --flat-metadata --vector-db-type $VECTOR_DB_TYPE"
+    done
+    
+    # Test glob pattern matching for collection deletion
+    run_test "Delete collections matching glob pattern 'PatternTest*'" "./bin/weave cols delete-schema --pattern 'PatternTest*' --vector-db-type $VECTOR_DB_TYPE --force"
+    
+    # Test regex pattern matching for collection deletion
+    run_test "Delete collections matching regex pattern 'Test.*'" "./bin/weave cols delete-schema --pattern 'Test.*' --vector-db-type $VECTOR_DB_TYPE --force"
+    
+    # Verify remaining collections
+    run_test "List collections after pattern deletion" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"
+    
+    # Clean up remaining test collections
+    run_test "Delete remaining test collection" "./bin/weave cols delete-schema 'OtherCollection' --vector-db-type $VECTOR_DB_TYPE --force"
+
     # Final verification
     run_test "List collections (final - should be clean)" "./bin/weave cols ls --vector-db-type $VECTOR_DB_TYPE"
     

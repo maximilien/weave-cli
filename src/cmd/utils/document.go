@@ -287,8 +287,36 @@ func DeleteWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, co
 		} else {
 			PrintSuccess(fmt.Sprintf("✅ Successfully deleted %d document(s) with filename '%s'", deletedCount, name))
 		}
+	} else if pattern != "" {
+		// Delete by pattern - get all documents and filter by pattern
+		documents, err := client.ListDocuments(ctx, collectionName, 1000) // Get up to 1000 documents
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to list documents for pattern matching: %v", err))
+			return
+		}
+
+		var matchingIDs []string
+		for _, doc := range documents {
+			// Check if filename matches pattern
+			if filename, ok := doc.Metadata["filename"].(string); ok && matchPattern(filename, pattern) {
+				matchingIDs = append(matchingIDs, doc.ID)
+			}
+		}
+
+		if len(matchingIDs) == 0 {
+			PrintInfo(fmt.Sprintf("No documents found matching pattern '%s'", pattern))
+			return
+		}
+
+		// Delete matching documents
+		deletedCount, err = client.DeleteDocumentsBulk(ctx, collectionName, matchingIDs)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to delete documents by pattern '%s': %v", pattern, err))
+			return
+		}
+		PrintSuccess(fmt.Sprintf("✅ Successfully deleted %d document(s) matching pattern '%s'", deletedCount, pattern))
 	} else {
-		PrintError("No deletion criteria specified. Please provide document IDs, metadata filters, or filename.")
+		PrintError("No deletion criteria specified. Please provide document IDs, metadata filters, filename, or pattern.")
 		return
 	}
 }
@@ -334,8 +362,39 @@ func DeleteMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collec
 		} else {
 			PrintSuccess(fmt.Sprintf("✅ Successfully deleted %d document(s) with filename '%s'", deletedCount, name))
 		}
+	} else if pattern != "" {
+		// Delete by pattern - get all documents and filter by pattern
+		documents, err := client.ListDocuments(ctx, collectionName, 1000) // Get up to 1000 documents
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to list documents for pattern matching: %v", err))
+			return
+		}
+
+		var matchingIDs []string
+		for _, doc := range documents {
+			// Check if filename matches pattern
+			if filename, ok := doc.Metadata["filename"].(string); ok && matchPattern(filename, pattern) {
+				matchingIDs = append(matchingIDs, doc.ID)
+			}
+		}
+
+		if len(matchingIDs) == 0 {
+			PrintInfo(fmt.Sprintf("No documents found matching pattern '%s'", pattern))
+			return
+		}
+
+		// Delete matching documents
+		for _, docID := range matchingIDs {
+			err := client.DeleteDocument(ctx, collectionName, docID)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to delete document %s: %v", docID, err))
+				continue
+			}
+			deletedCount++
+		}
+		PrintSuccess(fmt.Sprintf("✅ Successfully deleted %d document(s) matching pattern '%s'", deletedCount, pattern))
 	} else {
-		PrintError("No deletion criteria specified. Please provide document IDs, metadata filters, or filename.")
+		PrintError("No deletion criteria specified. Please provide document IDs, metadata filters, filename, or pattern.")
 		return
 	}
 }
@@ -384,34 +443,65 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 	// Chunk the text content first to get total count
 	chunks := chunkText(string(content), chunkSize)
 
+	// Determine if this is a WeaveDocs collection (new schema) or RagMeDocs (legacy)
+	isWeaveDocs := isWeaveDocsCollection(collectionName)
+
 	// Create documents for each chunk
 	successCount := 0
 	for i, chunk := range chunks {
 		docID := uuid.New().String()
 
-		// Create metadata as a JSON string (exactly like existing RagMeDocs)
-		metadataMap := map[string]interface{}{
-			"type":       "text",
-			"filename":   filepath.Base(filePath),
-			"date_added": time.Now().Format(time.RFC3339),
-		}
+		var document weaviate.Document
+		if isWeaveDocs {
+			// Use WeaveDocs schema (flat metadata structure)
+			document = weaviate.Document{
+				ID:      docID,
+				Content: chunk,
+				URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+				Metadata: map[string]interface{}{
+					"id":                docID,
+					"added_date":        time.Now().Format(time.RFC3339),
+					"creation_date":     time.Now().Format(time.RFC3339),
+					"modified_date":     time.Now().Format(time.RFC3339),
+					"creator":           "",
+					"producer":          "",
+					"title":             filepath.Base(filePath),
+					"ai_summary":        "",
+					"filename":          filepath.Base(filePath),
+					"is_chunked":        len(chunks) > 1,
+					"total_chunks":      len(chunks),
+					"chunk_index":       i,
+					"chunk_sizes":       getChunkSizes(chunks),
+					"original_filename": filepath.Base(filePath),
+					"storage_path":      filePath,
+					"type":              "text",
+				},
+			}
+		} else {
+			// Use RagMeDocs schema (nested metadata structure for backward compatibility)
+			metadataMap := map[string]interface{}{
+				"type":       "text",
+				"filename":   filepath.Base(filePath),
+				"date_added": time.Now().Format(time.RFC3339),
+			}
 
-		// Convert metadata to JSON string (like existing RagMeDocs)
-		metadataJSON, marshalErr := json.Marshal(metadataMap)
-		if marshalErr != nil {
-			PrintError(fmt.Sprintf("Failed to marshal metadata: %v", marshalErr))
-			continue
-		}
+			// Convert metadata to JSON string (like existing RagMeDocs)
+			metadataJSON, marshalErr := json.Marshal(metadataMap)
+			if marshalErr != nil {
+				PrintError(fmt.Sprintf("Failed to marshal metadata: %v", marshalErr))
+				continue
+			}
 
-		chunkMetadata := map[string]interface{}{
-			"metadata": string(metadataJSON),
-		}
+			chunkMetadata := map[string]interface{}{
+				"metadata": string(metadataJSON),
+			}
 
-		document := weaviate.Document{
-			ID:       docID,
-			Content:  chunk,
-			URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
-			Metadata: chunkMetadata,
+			document = weaviate.Document{
+				ID:       docID,
+				Content:  chunk,
+				URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+				Metadata: chunkMetadata,
+			}
 		}
 
 		err := client.CreateDocument(ctx, collectionName, document)
@@ -446,25 +536,61 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 	base64Data := base64.StdEncoding.EncodeToString(imageBytes)
 	dataURL := fmt.Sprintf("data:image/%s;base64,%s", strings.TrimPrefix(filepath.Ext(filePath), "."), base64Data)
 
-	// Generate metadata
-	metadata := map[string]interface{}{
-		"type":         "image",
-		"filename":     filepath.Base(filePath),
-		"date_added":   time.Now().Format(time.RFC3339),
-		"storage_path": filePath,
-		"file_size":    fileInfo.Size(),
-		"image_format": strings.ToLower(filepath.Ext(filePath)),
-		"image_size":   len(imageBytes),
-	}
+	// Determine if this is a WeaveImages collection (new schema) or RagMeImages (legacy)
+	isWeaveImages := isWeaveImagesCollection(collectionName)
 
 	// Create document
 	docID := uuid.New().String()
-	document := weaviate.Document{
-		ID:        docID,
-		Image:     dataURL,
-		ImageData: base64Data,
-		URL:       fmt.Sprintf("file://%s", filePath),
-		Metadata:  metadata,
+	var document weaviate.Document
+
+	if isWeaveImages {
+		// Use WeaveImages schema (flat metadata structure)
+		document = weaviate.Document{
+			ID:        docID,
+			Image:     dataURL,
+			ImageData: base64Data,
+			URL:       fmt.Sprintf("file://%s", filePath),
+			Metadata: map[string]interface{}{
+				"id":                docID,
+				"added_date":        time.Now().Format(time.RFC3339),
+				"creation_date":     time.Now().Format(time.RFC3339),
+				"modified_date":     time.Now().Format(time.RFC3339),
+				"creator":           "",
+				"producer":          "",
+				"title":             filepath.Base(filePath),
+				"ai_summary":        "",
+				"filename":          filepath.Base(filePath),
+				"is_chunked":        false,
+				"total_chunks":      1,
+				"chunk_index":       0,
+				"chunk_sizes":       []int{len(imageBytes)},
+				"original_filename": filepath.Base(filePath),
+				"storage_path":      filePath,
+				"type":              "image",
+				"file_size":         fileInfo.Size(),
+				"image_format":      strings.ToLower(filepath.Ext(filePath)),
+				"image_size":        len(imageBytes),
+			},
+		}
+	} else {
+		// Use RagMeImages schema (legacy structure for backward compatibility)
+		metadata := map[string]interface{}{
+			"type":         "image",
+			"filename":     filepath.Base(filePath),
+			"date_added":   time.Now().Format(time.RFC3339),
+			"storage_path": filePath,
+			"file_size":    fileInfo.Size(),
+			"image_format": strings.ToLower(filepath.Ext(filePath)),
+			"image_size":   len(imageBytes),
+		}
+
+		document = weaviate.Document{
+			ID:        docID,
+			Image:     dataURL,
+			ImageData: base64Data,
+			URL:       fmt.Sprintf("file://%s", filePath),
+			Metadata:  metadata,
+		}
 	}
 
 	err = client.CreateDocument(ctx, collectionName, document)
@@ -569,6 +695,63 @@ func chunkText(text string, chunkSize int) []string {
 	return chunks
 }
 
+// isWeaveDocsCollection determines if a collection uses the WeaveDocs schema
+func isWeaveDocsCollection(collectionName string) bool {
+	// WeaveDocs is the default for --text collections
+	// Check if collection name suggests it's using the new schema
+	weaveDocsNames := []string{"WeaveDocs", "weavedocs", "weave-docs", "weave_docs"}
+	for _, name := range weaveDocsNames {
+		if strings.EqualFold(collectionName, name) {
+			return true
+		}
+	}
+
+	// Default to WeaveDocs schema for new collections
+	// Legacy RagMeDocs collections should be explicitly named
+	ragMeDocsNames := []string{"RagMeDocs", "ragmedocs", "ragme-docs", "ragme_docs"}
+	for _, name := range ragMeDocsNames {
+		if strings.EqualFold(collectionName, name) {
+			return false
+		}
+	}
+
+	// Default to new WeaveDocs schema
+	return true
+}
+
+// isWeaveImagesCollection determines if a collection uses the WeaveImages schema
+func isWeaveImagesCollection(collectionName string) bool {
+	// WeaveImages is the default for --image collections
+	// Check if collection name suggests it's using the new schema
+	weaveImagesNames := []string{"WeaveImages", "weaveimages", "weave-images", "weave_images"}
+	for _, name := range weaveImagesNames {
+		if strings.EqualFold(collectionName, name) {
+			return true
+		}
+	}
+
+	// Default to WeaveImages schema for new collections
+	// Legacy RagMeImages collections should be explicitly named
+	ragMeImagesNames := []string{"RagMeImages", "ragmeimages", "ragme-images", "ragme_images"}
+	for _, name := range ragMeImagesNames {
+		if strings.EqualFold(collectionName, name) {
+			return false
+		}
+	}
+
+	// Default to new WeaveImages schema
+	return true
+}
+
+// getChunkSizes returns an array of chunk sizes
+func getChunkSizes(chunks []string) []int {
+	sizes := make([]int, len(chunks))
+	for i, chunk := range chunks {
+		sizes[i] = len(chunk)
+	}
+	return sizes
+}
+
 // Mock helper functions
 func processTextFileMock(ctx context.Context, client *mock.Client, collectionName, filePath string, chunkSize int) {
 	// Read file content
@@ -585,30 +768,61 @@ func processTextFileMock(ctx context.Context, client *mock.Client, collectionNam
 		return
 	}
 
-	// Generate metadata
-	metadata := map[string]interface{}{
-		"type":              "text",
-		"filename":          filepath.Base(filePath),
-		"original_filename": filepath.Base(filePath),
-		"date_added":        time.Now().Format(time.RFC3339),
-		"storage_path":      filePath,
-		"file_size":         fileInfo.Size(),
-		"is_chunked":        true,
-	}
-
 	// Chunk the text content
 	chunks := chunkText(string(content), chunkSize)
+
+	// Determine if this is a WeaveDocs collection (new schema) or RagMeDocs (legacy)
+	isWeaveDocs := isWeaveDocsCollection(collectionName)
 
 	// Create documents for each chunk
 	successCount := 0
 	for i, chunk := range chunks {
 		docID := fmt.Sprintf("%s-chunk-%d", filepath.Base(filePath), i)
 
-		document := mock.Document{
-			ID:       docID,
-			Content:  chunk,
-			URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
-			Metadata: metadata,
+		var document mock.Document
+		if isWeaveDocs {
+			// Use WeaveDocs schema (flat metadata structure)
+			document = mock.Document{
+				ID:      docID,
+				Content: chunk,
+				URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+				Metadata: map[string]interface{}{
+					"id":                docID,
+					"added_date":        time.Now().Format(time.RFC3339),
+					"creation_date":     time.Now().Format(time.RFC3339),
+					"modified_date":     time.Now().Format(time.RFC3339),
+					"creator":           "",
+					"producer":          "",
+					"title":             filepath.Base(filePath),
+					"ai_summary":        "",
+					"filename":          filepath.Base(filePath),
+					"is_chunked":        len(chunks) > 1,
+					"total_chunks":      len(chunks),
+					"chunk_index":       i,
+					"chunk_sizes":       getChunkSizes(chunks),
+					"original_filename": filepath.Base(filePath),
+					"storage_path":      filePath,
+					"type":              "text",
+				},
+			}
+		} else {
+			// Use RagMeDocs schema (legacy structure for backward compatibility)
+			metadata := map[string]interface{}{
+				"type":              "text",
+				"filename":          filepath.Base(filePath),
+				"original_filename": filepath.Base(filePath),
+				"date_added":        time.Now().Format(time.RFC3339),
+				"storage_path":      filePath,
+				"file_size":         fileInfo.Size(),
+				"is_chunked":        true,
+			}
+
+			document = mock.Document{
+				ID:       docID,
+				Content:  chunk,
+				URL:      fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+				Metadata: metadata,
+			}
 		}
 
 		err := client.CreateDocument(ctx, collectionName, document)
@@ -641,25 +855,61 @@ func processImageFileMock(ctx context.Context, client *mock.Client, collectionNa
 	base64Data := base64.StdEncoding.EncodeToString(imageBytes)
 	dataURL := fmt.Sprintf("data:image/%s;base64,%s", strings.TrimPrefix(filepath.Ext(filePath), "."), base64Data)
 
-	// Generate metadata
-	metadata := map[string]interface{}{
-		"type":         "image",
-		"filename":     filepath.Base(filePath),
-		"date_added":   time.Now().Format(time.RFC3339),
-		"storage_path": filePath,
-		"file_size":    fileInfo.Size(),
-		"image_format": strings.ToLower(filepath.Ext(filePath)),
-		"image_size":   len(imageBytes),
-	}
+	// Determine if this is a WeaveImages collection (new schema) or RagMeImages (legacy)
+	isWeaveImages := isWeaveImagesCollection(collectionName)
 
 	// Create document
 	docID := fmt.Sprintf("%s-image", filepath.Base(filePath))
-	document := mock.Document{
-		ID:        docID,
-		Image:     dataURL,
-		ImageData: base64Data,
-		URL:       fmt.Sprintf("file://%s", filePath),
-		Metadata:  metadata,
+	var document mock.Document
+
+	if isWeaveImages {
+		// Use WeaveImages schema (flat metadata structure)
+		document = mock.Document{
+			ID:        docID,
+			Image:     dataURL,
+			ImageData: base64Data,
+			URL:       fmt.Sprintf("file://%s", filePath),
+			Metadata: map[string]interface{}{
+				"id":                docID,
+				"added_date":        time.Now().Format(time.RFC3339),
+				"creation_date":     time.Now().Format(time.RFC3339),
+				"modified_date":     time.Now().Format(time.RFC3339),
+				"creator":           "",
+				"producer":          "",
+				"title":             filepath.Base(filePath),
+				"ai_summary":        "",
+				"filename":          filepath.Base(filePath),
+				"is_chunked":        false,
+				"total_chunks":      1,
+				"chunk_index":       0,
+				"chunk_sizes":       []int{len(imageBytes)},
+				"original_filename": filepath.Base(filePath),
+				"storage_path":      filePath,
+				"type":              "image",
+				"file_size":         fileInfo.Size(),
+				"image_format":      strings.ToLower(filepath.Ext(filePath)),
+				"image_size":        len(imageBytes),
+			},
+		}
+	} else {
+		// Use RagMeImages schema (legacy structure for backward compatibility)
+		metadata := map[string]interface{}{
+			"type":         "image",
+			"filename":     filepath.Base(filePath),
+			"date_added":   time.Now().Format(time.RFC3339),
+			"storage_path": filePath,
+			"file_size":    fileInfo.Size(),
+			"image_format": strings.ToLower(filepath.Ext(filePath)),
+			"image_size":   len(imageBytes),
+		}
+
+		document = mock.Document{
+			ID:        docID,
+			Image:     dataURL,
+			ImageData: base64Data,
+			URL:       fmt.Sprintf("file://%s", filePath),
+			Metadata:  metadata,
+		}
 	}
 
 	err = client.CreateDocument(ctx, collectionName, document)
