@@ -179,6 +179,10 @@ func ExportAsYAML(export *CollectionExport) (string, error) {
 
 	// Post-process to make datatype arrays more compact
 	result := compactYAMLArrays(string(data))
+
+	// Add YAML document separator at the beginning for valid YAML format
+	result = "---\n" + result
+
 	return result, nil
 }
 
@@ -228,8 +232,8 @@ func compactYAMLArrays(yamlStr string) string {
 		// Pattern: line with field name ending with ":", next line is "type: <value>", no other nested fields
 		trimmed := strings.TrimSpace(line)
 		if strings.HasSuffix(trimmed, ":") && !strings.Contains(line, "metadata:") &&
-		   !strings.Contains(line, "schema:") && !strings.Contains(line, "properties:") &&
-		   i+1 < len(lines) {
+			!strings.Contains(line, "schema:") && !strings.Contains(line, "properties:") &&
+			i+1 < len(lines) {
 			indent := len(line) - len(strings.TrimLeft(line, " "))
 			nextLine := lines[i+1]
 			nextIndent := len(nextLine) - len(strings.TrimLeft(nextLine, " "))
