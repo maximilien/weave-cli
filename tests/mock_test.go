@@ -741,3 +741,201 @@ func TestCollectionSchemaDeletionIntegration(t *testing.T) {
 		}
 	})
 }
+
+// TestMockClientQuery tests the query functionality of the mock client
+func TestMockClientQuery(t *testing.T) {
+	cfg := &config.MockConfig{
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
+		Collections: []config.MockCollection{
+			{Name: "test", Type: "text", Description: "Test collection"},
+		},
+	}
+
+	client := mock.NewClient(cfg)
+	ctx := context.Background()
+
+	// Create test documents with different content
+	testDocs := []mock.Document{
+		{
+			ID:      "ml-doc-1",
+			Content: "This document is about machine learning algorithms and neural networks",
+			Metadata: map[string]interface{}{
+				"filename": "ml_guide.txt",
+				"type":     "text",
+			},
+		},
+		{
+			ID:      "ai-doc-1",
+			Content: "Artificial intelligence and deep learning concepts",
+			Metadata: map[string]interface{}{
+				"filename": "ai_basics.txt",
+				"type":     "text",
+			},
+		},
+		{
+			ID:      "data-doc-1",
+			Content: "Data preprocessing and feature engineering techniques",
+			Metadata: map[string]interface{}{
+				"filename": "data_prep.txt",
+				"type":     "text",
+			},
+		},
+	}
+
+	// Create documents
+	for _, doc := range testDocs {
+		err := client.CreateDocument(ctx, "test", doc)
+		if err != nil {
+			t.Fatalf("Failed to create test document: %v", err)
+		}
+	}
+
+	t.Run("BasicQuery", func(t *testing.T) {
+		// Test query for machine learning
+		options := weaviate.QueryOptions{TopK: 5}
+		results, err := client.Query(ctx, "test", "machine learning", options)
+		if err != nil {
+			t.Errorf("Query failed: %v", err)
+		}
+
+		if len(results) == 0 {
+			t.Error("Expected at least one result for 'machine learning' query")
+		}
+
+		// Check that results are sorted by score (highest first)
+		for i := 1; i < len(results); i++ {
+			if results[i-1].Score < results[i].Score {
+				t.Error("Results should be sorted by score (highest first)")
+			}
+		}
+
+		// Verify result structure
+		for _, result := range results {
+			if result.ID == "" {
+				t.Error("Result ID should not be empty")
+			}
+			if result.Content == "" {
+				t.Error("Result Content should not be empty")
+			}
+			if result.Score < 0 || result.Score > 1 {
+				t.Errorf("Result Score should be between 0 and 1, got %f", result.Score)
+			}
+		}
+	})
+
+	t.Run("TopKLimit", func(t *testing.T) {
+		// Test query with top_k limit
+		options := weaviate.QueryOptions{TopK: 2}
+		results, err := client.Query(ctx, "test", "machine learning", options)
+		if err != nil {
+			t.Errorf("Query with top_k failed: %v", err)
+		}
+
+		if len(results) > 2 {
+			t.Errorf("Expected at most 2 results, got %d", len(results))
+		}
+	})
+
+	t.Run("NoResults", func(t *testing.T) {
+		// Test query for non-existent content
+		options := weaviate.QueryOptions{TopK: 5}
+		results, err := client.Query(ctx, "test", "nonexistent content", options)
+		if err != nil {
+			t.Errorf("Query for non-existent content failed: %v", err)
+		}
+
+		if len(results) != 0 {
+			t.Error("Expected no results for non-existent content")
+		}
+	})
+
+	t.Run("NonExistentCollection", func(t *testing.T) {
+		// Test query on non-existent collection
+		options := weaviate.QueryOptions{TopK: 5}
+		results, err := client.Query(ctx, "nonexistent", "test query", options)
+		if err == nil {
+			t.Error("Expected error for query on non-existent collection")
+		}
+		if results != nil {
+			t.Error("Expected nil results for non-existent collection")
+		}
+	})
+
+	t.Run("EmptyQuery", func(t *testing.T) {
+		// Test empty query
+		options := weaviate.QueryOptions{TopK: 5}
+		results, err := client.Query(ctx, "test", "", options)
+		if err != nil {
+			t.Errorf("Empty query should not fail: %v", err)
+		}
+		if len(results) != 0 {
+			t.Error("Expected no results for empty query")
+		}
+	})
+}
+
+// TestCalculateMockScore tests the mock scoring function
+func TestCalculateMockScore(t *testing.T) {
+	cfg := &config.MockConfig{
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
+		Collections: []config.MockCollection{
+			{Name: "test", Type: "text", Description: "Test collection"},
+		},
+	}
+
+	client := mock.NewClient(cfg)
+	doc := mock.Document{
+		ID:      "test-score-doc",
+		Content: "This is a test document about machine learning and artificial intelligence",
+	}
+
+	t.Run("ExactMatch", func(t *testing.T) {
+		// Test exact match
+		queryWords := []string{"machine", "learning"}
+		score := client.CalculateMockScore(doc, queryWords)
+		if score != 1.0 {
+			t.Errorf("Expected score 1.0 for exact match, got %f", score)
+		}
+	})
+
+	t.Run("PartialMatch", func(t *testing.T) {
+		// Test partial match
+		queryWords := []string{"machine", "learning", "nonexistent"}
+		score := client.CalculateMockScore(doc, queryWords)
+		expectedScore := 2.0 / 3.0 // 2 out of 3 words match
+		if score != expectedScore {
+			t.Errorf("Expected score %f for partial match, got %f", expectedScore, score)
+		}
+	})
+
+	t.Run("NoMatch", func(t *testing.T) {
+		// Test no match
+		queryWords := []string{"nonexistent", "content"}
+		score := client.CalculateMockScore(doc, queryWords)
+		if score != 0.0 {
+			t.Errorf("Expected score 0.0 for no match, got %f", score)
+		}
+	})
+
+	t.Run("EmptyQuery", func(t *testing.T) {
+		// Test empty query
+		queryWords := []string{}
+		score := client.CalculateMockScore(doc, queryWords)
+		if score != 0.0 {
+			t.Errorf("Expected score 0.0 for empty query, got %f", score)
+		}
+	})
+
+	t.Run("CaseInsensitive", func(t *testing.T) {
+		// Test case insensitive matching
+		queryWords := []string{"MACHINE", "LEARNING"}
+		score := client.CalculateMockScore(doc, queryWords)
+		if score != 1.0 {
+			t.Errorf("Expected score 1.0 for case insensitive match, got %f", score)
+		}
+	})
+}

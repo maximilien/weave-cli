@@ -480,7 +480,7 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	queryWords := strings.Fields(strings.ToLower(queryText))
 
 	for _, doc := range documents {
-		score := c.calculateMockScore(doc, queryWords)
+		score := c.CalculateMockScore(doc, queryWords)
 		if score > 0 {
 			results = append(results, weaviate.QueryResult{
 				ID:       doc.ID,
@@ -508,8 +508,8 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	return results, nil
 }
 
-// calculateMockScore calculates a mock similarity score based on keyword matching
-func (c *Client) calculateMockScore(doc Document, queryWords []string) float64 {
+// CalculateMockScore calculates a mock similarity score based on keyword matching
+func (c *Client) CalculateMockScore(doc Document, queryWords []string) float64 {
 	if len(queryWords) == 0 {
 		return 0.0
 	}
@@ -519,7 +519,8 @@ func (c *Client) calculateMockScore(doc Document, queryWords []string) float64 {
 	totalWords := float64(len(queryWords))
 
 	for _, word := range queryWords {
-		if strings.Contains(content, word) {
+		wordLower := strings.ToLower(word)
+		if strings.Contains(content, wordLower) {
 			matches++
 		}
 	}
