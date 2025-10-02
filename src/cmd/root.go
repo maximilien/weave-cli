@@ -92,6 +92,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&weaviateAPIKey, "weaviate-api-key", "", "override WEAVIATE_API_KEY")
 	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
 
+	// Bind flags to viper
+	viper.BindPFlag("vector-db-type", rootCmd.PersistentFlags().Lookup("vector-db-type"))
+	viper.BindPFlag("weaviate-api-key", rootCmd.PersistentFlags().Lookup("weaviate-api-key"))
+	viper.BindPFlag("weaviate-url", rootCmd.PersistentFlags().Lookup("weaviate-url"))
+	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+
 	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
 
@@ -125,8 +132,8 @@ func initConfig() {
 	}
 }
 
-// loadConfigWithOverrides loads configuration with command-line overrides
-func loadConfigWithOverrides() (*config.Config, error) {
+// LoadConfigWithOverrides loads configuration with command-line overrides
+func LoadConfigWithOverrides() (*config.Config, error) {
 	return config.LoadConfigWithOptions(config.LoadConfigOptions{
 		ConfigFile:     cfgFile,
 		EnvFile:        envFile,

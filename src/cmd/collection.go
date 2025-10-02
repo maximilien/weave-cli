@@ -26,6 +26,7 @@ func init() {
 	collectionCmd.AddCommand(collection.ShowCmd)
 	collectionCmd.AddCommand(collection.CountCmd)
 	collectionCmd.AddCommand(collection.CreateCmd)
+	collectionCmd.AddCommand(collection.QueryCmd)
 	collectionCmd.AddCommand(collection.DeleteCmd)
 	collectionCmd.AddCommand(collection.DeleteAllCmd)
 	collectionCmd.AddCommand(collection.DeleteSchemaCmd)

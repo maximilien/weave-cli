@@ -434,3 +434,73 @@ func ShowDocumentMetadata(doc weaviate.Document, collectionName string) {
 	PrintStyledValueDimmed(fmt.Sprintf("%.1f characters", avgLength))
 	fmt.Println()
 }
+
+// DisplayQueryResults displays semantic search results with styling
+func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryText string) {
+	PrintSuccess(fmt.Sprintf("Semantic search results for '%s' in collection '%s':", queryText, collectionName))
+	fmt.Println()
+
+	if len(results) == 0 {
+		PrintWarning("No results found for your query.")
+		return
+	}
+
+	for i, result := range results {
+		fmt.Printf("%d. ", i+1)
+		PrintStyledEmoji("🔍")
+		fmt.Printf(" ")
+		PrintStyledKeyProminent("Score")
+		fmt.Printf(": ")
+		PrintStyledValue(fmt.Sprintf("%.3f", result.Score))
+		fmt.Println()
+
+		fmt.Printf("   ")
+		PrintStyledKeyProminent("ID")
+		fmt.Printf(": ")
+		PrintStyledID(result.ID)
+		fmt.Println()
+
+		if result.Content != "" {
+			fmt.Printf("   ")
+			PrintStyledKeyProminent("Content")
+			fmt.Printf(": ")
+			// Truncate content for better readability
+			content := SmartTruncate(result.Content, "content", 3)
+			PrintStyledValue(content)
+			fmt.Println()
+		}
+
+		// Show relevant metadata fields
+		if result.Metadata != nil && len(result.Metadata) > 0 {
+			fmt.Printf("   ")
+			PrintStyledKeyProminent("Metadata")
+			fmt.Printf(": ")
+
+			// Show key metadata fields
+			keyFields := []string{"filename", "original_filename", "title", "type", "creation_date"}
+			var metadataParts []string
+
+			for _, field := range keyFields {
+				if value, exists := result.Metadata[field]; exists && value != "" {
+					metadataParts = append(metadataParts, fmt.Sprintf("%s: %v", field, value))
+				}
+			}
+
+			if len(metadataParts) > 0 {
+				PrintStyledValueDimmed(strings.Join(metadataParts, ", "))
+			} else {
+				PrintStyledValueDimmed(fmt.Sprintf("%d fields", len(result.Metadata)))
+			}
+			fmt.Println()
+		}
+
+		fmt.Println()
+	}
+
+	// Show summary
+	PrintStyledEmoji("📊")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Summary")
+	fmt.Printf(": Found %d results", len(results))
+	fmt.Println()
+}

@@ -100,7 +100,7 @@ func init() {
 
 func runConfigShow(cmd *cobra.Command, args []string) {
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := LoadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -163,7 +163,7 @@ func runConfigShow(cmd *cobra.Command, args []string) {
 
 func runConfigList(cmd *cobra.Command, args []string) {
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := LoadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -256,7 +256,7 @@ func displayMockConfig(cfg *config.VectorDBConfig) {
 
 func runConfigListSchemas(cmd *cobra.Command, args []string) {
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := LoadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)
@@ -310,7 +310,7 @@ func runConfigShowSchema(cmd *cobra.Command, args []string) {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Load configuration
-	cfg, err := loadConfigWithOverrides()
+	cfg, err := LoadConfigWithOverrides()
 	if err != nil {
 		printError(fmt.Sprintf("Failed to load configuration: %v", err))
 		os.Exit(1)

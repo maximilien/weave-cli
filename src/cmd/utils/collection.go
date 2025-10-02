@@ -1319,3 +1319,37 @@ func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinitio
 	schema.Properties = properties
 	return schema, nil
 }
+
+// QueryWeaviateCollection performs semantic search on a Weaviate collection
+func QueryWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions) {
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		return
+	}
+
+	// Perform the semantic search
+	results, err := client.Query(ctx, collectionName, queryText, options)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, err))
+		return
+	}
+
+	// Display results
+	DisplayQueryResults(results, collectionName, queryText)
+}
+
+// QueryMockCollection performs semantic search on a mock collection
+func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions) {
+	client := CreateMockClient(cfg)
+
+	// Perform mock semantic search
+	results, err := client.Query(ctx, collectionName, queryText, options)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to query mock collection '%s': %v", collectionName, err))
+		return
+	}
+
+	// Display results
+	DisplayQueryResults(results, collectionName, queryText)
+}

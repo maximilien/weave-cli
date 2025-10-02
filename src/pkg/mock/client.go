@@ -463,3 +463,67 @@ func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) 
 	c.collections[collectionName] = []Document{}
 	return nil
 }
+
+// Query performs semantic search on a collection (mock implementation)
+func (c *Client) Query(ctx context.Context, collectionName, queryText string, options weaviate.QueryOptions) ([]weaviate.QueryResult, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	// Check if collection exists
+	documents, exists := c.collections[collectionName]
+	if !exists {
+		return nil, fmt.Errorf("collection '%s' does not exist", collectionName)
+	}
+
+	// Simple mock semantic search based on keyword matching
+	var results []weaviate.QueryResult
+	queryWords := strings.Fields(strings.ToLower(queryText))
+
+	for _, doc := range documents {
+		score := c.calculateMockScore(doc, queryWords)
+		if score > 0 {
+			results = append(results, weaviate.QueryResult{
+				ID:       doc.ID,
+				Content:  doc.Content,
+				Metadata: doc.Metadata,
+				Score:    score,
+			})
+		}
+	}
+
+	// Sort by score (highest first)
+	for i := 0; i < len(results)-1; i++ {
+		for j := i + 1; j < len(results); j++ {
+			if results[i].Score < results[j].Score {
+				results[i], results[j] = results[j], results[i]
+			}
+		}
+	}
+
+	// Limit results to top_k
+	if options.TopK > 0 && len(results) > options.TopK {
+		results = results[:options.TopK]
+	}
+
+	return results, nil
+}
+
+// calculateMockScore calculates a mock similarity score based on keyword matching
+func (c *Client) calculateMockScore(doc Document, queryWords []string) float64 {
+	if len(queryWords) == 0 {
+		return 0.0
+	}
+
+	content := strings.ToLower(doc.Content)
+	matches := 0.0
+	totalWords := float64(len(queryWords))
+
+	for _, word := range queryWords {
+		if strings.Contains(content, word) {
+			matches++
+		}
+	}
+
+	// Return score as percentage of matched words
+	return matches / totalWords
+}
