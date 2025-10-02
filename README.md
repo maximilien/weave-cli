@@ -1,9 +1,18 @@
-# Weave CLI v0.2.2
+# Weave CLI v0.2.6
 
 A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases, independently of specific
 applications.
+
+## 🚀 What's New in v0.2.6
+
+- **🔍 Semantic Search**: New `query` command for semantic search on collections
+- **🎯 Smart Fallback**: Automatic fallback from semantic to text search when needed
+- **📊 Query Results**: Beautiful formatted results with relevance scores
+- **🧪 Comprehensive Testing**: 100% test coverage for query functionality
+- **⚡ Performance**: Optimized query execution with configurable result limits
+- **🎨 Enhanced Display**: Styled query results with emojis and clear formatting
 
 ## 🚀 What's New in v0.2.2
 
@@ -54,6 +63,8 @@ recording details.
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, create, view, and delete collections
 - 📄 **Document Management** - List, show, and delete individual documents
+- 🔍 **Semantic Search** - Query collections with natural language using
+  `weave collection query`
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
 - 📋 **Virtual Document View** - Aggregate chunked documents by original file with
@@ -176,6 +187,13 @@ weave collection show MyCollection --expand-metadata
 
 # Show document with expanded metadata analysis
 weave document show MyCollection DOCUMENT_ID --expand-metadata
+
+# Query collection with semantic search
+weave collection query MyCollection "machine learning algorithms"
+weave cols q MyCollection "neural networks" --top_k 3
+
+# Query with custom result limit
+weave collection query MyCollection "artificial intelligence" --top_k 10
 ```
 
 ### Destructive Operations
@@ -314,6 +332,76 @@ nano config.yaml
 - **Use example files** (`config.yaml.example`, `.env.example`) as templates
 - **Rotate API keys** regularly for production environments
 - **Use different keys** for development and production
+
+## Semantic Search
+
+Query your collections using natural language with the new `query` command:
+
+```bash
+# Basic semantic search
+weave collection query MyCollection "machine learning algorithms"
+weave cols q MyCollection "neural networks"
+
+# Limit results with top_k
+weave collection query MyCollection "artificial intelligence" --top_k 5
+weave cols q MyCollection "deep learning" --top_k 3
+
+# Using aliases
+weave cols q MyCollection "data science"
+weave collection q MyCollection "computer vision"
+```
+
+**Query Features:**
+
+- **🔍 Semantic Search**: Uses Weaviate's `nearText` for vector-based similarity
+  search
+- **🎯 Smart Fallback**: Automatically falls back to text search if semantic
+  search isn't supported
+- **📊 Relevance Scoring**: Results include similarity scores (0.0 to 1.0)
+- **⚡ Configurable Limits**: Control number of results with `--top_k` flag
+  (default: 5)
+- **🎨 Beautiful Display**: Formatted results with emojis and clear structure
+- **🔄 Cross-Database**: Works with Weaviate Cloud, Local, and Mock databases
+
+**Query Examples:**
+
+```bash
+# Find documents about specific topics
+weave cols q WeaveDocs "weave-cli installation"
+weave cols q WeaveDocs "configuration setup"
+
+# Search with different result limits
+weave cols q WeaveDocs "machine learning" --top_k 10
+weave cols q WeaveDocs "artificial intelligence" --top_k 3
+
+# Case insensitive search
+weave cols q WeaveDocs "MACHINE LEARNING"
+weave cols q WeaveDocs "Artificial Intelligence"
+```
+
+**Query Results Format:**
+
+```bash
+$ weave cols q WeaveDocs "weave-cli"
+
+✅ Semantic search results for 'weave-cli' in collection 'WeaveDocs':
+
+1. 🔍 Score: 1.000
+   ID: c937af68-727e-4946-8df5-f26919df7645
+   Content: # Weave CLI v0.2.6
+   
+   A command-line tool for managing Weaviate vector databases...
+   📋 Metadata: {"filename": "README.md", "type": "text"}
+
+2. 🔍 Score: 0.800
+   ID: a0665b61-1558-4ac3-9b26-ecbf755e92b6
+   Content: # Installation Guide
+   
+   Download and setup instructions for Weave CLI...
+   📋 Metadata: {"filename": "INSTALL.md", "type": "text"}
+
+📊 Summary: Found 2 results
+```
 
 ## Collection Management
 
@@ -470,6 +558,7 @@ Weave follows a consistent command pattern:
 - **collection** - Collection management
   - `weave collection list` - List all collections
   - `weave collection create COLLECTION_NAME [COLLECTION_NAME...]` - Create collection(s)
+  - `weave collection query COLLECTION_NAME "query text"` - Semantic search on collection
   - `weave collection list --virtual` - Show collections with virtual structure
   - `weave collection delete COLLECTION_NAME [COLLECTION_NAME...]` - Clear collections
   - `weave collection delete-schema COLLECTION_NAME [COLLECTION_NAME...]` -
@@ -497,6 +586,8 @@ weave col create MyCol  # Same as: weave collection create MyCol
 weave cols create MyCol # Same as: weave collection create MyCol
 weave cols c MyCol      # Same as: weave collection create MyCol
 weave cols c Col1 Col2 Col3  # Create multiple collections at once
+weave cols q MyCol "query" # Same as: weave collection query MyCol "query"
+weave col query MyCol "query" # Same as: weave collection query MyCol "query"
 weave cols d Col1 Col2  # Same as: weave collection delete Col1 Col2
 weave cols ds MyCol     # Same as: weave collection delete-schema MyCol
 weave cols ds Col1 Col2 Col3  # Delete multiple collection schemas at once

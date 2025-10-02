@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **WeaveDocs/WeaveImages Schema**: New default schema structure for better document management
+- **WeaveDocs/WeaveImages Schema**: New default schema structure for better
+  document management
   - Flat metadata structure for improved performance and simplicity
   - Better support for document aggregation and display
   - Backward compatibility with RagMeDocs/RagMeImages schemas
@@ -22,16 +23,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Schema Defaults**: Updated default schemas from RagMeDocs/RagMeImages to WeaveDocs/WeaveImages
-- **Document Creation**: Enhanced document creation to use new WeaveDocs schema by default
+- **Schema Defaults**: Updated default schemas from RagMeDocs/RagMeImages to
+  WeaveDocs/WeaveImages
+- **Document Creation**: Enhanced document creation to use new WeaveDocs schema
+  by default
 - **Test Coverage**: Updated test cases to reflect new schema structure
 - **Demo Scripts**: Updated demo files to showcase new schema capabilities
 
 ### Fixed
 
-- **Document Aggregation**: Fixed document aggregation logic to handle both new and legacy schemas
-- **Schema Detection**: Improved collection type detection for better schema handling
-- **Metadata Structure**: Standardized metadata fields across different document types
+- **Document Aggregation**: Fixed document aggregation logic to handle both new
+  and legacy schemas
+- **Schema Detection**: Improved collection type detection for better schema
+  handling
+- **Metadata Structure**: Standardized metadata fields across different document
+  types
 
 ### Technical Details
 

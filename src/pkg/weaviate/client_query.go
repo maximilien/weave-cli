@@ -144,7 +144,7 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 					metadata
 				}
 			}
-		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), options.TopK, 
+		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), options.TopK,
 		func() string {
 			if whereClause != "" {
 				return ",\n\t\t\t" + whereClause
@@ -182,12 +182,12 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 		if v.Kind() == reflect.Ptr {
 			v = v.Elem()
 		}
-		
+
 		dataField := v.FieldByName("Data")
 		if !dataField.IsValid() || dataField.IsNil() {
 			return nil, fmt.Errorf("invalid result format: %T", result)
 		}
-		
+
 		if dataMap, ok := dataField.Interface().(map[string]interface{}); ok {
 			data = dataMap
 		} else {
@@ -265,16 +265,16 @@ func getDataField(result interface{}) map[string]interface{} {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	dataField := v.FieldByName("Data")
 	if !dataField.IsValid() || dataField.IsNil() {
 		return nil
 	}
-	
+
 	if data, ok := dataField.Interface().(map[string]interface{}); ok {
 		return data
 	}
-	
+
 	return nil
 }
 
@@ -284,17 +284,17 @@ func hasGraphQLErrors(result interface{}) bool {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	errorsField := v.FieldByName("Errors")
 	if !errorsField.IsValid() || errorsField.IsNil() {
 		return false
 	}
-	
+
 	// Check if errors slice has any elements
 	if errorsField.Kind() == reflect.Slice {
 		return errorsField.Len() > 0
 	}
-	
+
 	return false
 }
 
@@ -352,7 +352,7 @@ func convertJSONObjectToMap(jsonObj interface{}) map[string]interface{} {
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-	
+
 	result := make(map[string]interface{})
 	if v.Kind() == reflect.Map {
 		for _, key := range v.MapKeys() {
@@ -361,6 +361,6 @@ func convertJSONObjectToMap(jsonObj interface{}) map[string]interface{} {
 			result[keyStr] = value
 		}
 	}
-	
+
 	return result
 }
