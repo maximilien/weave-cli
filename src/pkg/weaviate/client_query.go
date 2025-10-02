@@ -33,7 +33,6 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-
 	// Default top_k if not specified
 	if options.TopK <= 0 {
 		options.TopK = 5

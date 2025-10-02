@@ -1,11 +1,11 @@
-# Weave CLI v0.2.6
+# Weave CLI v0.2.7
 
 A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases, independently of specific
 applications.
 
-## 🚀 What's New in v0.2.6
+## 🚀 What's New in v0.2.7
 
 - **🔍 Semantic Search**: New `query` command for semantic search on collections
 - **🎯 Smart Fallback**: Automatic fallback from semantic to text search when needed
@@ -13,6 +13,18 @@ applications.
 - **🧪 Comprehensive Testing**: 100% test coverage for query functionality
 - **⚡ Performance**: Optimized query execution with configurable result limits
 - **🎨 Enhanced Display**: Styled query results with emojis and clear formatting
+
+## ⚠️ Known Limitations
+
+**Weaviate Instance Requirements**: Some Weaviate instances may not support advanced search features:
+
+- `nearText` semantic search requires vector search modules
+- `bm25` keyword search requires BM25 module installation  
+- `hybrid` search requires hybrid search module
+- Fallback to simple text search works but may have accuracy limitations
+- **Use `--vector-db-type mock` for full functionality testing**
+
+For more details, see [WEAVIATE_INTEGRATION_STATUS.md](WEAVIATE_INTEGRATION_STATUS.md).
 
 ## 🚀 What's New in v0.2.2
 
