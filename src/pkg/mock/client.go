@@ -480,7 +480,7 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	queryWords := strings.Fields(strings.ToLower(queryText))
 
 	for _, doc := range documents {
-		score := c.CalculateMockScore(doc, queryWords)
+		score := c.CalculateMockScoreWithMetadata(doc, queryWords, options.SearchMetadata)
 		if score > 0 {
 			results = append(results, weaviate.QueryResult{
 				ID:       doc.ID,
@@ -510,21 +510,71 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 
 // CalculateMockScore calculates a mock similarity score based on keyword matching
 func (c *Client) CalculateMockScore(doc Document, queryWords []string) float64 {
+	return c.CalculateMockScoreWithMetadata(doc, queryWords, false)
+}
+
+// CalculateMockScoreWithMetadata calculates a mock similarity score based on keyword matching
+// with optional metadata search
+func (c *Client) CalculateMockScoreWithMetadata(doc Document, queryWords []string, searchMetadata bool) float64 {
 	if len(queryWords) == 0 {
 		return 0.0
 	}
 
-	content := strings.ToLower(doc.Content)
-	matches := 0.0
+	contentMatches := 0.0
+	metadataMatches := 0.0
 	totalWords := float64(len(queryWords))
 
+	// Search in content
+	content := strings.ToLower(doc.Content)
 	for _, word := range queryWords {
 		wordLower := strings.ToLower(word)
 		if strings.Contains(content, wordLower) {
-			matches++
+			contentMatches++
 		}
 	}
 
-	// Return score as percentage of matched words
-	return matches / totalWords
+	// Search in metadata if enabled
+	if searchMetadata && doc.Metadata != nil {
+		metadataStr := strings.ToLower(fmt.Sprintf("%v", doc.Metadata))
+		for _, word := range queryWords {
+			wordLower := strings.ToLower(word)
+			if strings.Contains(metadataStr, wordLower) {
+				metadataMatches++
+			}
+		}
+	}
+
+	// Calculate base score from content matches (0.0 to 1.0)
+	contentScore := contentMatches / totalWords
+
+	// Add bonus for metadata matches (up to 0.2 additional points)
+	metadataBonus := 0.0
+	if searchMetadata && metadataMatches > 0 {
+		metadataBonus = (metadataMatches / totalWords) * 0.2
+	}
+
+	// Combine scores with a maximum of 1.0
+	finalScore := contentScore + metadataBonus
+	if finalScore > 1.0 {
+		finalScore = 1.0
+	}
+
+	// Add some randomness to make scores more realistic (0.05 variance)
+	// This simulates the natural variation in real vector similarity scores
+	if finalScore > 0.1 { // Only add randomness for meaningful matches
+		// Use document ID as seed for consistent randomness
+		seed := int64(len(doc.ID)) % 1000
+		randomOffset := (float64(seed%10) - 5) / 100.0 // -0.05 to +0.05
+		finalScore += randomOffset
+
+		// Ensure score stays within bounds
+		if finalScore < 0.0 {
+			finalScore = 0.0
+		}
+		if finalScore > 1.0 {
+			finalScore = 1.0
+		}
+	}
+
+	return finalScore
 }

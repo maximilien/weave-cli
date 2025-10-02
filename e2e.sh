@@ -285,8 +285,29 @@ main() {
         fi
     fi
 
-    # Step 6.5: Compact Schema Tests (before documents are deleted)
-    print_section "Step 6.5: Compact Schema Tests (with documents)"
+    # Step 6.5: Query Tests (before documents are deleted)
+    print_section "Step 6.5: Query Tests (with documents)"
+    
+    # Test basic semantic search
+    run_test "Basic semantic search" "./bin/weave cols q '$TEXT_COLLECTION' 'weave-cli installation' --vector-db-type $VECTOR_DB_TYPE"
+    
+    # Test search with custom result limit
+    run_test "Search with custom result limit" "./bin/weave cols q '$TEXT_COLLECTION' 'machine learning' --top_k 3 --vector-db-type $VECTOR_DB_TYPE"
+    
+    # Test search with metadata flag
+    run_test "Search with metadata flag" "./bin/weave cols q '$TEXT_COLLECTION' 'README' --search-metadata --vector-db-type $VECTOR_DB_TYPE"
+    
+    # Test case insensitive search
+    run_test "Case insensitive search" "./bin/weave cols q '$TEXT_COLLECTION' 'WEAVE-CLI' --vector-db-type $VECTOR_DB_TYPE"
+    
+    # Test BM25 search
+    run_test "BM25 keyword search" "./bin/weave cols q '$TEXT_COLLECTION' 'sample' --bm25 --vector-db-type $VECTOR_DB_TYPE"
+    
+    # Test query help
+    run_test "Query help command" "./bin/weave cols q --help"
+
+    # Step 6.6: Compact Schema Tests (before documents are deleted)
+    print_section "Step 6.6: Compact Schema Tests (with documents)"
 
     # Test compact flag - should show metadata but remove occurrences/samples
     run_test "Export schema with compact flag to YAML" "./bin/weave cols show '$TEXT_COLLECTION' --schema --yaml-file /tmp/${TEXT_COLLECTION}_schema_compact.yaml --compact --vector-db-type $VECTOR_DB_TYPE"

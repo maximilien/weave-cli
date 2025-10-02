@@ -1336,7 +1336,7 @@ func QueryWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, co
 	}
 
 	// Display results
-	DisplayQueryResults(results, collectionName, queryText)
+	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate)
 }
 
 // QueryMockCollection performs semantic search on a mock collection
@@ -1351,5 +1351,5 @@ func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collec
 	}
 
 	// Display results
-	DisplayQueryResults(results, collectionName, queryText)
+	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate)
 }

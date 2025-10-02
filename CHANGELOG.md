@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **🔍 Semantic Search**: New `query` command for semantic search on collections
+  - Uses Weaviate's `nearText` for vector-based similarity search
+  - Automatic fallback to hybrid search with real similarity scores
+  - Beautiful formatted results with relevance scores (0.0 to 1.0)
+- **🔤 BM25 Override**: New `--bm25` flag for keyword-based search
+  - Direct BM25 keyword search instead of semantic search
+  - Real relevance scoring from Weaviate API
+  - Perfect for exact keyword matching
+- **🔍 Metadata Search**: New `--search-metadata` flag
+  - Search in metadata fields in addition to content/text fields
+  - Supports URLs, filenames, domains, and custom metadata
+  - Combined with content search for comprehensive results
+- **📊 Real Scoring**: All search methods provide authentic Weaviate similarity scores
+  - Primary search: nearText provides distance-based similarity scores
+  - Fallback search: hybrid search provides combined vector+keyword scores
+  - BM25 override: direct BM25 keyword search provides relevance scores
 - **WeaveDocs/WeaveImages Schema**: New default schema structure for better
   document management
   - Flat metadata structure for improved performance and simplicity

@@ -436,7 +436,7 @@ func ShowDocumentMetadata(doc weaviate.Document, collectionName string) {
 }
 
 // DisplayQueryResults displays semantic search results with styling
-func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryText string) {
+func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryText string, noTruncate bool) {
 	PrintSuccess(fmt.Sprintf("Semantic search results for '%s' in collection '%s':", queryText, collectionName))
 	fmt.Println()
 
@@ -464,8 +464,13 @@ func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryTe
 			fmt.Printf("   ")
 			PrintStyledKeyProminent("Content")
 			fmt.Printf(": ")
-			// Truncate content for better readability
-			content := SmartTruncate(result.Content, "content", 3)
+			// Truncate content for better readability unless --no-truncate is specified
+			var content string
+			if noTruncate {
+				content = result.Content
+			} else {
+				content = SmartTruncate(result.Content, "content", 3)
+			}
 			PrintStyledValue(content)
 			fmt.Println()
 		}

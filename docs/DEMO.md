@@ -180,37 +180,94 @@ Available Commands:
 
 ---
 
-## Page 6: List Documents
+## Page 7: Semantic Search & Query
 
-### Simple Document List
+### Basic Semantic Search
 ```bash
-./bin/weave docs ls WeaveDocs
+./bin/weave cols q WeaveDocs "weave-cli installation"
 ```
 **Expected Output:**
 ```
-📋 Documents in WeaveDocs:
-  README.md (3 chunks)
-  CHANGELOG.md (5 chunks)
+✅ Semantic search results for 'weave-cli installation' in collection 'WeaveDocs':
+
+1. 🔍 Score: 1.000
+   ID: c937af68-727e-4946-8df5-f26919df7645
+   Content: # Weave CLI v0.2.6
+   
+   A command-line tool for managing Weaviate vector databases...
+   📋 Metadata: {"filename": "README.md", "type": "text"}
+
+📊 Summary: Found 1 results
 ```
 
-### Virtual Document List with Summary
+### Search with Custom Result Limit
 ```bash
-./bin/weave docs ls WeaveDocs -w -S
+./bin/weave cols q WeaveDocs "machine learning" --top_k 3
 ```
 **Expected Output:**
 ```
-📋 Virtual Documents:
-📄 README.md - 3 chunks
-📄 CHANGELOG.md - 5 chunks
+✅ Semantic search results for 'machine learning' in collection 'WeaveDocs':
 
-📋 Summary:
-1. README.md - 3 chunks
-2. CHANGELOG.md - 5 chunks
+1. 🔍 Score: 1.000
+   ID: doc1-chunk1
+   Content: This document covers machine learning algorithms...
+   📋 Metadata: {"filename": "ml_guide.txt", "type": "text"}
+
+📊 Summary: Found 1 results
+```
+
+### Search with Metadata (NEW!)
+```bash
+./bin/weave cols q WeaveDocs "maximilien.org" --search-metadata
+```
+**Expected Output:**
+```
+✅ Semantic search results for 'maximilien.org' in collection 'WeaveDocs':
+
+1. 🔍 Score: 1.000
+   ID: e0b3768f-2cc9-4962-aee2-913a95e5757c
+   Content: [Navigation menu content]
+   📋 Metadata: {"url": "https://maximilien.org", "type": "webpage"}
+
+📊 Summary: Found 1 results
+```
+
+### BM25 Keyword Search (NEW!)
+```bash
+./bin/weave cols q WeaveDocs "exact keywords" --bm25
+```
+**Expected Output:**
+```
+✅ Semantic search results for 'exact keywords' in collection 'WeaveDocs':
+
+1. 🔍 Score: 0.850
+   ID: doc1-chunk1
+   Content: This document contains exact keywords for BM25 search...
+   📋 Metadata: {"filename": "keywords.txt", "type": "text"}
+
+📊 Summary: Found 1 results
+```
+
+### Query Help
+```bash
+./bin/weave cols q --help
+```
+**Expected Output:**
+```
+Perform semantic search on a collection using natural language queries.
+
+Usage:
+  weave collection query COLLECTION "query text" [flags]
+
+Flags:
+  -m, --search-metadata   Also search in metadata fields (default: false)
+  -k, --top_k int         Number of top results to return (default: 5)
+  -d, --distance float    Maximum distance threshold for results
 ```
 
 ---
 
-## Page 7: Delete Documents
+## Page 8: Delete Documents
 
 ### Delete Single Document
 ```bash
@@ -233,7 +290,7 @@ Available Commands:
 
 ---
 
-## Page 8: Cleanup Operations
+## Page 9: Cleanup Operations
 
 ### Delete All Documents
 ```bash
@@ -255,7 +312,7 @@ Available Commands:
 
 ---
 
-## Page 9: Getting Weave CLI
+## Page 10: Getting Weave CLI
 
 ### Download Binary
 ```bash
@@ -281,7 +338,7 @@ Built with ❤️ by [github.com/maximilien](https://github.com/maximilien)
 
 ---
 
-## Page 10: Thank You
+## Page 11: Thank You
 
 ### Demo Complete
 ```bash

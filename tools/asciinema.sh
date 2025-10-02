@@ -187,17 +187,24 @@ run_demo_cmd "./bin/weave cols ls | grep WeaveDocs || echo 'WeaveDocs collection
 run_demo_cmd "./bin/weave docs ls WeaveDocs" "Simple Document List"
 run_demo_cmd "./bin/weave docs ls WeaveDocs -w -S" "Virtual Document View with Summary"
 
-# Page 7: Delete Documents
+# Page 7: Semantic Search & Query
 page_break "7"
+run_demo_cmd "./bin/weave cols q WeaveDocs 'weave-cli installation'" "Basic Semantic Search"
+run_demo_cmd "./bin/weave cols q WeaveDocs 'machine learning' --top_k 3" "Search with Custom Result Limit"
+run_demo_cmd "./bin/weave cols q WeaveDocs 'maximilien.org' --search-metadata" "Search with Metadata (NEW!)"
+run_demo_cmd "./bin/weave cols q --help | head -15" "Query Help"
+
+# Page 8: Delete Documents
+page_break "8"
 run_demo_cmd "./bin/weave docs delete WeaveDocs --name README.md --force" "Delete Document with Force"
 
-# Page 8: Cleanup Operations
-page_break "8"
+# Page 9: Cleanup Operations
+page_break "9"
 run_demo_cmd "./bin/weave docs delete-all WeaveDocs --force" "Delete All Documents"
 run_demo_cmd "./bin/weave cols delete-schema WeaveDocs --force" "Delete Collection Schema"
 
-# Page 9: Getting Weave CLI
-page_break "9"
+# Page 10: Getting Weave CLI
+page_break "10"
 echo -e "${BLUE}💻 Getting Weave CLI${NC}"
 echo -e "${YELLOW}# Download from GitHub releases${NC}"
 echo -e "${YELLOW}# Build from source: git clone && ./build.sh${NC}"
@@ -205,8 +212,8 @@ echo -e "${YELLOW}# MIT License - Free for commercial use${NC}"
 echo -e "${YELLOW}# Built with ❤️ by github.com/maximilien${NC}"
 echo ""
 
-# Page 10: Thank You
-page_break "10"
+# Page 11: Thank You
+page_break "11"
 run_demo_cmd "echo '🎉 Demo completed successfully!'" "Demo Complete"
 run_demo_cmd "./bin/weave --version" "Version Information"
 
@@ -331,6 +338,27 @@ echo -e "${BLUE}💻 List Documents${NC}"
 echo -e "${YELLOW}$ ./bin/weave docs ls DemoCollection${NC}"
 sleep 1
 ./bin/weave docs ls DemoCollection
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Semantic Search${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols q DemoCollection 'sample document'${NC}"
+sleep 1
+./bin/weave cols q DemoCollection "sample document"
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Search with Metadata${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols q DemoCollection 'README' --search-metadata${NC}"
+sleep 1
+./bin/weave cols q DemoCollection "README" --search-metadata
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 BM25 Keyword Search${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols q DemoCollection 'sample' --bm25${NC}"
+sleep 1
+./bin/weave cols q DemoCollection "sample" --bm25
 echo ""
 sleep 2
 

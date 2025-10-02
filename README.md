@@ -355,9 +355,14 @@ weave collection q MyCollection "computer vision"
 
 - **🔍 Semantic Search**: Uses Weaviate's `nearText` for vector-based similarity
   search
-- **🎯 Smart Fallback**: Automatically falls back to text search if semantic
+- **🎯 Smart Fallback**: Automatically falls back to hybrid search if semantic
   search isn't supported
-- **📊 Relevance Scoring**: Results include similarity scores (0.0 to 1.0)
+- **🔤 BM25 Override**: Use `--bm25` flag for keyword-based search instead of
+  semantic search
+- **📊 Real Scoring**: All search methods provide authentic Weaviate similarity
+  scores (0.0 to 1.0)
+- **🔍 Metadata Search**: Use `--search-metadata` flag to search in metadata
+  fields
 - **⚡ Configurable Limits**: Control number of results with `--top_k` flag
   (default: 5)
 - **🎨 Beautiful Display**: Formatted results with emojis and clear structure
@@ -377,6 +382,15 @@ weave cols q WeaveDocs "artificial intelligence" --top_k 3
 # Case insensitive search
 weave cols q WeaveDocs "MACHINE LEARNING"
 weave cols q WeaveDocs "Artificial Intelligence"
+
+# Search with metadata fields
+weave cols q WeaveDocs "maximilien.org" --search-metadata
+
+# Use BM25 keyword search
+weave cols q WeaveDocs "exact keywords" --bm25
+
+# Combine metadata search with BM25
+weave cols q WeaveDocs "search term" --search-metadata --bm25
 ```
 
 **Query Results Format:**
