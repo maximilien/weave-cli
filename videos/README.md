@@ -6,6 +6,7 @@ This directory contains asciinema recordings of Weave CLI demonstrations.
 
 - `weave-cli-full-demo.cast` - Complete 5-minute demo showcasing all features
 - `weave-cli-quick-demo.cast` - Quick 2-minute demo for rapid overview
+- `latest-demo-uploads.txt` - **Latest uploaded demo URLs** (automatically updated)
 
 ## Creating Recordings
 
@@ -21,8 +22,11 @@ Use the asciinema recording tool:
 # List available recordings
 ./tools/asciinema.sh list
 
-# Upload to asciinema.org
+# Upload to asciinema.org (saves URL to latest-demo-uploads.txt)
 ./tools/asciinema.sh upload
+
+# View latest uploaded demo URLs
+cat videos/latest-demo-uploads.txt
 ```
 
 ## Prerequisites
@@ -73,8 +77,13 @@ The demo follows the script in `docs/DEMO.md` with 10 pages:
 
 ## Sharing
 
-Once uploaded to asciinema.org, you'll get a shareable URL like:
-`https://asciinema.org/a/abc123`
+Once uploaded to asciinema.org, the URL is automatically saved to
+`latest-demo-uploads.txt` and displayed in the terminal.
+
+**Latest Demo URLs**: Check `videos/latest-demo-uploads.txt` for the most
+recent upload links.
+
+Shareable URLs look like: `https://asciinema.org/a/abc123`
 
 Perfect for:
 
@@ -83,3 +92,12 @@ Perfect for:
 - Social media
 - GitHub README
 - Project showcases
+
+## Latest Uploads
+
+The `latest-demo-uploads.txt` file maintains:
+
+- Latest URL for quick demo
+- Latest URL for full demo
+- Upload timestamps and filenames
+- Automatically updated on each upload

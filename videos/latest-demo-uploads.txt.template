@@ -1,0 +1,14 @@
+# Weave CLI Demo Uploads
+# Latest uploads for quick and full demos
+
+# This file is automatically updated when you upload demos using:
+# ./tools/asciinema.sh upload
+
+# Usage:
+#   1. Record a demo: ./tools/asciinema.sh quick (or demo)
+#   2. Upload the demo: ./tools/asciinema.sh upload
+#   3. The URL will be saved here automatically
+
+# Latest Demo URLs:
+quick: (not yet uploaded - run: ./tools/asciinema.sh quick && ./tools/asciinema.sh upload)
+full: (not yet uploaded - run: ./tools/asciinema.sh demo && ./tools/asciinema.sh upload)

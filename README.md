@@ -16,10 +16,11 @@ applications.
 
 ## ⚠️ Known Limitations
 
-**Weaviate Instance Requirements**: Some Weaviate instances may not support advanced search features:
+**Weaviate Instance Requirements**: Some Weaviate instances may not support
+advanced search features:
 
 - `nearText` semantic search requires vector search modules
-- `bm25` keyword search requires BM25 module installation  
+- `bm25` keyword search requires BM25 module installation
 - `hybrid` search requires hybrid search module
 - Fallback to simple text search works but may have accuracy limitations
 - **Use `--vector-db-type mock` for full functionality testing**
@@ -54,16 +55,23 @@ For more details, see [WEAVIATE_INTEGRATION_STATUS.md](WEAVIATE_INTEGRATION_STAT
 
 Watch Weave CLI in action with our interactive demos:
 
-- **📹 Full Demo** (5 minutes): Complete feature showcase
-- **⚡ Quick Demo** (2 minutes): Rapid overview
+- **📹 [Full Demo](https://asciinema.org/a/bgBFlzxYlX4rgbMkIV90qm217)** (5 minutes): Complete feature showcase
+- **⚡ [Quick Demo](https://asciinema.org/a/NlMxEJmJbXudj787MCYQAbw8g)** (2 minutes): Rapid overview
+
+**Latest Demo URLs** are automatically saved to `videos/latest-demo-uploads.txt`
+after each upload. Check that file for the most current demo links.
 
 ```bash
 # Record your own demo
-./tools/asciinema.sh demo
+./tools/asciinema.sh demo      # Record full demo
+./tools/asciinema.sh quick     # Record quick demo
 
-# Upload to asciinema.org for sharing
+# Upload to asciinema.org (saves URL to videos/latest-demo-uploads.txt)
 ./tools/asciinema.sh upload
-```
+
+# View latest demo URLs
+cat videos/latest-demo-uploads.txt
+```text
 
 See `docs/DEMO.md` for the complete demo script and `videos/README.md` for
 recording details.
@@ -71,7 +79,7 @@ recording details.
 ## Features
 
 - 🌐 **Weaviate Cloud Support** - Connect to Weaviate Cloud instances
-- 🏠 **Weaviate Local Support** - Connect to local Weaviate instances  
+- 🏠 **Weaviate Local Support** - Connect to local Weaviate instances
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, create, view, and delete collections
 - 📄 **Document Management** - List, show, and delete individual documents
@@ -99,7 +107,7 @@ cd weave-cli
 ./build.sh
 
 # The binary will be available at bin/weave
-```
+```text
 
 ### Configuration
 
@@ -110,7 +118,7 @@ cd weave-cli
    cp .env.example .env
    ```
 
-2. **Configure your environment**:
+1. **Configure your environment**:
 
    Edit `.env` with your values:
 
@@ -120,7 +128,7 @@ cd weave-cli
    WEAVIATE_URL="https://your-cluster.weaviate.cloud"
    WEAVIATE_API_KEY="your-api-key"
    OPENAI_API_KEY="sk-proj-your-openai-key"
-   
+
    # Optional collection names
    WEAVIATE_COLLECTION="MyCollection"
    WEAVIATE_COLLECTION_IMAGES="MyImages"
@@ -138,13 +146,13 @@ cd weave-cli
 
    **Priority order**: Command flags > `--env` file > `.env` file > Shell environment
 
-3. **Test your connection**:
+1. **Test your connection**:
 
    ```bash
    ./bin/weave health check
    ```
 
-4. **List your collections**:
+1. **List your collections**:
 
    ```bash
    ./bin/weave collection list
@@ -206,7 +214,7 @@ weave cols q MyCollection "neural networks" --top_k 3
 
 # Query with custom result limit
 weave collection query MyCollection "artificial intelligence" --top_k 10
-```
+```text
 
 ### Destructive Operations
 
@@ -222,7 +230,7 @@ weave collection delete-schema MyCollection
 # Skip confirmations with --force flag
 weave docs delete-all MyCollection --force
 weave collection delete-schema MyCollection --force
-```
+```text
 
 **Safety Features:**
 
@@ -254,7 +262,7 @@ OPENAI_API_KEY="sk-proj-your-openai-api-key"  # Required for embeddings
 WEAVIATE_COLLECTION="MyCollection"
 WEAVIATE_COLLECTION_IMAGES="MyImages"
 WEAVIATE_COLLECTION_TEST="MyCollection_test"
-```
+```text
 
 ### Command-Line Overrides
 
@@ -272,7 +280,7 @@ weave --vector-db-type weaviate-cloud \
 
 # Use custom config and env files
 weave --config /path/to/config.yaml --env /path/to/.env collection list
-```
+```text
 
 **Priority Order** (highest to lowest):
 
@@ -301,7 +309,7 @@ databases:
         - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
           type: image
           description: Image documents collection
-```
+```text
 
 ### Database Types
 
@@ -336,7 +344,7 @@ nano config.yaml
 
 # Test configuration
 ./bin/weave health check
-```
+```text
 
 ### Security Notes
 
@@ -361,7 +369,7 @@ weave cols q MyCollection "deep learning" --top_k 3
 # Using aliases
 weave cols q MyCollection "data science"
 weave collection q MyCollection "computer vision"
-```
+```text
 
 **Query Features:**
 
@@ -371,14 +379,22 @@ weave collection q MyCollection "computer vision"
   search isn't supported
 - **🔤 BM25 Override**: Use `--bm25` flag for keyword-based search instead of
   semantic search
-- **📊 Real Scoring**: All search methods provide authentic Weaviate similarity
-  scores (0.0 to 1.0)
+- **📊 Normalized Scoring**: Scores are normalized using a quadratic function to
+  spread results across a wider range, making low-relevance results clearly
+  distinguishable (< 0.3) from good matches (0.5-0.7) and strong matches (> 0.7)
 - **🔍 Metadata Search**: Use `--search-metadata` flag to search in metadata
   fields
 - **⚡ Configurable Limits**: Control number of results with `--top_k` flag
   (default: 5)
 - **🎨 Beautiful Display**: Formatted results with emojis and clear structure
 - **🔄 Cross-Database**: Works with Weaviate Cloud, Local, and Mock databases
+
+**Score Interpretation:**
+
+- **< 0.3**: No good matches found (try rephrasing your query)
+- **0.3-0.5**: Weak/marginal semantic relevance
+- **0.5-0.7**: Good semantic relevance to your query
+- **> 0.7**: Strong semantic relevance to your query
 
 **Query Examples:**
 
@@ -403,7 +419,7 @@ weave cols q WeaveDocs "exact keywords" --bm25
 
 # Combine metadata search with BM25
 weave cols q WeaveDocs "search term" --search-metadata --bm25
-```
+```text
 
 **Query Results Format:**
 
@@ -415,19 +431,19 @@ $ weave cols q WeaveDocs "weave-cli"
 1. 🔍 Score: 1.000
    ID: c937af68-727e-4946-8df5-f26919df7645
    Content: # Weave CLI v0.2.6
-   
+
    A command-line tool for managing Weaviate vector databases...
    📋 Metadata: {"filename": "README.md", "type": "text"}
 
 2. 🔍 Score: 0.800
    ID: a0665b61-1558-4ac3-9b26-ecbf755e92b6
    Content: # Installation Guide
-   
+
    Download and setup instructions for Weave CLI...
    📋 Metadata: {"filename": "INSTALL.md", "type": "text"}
 
 📊 Summary: Found 2 results
-```
+```text
 
 ## Collection Management
 
@@ -449,7 +465,7 @@ weave collection create MyCollection --embedding text-embedding-ada-002 --field 
 # Using aliases
 weave cols c MyCollection
 weave cols create MyCollection --field title:text,author:text
-```
+```text
 
 ## Collection Creation
 
@@ -462,7 +478,7 @@ weave collection create MyTextCollection                    # Default: text sche
 weave collection create MyTextCollection --text             # Explicit: text schema
 weave collection create MyTextCollection --text --embedding text-embedding-3-small
 
-# Create image collections (RagMeImages schema)  
+# Create image collections (RagMeImages schema)
 weave collection create MyImageCollection --image
 weave collection create MyImageCollection --image --field title:text,content:text
 
@@ -472,7 +488,7 @@ weave collection create Col1 Col2 Col3                      # Default: text
 # Using aliases
 weave cols c MyTextCollection                               # Default: text schema
 weave cols c MyImageCollection --image                      # Explicit: image schema
-```
+```text
 
 **Schema Types:**
 
@@ -497,7 +513,7 @@ weave docs create MyTextCollection document.pdf --image-collection MyImageCollec
 # Using aliases
 weave docs c MyTextCollection document.txt
 weave docs c MyImageCollection image.jpg
-```
+```text
 
 **Supported Field Types:**
 
@@ -527,7 +543,7 @@ weave document delete MyCollection --pattern ".*\.(png|jpg|gif)$"
 # Using aliases
 weave docs d MyCollection --pattern "*.png"
 weave docs d MyCollection --pattern "temp.*\.pdf"
-```
+```text
 
 **Pattern Types:**
 
@@ -557,7 +573,7 @@ weave docs d MyCollection --pattern "*.jpg"
 # Skip confirmation with --force flag
 weave cols d Col1 Col2 Col3 --force
 weave docs d MyCollection doc1 doc2 doc3 --force
-```
+```text
 
 **Safety Features:**
 
@@ -578,7 +594,7 @@ Weave follows a consistent command pattern:
 - **config** - Configuration management
   - `weave config show` - Show current configuration
 
-- **health** - Health and connectivity management  
+- **health** - Health and connectivity management
   - `weave health check` - Check database health
 
 - **collection** - Collection management
@@ -618,11 +634,11 @@ weave cols d Col1 Col2  # Same as: weave collection delete Col1 Col2
 weave cols ds MyCol     # Same as: weave collection delete-schema MyCol
 weave cols ds Col1 Col2 Col3  # Delete multiple collection schemas at once
 
-# Document commands  
+# Document commands
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
 weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
-```
+```text
 
 ## New Features
 
@@ -640,7 +656,7 @@ weave collection create MyCol1 MyCol2 --embedding text-embedding-3-large
 
 # With custom fields
 weave collection create DataCol1 DataCol2 --field title:text,author:text,tags:text
-```
+```text
 
 ### Collection Schema Management
 
@@ -657,7 +673,7 @@ weave cols ds Col1 Col2 Col3 --force
 
 # Then recreate with new schema
 weave collection create WeaveDocs
-```
+```text
 
 **Note**: `delete-schema` removes the collection entirely, while `delete` only
 clears documents.
@@ -683,10 +699,10 @@ $ weave document list MyCollection
 
 1. 📄 ID: doc1-chunk1
    Content: This is the first chunk of a document about machine learning...
-   📋 Metadata: 
+   📋 Metadata:
      metadata: {"original_filename": "ml_guide.pdf", "is_chunked": true...}
      author: Test Author
-```
+```text
 
 ### Virtual Document View
 
@@ -703,30 +719,30 @@ documents):
 1. 📄 Document: research_paper.pdf
    📝 Chunks: 3/3
    🖼️ Images: 2
-   📋 Metadata: 
+   📋 Metadata:
      original_filename: research_paper.pdf
-   📝 Chunk Details: 
+   📝 Chunk Details:
      1. ID: chunk-1
         Content: Introduction to machine learning concepts...
-     2. ID: chunk-2  
+     2. ID: chunk-2
         Content: Deep learning architectures and applications...
      3. ID: chunk-3
         Content: Conclusion and future work...
-   🗂️ Stack Details: 
+   🗂️ Stack Details:
      1. ID: image-1 (from page 2)
      2. ID: image-2 (from page 5)
 
 2. 📄 Document: presentation.pptx
    🖼️ Images: 5
-   📋 Metadata: 
+   📋 Metadata:
      original_filename: presentation.pptx
-   🗂️ Stack Details: 
+   🗂️ Stack Details:
      1. ID: slide-1-image
      2. ID: slide-3-chart
      3. ID: slide-5-diagram
      4. ID: slide-7-graph
      5. ID: slide-9-logo
-```
+```text
 
 **Key Features:**
 
@@ -792,7 +808,7 @@ features, and usage examples.
 
 # Run linter
 ./lint.sh
-```
+```text
 
 ### Project Structure
 
@@ -819,7 +835,7 @@ weave-cli/
 ├── tests/                 # Test files
 ├── bin/                   # Built binaries
 └── README.md             # This file
-```
+```text
 
 **Code Organization:**
 

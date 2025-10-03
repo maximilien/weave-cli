@@ -58,3 +58,7 @@ TODOs.md
 # Test artifacts
 test-results/
 playwright-report/
+
+# Demo recordings (keep README and template, ignore actual recordings and URLs)
+videos/*.cast
+videos/latest-demo-uploads.txt

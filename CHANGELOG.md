@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.8] - 2025-10-03
+
+### Added
+
+- **📊 Score Normalization**: Implemented quadratic score normalization for
+  better result differentiation
+  - Low-relevance results (raw score 0.5) now display as 0.25, clearly
+    indicating poor matches
+  - High-relevance results (raw score 0.7+) preserved at higher normalized values
+  - Makes it much easier to distinguish irrelevant results from good matches
+  - Uses `score^2` transformation to amplify score differences
+- **⚠️ Smart Result Warnings**: Automatic detection and warning for low-quality results
+  - Displays warning when all results have scores < 0.3
+  - Suggests rephrasing query for better results
+  - Provides clear score interpretation guidance
+- **📖 Enhanced Documentation**: Updated help text and README with score interpretation
+  - Clear score ranges: < 0.3 (no match), 0.3-0.5 (weak), 0.5-0.7 (good), > 0.7 (strong)
+  - Help text includes score interpretation guidelines
+  - README documents the normalization approach
+- **🎬 Demo Upload Tracking**: Asciinema upload script now saves URLs automatically
+  - Upload URLs saved to `videos/latest-demo-uploads.txt`
+  - Maintains latest URLs for both quick and full demos
+  - Includes timestamps and upload history
+  - README updated to reference latest demo URLs
+
+### Changed
+
+- **Score Display**: All scores now use normalized values for clearer interpretation
+- **User Guidance**: Enhanced output messages to help users understand query results
+
 ## [0.2.7] - 2025-10-02
 
 ### Added
@@ -38,8 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Enhanced Query Display**: Improved result formatting with emojis and clear structure
-- **Improved Mock Scoring**: More realistic scoring algorithm with content/metadata differentiation
+- **Enhanced Query Display**: Improved result formatting with emojis and
+  clear structure
+- **Improved Mock Scoring**: More realistic scoring algorithm with
+  content/metadata differentiation
 - **Updated Documentation**: Complete README, CHANGELOG, and demo updates
 
 ### Fixed
@@ -50,9 +82,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Limitations
 
-⚠️ **Weaviate Instance Requirements**: Some Weaviate instances may not support advanced search features:
+⚠️ **Weaviate Instance Requirements**: Some Weaviate instances may not
+support advanced search features:
+
 - `nearText` semantic search requires vector search modules
-- `bm25` keyword search requires BM25 module installation  
+- `bm25` keyword search requires BM25 module installation
 - `hybrid` search requires hybrid search module
 - Fallback to simple text search works but may have accuracy limitations
 - Use `--vector-db-type mock` for full functionality testing
@@ -74,7 +108,7 @@ weave cols q MyCollection "search term" --search-metadata --bm25
 
 # Show full content without truncation
 weave cols q MyCollection "query" --no-truncate
-```
+```text
 
 ## [0.2.6] - 2025-10-01
 
@@ -175,7 +209,7 @@ weave collection create MyCol --schema-yaml-file schema.yaml
 
 # Traditional method still works
 weave collection create MyCol
-```
+```text
 
 ## [0.2.2] - 2025-09-29
 

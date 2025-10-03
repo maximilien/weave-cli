@@ -24,6 +24,13 @@ var QueryCmd = &cobra.Command{
 This command uses Weaviate's vector search capabilities to find the most relevant
 documents based on semantic similarity to your query text.
 
+Score Interpretation:
+  Scores are normalized to spread results across a wider range:
+  - < 0.3: No good matches found (try rephrasing your query)
+  - 0.3-0.5: Weak/marginal relevance
+  - 0.5-0.7: Good semantic relevance
+  - > 0.7: Strong semantic relevance
+
 Examples:
   weave cols query MyDocs "machine learning algorithms"
   weave cols q MyDocs "artificial intelligence" --top_k 10

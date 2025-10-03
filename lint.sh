@@ -165,10 +165,19 @@ fi
 echo "📝 Checking Markdown files..."
 if find . -name "*.md" -not -path "./src/vendor/*" -not -path "./node_modules/*" -not -path "./docs/*" | grep -q .; then
     if command_exists markdownlint; then
+        # Run auto-fix script first
+        if [ -f "./tools/fix_markdown_lint.sh" ]; then
+            print_status "Running markdown auto-fixes..."
+            ./tools/fix_markdown_lint.sh > /dev/null 2>&1
+        fi
+
         if npx markdownlint "**/*.md" --ignore node_modules --ignore src/vendor --ignore docs; then
             print_success "Markdown linting passed!"
         else
             print_warning "Markdown linting issues found"
+            print_status "Some issues require manual fixes (line length, list numbering, etc.)"
+            # Don't fail the entire lint process for markdown warnings
+            true
         fi
     else
         print_warning "markdownlint not found, skipping Markdown linting"
@@ -183,7 +192,8 @@ echo "🐚 Checking shell scripts..."
 if find . -name "*.sh" | grep -q .; then
     if command_exists shellcheck; then
         find . -name "*.sh" -print0 | while IFS= read -r -d '' sh_file; do
-            if shellcheck "$sh_file"; then
+            # Ignore info-level warnings (SC2016, etc) - only fail on warnings and errors
+            if shellcheck -S warning "$sh_file"; then
                 print_success "Shell script $sh_file passed!"
             else
                 print_error "Shell script $sh_file has issues"

@@ -508,4 +508,31 @@ func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryTe
 	PrintStyledKeyProminent("Summary")
 	fmt.Printf(": Found %d results", len(results))
 	fmt.Println()
+
+	// Check if all results have low scores (< 0.3 after normalization)
+	allLowScores := true
+	for _, result := range results {
+		if result.Score >= 0.3 {
+			allLowScores = false
+			break
+		}
+	}
+
+	// Show score interpretation guidance
+	fmt.Println()
+	if allLowScores {
+		PrintStyledEmoji("⚠️")
+		fmt.Printf("  ")
+		PrintWarning("All results have low scores (< 0.3) - no good matches found for your query")
+		fmt.Println()
+		PrintStyledEmoji("💡")
+		fmt.Printf("  ")
+		PrintStyledValueDimmed("Try rephrasing your query or use different keywords")
+		fmt.Println()
+	} else {
+		PrintStyledEmoji("ℹ️")
+		fmt.Printf("  ")
+		PrintStyledValueDimmed("Score interpretation: < 0.3 = no match, 0.3-0.5 = weak, 0.5-0.7 = good, > 0.7 = strong")
+		fmt.Println()
+	}
 }

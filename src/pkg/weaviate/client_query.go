@@ -6,6 +6,7 @@ package weaviate
 import (
 	"context"
 	"fmt"
+	"math"
 	"reflect"
 	"strings"
 	"time"
@@ -26,6 +27,29 @@ type QueryOptions struct {
 	SearchMetadata bool    `json:"search_metadata"`
 	NoTruncate     bool    `json:"no_truncate"`
 	UseBM25        bool    `json:"use_bm25"`
+}
+
+// normalizeScore applies a non-linear transformation to spread scores across a wider range.
+// This makes low-relevance results (0.5) appear much lower (0.25) while keeping
+// high-relevance results (0.7+) relatively high.
+//
+// The transformation uses a power function: score^2 which:
+// - Maps 0.5 → 0.25 (low, indicates marginal match)
+// - Maps 0.6 → 0.36 (moderate match)
+// - Maps 0.65 → 0.42 (good match)
+// - Maps 0.7 → 0.49 (good relevance)
+// - Maps 0.8 → 0.64 (strong relevance)
+// - Maps 0.9 → 0.81 (very strong relevance)
+// - Maps 1.0 → 1.0 (perfect match)
+func normalizeScore(rawScore float64) float64 {
+	if rawScore < 0 {
+		return 0
+	}
+	if rawScore > 1 {
+		return 1
+	}
+	// Use quadratic function to amplify differences
+	return math.Pow(rawScore, 2.0)
 }
 
 // Query performs semantic search on a collection using nearText
@@ -70,20 +94,21 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		return c.queryWithBM25(ctx, collectionName, queryText, options, contentField)
 	}
 
-	// Build the GraphQL query for semantic search
-	// Try nearText first, fall back to simple search if not supported
+	// Build the GraphQL query for semantic search using nearText
+	// This uses the vectorizer configured for the collection (e.g., text2vec-openai)
 	query := fmt.Sprintf(`
 		{
 			Get {
 				%s(
 					nearText: {
 						concepts: ["%s"]
-						limit: %d
 					}
+					limit: %d
 				) {
 					_additional {
 						id
 						distance
+						certainty
 					}
 					%s
 					metadata
@@ -154,6 +179,17 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 	// Escape query text for GraphQL
 	queryTextEscaped := strings.ReplaceAll(queryText, `"`, `\"`)
 
+	// Build properties list for BM25 query
+	propertiesList := ""
+	if len(queryFields) > 0 {
+		// Quote each field name properly
+		quotedFields := make([]string, len(queryFields))
+		for i, field := range queryFields {
+			quotedFields[i] = `"` + field + `"`
+		}
+		propertiesList = fmt.Sprintf(`properties: [%s]`, strings.Join(quotedFields, ", "))
+	}
+
 	// Build the GraphQL query using BM25 for real similarity scores
 	query := fmt.Sprintf(`
 		{
@@ -161,19 +197,20 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 				%s(
 					bm25: {
 						query: "%s"
-						properties: [%s]
-						limit: %d
+						%s
 					}
+					limit: %d
 				) {
 					_additional {
 						id
 						score
+						explainScore
 					}
 					%s
 					metadata
 				}
 			}
-		}`, collectionName, queryTextEscaped, strings.Join(queryFields, ","), options.TopK, contentField)
+		}`, collectionName, queryTextEscaped, propertiesList, options.TopK, contentField)
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
@@ -354,19 +391,34 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 		// Extract ID
 		id, _ := additional["id"].(string)
 
-		// Extract similarity score (handle both distance and score fields)
-		var score float64
-		if distance, exists := additional["distance"]; exists {
-			// nearText provides distance, convert to similarity score
+		// Extract similarity score (handle distance, certainty, and score fields)
+		var rawScore float64
+		if certainty, exists := additional["certainty"]; exists {
+			// nearText can provide certainty (0.0 to 1.0, higher is better)
+			if cert, ok := certainty.(float64); ok {
+				rawScore = cert
+			}
+		} else if distance, exists := additional["distance"]; exists {
+			// nearText can also provide distance (lower is better, convert to score)
 			if dist, ok := distance.(float64); ok {
-				score = 1.0 - dist
+				// Convert distance to similarity score (assuming cosine distance 0-2 range)
+				rawScore = 1.0 - (dist / 2.0)
+				if rawScore < 0 {
+					rawScore = 0
+				}
 			}
 		} else if scoreVal, exists := additional["score"]; exists {
 			// BM25/hybrid provides score directly
 			if s, ok := scoreVal.(float64); ok {
-				score = s
+				rawScore = s
 			}
+		} else {
+			// No score available, default to 0.5
+			rawScore = 0.5
 		}
+
+		// Apply score normalization to spread scores across wider range
+		score := normalizeScore(rawScore)
 
 		// Extract content
 		content, _ := resultItem[contentField].(string)
@@ -473,25 +525,27 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 	queryTextEscaped := strings.ReplaceAll(queryText, `"`, `\"`)
 
 	// Build the GraphQL query using hybrid search for real similarity scores
+	// Hybrid search combines vector search with keyword search
 	query := fmt.Sprintf(`
 		{
 			Get {
 				%s(
 					hybrid: {
 						query: "%s"
-						properties: [%s]
-						limit: %d
+						alpha: 0.75
 					}
+					limit: %d
 				) {
 					_additional {
 						id
 						score
+						explainScore
 					}
 					%s
 					metadata
 				}
 			}
-		}`, collectionName, queryTextEscaped, strings.Join(queryFields, ","), options.TopK, contentField)
+		}`, collectionName, queryTextEscaped, options.TopK, contentField)
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {

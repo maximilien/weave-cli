@@ -394,18 +394,18 @@ EOF
 # Function to upload recording
 upload_recording() {
     local file_to_upload="$1"
-    
+
     # If no file specified, find the latest recording
     if [ -z "$file_to_upload" ]; then
         # Use macOS-compatible approach to find latest .cast file
         # Find the most recent .cast file (macOS compatible)
         file_to_upload=$(find videos -name "*.cast" -type f -exec stat -f "%m %N" {} \; 2>/dev/null | sort -nr | head -1 | cut -d' ' -f2-)
-        
+
         if [ -z "$file_to_upload" ]; then
             print_error "No recordings found in videos/ directory"
             return 1
         fi
-        
+
         print_header "Uploading latest recording: $file_to_upload"
     else
         # Check if the specified file exists
@@ -413,15 +413,84 @@ upload_recording() {
             print_error "File not found: $file_to_upload"
             return 1
         fi
-        
+
         print_header "Uploading specified recording: $file_to_upload"
     fi
-    
+
     if ! check_asciinema; then
         return 1
     fi
-    
-    asciinema upload "$file_to_upload"
+
+    # Create videos directory if it doesn't exist
+    mkdir -p videos
+
+    # Upload and capture the URL
+    print_header "Uploading to asciinema.org..."
+    local upload_output
+    upload_output=$(asciinema upload "$file_to_upload" 2>&1)
+    local upload_status=$?
+
+    # Display the upload output
+    echo "$upload_output"
+
+    if [ $upload_status -eq 0 ]; then
+        # Extract the URL from the output
+        local upload_url
+        upload_url=$(echo "$upload_output" | grep -o 'https://asciinema.org/a/[^[:space:]]*')
+
+        if [ -n "$upload_url" ]; then
+            # Determine the demo type from filename
+            local demo_type="unknown"
+            if [[ "$file_to_upload" == *"quick"* ]]; then
+                demo_type="quick"
+            elif [[ "$file_to_upload" == *"full"* ]]; then
+                demo_type="full"
+            fi
+
+            # Save to latest-demo-uploads.txt
+            local upload_file="videos/latest-demo-uploads.txt"
+            local template_file="videos/latest-demo-uploads.txt.template"
+            local timestamp
+            timestamp=$(date "+%Y-%m-%d %H:%M:%S")
+
+            # Create from template if it doesn't exist
+            if [ ! -f "$upload_file" ]; then
+                if [ -f "$template_file" ]; then
+                    cp "$template_file" "$upload_file"
+                else
+                    echo "# Weave CLI Demo Uploads" > "$upload_file"
+                    echo "# Latest uploads for quick and full demos" >> "$upload_file"
+                    echo "" >> "$upload_file"
+                fi
+            fi
+
+            # Update or add the entry for this demo type
+            if grep -q "^${demo_type}:" "$upload_file" 2>/dev/null; then
+                # Update existing entry (macOS compatible)
+                if [[ "$OSTYPE" == "darwin"* ]]; then
+                    sed -i '' "s|^${demo_type}:.*|${demo_type}: ${upload_url}|" "$upload_file"
+                else
+                    sed -i "s|^${demo_type}:.*|${demo_type}: ${upload_url}|" "$upload_file"
+                fi
+            else
+                # Add new entry
+                echo "${demo_type}: ${upload_url}" >> "$upload_file"
+            fi
+
+            # Also add a timestamped entry
+            echo "" >> "$upload_file"
+            echo "# Upload on ${timestamp}" >> "$upload_file"
+            echo "# File: ${file_to_upload}" >> "$upload_file"
+            echo "# URL: ${upload_url}" >> "$upload_file"
+
+            print_success "Upload URL saved to: $upload_file"
+            print_success "Demo type: $demo_type"
+            print_success "URL: $upload_url"
+        fi
+    else
+        print_error "Upload failed"
+        return 1
+    fi
 }
 
 # Function to list recordings
