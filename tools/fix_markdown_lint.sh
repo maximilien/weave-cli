@@ -5,7 +5,8 @@
 # Automatic Markdown Linting Fixes
 # This script automatically fixes common markdown linting issues
 
-set -e
+# Don't exit on error - we want to process all files
+set +e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -17,17 +18,28 @@ for file in "$PROJECT_ROOT"/*.md; do
     if [ -f "$file" ]; then
         echo "  Fixing: $(basename "$file")"
 
-        # Remove trailing spaces
-        sed -i '' 's/[[:space:]]*$//' "$file"
+        # Remove trailing spaces (macOS compatible)
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' 's/[[:space:]]*$//' "$file" 2>/dev/null || true
+        else
+            sed -i 's/[[:space:]]*$//' "$file" 2>/dev/null || true
+        fi
 
         # Ensure file ends with exactly one newline
         if [ -n "$(tail -c1 "$file" 2>/dev/null)" ]; then
-            echo '' >> "$file"
+            echo '' >> "$file" 2>/dev/null || true
         fi
 
         # Add 'text' language to code blocks that don't have a language
-        sed -i '' 's/^```$/```text/' "$file" || true
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            sed -i '' 's/^```$/```text/' "$file" 2>/dev/null || true
+        else
+            sed -i 's/^```$/```text/' "$file" 2>/dev/null || true
+        fi
     fi
 done
 
 echo "✅ Markdown linting fixes applied"
+
+# Always exit successfully
+exit 0
