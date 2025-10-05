@@ -437,26 +437,6 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 	return queryResults, nil
 }
 
-// getDataField extracts the Data field from a GraphQLResponse using reflection
-func getDataField(result interface{}) map[string]interface{} {
-	// Use reflection to access the Data field
-	v := reflect.ValueOf(result)
-	if v.Kind() == reflect.Ptr {
-		v = v.Elem()
-	}
-
-	dataField := v.FieldByName("Data")
-	if !dataField.IsValid() || dataField.IsNil() {
-		return nil
-	}
-
-	if data, ok := dataField.Interface().(map[string]interface{}); ok {
-		return data
-	}
-
-	return nil
-}
-
 // hasGraphQLErrors checks if the GraphQL response contains errors
 func hasGraphQLErrors(result interface{}) bool {
 	if result == nil {

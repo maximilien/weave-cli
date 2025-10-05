@@ -60,7 +60,7 @@ func normalizeScore(rawScore float64) float64 {
     }
     return math.Pow(rawScore, 2.0)
 }
-```
+```text
 
 **Benefits**:
 - Makes low-relevance results (0.5) appear much lower (0.25)
@@ -81,7 +81,7 @@ func normalizeScore(rawScore float64) float64 {
 
 ```bash
 ./bin/weave cols query --help
-```
+```text
 
 Shows clear score interpretation:
 - Score ranges explained
@@ -144,7 +144,7 @@ $ ./bin/weave cols q WeaveDocs "star wars" -k 3
 
 ⚠️  All results have low scores (< 0.3) - no good matches found for your query
 💡  Try rephrasing your query or use different keywords
-```
+```text
 
 ```bash
 # Good-relevance query (shows interpretation)
@@ -156,7 +156,7 @@ $ ./bin/weave cols q WeaveDocs "collection management" -k 3
    ...
 
 ℹ️  Score interpretation: < 0.3 = no match, 0.3-0.5 = weak, 0.5-0.7 = good, > 0.7 = strong
-```
+```text
 
 ### Demo Upload Workflow
 
@@ -169,7 +169,7 @@ $ ./bin/weave cols q WeaveDocs "collection management" -k 3
 
 # View latest URLs
 cat videos/latest-demo-uploads.txt
-```
+```text
 
 ## 🚀 Deployment Ready
 

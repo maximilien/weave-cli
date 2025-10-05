@@ -55,8 +55,10 @@ For more details, see [WEAVIATE_INTEGRATION_STATUS.md](WEAVIATE_INTEGRATION_STAT
 
 Watch Weave CLI in action with our interactive demos:
 
-- **📹 [Full Demo](https://asciinema.org/a/bgBFlzxYlX4rgbMkIV90qm217)** (5 minutes): Complete feature showcase
-- **⚡ [Quick Demo](https://asciinema.org/a/NlMxEJmJbXudj787MCYQAbw8g)** (2 minutes): Rapid overview
+- **📹 [Full Demo](https://asciinema.org/a/bgBFlzxYlX4rgbMkIV90qm217)**
+  (5 minutes): Complete feature showcase
+- **⚡ [Quick Demo](https://asciinema.org/a/NlMxEJmJbXudj787MCYQAbw8g)**
+  (2 minutes): Rapid overview
 
 **Latest Demo URLs** are automatically saved to `videos/latest-demo-uploads.txt`
 after each upload. Check that file for the most current demo links.

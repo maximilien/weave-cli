@@ -93,11 +93,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
 
 	// Bind flags to viper
-	viper.BindPFlag("vector-db-type", rootCmd.PersistentFlags().Lookup("vector-db-type"))
-	viper.BindPFlag("weaviate-api-key", rootCmd.PersistentFlags().Lookup("weaviate-api-key"))
-	viper.BindPFlag("weaviate-url", rootCmd.PersistentFlags().Lookup("weaviate-url"))
-	viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
-	viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+	_ = viper.BindPFlag("vector-db-type", rootCmd.PersistentFlags().Lookup("vector-db-type"))
+	_ = viper.BindPFlag("weaviate-api-key", rootCmd.PersistentFlags().Lookup("weaviate-api-key"))
+	_ = viper.BindPFlag("weaviate-url", rootCmd.PersistentFlags().Lookup("weaviate-url"))
+	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
+	_ = viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
 
 	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")

@@ -476,7 +476,7 @@ func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryTe
 		}
 
 		// Show relevant metadata fields
-		if result.Metadata != nil && len(result.Metadata) > 0 {
+		if len(result.Metadata) > 0 {
 			fmt.Printf("   ")
 			PrintStyledKeyProminent("Metadata")
 			fmt.Printf(": ")
