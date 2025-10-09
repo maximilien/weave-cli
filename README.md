@@ -84,7 +84,7 @@ recording details.
 - 🏠 **Weaviate Local Support** - Connect to local Weaviate instances
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, create, view, and delete collections
-- 📄 **Document Management** - List, show, and delete individual documents
+- 📄 **Document Management** - Create, update, list, show, and delete documents
 - 🔍 **Semantic Search** - Query collections with natural language using
   `weave collection query`
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
@@ -515,6 +515,33 @@ weave docs create MyTextCollection document.pdf --image-collection MyImageCollec
 # Using aliases
 weave docs c MyTextCollection document.txt
 weave docs c MyImageCollection image.jpg
+```text
+
+## Document Update
+
+Update existing documents with new content or metadata:
+
+```bash
+# Update content from string
+weave docs update MyCollection abc-123-def --content "New content here"
+weave docs u MyCollection abc-123-def --content "Updated text"
+
+# Update content from file
+weave docs update MyCollection abc-123-def --file updated-doc.txt
+
+# Update metadata fields
+weave docs update MyCollection abc-123-def --metadata title="Updated Title"
+weave docs update MyCollection abc-123-def --metadata version=2,author="John Doe"
+
+# Update by document name (instead of ID)
+weave docs update MyCollection --name README.md --content "Updated README"
+weave docs u MyCollection --name document.txt --file new-version.txt
+
+# Update both content and metadata
+weave docs update MyCollection abc-123-def --file new.txt --metadata version=2
+
+# Update using metadata filter
+weave docs update MyCollection --metadata-filter type=report --metadata status=reviewed
 ```text
 
 **Supported Field Types:**

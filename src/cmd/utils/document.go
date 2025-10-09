@@ -1047,3 +1047,206 @@ func processPDFFileMock(ctx context.Context, client *mock.Client, collectionName
 	}
 	fmt.Println()
 }
+
+// UpdateWeaviateDocument updates an existing document in Weaviate
+func UpdateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID, docName string, metadataFilter []string, content, filePath string, metadata []string) error {
+	client, err := CreateWeaviateClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+
+	// Parse metadata updates
+	metadataUpdates := make(map[string]interface{})
+	for _, m := range metadata {
+		parts := strings.SplitN(m, "=", 2)
+		if len(parts) != 2 {
+			return fmt.Errorf("invalid metadata format: %s (expected key=value)", m)
+		}
+		metadataUpdates[parts[0]] = parts[1]
+	}
+
+	// Get new content if file path is specified
+	var newContent string
+	if filePath != "" {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read file %s: %w", filePath, err)
+		}
+		newContent = string(data)
+	} else if content != "" {
+		newContent = content
+	}
+
+	// Find document by ID, name, or metadata filter
+	var targetDocID string
+	if documentID != "" {
+		targetDocID = documentID
+	} else if docName != "" {
+		// Find document by name
+		docs, err := client.ListDocuments(ctx, collectionName, 100)
+		if err != nil {
+			return fmt.Errorf("failed to list documents: %w", err)
+		}
+		for _, doc := range docs {
+			if filename, ok := doc.Metadata["filename"].(string); ok && filename == docName {
+				targetDocID = doc.ID
+				break
+			}
+			if origFilename, ok := doc.Metadata["original_filename"].(string); ok && origFilename == docName {
+				targetDocID = doc.ID
+				break
+			}
+		}
+		if targetDocID == "" {
+			return fmt.Errorf("document with name '%s' not found", docName)
+		}
+	} else if len(metadataFilter) > 0 {
+		// Find document by metadata filter
+		docs, err := client.ListDocuments(ctx, collectionName, 100)
+		if err != nil {
+			return fmt.Errorf("failed to list documents: %w", err)
+		}
+		for _, doc := range docs {
+			match := true
+			for _, filter := range metadataFilter {
+				parts := strings.SplitN(filter, "=", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("invalid metadata filter: %s", filter)
+				}
+				key, value := parts[0], parts[1]
+				if docValue, ok := doc.Metadata[key]; !ok || fmt.Sprint(docValue) != value {
+					match = false
+					break
+				}
+			}
+			if match {
+				targetDocID = doc.ID
+				break
+			}
+		}
+		if targetDocID == "" {
+			return fmt.Errorf("no document found matching metadata filters")
+		}
+	}
+
+	// Update the document
+	if err := client.UpdateDocument(ctx, collectionName, targetDocID, newContent, metadataUpdates); err != nil {
+		return fmt.Errorf("failed to update document: %w", err)
+	}
+
+	PrintSuccess(fmt.Sprintf("Successfully updated document: %s", targetDocID))
+	if newContent != "" {
+		fmt.Printf("  Content updated (%d characters)\n", len(newContent))
+	}
+	if len(metadataUpdates) > 0 {
+		fmt.Printf("  Metadata updated (%d fields)\n", len(metadataUpdates))
+		for key, value := range metadataUpdates {
+			fmt.Printf("    %s: %v\n", key, value)
+		}
+	}
+
+	return nil
+}
+
+// UpdateMockDocument updates a document in the mock database
+func UpdateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, documentID, docName string, metadataFilter []string, content, filePath string, metadata []string) {
+	client := CreateMockClient(cfg)
+
+	// Parse metadata updates
+	metadataUpdates := make(map[string]interface{})
+	for _, m := range metadata {
+		parts := strings.SplitN(m, "=", 2)
+		if len(parts) != 2 {
+			PrintError(fmt.Sprintf("Invalid metadata format: %s", m))
+			return
+		}
+		metadataUpdates[parts[0]] = parts[1]
+	}
+
+	// Get new content if file path is specified
+	var newContent string
+	if filePath != "" {
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to read file: %v", err))
+			return
+		}
+		newContent = string(data)
+	} else if content != "" {
+		newContent = content
+	}
+
+	// Find document by ID, name, or metadata filter
+	var targetDocID string
+	if documentID != "" {
+		targetDocID = documentID
+	} else if docName != "" {
+		// Find document by name
+		docs, err := client.ListDocuments(ctx, collectionName, 100)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			return
+		}
+		for _, doc := range docs {
+			if filename, ok := doc.Metadata["filename"].(string); ok && filename == docName {
+				targetDocID = doc.ID
+				break
+			}
+			if origFilename, ok := doc.Metadata["original_filename"].(string); ok && origFilename == docName {
+				targetDocID = doc.ID
+				break
+			}
+		}
+		if targetDocID == "" {
+			PrintError(fmt.Sprintf("Document with name '%s' not found", docName))
+			return
+		}
+	} else if len(metadataFilter) > 0 {
+		// Find document by metadata filter
+		docs, err := client.ListDocuments(ctx, collectionName, 100)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			return
+		}
+		for _, doc := range docs {
+			match := true
+			for _, filter := range metadataFilter {
+				parts := strings.SplitN(filter, "=", 2)
+				if len(parts) != 2 {
+					PrintError(fmt.Sprintf("Invalid metadata filter: %s", filter))
+					return
+				}
+				key, value := parts[0], parts[1]
+				if docValue, ok := doc.Metadata[key]; !ok || fmt.Sprint(docValue) != value {
+					match = false
+					break
+				}
+			}
+			if match {
+				targetDocID = doc.ID
+				break
+			}
+		}
+		if targetDocID == "" {
+			PrintError("No document found matching metadata filters")
+			return
+		}
+	}
+
+	// Update the document
+	if err := client.UpdateDocument(ctx, collectionName, targetDocID, newContent, metadataUpdates); err != nil {
+		PrintError(fmt.Sprintf("Failed to update document: %v", err))
+		return
+	}
+
+	PrintSuccess(fmt.Sprintf("Successfully updated document: %s", targetDocID))
+	if newContent != "" {
+		fmt.Printf("  Content updated (%d characters)\n", len(newContent))
+	}
+	if len(metadataUpdates) > 0 {
+		fmt.Printf("  Metadata updated (%d fields)\n", len(metadataUpdates))
+		for key, value := range metadataUpdates {
+			fmt.Printf("    %s: %v\n", key, value)
+		}
+	}
+}

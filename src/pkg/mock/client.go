@@ -578,3 +578,53 @@ func (c *Client) CalculateMockScoreWithMetadata(doc Document, queryWords []strin
 
 	return finalScore
 }
+
+// UpdateDocument updates an existing document in the mock database
+func (c *Client) UpdateDocument(ctx context.Context, collectionName, documentID, content string, metadata map[string]interface{}) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Check if collection exists
+	docs, exists := c.collections[collectionName]
+	if !exists {
+		return fmt.Errorf("collection not found: %s", collectionName)
+	}
+
+	// Find the document
+	var found bool
+	var docIndex int
+	for i, doc := range docs {
+		if doc.ID == documentID {
+			found = true
+			docIndex = i
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("document not found: %s", documentID)
+	}
+
+	// Update content if provided
+	if content != "" {
+		c.collections[collectionName][docIndex].Content = content
+	}
+
+	// Update metadata if provided
+	if len(metadata) > 0 {
+		if c.collections[collectionName][docIndex].Metadata == nil {
+			c.collections[collectionName][docIndex].Metadata = make(map[string]interface{})
+		}
+		for key, value := range metadata {
+			c.collections[collectionName][docIndex].Metadata[key] = value
+		}
+	}
+
+	// Update modification timestamp
+	if c.collections[collectionName][docIndex].Metadata == nil {
+		c.collections[collectionName][docIndex].Metadata = make(map[string]interface{})
+	}
+	c.collections[collectionName][docIndex].Metadata["updated_at"] = time.Now().Format(time.RFC3339)
+
+	return nil
+}

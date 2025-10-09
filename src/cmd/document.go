@@ -26,6 +26,7 @@ func init() {
 	documentCmd.AddCommand(document.ShowCmd)
 	documentCmd.AddCommand(document.CountCmd)
 	documentCmd.AddCommand(document.CreateCmd)
+	documentCmd.AddCommand(document.UpdateCmd)
 	documentCmd.AddCommand(document.DeleteCmd)
 	documentCmd.AddCommand(document.DeleteAllCmd)
 }
