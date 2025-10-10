@@ -264,7 +264,21 @@ func GetEnvFile() string {
 // GetDefaultDatabase returns the default vector database configuration
 func (c *Config) GetDefaultDatabase() (*VectorDBConfig, error) {
 	if len(c.Databases.VectorDatabases) == 0 {
-		return nil, fmt.Errorf("no vector databases configured")
+		return nil, fmt.Errorf(`no vector databases configured
+
+To fix this issue, you need to set up your Weaviate configuration:
+
+1. Set the required environment variables:
+   export WEAVIATE_URL="your-weaviate-url"
+   export WEAVIATE_API_KEY="your-api-key"
+   export OPENAI_API_KEY="your-openai-key"
+
+2. Or use the mock database for testing:
+   export VECTOR_DB_TYPE="mock"
+
+3. Check your config.yaml file exists and contains valid database configurations
+
+For more help, run: weave config show`)
 	}
 
 	// Get the default database name
@@ -288,7 +302,21 @@ func (c *Config) GetDefaultDatabase() (*VectorDBConfig, error) {
 // GetDatabase returns a specific vector database configuration by name
 func (c *Config) GetDatabase(name string) (*VectorDBConfig, error) {
 	if len(c.Databases.VectorDatabases) == 0 {
-		return nil, fmt.Errorf("no vector databases configured")
+		return nil, fmt.Errorf(`no vector databases configured
+
+To fix this issue, you need to set up your Weaviate configuration:
+
+1. Set the required environment variables:
+   export WEAVIATE_URL="your-weaviate-url"
+   export WEAVIATE_API_KEY="your-api-key"
+   export OPENAI_API_KEY="your-openai-key"
+
+2. Or use the mock database for testing:
+   export VECTOR_DB_TYPE="mock"
+
+3. Check your config.yaml file exists and contains valid database configurations
+
+For more help, run: weave config show`)
 	}
 
 	for i := range c.Databases.VectorDatabases {
