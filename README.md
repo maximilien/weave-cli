@@ -1,25 +1,33 @@
 # Weave CLI
 
-A command-line tool for managing Weaviate vector databases, written in Go. This tool provides a fast and easy way to manage content in text and image collections of configured vector databases.
+A command-line tool for managing Weaviate vector databases, written in Go.
+This tool provides a fast and easy way to manage content in text and image
+collections of configured vector databases.
 
 ## 🚀 What's New in v0.2.10
 
-- **📄 Enhanced PDF Processing**: Improved PDF text extraction with better fallback handling
-- **💬 Human-Friendly Error Messages**: Simplified, actionable error messages with helpful suggestions
-- **🎬 Updated Demos**: New demo recordings showcasing PDF processing capabilities
-- **🔧 Better UX**: Fixed PDF success message formatting and improved user experience
+- **📄 Enhanced PDF Processing**: Improved PDF text extraction with better
+  fallback handling
+- **💬 Human-Friendly Error Messages**: Simplified, actionable error messages
+  with helpful suggestions
+- **🎬 Updated Demos**: New demo recordings showcasing PDF processing
+  capabilities
+- **🔧 Better UX**: Fixed PDF success message formatting and improved user
+  experience
 
 ## 🎬 Demo
 
 Watch Weave CLI in action with our interactive demos:
 
-- **📹 [Full Demo](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)** (5 minutes): Complete feature showcase with PDF processing
-- **⚡ [Quick Demo](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)** (2 minutes): Rapid overview with environment variables
+- **📹 [Full Demo](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
+  (5 minutes): Complete feature showcase with PDF processing
+- **⚡ [Quick Demo](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)**
+  (2 minutes): Rapid overview with environment variables
 
 ## Features
 
 - 🌐 **Weaviate Cloud Support** - Connect to Weaviate Cloud instances
-- 🏠 **Weaviate Local Support** - Connect to local Weaviate instances  
+- 🏠 **Weaviate Local Support** - Connect to local Weaviate instances
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, create, view, and delete collections
 - 📄 **Document Management** - Create, update, list, show, and delete documents
@@ -39,7 +47,7 @@ cd weave-cli
 ./build.sh
 
 # The binary will be available at bin/weave
-```
+```text
 
 ### Configuration
 
@@ -48,14 +56,14 @@ cd weave-cli
 export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
 export WEAVIATE_API_KEY="your-weaviate-api-key"
 export OPENAI_API_KEY="sk-proj-your-openai-key"
-```
+```text
 
 **Option 2: Configuration File**
 ```bash
 # Copy example config
 cp config.yaml.example config.yaml
 # Edit config.yaml with your settings
-```
+```text
 
 ### Basic Usage
 
@@ -78,13 +86,21 @@ cp config.yaml.example config.yaml
 
 # List documents
 ./bin/weave docs ls MyCollection
-```
+```text
 
 ## Documentation
 
-- **[📖 User Guide](docs/USER_GUIDE.md)** - Comprehensive usage guide with examples
+- **[📖 User Guide](docs/USER_GUIDE.md)** - Comprehensive usage guide with
+  examples
 - **[🎬 Demo Guide](docs/DEMO.md)** - Interactive demo scripts and recordings
-- **[⚠️ Error Messages](docs/ERROR_MESSAGES.md)** - Human-friendly error message examples
+- **[⚠️ Error Messages](docs/ERROR_MESSAGES.md)** - Human-friendly error message
+  examples
+- **[📋 Configuration Guide](docs/USER_GUIDE.md#configuration)** - Detailed
+  configuration options
+- **[🔍 Search Guide](docs/USER_GUIDE.md#semantic-search)** - Advanced search
+  capabilities
+- **[📄 PDF Processing](docs/USER_GUIDE.md#pdf-processing)** - PDF text
+  extraction features
 
 ## Database Support
 
@@ -106,7 +122,7 @@ cp config.yaml.example config.yaml
 
 # Record demos
 ./tools/asciinema.sh demo
-```
+```text
 
 ## Contributing
 
