@@ -47,7 +47,7 @@ cd weave-cli
 ./build.sh
 
 # The binary will be available at bin/weave
-```text
+```
 
 ### Configuration
 
@@ -56,14 +56,14 @@ cd weave-cli
 export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
 export WEAVIATE_API_KEY="your-weaviate-api-key"
 export OPENAI_API_KEY="sk-proj-your-openai-key"
-```text
+```
 
 **Option 2: Configuration File**
 ```bash
 # Copy example config
 cp config.yaml.example config.yaml
 # Edit config.yaml with your settings
-```text
+```
 
 ### Basic Usage
 
@@ -86,7 +86,7 @@ cp config.yaml.example config.yaml
 
 # List documents
 ./bin/weave docs ls MyCollection
-```text
+```
 
 ## Documentation
 
@@ -122,7 +122,7 @@ cp config.yaml.example config.yaml
 
 # Record demos
 ./tools/asciinema.sh demo
-```text
+```
 
 ## Contributing
 
