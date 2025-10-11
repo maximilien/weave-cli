@@ -691,7 +691,7 @@ func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName
 		}
 	}
 
-	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d text chunks", filepath.Base(filePath), textSuccessCount))
+	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d text chunks)", filepath.Base(filePath), textSuccessCount))
 	if imageSuccessCount > 0 {
 		fmt.Printf(", %d images)", imageSuccessCount)
 	}
@@ -1041,7 +1041,7 @@ func processPDFFileMock(ctx context.Context, client *mock.Client, collectionName
 		}
 	}
 
-	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d text chunks", filepath.Base(filePath), textSuccessCount))
+	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d text chunks)", filepath.Base(filePath), textSuccessCount))
 	if imageSuccessCount > 0 {
 		fmt.Printf(", %d images)", imageSuccessCount)
 	}

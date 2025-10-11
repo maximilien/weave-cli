@@ -61,6 +61,7 @@ print_help() {
     echo "  • Weaviate Cloud instance configured"
     echo "  • Test collections available (WeaveDocs, WeaveImages)"
     echo "  • Demo documents in docs/ and images/ directories"
+    echo "  • PDF files in tests/fixtures/ directory"
 }
 
 # Function to check if asciinema is installed
@@ -178,6 +179,7 @@ run_demo_cmd "./bin/weave cols ls" "List All Collections"
 # Page 4: Create Documents
 page_break "4"
 run_demo_cmd "if [ -f README.md ]; then ./bin/weave docs create WeaveDocs README.md || echo 'Document creation failed - continuing demo'; else echo 'README.md not found - creating sample document'; echo '# Sample Document\n\nThis is a sample document for the demo.\n\n## Features\n- Vector embeddings\n- Semantic search\n- Document management' > README.md && ./bin/weave docs create WeaveDocs README.md || echo 'Document creation failed - continuing demo'; fi" "Create Text Document"
+run_demo_cmd "if [ -f tests/fixtures/ragme-io.pdf ]; then ./bin/weave docs create WeaveDocs tests/fixtures/ragme-io.pdf || echo 'PDF document creation failed - continuing demo'; else echo 'ℹ️ No PDF file found - skipping PDF document creation'; fi" "Create PDF Document (NEW!)"
 run_demo_cmd "if [ -f images/weave-cli_1.png ]; then if ./bin/weave docs create WeaveImages images/weave-cli_1.png >/dev/null 2>&1; then echo '✅ Image document created successfully'; else echo 'ℹ️ Image too large for embedding model - this is expected for large images'; fi; else echo 'ℹ️ No image file found - skipping image document creation'; fi" "Create Image Document"
 
 # Page 5: Show Documents & Schema
@@ -196,7 +198,8 @@ run_demo_cmd "./bin/weave docs ls WeaveDocs -w -S" "Virtual Document View with S
 page_break "7"
 run_demo_cmd "./bin/weave cols q WeaveDocs 'weave-cli installation'" "Basic Semantic Search"
 run_demo_cmd "./bin/weave cols q WeaveDocs 'machine learning' --top_k 3" "Search with Custom Result Limit"
-run_demo_cmd "./bin/weave cols q WeaveDocs 'maximilien.org' --search-metadata" "Search with Metadata (NEW!)"
+run_demo_cmd "./bin/weave cols q WeaveDocs 'ragme.io' --search-metadata" "Search PDF Content (NEW!)"
+run_demo_cmd "./bin/weave cols q WeaveDocs 'maximilien.org' --search-metadata" "Search with Metadata"
 run_demo_cmd "./bin/weave cols q --help | head -15" "Query Help"
 
 # Page 8: Delete Documents
@@ -387,6 +390,17 @@ fi
 echo ""
 sleep 2
 
+echo -e "${BLUE}💻 Create PDF Document (NEW!)${NC}"
+echo -e "${YELLOW}$ ./bin/weave docs create DemoCollection tests/fixtures/ragme-io.pdf${NC}"
+sleep 1
+if [ -f tests/fixtures/ragme-io.pdf ]; then
+    ./bin/weave docs create DemoCollection tests/fixtures/ragme-io.pdf || echo "PDF document creation may have failed - continuing demo"
+else
+    echo "ℹ️ No PDF file found - skipping PDF document creation"
+fi
+echo ""
+sleep 2
+
 echo -e "${BLUE}💻 List Documents${NC}"
 echo -e "${YELLOW}$ ./bin/weave docs ls DemoCollection${NC}"
 sleep 1
@@ -398,6 +412,13 @@ echo -e "${BLUE}💻 Semantic Search${NC}"
 echo -e "${YELLOW}$ ./bin/weave cols q DemoCollection 'sample document'${NC}"
 sleep 1
 ./bin/weave cols q DemoCollection "sample document"
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Search PDF Content (NEW!)${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols q DemoCollection 'ragme.io' --search-metadata${NC}"
+sleep 1
+./bin/weave cols q DemoCollection "ragme.io" --search-metadata
 echo ""
 sleep 2
 
