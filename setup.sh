@@ -129,6 +129,41 @@ else
     print_success "gosec is already installed"
 fi
 
+# Install poppler-utils (for pdftotext)
+print_header "Installing poppler-utils (for PDF text extraction)..."
+if ! command_exists pdftotext; then
+    print_status "Installing poppler-utils..."
+    case $OS in
+        "macos")
+            if command_exists brew; then
+                brew install poppler
+                print_success "poppler-utils installed successfully via Homebrew!"
+            else
+                print_warning "Homebrew not found. Please install poppler manually:"
+                print_status "Visit: https://poppler.freedesktop.org/"
+            fi
+            ;;
+        "linux")
+            if command_exists apt-get; then
+                sudo apt-get update && sudo apt-get install -y poppler-utils
+                print_success "poppler-utils installed successfully via apt-get!"
+            elif command_exists yum; then
+                sudo yum install -y poppler-utils
+                print_success "poppler-utils installed successfully via yum!"
+            else
+                print_warning "Package manager not found. Please install poppler-utils manually:"
+                print_status "Visit: https://poppler.freedesktop.org/"
+            fi
+            ;;
+        *)
+            print_warning "Unknown OS. Please install poppler-utils manually:"
+            print_status "Visit: https://poppler.freedesktop.org/"
+            ;;
+    esac
+else
+    print_success "poppler-utils is already installed"
+fi
+
 # Install shellcheck
 print_header "Installing shellcheck..."
 if ! command_exists shellcheck; then
@@ -254,7 +289,7 @@ fi
 print_header "Verifying installations..."
 echo ""
 
-tools=("go" "golangci-lint" "goimports" "govulncheck" "gosec" "shellcheck" "yamllint" "markdownlint" "go-mod-outdated")
+tools=("go" "golangci-lint" "goimports" "govulncheck" "gosec" "pdftotext" "shellcheck" "yamllint" "markdownlint" "go-mod-outdated")
 
 all_installed=true
 for tool in "${tools[@]}"; do

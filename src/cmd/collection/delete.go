@@ -109,7 +109,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		utils.PrintError(fmt.Sprintf("Failed to delete collection(s): %v", err))
+		utils.PrintError(utils.FormatDeletionError("collection(s)", err))
 		os.Exit(1)
 	}
 

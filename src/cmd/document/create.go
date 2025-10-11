@@ -95,7 +95,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize); err != nil {
-			utils.PrintError(fmt.Sprintf("Failed to create Weaviate document: %v", err))
+			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMock:

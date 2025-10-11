@@ -25,8 +25,8 @@ func TestMockUpdateDocument(t *testing.T) {
 
 	// Create a test document
 	testDoc := mock.Document{
-		ID:       "test-doc-1",
-		Content:  "Initial test content",
+		ID:      "test-doc-1",
+		Content: "Initial test content",
 		Metadata: map[string]interface{}{
 			"filename": "test.txt",
 			"type":     "test",

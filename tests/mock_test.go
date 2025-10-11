@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max
 
-
 package tests
 
 import (
@@ -568,7 +567,7 @@ func TestMultipleCollectionCreationIntegration(t *testing.T) {
 
 	t.Run("Create Multiple Collections", func(t *testing.T) {
 		collectionNames := []string{"MultiCol1", "MultiCol2", "MultiCol3"}
-		
+
 		// Create multiple collections
 		for _, name := range collectionNames {
 			err := client.CreateCollection(ctx, name, "text-embedding-3-small", []weaviate.FieldDefinition{})
@@ -596,7 +595,7 @@ func TestMultipleCollectionCreationIntegration(t *testing.T) {
 			{Name: "title", Type: "text"},
 			{Name: "author", Type: "text"},
 		}
-		
+
 		// Create multiple collections with custom fields
 		for _, name := range collectionNames {
 			err := client.CreateCollection(ctx, name, "text-embedding-3-large", customFields)
@@ -645,7 +644,7 @@ func TestCollectionSchemaDeletionIntegration(t *testing.T) {
 
 	t.Run("Delete Collection Schema", func(t *testing.T) {
 		collectionName := "SchemaTestCollection"
-		
+
 		// Create a collection first
 		err := client.CreateCollection(ctx, collectionName, "text-embedding-3-small", []weaviate.FieldDefinition{})
 		if err != nil {
@@ -693,7 +692,7 @@ func TestCollectionSchemaDeletionIntegration(t *testing.T) {
 
 	t.Run("Delete Collection with Documents", func(t *testing.T) {
 		collectionName := "CollectionWithDocs"
-		
+
 		// Create a collection
 		err := client.CreateCollection(ctx, collectionName, "text-embedding-3-small", []weaviate.FieldDefinition{})
 		if err != nil {

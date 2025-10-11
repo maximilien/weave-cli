@@ -169,7 +169,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
-			utils.PrintError(fmt.Sprintf("Failed to create collection from schema '%s': %v", schemaName, err))
+			utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection from schema '%s'", schemaName), err))
 			os.Exit(1)
 		}
 
@@ -191,7 +191,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
-			utils.PrintError(fmt.Sprintf("Failed to create collection from schema file: %v", err))
+			utils.PrintError(utils.FormatCreationError("collection from schema file", err))
 			os.Exit(1)
 		}
 
@@ -221,7 +221,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	}
 
 	if err != nil {
-		utils.PrintError(fmt.Sprintf("Failed to create collection: %v", err))
+		utils.PrintError(utils.FormatCreationError("collection", err))
 		os.Exit(1)
 	}
 

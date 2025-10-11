@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max
 
-
 package tests
 
 import (
@@ -341,22 +340,22 @@ func TestCLIWithMockClient(t *testing.T) {
 			ID:      "test-doc-1",
 			Content: "Test document content",
 			Metadata: map[string]interface{}{
-				"id":              "test-doc-1",
-				"added_date":      "2025-01-01T00:00:00Z",
-				"creation_date":   "2025-01-01T00:00:00Z",
-				"modified_date":   "2025-01-01T00:00:00Z",
-				"creator":         "",
-				"producer":        "",
-				"title":           "test.txt",
-				"ai_summary":      "",
-				"filename":        "test.txt",
-				"is_chunked":      false,
-				"total_chunks":    1,
-				"chunk_index":     0,
-				"chunk_sizes":     []int{20},
+				"id":                "test-doc-1",
+				"added_date":        "2025-01-01T00:00:00Z",
+				"creation_date":     "2025-01-01T00:00:00Z",
+				"modified_date":     "2025-01-01T00:00:00Z",
+				"creator":           "",
+				"producer":          "",
+				"title":             "test.txt",
+				"ai_summary":        "",
+				"filename":          "test.txt",
+				"is_chunked":        false,
+				"total_chunks":      1,
+				"chunk_index":       0,
+				"chunk_sizes":       []int{20},
 				"original_filename": "test.txt",
-				"storage_path":    "/path/to/test.txt",
-				"type":            "text",
+				"storage_path":      "/path/to/test.txt",
+				"type":              "text",
 			},
 		}
 
@@ -1807,9 +1806,9 @@ func TestDocumentCreateFunctionality(t *testing.T) {
 
 	t.Run("Chunk Size Validation", func(t *testing.T) {
 		testCases := []struct {
-			name     string
+			name      string
 			chunkSize int
-			expected bool
+			expected  bool
 		}{
 			{"Valid chunk size", 1000, true},
 			{"Small chunk size", 50, true},
@@ -1882,26 +1881,26 @@ func TestDocumentCreateMockClient(t *testing.T) {
 		// Test document creation with WeaveDocs schema
 		ctx := context.Background()
 		document := mock.Document{
-			ID:       "test-doc-1",
-			Content:  "This is a test document",
-			URL:      "file://test.txt",
+			ID:      "test-doc-1",
+			Content: "This is a test document",
+			URL:     "file://test.txt",
 			Metadata: map[string]interface{}{
-				"id":              "test-doc-1",
-				"added_date":      "2025-01-01T00:00:00Z",
-				"creation_date":   "2025-01-01T00:00:00Z",
-				"modified_date":   "2025-01-01T00:00:00Z",
-				"creator":         "",
-				"producer":        "",
-				"title":           "test.txt",
-				"ai_summary":      "",
-				"filename":        "test.txt",
-				"is_chunked":      false,
-				"total_chunks":    1,
-				"chunk_index":     0,
-				"chunk_sizes":     []int{25},
+				"id":                "test-doc-1",
+				"added_date":        "2025-01-01T00:00:00Z",
+				"creation_date":     "2025-01-01T00:00:00Z",
+				"modified_date":     "2025-01-01T00:00:00Z",
+				"creator":           "",
+				"producer":          "",
+				"title":             "test.txt",
+				"ai_summary":        "",
+				"filename":          "test.txt",
+				"is_chunked":        false,
+				"total_chunks":      1,
+				"chunk_index":       0,
+				"chunk_sizes":       []int{25},
 				"original_filename": "test.txt",
-				"storage_path":    "/path/to/test.txt",
-				"type":            "text",
+				"storage_path":      "/path/to/test.txt",
+				"type":              "text",
 			},
 		}
 
@@ -1949,26 +1948,26 @@ func TestDocumentCreateMockClient(t *testing.T) {
 
 		ctx := context.Background()
 		document := mock.Document{
-			ID:       "duplicate-doc",
-			Content:  "First document",
-			URL:      "file://test1.txt",
+			ID:      "duplicate-doc",
+			Content: "First document",
+			URL:     "file://test1.txt",
 			Metadata: map[string]interface{}{
-				"id":              "duplicate-doc",
-				"added_date":      "2025-01-01T00:00:00Z",
-				"creation_date":   "2025-01-01T00:00:00Z",
-				"modified_date":   "2025-01-01T00:00:00Z",
-				"creator":         "",
-				"producer":        "",
-				"title":           "test1.txt",
-				"ai_summary":      "",
-				"filename":        "test1.txt",
-				"is_chunked":      false,
-				"total_chunks":    1,
-				"chunk_index":     0,
-				"chunk_sizes":     []int{14},
+				"id":                "duplicate-doc",
+				"added_date":        "2025-01-01T00:00:00Z",
+				"creation_date":     "2025-01-01T00:00:00Z",
+				"modified_date":     "2025-01-01T00:00:00Z",
+				"creator":           "",
+				"producer":          "",
+				"title":             "test1.txt",
+				"ai_summary":        "",
+				"filename":          "test1.txt",
+				"is_chunked":        false,
+				"total_chunks":      1,
+				"chunk_index":       0,
+				"chunk_sizes":       []int{14},
 				"original_filename": "test1.txt",
-				"storage_path":    "/path/to/test1.txt",
-				"type":            "text",
+				"storage_path":      "/path/to/test1.txt",
+				"type":              "text",
 			},
 		}
 
@@ -2001,26 +2000,26 @@ func TestDocumentCreateMockClient(t *testing.T) {
 
 		ctx := context.Background()
 		document := mock.Document{
-			ID:       "test-doc",
-			Content:  "Test content",
-			URL:      "file://test.txt",
+			ID:      "test-doc",
+			Content: "Test content",
+			URL:     "file://test.txt",
 			Metadata: map[string]interface{}{
-				"id":              "test-doc",
-				"added_date":      "2025-01-01T00:00:00Z",
-				"creation_date":   "2025-01-01T00:00:00Z",
-				"modified_date":   "2025-01-01T00:00:00Z",
-				"creator":         "",
-				"producer":        "",
-				"title":           "test.txt",
-				"ai_summary":      "",
-				"filename":        "test.txt",
-				"is_chunked":      false,
-				"total_chunks":    1,
-				"chunk_index":     0,
-				"chunk_sizes":     []int{12},
+				"id":                "test-doc",
+				"added_date":        "2025-01-01T00:00:00Z",
+				"creation_date":     "2025-01-01T00:00:00Z",
+				"modified_date":     "2025-01-01T00:00:00Z",
+				"creator":           "",
+				"producer":          "",
+				"title":             "test.txt",
+				"ai_summary":        "",
+				"filename":          "test.txt",
+				"is_chunked":        false,
+				"total_chunks":      1,
+				"chunk_index":       0,
+				"chunk_sizes":       []int{12},
 				"original_filename": "test.txt",
-				"storage_path":    "/path/to/test.txt",
-				"type":            "text",
+				"storage_path":      "/path/to/test.txt",
+				"type":              "text",
 			},
 		}
 
@@ -2292,7 +2291,7 @@ func TestPatternMatching(t *testing.T) {
 			{"doc[0-9].pdf", false},
 			{"image_[a-z].png", false},
 			{"backup_*.log", false},
-			
+
 			// Regex patterns (should be true)
 			{"tmp.*\\.png", true},
 			{"^prefix.*\\.jpg$", true},
@@ -2314,8 +2313,8 @@ func TestPatternMatching(t *testing.T) {
 	t.Run("GlobToRegex", func(t *testing.T) {
 		// Test cases for glob to regex conversion
 		testCases := []struct {
-			glob    string
-			regex   string
+			glob  string
+			regex string
 		}{
 			{"tmp*.png", "tmp.*\\.png"},
 			{"file?.txt", "file.\\.txt"},
@@ -2337,8 +2336,8 @@ func TestPatternMatching(t *testing.T) {
 	t.Run("PatternMatchingIntegration", func(t *testing.T) {
 		// Test that converted patterns work correctly
 		testCases := []struct {
-			pattern string
-			filename string
+			pattern     string
+			filename    string
 			shouldMatch bool
 		}{
 			// Shell glob patterns
@@ -2350,7 +2349,7 @@ func TestPatternMatching(t *testing.T) {
 			{"doc[0-9].pdf", "doc1.pdf", true},
 			{"doc[0-9].pdf", "doc5.pdf", true},
 			{"doc[0-9].pdf", "doc12.pdf", false},
-			
+
 			// Regex patterns
 			{"tmp.*\\.png", "tmp123.png", true},
 			{"tmp.*\\.png", "tmp_file.png", true},
@@ -2362,22 +2361,22 @@ func TestPatternMatching(t *testing.T) {
 		for _, tc := range testCases {
 			var regex *regexp.Regexp
 			var err error
-			
+
 			if isRegexPattern(tc.pattern) {
 				regex, err = regexp.Compile(tc.pattern)
 			} else {
 				regexPattern := globToRegex(tc.pattern)
 				regex, err = regexp.Compile(regexPattern)
 			}
-			
+
 			if err != nil {
 				t.Errorf("Failed to compile pattern '%s': %v", tc.pattern, err)
 				continue
 			}
-			
+
 			matches := regex.MatchString(tc.filename)
 			if matches != tc.shouldMatch {
-				t.Errorf("Pattern '%s' with filename '%s': expected %v, got %v", 
+				t.Errorf("Pattern '%s' with filename '%s': expected %v, got %v",
 					tc.pattern, tc.filename, tc.shouldMatch, matches)
 			}
 		}
@@ -2390,19 +2389,19 @@ func isRegexPattern(pattern string) bool {
 	strongRegexIndicators := []string{
 		"^", "$", "\\", ".*", ".+", ".?", "(", ")", "{", "}", "|", "+",
 	}
-	
+
 	// Check for strong regex indicators first
 	for _, indicator := range strongRegexIndicators {
 		if strings.Contains(pattern, indicator) {
 			return true
 		}
 	}
-	
+
 	// Check for escaped characters (indicates regex)
 	if strings.Contains(pattern, "\\") {
 		return true
 	}
-	
+
 	// If pattern contains only glob characters (*, ?, []) and no strong regex chars, treat as glob
 	return false
 }
@@ -2410,16 +2409,16 @@ func isRegexPattern(pattern string) bool {
 func globToRegex(glob string) string {
 	// Escape special regex characters first
 	result := regexp.QuoteMeta(glob)
-	
+
 	// Convert glob patterns to regex equivalents
-	result = strings.ReplaceAll(result, "\\*", ".*")     // * -> .*
-	result = strings.ReplaceAll(result, "\\?", ".")     // ? -> .
-	result = strings.ReplaceAll(result, "\\[", "[")    // [ -> [
-	result = strings.ReplaceAll(result, "\\]", "]")    // ] -> ]
-	
+	result = strings.ReplaceAll(result, "\\*", ".*") // * -> .*
+	result = strings.ReplaceAll(result, "\\?", ".")  // ? -> .
+	result = strings.ReplaceAll(result, "\\[", "[")  // [ -> [
+	result = strings.ReplaceAll(result, "\\]", "]")  // ] -> ]
+
 	// Add anchors for exact matching (optional - could be made configurable)
 	// result = "^" + result + "$"
-	
+
 	return result
 }
 
@@ -2428,10 +2427,10 @@ func TestDocumentByNameOperations(t *testing.T) {
 	t.Run("DocumentNameMatching", func(t *testing.T) {
 		// Test document name matching logic
 		tests := []struct {
-			name     string
-			doc      mock.Document
+			name       string
+			doc        mock.Document
 			searchName string
-			expected bool
+			expected   bool
 		}{
 			{
 				name: "Exact filename match",
@@ -2442,7 +2441,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  true,
+				expected:   true,
 			},
 			{
 				name: "Base filename match",
@@ -2453,7 +2452,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  true,
+				expected:   true,
 			},
 			{
 				name: "URL field match",
@@ -2464,19 +2463,19 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  true,
+				expected:   true,
 			},
 			{
 				name: "WeaveDocs schema filename match",
 				doc: mock.Document{
 					ID: "test-id",
 					Metadata: map[string]interface{}{
-						"filename": "test_image.png",
+						"filename":          "test_image.png",
 						"original_filename": "test_image.png",
 					},
 				},
 				searchName: "test_image.png",
-				expected:  true,
+				expected:   true,
 			},
 			{
 				name: "Nested metadata filename match (legacy RagMeDocs)",
@@ -2487,7 +2486,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  true,
+				expected:   true,
 			},
 			{
 				name: "Nested metadata original_filename match (legacy RagMeDocs)",
@@ -2498,7 +2497,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  true,
+				expected:   true,
 			},
 			{
 				name: "No match",
@@ -2509,7 +2508,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  false,
+				expected:   false,
 			},
 		}
 
@@ -2526,19 +2525,19 @@ func TestDocumentByNameOperations(t *testing.T) {
 	t.Run("DocumentNameMatchingEdgeCases", func(t *testing.T) {
 		// Test edge cases
 		tests := []struct {
-			name     string
-			doc      mock.Document
+			name       string
+			doc        mock.Document
 			searchName string
-			expected bool
+			expected   bool
 		}{
 			{
 				name: "Empty metadata",
 				doc: mock.Document{
-					ID: "test-id",
+					ID:       "test-id",
 					Metadata: map[string]interface{}{},
 				},
 				searchName: "test_image.png",
-				expected:  false,
+				expected:   false,
 			},
 			{
 				name: "Invalid JSON metadata",
@@ -2549,7 +2548,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  false,
+				expected:   false,
 			},
 			{
 				name: "Non-string metadata values",
@@ -2560,7 +2559,7 @@ func TestDocumentByNameOperations(t *testing.T) {
 					},
 				},
 				searchName: "test_image.png",
-				expected:  false,
+				expected:   false,
 			},
 		}
 
@@ -2583,14 +2582,14 @@ func mockDocumentNameMatches(doc mock.Document, name string) bool {
 			return true
 		}
 	}
-	
+
 	// Check filename field directly
 	if filename, ok := doc.Metadata["filename"].(string); ok {
 		if filename == name || filepath.Base(filename) == name {
 			return true
 		}
 	}
-	
+
 	// Check nested metadata for filename (common in text documents)
 	if metadata, ok := doc.Metadata["metadata"]; ok {
 		if metadataStr, ok := metadata.(string); ok {
@@ -2609,6 +2608,6 @@ func mockDocumentNameMatches(doc mock.Document, name string) bool {
 			}
 		}
 	}
-	
+
 	return false
 }

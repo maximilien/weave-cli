@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max
 
-
 package tests
 
 import (
@@ -316,7 +315,7 @@ func TestFastMockVirtualDocumentDeletion(t *testing.T) {
 
 		// Clear the collection first to avoid interference
 		client.DeleteCollection(virtualCtx, "VirtualTestCollection")
-		
+
 		// Recreate the collection since DeleteCollection now actually deletes it
 		err := client.CreateCollection(virtualCtx, "VirtualTestCollection", "text-embedding-3-small", nil)
 		if err != nil {
