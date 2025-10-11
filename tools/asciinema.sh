@@ -9,6 +9,19 @@ if [ -f ".env" ]; then
     source .env
 fi
 
+# Set up environment variables for demo (if not already set)
+if [ -z "$VECTOR_DB_TYPE" ]; then
+    export VECTOR_DB_TYPE="weaviate-cloud"
+fi
+
+# Check if we have the required environment variables for Weaviate Cloud
+if [ -z "$WEAVIATE_URL" ] || [ -z "$WEAVIATE_API_KEY" ] || [ -z "$OPENAI_API_KEY" ]; then
+    echo "⚠️  Required environment variables not set for Weaviate Cloud demo"
+    echo "⚠️  Setting up mock database for demo instead..."
+    export VECTOR_DB_TYPE="mock"
+    unset WEAVIATE_URL WEAVIATE_API_KEY OPENAI_API_KEY
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -153,10 +166,10 @@ sleep 1
 echo ""
 sleep 2
 
-# Page 1: Health Check & Configuration
+# Page 1: Configuration & Health Check
 page_break "1"
+run_demo_cmd "./bin/weave config show" "Configuration Display (Environment Variables)"
 run_demo_cmd "./bin/weave health check" "Health Check"
-run_demo_cmd "./bin/weave config show" "Configuration Display"
 run_demo_cmd "./bin/weave --help | head -20" "Help Command"
 
 # Page 2: Create Collections
@@ -291,6 +304,13 @@ YELLOW='\033[1;33m'
 NC='\033[0m'
 
 echo -e "${GREEN}🚀 Weave CLI Quick Demo${NC}"
+echo ""
+sleep 2
+
+echo -e "${BLUE}💻 Configuration (Environment Variables)${NC}"
+echo -e "${YELLOW}$ ./bin/weave config show${NC}"
+sleep 1
+./bin/weave config show
 echo ""
 sleep 2
 
