@@ -135,14 +135,19 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	viper.AutomaticEnv()
 
 	// Read config file
-	if err := viper.ReadInConfig(); err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
-	// Get raw config data
 	var rawConfig map[string]interface{}
-	if err := viper.Unmarshal(&rawConfig); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	if err := viper.ReadInConfig(); err != nil {
+		// If config file doesn't exist, create a default config from environment variables
+		if strings.Contains(err.Error(), "Config File") && strings.Contains(err.Error(), "Not Found") {
+			rawConfig = createDefaultConfigFromEnv()
+		} else {
+			return nil, fmt.Errorf("failed to read config file: %w", err)
+		}
+	} else {
+		// Get raw config data from file
+		if err := viper.Unmarshal(&rawConfig); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+		}
 	}
 
 	// Interpolate environment variables
@@ -170,6 +175,108 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+// createDefaultConfigFromEnv creates a default configuration from environment variables
+func createDefaultConfigFromEnv() map[string]interface{} {
+	// Get environment variables with defaults
+	vectorDBType := os.Getenv("VECTOR_DB_TYPE")
+	if vectorDBType == "" {
+		vectorDBType = "weaviate-cloud"
+	}
+
+	weaviateURL := os.Getenv("WEAVIATE_URL")
+	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
+	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
+
+	// Create default collections
+	collections := []map[string]interface{}{
+		{
+			"name":        os.Getenv("WEAVIATE_COLLECTION"),
+			"type":        "text",
+			"description": "Main text documents collection",
+		},
+		{
+			"name":        os.Getenv("WEAVIATE_COLLECTION_IMAGES"),
+			"type":        "image",
+			"description": "Image documents collection",
+		},
+	}
+
+	// Filter out collections with empty names
+	var validCollections []map[string]interface{}
+	for _, col := range collections {
+		if name, ok := col["name"].(string); ok && name != "" {
+			validCollections = append(validCollections, col)
+		}
+	}
+
+	// If no collections specified, use defaults
+	if len(validCollections) == 0 {
+		validCollections = []map[string]interface{}{
+			{
+				"name":        "WeaveDocs",
+				"type":        "text",
+				"description": "Main text documents collection",
+			},
+			{
+				"name":        "WeaveImages",
+				"type":        "image",
+				"description": "Image documents collection",
+			},
+		}
+	}
+
+	// Create vector databases based on type
+	var vectorDatabases []map[string]interface{}
+
+	if vectorDBType == "mock" {
+		// Mock database
+		vectorDatabases = append(vectorDatabases, map[string]interface{}{
+			"name":                "mock",
+			"type":                "mock",
+			"enabled":             true,
+			"simulate_embeddings": true,
+			"embedding_dimension": 384,
+			"collections":         validCollections,
+		})
+	} else if vectorDBType == "weaviate-local" {
+		// Local Weaviate
+		vectorDatabases = append(vectorDatabases, map[string]interface{}{
+			"name":        "weaviate-local",
+			"type":        "weaviate-local",
+			"url":         "http://localhost:8080",
+			"collections": validCollections,
+		})
+	} else {
+		// Cloud Weaviate (default)
+		weaviateConfig := map[string]interface{}{
+			"name":        "weaviate-cloud",
+			"type":        "weaviate-cloud",
+			"collections": validCollections,
+		}
+
+		if weaviateURL != "" {
+			weaviateConfig["url"] = weaviateURL
+		}
+		if weaviateAPIKey != "" {
+			weaviateConfig["api_key"] = weaviateAPIKey
+		}
+		if openaiAPIKey != "" {
+			weaviateConfig["openai_api_key"] = openaiAPIKey
+		}
+
+		vectorDatabases = append(vectorDatabases, weaviateConfig)
+	}
+
+	// Create the complete config structure
+	return map[string]interface{}{
+		"databases": map[string]interface{}{
+			"default":          vectorDBType,
+			"vector_databases": vectorDatabases,
+		},
+		"schemas_dir": "./schemas",
+	}
 }
 
 // interpolateEnvVars recursively interpolates environment variables in the config
@@ -276,7 +383,9 @@ To fix this issue, you need to set up your Weaviate configuration:
 2. Or use the mock database for testing:
    export VECTOR_DB_TYPE="mock"
 
-3. Check your config.yaml file exists and contains valid database configurations
+3. Optionally create a config.yaml file (see config.yaml.example for reference)
+
+Note: config.yaml is optional - you can use environment variables alone!
 
 For more help, run: weave config show`)
 	}
@@ -314,7 +423,9 @@ To fix this issue, you need to set up your Weaviate configuration:
 2. Or use the mock database for testing:
    export VECTOR_DB_TYPE="mock"
 
-3. Check your config.yaml file exists and contains valid database configurations
+3. Optionally create a config.yaml file (see config.yaml.example for reference)
+
+Note: config.yaml is optional - you can use environment variables alone!
 
 For more help, run: weave config show`)
 	}

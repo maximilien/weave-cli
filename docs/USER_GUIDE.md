@@ -35,15 +35,28 @@ cd weave-cli
 
 ### Quick Start
 
-1. **Configure your database**:
+**Method 1: Environment Variables Only (Recommended)**
+```bash
+# Set your environment variables
+export VECTOR_DB_TYPE="weaviate-cloud"
+export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+export WEAVIATE_API_KEY="your-weaviate-api-key"
+export OPENAI_API_KEY="sk-proj-your-openai-api-key"
 
-   ```bash
-   # Copy the example configuration
-   cp config.yaml.example config.yaml
-   
-   # Edit with your Weaviate details
-   nano config.yaml
-   ```
+# Test the connection
+./bin/weave health check
+```
+
+**Method 2: Configuration Files**
+```bash
+# Copy the example configuration
+cp config.yaml.example config.yaml
+cp .env.example .env
+
+# Edit with your Weaviate details
+nano config.yaml
+nano .env
+```
 
 2. **Set environment variables**:
 
@@ -67,9 +80,22 @@ cd weave-cli
 
 ## Configuration
 
-### Configuration Files
+Weave CLI supports flexible configuration through environment variables or YAML files.
+**Configuration files are optional** - you can use environment variables alone!
 
-Weave CLI uses two configuration files:
+### Configuration Methods
+
+**Method 1: Environment Variables Only (Fastest)**
+```bash
+export VECTOR_DB_TYPE="weaviate-cloud"
+export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+export WEAVIATE_API_KEY="your-weaviate-api-key"
+export OPENAI_API_KEY="sk-proj-your-openai-api-key"
+```
+
+**Method 2: Configuration Files**
+
+Weave CLI can use two configuration files:
 
 #### config.yaml
 

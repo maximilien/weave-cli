@@ -113,12 +113,19 @@ cd weave-cli
 
 ### Configuration
 
-1. **Copy example files**:
+**Option 1: Environment Variables Only (Recommended)**
+```bash
+export VECTOR_DB_TYPE="weaviate-cloud"
+export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+export WEAVIATE_API_KEY="your-weaviate-api-key"
+export OPENAI_API_KEY="sk-proj-your-openai-api-key"
+```
 
-   ```bash
-   cp config.yaml.example config.yaml
-   cp .env.example .env
-   ```
+**Option 2: Configuration Files**
+```bash
+cp config.yaml.example config.yaml
+cp .env.example .env
+```
 
 1. **Configure your environment**:
 
@@ -244,8 +251,8 @@ weave collection delete-schema MyCollection --force
 
 ## Detailed Configuration
 
-Weave CLI uses a combination of YAML configuration files and environment
-variables for flexible setup.
+Weave CLI supports flexible configuration through environment variables or YAML files.
+**Configuration files are optional** - you can use environment variables alone!
 
 ### Environment Variables (.env)
 
@@ -354,6 +361,7 @@ nano config.yaml
 - **Use example files** (`config.yaml.example`, `.env.example`) as templates
 - **Rotate API keys** regularly for production environments
 - **Use different keys** for development and production
+- **Environment variables** are the most secure method for production deployments
 
 ## Semantic Search
 

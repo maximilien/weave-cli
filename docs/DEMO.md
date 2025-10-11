@@ -4,6 +4,29 @@ A 5-minute demonstration of Weave CLI capabilities for managing Weaviate vector 
 
 ## Page 1: Health Check & Configuration
 
+### Environment Variable Configuration (New!)
+```bash
+# Set environment variables (no config.yaml needed!)
+export VECTOR_DB_TYPE="weaviate-cloud"
+export WEAVIATE_URL="https://your-instance.weaviate.cloud"
+export WEAVIATE_API_KEY="your-api-key"
+export OPENAI_API_KEY="sk-proj-your-openai-key"
+
+# Test the configuration
+./bin/weave config show
+```
+**Expected Output:**
+```
+🔧 Default Database Configuration
+Type: weaviate-cloud
+🌐 Weaviate Cloud Configuration
+  URL: https://your-instance.weaviate.cloud
+  API Key: ***hidden***
+  Collections:
+    - WeaveDocs (text)
+    - WeaveImages (image)
+```
+
 ### Health Check
 ```bash
 ./bin/weave health check
@@ -14,16 +37,25 @@ A 5-minute demonstration of Weave CLI capabilities for managing Weaviate vector 
 ✅ Database is healthy and accessible
 ```
 
-### Configuration Display
+### Mock Database Demo (No External Dependencies!)
 ```bash
+# Use mock database for testing (no Weaviate instance needed!)
+export VECTOR_DB_TYPE="mock"
+
+# Show configuration
 ./bin/weave config show
 ```
 **Expected Output:**
 ```
-🔧 Configuration:
-  Vector DB Type: weaviate-cloud
-  Weaviate URL: https://your-instance.weaviate.cloud
-  API Key: [configured]
+🔧 Default Database Configuration
+Type: mock
+🧪 Mock Database Configuration
+  Enabled: true
+  Simulate Embeddings: true
+  Embedding Dimension: 384
+  Collections:
+    - WeaveDocs (text)
+    - WeaveImages (image)
 ```
 
 ### Help Command
