@@ -2,6 +2,8 @@
 
 A comprehensive guide to using the Weave CLI tool for managing Weaviate vector databases.
 
+> **📖 Quick Reference**: For a quick overview, see the [README.md](../README.md)
+
 ## Table of Contents
 
 1. [Getting Started](#getting-started)
