@@ -14,14 +14,6 @@ if [ -z "$VECTOR_DB_TYPE" ]; then
     export VECTOR_DB_TYPE="weaviate-cloud"
 fi
 
-# Check if we have the required environment variables for Weaviate Cloud
-if [ -z "$WEAVIATE_URL" ] || [ -z "$WEAVIATE_API_KEY" ] || [ -z "$OPENAI_API_KEY" ]; then
-    echo "⚠️  Required environment variables not set for Weaviate Cloud demo"
-    echo "⚠️  Setting up mock database for demo instead..."
-    export VECTOR_DB_TYPE="mock"
-    unset WEAVIATE_URL WEAVIATE_API_KEY OPENAI_API_KEY
-fi
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -174,8 +166,8 @@ run_demo_cmd "./bin/weave --help | head -20" "Help Command"
 
 # Page 2: Create Collections
 page_break "2"
-run_demo_cmd "./bin/weave cols create WeaveDocs --text --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Text Collection"
-run_demo_cmd "./bin/weave cols create WeaveImages --image --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists'" "Create Image Collection"
+run_demo_cmd "./bin/weave cols create WeaveDocs --text --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists - continuing demo'" "Create Text Collection"
+run_demo_cmd "./bin/weave cols create WeaveImages --image --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists - continuing demo'" "Create Image Collection"
 run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
 run_demo_cmd "./bin/weave cols show WeaveImages --schema" "Show Image Collection Schema"
 
@@ -185,8 +177,8 @@ run_demo_cmd "./bin/weave cols ls" "List All Collections"
 
 # Page 4: Create Documents
 page_break "4"
-run_demo_cmd "if [ -f README.md ]; then ./bin/weave docs create WeaveDocs README.md; else echo 'README.md not found - creating sample document'; echo '# Sample Document\n\nThis is a sample document for the demo.' > README.md && ./bin/weave docs create WeaveDocs README.md; fi" "Create Text Document"
-run_demo_cmd "if ./bin/weave docs create WeaveImages images/weave-cli_1.png >/dev/null 2>&1; then echo '✅ Image document created successfully'; else echo 'ℹ️ Image too large for embedding model - this is expected for large images'; fi" "Create Image Document"
+run_demo_cmd "if [ -f README.md ]; then ./bin/weave docs create WeaveDocs README.md || echo 'Document creation failed - continuing demo'; else echo 'README.md not found - creating sample document'; echo '# Sample Document\n\nThis is a sample document for the demo.\n\n## Features\n- Vector embeddings\n- Semantic search\n- Document management' > README.md && ./bin/weave docs create WeaveDocs README.md || echo 'Document creation failed - continuing demo'; fi" "Create Text Document"
+run_demo_cmd "if [ -f images/weave-cli_1.png ]; then if ./bin/weave docs create WeaveImages images/weave-cli_1.png >/dev/null 2>&1; then echo '✅ Image document created successfully'; else echo 'ℹ️ Image too large for embedding model - this is expected for large images'; fi; else echo 'ℹ️ No image file found - skipping image document creation'; fi" "Create Image Document"
 
 # Page 5: Show Documents & Schema
 page_break "5"
@@ -245,6 +237,19 @@ record_demo() {
     
     print_header "Recording ${demo_type} demo..."
     
+    # Check if we have the required environment variables for Weaviate Cloud
+    if [ -z "$WEAVIATE_URL" ] || [ -z "$WEAVIATE_API_KEY" ] || [ -z "$OPENAI_API_KEY" ]; then
+        print_error "❌ Required environment variables not set for Weaviate Cloud demo"
+        print_error "Please set the following environment variables:"
+        echo "  export WEAVIATE_URL=\"https://your-cluster.weaviate.cloud\""
+        echo "  export WEAVIATE_API_KEY=\"your-weaviate-api-key\""
+        echo "  export OPENAI_API_KEY=\"sk-proj-your-openai-api-key\""
+        echo ""
+        print_error "Demo cannot proceed without Weaviate credentials."
+        print_error "For testing without Weaviate, use: VECTOR_DB_TYPE=\"mock\" ./tools/asciinema.sh quick"
+        return 1
+    fi
+    
     if ! check_asciinema; then
         return 1
     fi
@@ -284,6 +289,19 @@ record_quick_demo() {
     local output_file="videos/weave-cli-quick-demo.cast"
     
     print_header "Recording quick demo..."
+    
+    # Check if we have the required environment variables for Weaviate Cloud
+    if [ -z "$WEAVIATE_URL" ] || [ -z "$WEAVIATE_API_KEY" ] || [ -z "$OPENAI_API_KEY" ]; then
+        print_error "❌ Required environment variables not set for Weaviate Cloud demo"
+        print_error "Please set the following environment variables:"
+        echo "  export WEAVIATE_URL=\"https://your-cluster.weaviate.cloud\""
+        echo "  export WEAVIATE_API_KEY=\"your-weaviate-api-key\""
+        echo "  export OPENAI_API_KEY=\"sk-proj-your-openai-api-key\""
+        echo ""
+        print_error "Demo cannot proceed without Weaviate credentials."
+        print_error "For testing without Weaviate, use: VECTOR_DB_TYPE=\"mock\" ./tools/asciinema.sh quick"
+        return 1
+    fi
     
     if ! check_asciinema; then
         return 1
@@ -343,14 +361,29 @@ sleep 2
 echo -e "${BLUE}💻 Create Collection${NC}"
 echo -e "${YELLOW}$ ./bin/weave cols create DemoCollection --text --flat-metadata${NC}"
 sleep 1
-./bin/weave cols create DemoCollection --text --flat-metadata --embedding-model text-embedding-3-small
+./bin/weave cols create DemoCollection --text --flat-metadata --embedding-model text-embedding-3-small || echo "Collection may already exist"
 echo ""
 sleep 2
 
 echo -e "${BLUE}💻 Create Document${NC}"
 echo -e "${YELLOW}$ ./bin/weave docs create DemoCollection README.md${NC}"
 sleep 1
-./bin/weave docs create DemoCollection README.md
+if [ -f README.md ]; then
+    ./bin/weave docs create DemoCollection README.md || echo "Document creation may have failed - continuing demo"
+else
+    echo "Creating sample document for demo..."
+    echo "# Sample Document
+
+This is a sample document for the Weave CLI demo.
+It contains some text that we can search through using semantic search.
+
+## Features
+- Vector embeddings
+- Semantic search
+- Document management
+- Collection management" > README.md
+    ./bin/weave docs create DemoCollection README.md || echo "Document creation may have failed - continuing demo"
+fi
 echo ""
 sleep 2
 

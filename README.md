@@ -55,10 +55,10 @@ For more details, see [WEAVIATE_INTEGRATION_STATUS.md](WEAVIATE_INTEGRATION_STAT
 
 Watch Weave CLI in action with our interactive demos:
 
-- **📹 [Full Demo](https://asciinema.org/a/bgBFlzxYlX4rgbMkIV90qm217)**
-  (5 minutes): Complete feature showcase
-- **⚡ [Quick Demo](https://asciinema.org/a/NlMxEJmJbXudj787MCYQAbw8g)**
-  (2 minutes): Rapid overview
+- **📹 [Full Demo](https://asciinema.org/a/lcr4P2h4Dh5Fka6gIZcjhO5e7)**
+  (5 minutes): Complete feature showcase with optional config.yaml
+- **⚡ [Quick Demo](https://asciinema.org/a/rcIVMhjYFTpOvOsMlq7iHMMGW)**
+  (2 minutes): Rapid overview with environment variables
 
 **Latest Demo URLs** are automatically saved to `videos/latest-demo-uploads.txt`
 after each upload. Check that file for the most current demo links.
@@ -119,13 +119,13 @@ export VECTOR_DB_TYPE="weaviate-cloud"
 export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
 export WEAVIATE_API_KEY="your-weaviate-api-key"
 export OPENAI_API_KEY="sk-proj-your-openai-api-key"
-```
+```text
 
 **Option 2: Configuration Files**
 ```bash
 cp config.yaml.example config.yaml
 cp .env.example .env
-```
+```text
 
 1. **Configure your environment**:
 
