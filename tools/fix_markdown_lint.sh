@@ -31,10 +31,11 @@ for file in "$PROJECT_ROOT"/*.md; do
         fi
 
         # Add 'text' language to code blocks that don't have a language
+        # Only replace opening ``` tags (followed by newline and content), not closing ones
         if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' 's/^```$/```text/' "$file" 2>/dev/null || true
+            sed -i '' '/^```$/{N;/^```\n[^`]/s/^```/```text/;}' "$file" 2>/dev/null || true
         else
-            sed -i 's/^```$/```text/' "$file" 2>/dev/null || true
+            sed -i '/^```$/{N;/^```\n[^`]/s/^```/```text/;}' "$file" 2>/dev/null || true
         fi
     fi
 done

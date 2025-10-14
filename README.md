@@ -51,14 +51,16 @@ cd weave-cli
 
 ### Configuration
 
-**Option 1: Environment Variables Only (Recommended)**
+#### Option 1: Environment Variables Only (Recommended)
+
 ```bash
 export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
 export WEAVIATE_API_KEY="your-weaviate-api-key"
 export OPENAI_API_KEY="sk-proj-your-openai-key"
 ```
 
-**Option 2: Configuration File**
+#### Option 2: Configuration File
+
 ```bash
 # Copy example config
 cp config.yaml.example config.yaml
