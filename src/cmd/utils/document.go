@@ -433,6 +433,13 @@ func DeleteAllMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 
 // processTextFile processes a text file and creates documents
 func processTextFile(ctx context.Context, client *weaviate.Client, collectionName, filePath string, chunkSize int) error {
+	// Convert to absolute path for consistent storage_path
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		// Fallback to original path if absolute path cannot be determined
+		absPath = filePath
+	}
+
 	// Read file content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -462,10 +469,10 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 				document = weaviate.Document{
 					ID:      docID,
 					Content: chunk,
-					URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
+					URL:     fmt.Sprintf("file://%s#chunk-%d", absPath, i),
 					Metadata: map[string]interface{}{
 						"id":                docID,
-						"added_date":        now,
+						"date_added":        now,
 						"creation_date":     now,
 						"modified_date":     now,
 						"creator":           "",
@@ -478,17 +485,18 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 						"chunk_index":       i,
 						"chunk_sizes":       getChunkSizes(chunks),
 						"original_filename": filepath.Base(filePath),
-						"storage_path":      filePath,
+						"storage_path":      absPath,
 						"type":              "text",
 						"content":           chunk, // Use content field as per Weaviate's expectation
 					},
 				}
 			} else {
 				// Use JSON metadata structure - single metadata field ONLY
+				// Content is stored in Document.Content, NOT in metadata
 				now := time.Now().Format(time.RFC3339)
 				metadataJSON := map[string]interface{}{
 					"id":                docID,
-					"added_date":        now,
+					"date_added":        now,
 					"creation_date":     now,
 					"modified_date":     now,
 					"creator":           "",
@@ -501,18 +509,15 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 					"chunk_index":       i,
 					"chunk_sizes":       getChunkSizes(chunks),
 					"original_filename": filepath.Base(filePath),
-					"storage_path":      filePath,
+					"storage_path":      absPath,
 					"type":              "text",
-					"content":           chunk, // Use content field as per Weaviate's expectation
 				}
-				metadataJSONStr, _ := json.Marshal(metadataJSON)
+				// Use the metadataJSON map directly - don't wrap it
 				document = weaviate.Document{
-					ID:      docID,
-					Content: chunk,
-					URL:     fmt.Sprintf("file://%s#chunk-%d", filePath, i),
-					Metadata: map[string]interface{}{
-						"metadata": string(metadataJSONStr),
-					},
+					ID:       docID,
+					Content:  chunk,
+					URL:      fmt.Sprintf("file://%s#chunk-%d", absPath, i),
+					Metadata: metadataJSON,
 				}
 			}
 		} else {
@@ -591,7 +596,7 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 			URL:       fmt.Sprintf("file://%s", filePath),
 			Metadata: map[string]interface{}{
 				"id":                docID,
-				"added_date":        now,
+				"date_added":        now,
 				"creation_date":     now,
 				"modified_date":     now,
 				"creator":           "",

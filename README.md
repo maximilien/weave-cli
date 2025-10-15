@@ -112,6 +112,24 @@ cp config.yaml.example config.yaml
 
 ## Development
 
+### Setup Development Environment
+
+```bash
+# Install all required development tools (linters, PDF tools, etc.)
+./setup.sh
+```
+
+This will install:
+
+- Go tools: `golangci-lint`, `goimports`, `govulncheck`, `gosec`
+- PDF processing: `poppler` (provides `pdftotext` for better PDF text extraction)
+- Shell linting: `shellcheck`
+- YAML linting: `yamllint`
+- Markdown linting: `markdownlint`
+- Dependency checking: `go-mod-outdated`
+
+### Build and Test
+
 ```bash
 # Build the project
 ./build.sh

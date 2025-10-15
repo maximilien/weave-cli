@@ -61,23 +61,26 @@ func extractPDFText(filePath string, chunkSize int) ([]PDFTextData, error) {
 	for i, chunk := range chunks {
 		// Build metadata compatible with RagMeDocs format
 		metadata := map[string]interface{}{
-			"author":          pdfMetadata["Author"], // PDF author if available
-			"chunk_index":     i,                     // Current chunk index
-			"chunk_sizes":     chunkSizes,            // Array of all chunk sizes
-			"source_document": fileName,              // Original filename
-			"processing_info": fmt.Sprintf("Processed on %s", time.Now().Format(time.RFC3339)),
-			"type":            "pdf",
-			"filename":        fileName,
-			"date_added":      time.Now().Format(time.RFC3339),
-			"storage_path":    filePath,
-			"file_size":       fileInfo.Size(),
-			"page_count":      pageCount,
-			"title":           pdfMetadata["Title"],
-			"subject":         pdfMetadata["Subject"],
-			"keywords":        pdfMetadata["Keywords"],
-			"creator":         pdfMetadata["Creator"],
-			"producer":        pdfMetadata["Producer"],
-			"creation_date":   pdfMetadata["CreationDate"],
+			"author":            pdfMetadata["Author"], // PDF author if available
+			"chunk_index":       i,                     // Current chunk index
+			"chunk_sizes":       chunkSizes,            // Array of all chunk sizes
+			"source_document":   fileName,              // Original filename
+			"processing_info":   fmt.Sprintf("Processed on %s", time.Now().Format(time.RFC3339)),
+			"type":              "pdf",
+			"filename":          fileName,
+			"date_added":        time.Now().Format(time.RFC3339),
+			"storage_path":      filePath,
+			"file_size":         fileInfo.Size(),
+			"page_count":        pageCount,
+			"title":             pdfMetadata["Title"],
+			"subject":           pdfMetadata["Subject"],
+			"keywords":          pdfMetadata["Keywords"],
+			"creator":           pdfMetadata["Creator"],
+			"producer":          pdfMetadata["Producer"],
+			"creation_date":     pdfMetadata["CreationDate"],
+			"is_chunked":        len(chunks) > 1, // Boolean flag indicating if document is chunked
+			"total_chunks":      len(chunks),     // Total number of chunks
+			"original_filename": fileName,        // Original filename (matches RagMeDocs)
 		}
 
 		// Remove empty metadata fields
