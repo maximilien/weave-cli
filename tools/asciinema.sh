@@ -59,7 +59,7 @@ print_help() {
     echo ""
     echo "Prerequisites:"
     echo "  • Weaviate Cloud instance configured"
-    echo "  • Test collections available (WeaveDocs, WeaveImages)"
+    echo "  • Test collections available (DemoCollection, DemoCollectionImages)"
     echo "  • Demo documents in docs/ and images/ directories"
     echo "  • PDF files in tests/fixtures/ directory"
 }
@@ -150,12 +150,12 @@ sleep 2
 
 # Pre-demo cleanup
 echo -e "${BLUE}💻 Pre-demo cleanup${NC}"
-echo -e "${YELLOW}$ ./bin/weave cols delete-schema WeaveDocs --force 2>/dev/null || true${NC}"
+echo -e "${YELLOW}$ ./bin/weave cols delete-schema DemoCollection --force 2>/dev/null || true${NC}"
 sleep 1
-./bin/weave cols delete-schema WeaveDocs --force 2>/dev/null || true
-echo -e "${YELLOW}$ ./bin/weave cols delete-schema WeaveImages --force 2>/dev/null || true${NC}"
+./bin/weave cols delete-schema DemoCollection --force 2>/dev/null || true
+echo -e "${YELLOW}$ ./bin/weave cols delete-schema DemoCollectionImages --force 2>/dev/null || true${NC}"
 sleep 1
-./bin/weave cols delete-schema WeaveImages --force 2>/dev/null || true
+./bin/weave cols delete-schema DemoCollectionImages --force 2>/dev/null || true
 echo ""
 sleep 2
 
@@ -167,10 +167,10 @@ run_demo_cmd "./bin/weave --help | head -20" "Help Command"
 
 # Page 2: Create Collections
 page_break "2"
-run_demo_cmd "./bin/weave cols create WeaveDocs --text --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists - continuing demo'" "Create Text Collection"
-run_demo_cmd "./bin/weave cols create WeaveImages --image --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists - continuing demo'" "Create Image Collection"
-run_demo_cmd "./bin/weave cols show WeaveDocs" "Show Collection Structure"
-run_demo_cmd "./bin/weave cols show WeaveImages --schema" "Show Image Collection Schema"
+run_demo_cmd "./bin/weave cols create DemoCollection --text --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists - continuing demo'" "Create Text Collection"
+run_demo_cmd "./bin/weave cols create DemoCollectionImages --image --flat-metadata --embedding-model text-embedding-3-small || echo 'Collection already exists - continuing demo'" "Create Image Collection"
+run_demo_cmd "./bin/weave cols show DemoCollection" "Show Collection Structure"
+run_demo_cmd "./bin/weave cols show DemoCollectionImages --schema" "Show Image Collection Schema"
 
 # Page 3: List Collections
 page_break "3"
@@ -178,38 +178,38 @@ run_demo_cmd "./bin/weave cols ls" "List All Collections"
 
 # Page 4: Create Documents
 page_break "4"
-run_demo_cmd "if [ -f README.md ]; then ./bin/weave docs create WeaveDocs README.md || echo 'Document creation failed - continuing demo'; else echo 'README.md not found - creating sample document'; echo '# Sample Document\n\nThis is a sample document for the demo.\n\n## Features\n- Vector embeddings\n- Semantic search\n- Document management' > README.md && ./bin/weave docs create WeaveDocs README.md || echo 'Document creation failed - continuing demo'; fi" "Create Text Document"
-run_demo_cmd "if [ -f tests/fixtures/ragme-io.pdf ]; then ./bin/weave docs create WeaveDocs tests/fixtures/ragme-io.pdf || echo 'PDF document creation failed - continuing demo'; else echo 'ℹ️ No PDF file found - skipping PDF document creation'; fi" "Create PDF Document (NEW!)"
-run_demo_cmd "if [ -f images/weave-cli_1.png ]; then if ./bin/weave docs create WeaveImages images/weave-cli_1.png >/dev/null 2>&1; then echo '✅ Image document created successfully'; else echo 'ℹ️ Image too large for embedding model - this is expected for large images'; fi; else echo 'ℹ️ No image file found - skipping image document creation'; fi" "Create Image Document"
+run_demo_cmd "if [ -f README.md ]; then ./bin/weave docs create DemoCollection README.md || echo 'Document creation failed - continuing demo'; else echo 'README.md not found - creating sample document'; echo '# Sample Document\n\nThis is a sample document for the demo.\n\n## Features\n- Vector embeddings\n- Semantic search\n- Document management' > README.md && ./bin/weave docs create DemoCollection README.md || echo 'Document creation failed - continuing demo'; fi" "Create Text Document"
+run_demo_cmd "if [ -f tests/fixtures/ragme-io.pdf ]; then ./bin/weave docs create DemoCollection tests/fixtures/ragme-io.pdf || echo 'PDF document creation failed - continuing demo'; else echo 'ℹ️ No PDF file found - skipping PDF document creation'; fi" "Create PDF Document (NEW!)"
+run_demo_cmd "if [ -f images/weave-cli_1.png ]; then if ./bin/weave docs create DemoCollectionImages images/weave-cli_1.png >/dev/null 2>&1; then echo '✅ Image document created successfully'; else echo 'ℹ️ Image too large for embedding model - this is expected for large images'; fi; else echo 'ℹ️ No image file found - skipping image document creation'; fi" "Create Image Document"
 
 # Page 5: Show Documents & Schema
 page_break "5"
-run_demo_cmd "./bin/weave docs show WeaveDocs --name README.md || echo 'Document not found - will show collection info instead'" "Show Document Details"
-run_demo_cmd "./bin/weave cols show WeaveDocs --schema" "Show Collection Schema"
-run_demo_cmd "./bin/weave cols show WeaveDocs --expand-metadata" "Show Collection Metadata Analysis"
+run_demo_cmd "./bin/weave docs show DemoCollection --name README.md || echo 'Document not found - will show collection info instead'" "Show Document Details"
+run_demo_cmd "./bin/weave cols show DemoCollection --schema" "Show Collection Schema"
+run_demo_cmd "./bin/weave cols show DemoCollection --expand-metadata" "Show Collection Metadata Analysis"
 
 # Page 6: List Documents
 page_break "6"
-run_demo_cmd "./bin/weave cols ls | grep WeaveDocs || echo 'WeaveDocs collection not found'" "Verify Collection Exists"
-run_demo_cmd "./bin/weave docs ls WeaveDocs" "Simple Document List"
-run_demo_cmd "./bin/weave docs ls WeaveDocs -w -S" "Virtual Document View with Summary"
+run_demo_cmd "./bin/weave cols ls | grep DemoCollection || echo 'DemoCollection collection not found'" "Verify Collection Exists"
+run_demo_cmd "./bin/weave docs ls DemoCollection" "Simple Document List"
+run_demo_cmd "./bin/weave docs ls DemoCollection -w -S" "Virtual Document View with Summary"
 
 # Page 7: Semantic Search & Query
 page_break "7"
-run_demo_cmd "./bin/weave cols q WeaveDocs 'weave-cli installation'" "Basic Semantic Search"
-run_demo_cmd "./bin/weave cols q WeaveDocs 'machine learning' --top_k 3" "Search with Custom Result Limit"
-run_demo_cmd "./bin/weave cols q WeaveDocs 'ragme.io' --search-metadata" "Search PDF Content (NEW!)"
-run_demo_cmd "./bin/weave cols q WeaveDocs 'maximilien.org' --search-metadata" "Search with Metadata"
+run_demo_cmd "./bin/weave cols q DemoCollection 'weave-cli installation'" "Basic Semantic Search"
+run_demo_cmd "./bin/weave cols q DemoCollection 'machine learning' --top_k 3" "Search with Custom Result Limit"
+run_demo_cmd "./bin/weave cols q DemoCollection 'ragme.io' --search-metadata" "Search PDF Content (NEW!)"
+run_demo_cmd "./bin/weave cols q DemoCollection 'maximilien.org' --search-metadata" "Search with Metadata"
 run_demo_cmd "./bin/weave cols q --help | head -15" "Query Help"
 
 # Page 8: Delete Documents
 page_break "8"
-run_demo_cmd "./bin/weave docs delete WeaveDocs --name README.md --force" "Delete Document with Force"
+run_demo_cmd "./bin/weave docs delete DemoCollection --name README.md --force" "Delete Document with Force"
 
 # Page 9: Cleanup Operations
 page_break "9"
-run_demo_cmd "./bin/weave docs delete-all WeaveDocs --force" "Delete All Documents"
-run_demo_cmd "./bin/weave cols delete-schema WeaveDocs --force" "Delete Collection Schema"
+run_demo_cmd "./bin/weave docs delete-all DemoCollection --force" "Delete All Documents"
+run_demo_cmd "./bin/weave cols delete-schema DemoCollection --force" "Delete Collection Schema"
 
 # Page 10: Getting Weave CLI
 page_break "10"
