@@ -19,9 +19,9 @@ collections of configured vector databases.
 
 Watch Weave CLI in action with our interactive demos:
 
-- **📹 [Full Demo](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
+- **📹 [Full Demo](https://asciinema.org/a/a5ltpNIQ6pPZkHLl0qGDX7OlF)**
   (5 minutes): Complete feature showcase with PDF processing
-- **⚡ [Quick Demo](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)**
+- **⚡ [Quick Demo](https://asciinema.org/a/qUgPvpBpqsJwlVrjVWVtnonKX)**
   (2 minutes): Rapid overview with environment variables
 
 ## Features
