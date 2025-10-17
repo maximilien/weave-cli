@@ -112,7 +112,11 @@ func extractImageNumbers(images []VirtualDocument) (int, int) {
 				// Get number part (before .ext)
 				numPart := strings.Split(parts[1], ".")[0]
 				var num int
-				fmt.Sscanf(numPart, "%d", &num)
+				_, err := fmt.Sscanf(numPart, "%d", &num)
+				if err != nil {
+					// If parsing fails, skip this file
+					continue
+				}
 
 				if min == -1 || num < min {
 					min = num

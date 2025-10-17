@@ -69,7 +69,11 @@ func TestFilepathAbsConversion(t *testing.T) {
 				if err != nil {
 					t.Fatalf("Failed to get current directory: %v", err)
 				}
-				defer os.Chdir(originalDir)
+				defer func() {
+					if err := os.Chdir(originalDir); err != nil {
+						t.Errorf("Failed to restore original directory: %v", err)
+					}
+				}()
 
 				if err := os.Chdir(tmpDir); err != nil {
 					t.Fatalf("Failed to change directory: %v", err)
@@ -135,7 +139,11 @@ func TestStoragePathRegression(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
-		defer os.Chdir(originalDir)
+		defer func() {
+			if err := os.Chdir(originalDir); err != nil {
+				t.Errorf("Failed to restore original directory: %v", err)
+			}
+		}()
 
 		if err := os.Chdir(tmpDir); err != nil {
 			t.Fatalf("Failed to change directory: %v", err)
@@ -187,7 +195,11 @@ func TestStoragePathRegression(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get current directory: %v", err)
 		}
-		defer os.Chdir(originalDir)
+		defer func() {
+			if err := os.Chdir(originalDir); err != nil {
+				t.Errorf("Failed to restore original directory: %v", err)
+			}
+		}()
 
 		if err := os.Chdir(tmpDir); err != nil {
 			t.Fatalf("Failed to change directory: %v", err)
