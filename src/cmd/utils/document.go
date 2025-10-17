@@ -747,7 +747,8 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 	}
 
 	// Extract OCR text (Phase 3)
-	ocrData, err := image.ExtractOCRFromBytes(imageBytes)
+	ocrExtractor := image.GetOCRExtractor()
+	ocrData, err := ocrExtractor.ExtractFromBytes(imageBytes)
 	if err != nil {
 		PrintWarning(fmt.Sprintf("Failed to extract OCR text: %v", err))
 		ocrData = &image.OCRData{} // Use empty OCR data
@@ -1067,7 +1068,8 @@ func processExtractedPDFImage(ctx context.Context, imageDoc pdf.PDFImageData, co
 	}
 
 	// Extract OCR text
-	ocrData, err := image.ExtractOCRFromBytes(imageBytes)
+	ocrExtractor := image.GetOCRExtractor()
+	ocrData, err := ocrExtractor.ExtractFromBytes(imageBytes)
 	if err != nil {
 		// Non-critical, continue with empty OCR
 		ocrData = &image.OCRData{}
