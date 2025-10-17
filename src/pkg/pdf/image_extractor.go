@@ -85,6 +85,15 @@ func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFIma
 	// Generate OCR text (placeholder - would need OCR library)
 	ocrText := extractOCRText(imagePath)
 
+	// Generate descriptive filename
+	pdfBasename := filepath.Base(sourcePDF)
+	pdfName := strings.TrimSuffix(pdfBasename, filepath.Ext(pdfBasename))
+	imageExt := strings.ToLower(filepath.Ext(imagePath))
+	if imageExt == "" {
+		imageExt = ".jpg" // Default extension
+	}
+	generatedFilename := fmt.Sprintf("%s_image_%d%s", pdfName, imageIndex+1, imageExt)
+
 	// Generate metadata
 	metadata := map[string]interface{}{
 		"type":         "image",
@@ -93,6 +102,7 @@ func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFIma
 		"image_format": strings.ToLower(filepath.Ext(imagePath)),
 		"image_size":   len(imageBytes),
 		"date_added":   time.Now().Format(time.RFC3339),
+		"filename":     generatedFilename,
 	}
 
 	// Add EXIF data to metadata

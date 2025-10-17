@@ -23,8 +23,8 @@ Type: weaviate-cloud
   URL: https://your-instance.weaviate.cloud
   API Key: ***hidden***
   Collections:
-    - WeaveDocs (text)
-    - WeaveImages (image)
+    - DemoCollection (text)
+    - DemoCollectionImages (image)
 ```
 
 ### Health Check
@@ -54,8 +54,8 @@ Type: mock
   Simulate Embeddings: true
   Embedding Dimension: 384
   Collections:
-    - WeaveDocs (text)
-    - WeaveImages (image)
+    - DemoCollection (text)
+    - DemoCollectionImages (image)
 ```
 
 ### Help Command
@@ -79,33 +79,33 @@ Available Commands:
 
 ### Create Text Collection
 ```bash
-./bin/weave cols create WeaveDocs --schema-type ragmedocs --embedding-model text-embedding-3-small
+./bin/weave cols create DemoCollection --schema-type ragmedocs --embedding-model text-embedding-3-small
 ```
 **Expected Output:**
 ```
-✅ Successfully created collection: WeaveDocs
+✅ Successfully created collection: DemoCollection
 📄 Schema Type: ragmedocs (text documents)
 ```
 *Note: If collection already exists, command will show "Collection already exists"*
 
 ### Create Image Collection
 ```bash
-./bin/weave cols create WeaveImages --schema-type ragmeimages --embedding-model text-embedding-3-small
+./bin/weave cols create DemoCollectionImages --schema-type ragmeimages --embedding-model text-embedding-3-small
 ```
 **Expected Output:**
 ```
-✅ Successfully created collection: WeaveImages
+✅ Successfully created collection: DemoCollectionImages
 🖼️ Schema Type: ragmeimages (image documents)
 ```
 *Note: If collection already exists, command will show "Collection already exists"*
 
 ### Show Collection Structure
 ```bash
-./bin/weave cols show WeaveDocs
+./bin/weave cols show DemoCollection
 ```
 **Expected Output:**
 ```
-📄 Collection: WeaveDocs
+📄 Collection: DemoCollection
   Type: ragmedocs
   Documents: 0
   Schema: Configured for text processing
@@ -122,8 +122,8 @@ Available Commands:
 **Expected Output:**
 ```
 📋 Collections:
-📄 WeaveDocs (0 docs) - ragmedocs
-🖼️ WeaveImages (0 docs) - ragmeimages
+📄 DemoCollection (0 docs) - ragmedocs
+🖼️ DemoCollectionImages (0 docs) - ragmeimages
 ```
 
 ---
@@ -132,7 +132,7 @@ Available Commands:
 
 ### Create Text Documents
 ```bash
-./bin/weave docs create WeaveDocs README.md docs/DEMO.md
+./bin/weave docs create DemoCollection README.md docs/DEMO.md
 ```
 **Expected Output:**
 ```
@@ -142,7 +142,7 @@ Available Commands:
 
 ### Create Image Documents
 ```bash
-./bin/weave docs create WeaveImages images/screenshot1.png images/screenshot2.jpg
+./bin/weave docs create DemoCollectionImages images/screenshot1.png images/screenshot2.jpg
 ```
 **Expected Output:**
 ```
@@ -156,7 +156,7 @@ Available Commands:
 
 ### Show Document Details
 ```bash
-./bin/weave docs show WeaveDocs --name README.md
+./bin/weave docs show DemoCollection --name README.md
 ```
 **Expected Output:**
 ```
@@ -169,23 +169,23 @@ Available Commands:
 
 ### Show Collection Schema
 ```bash
-./bin/weave cols show WeaveDocs
+./bin/weave cols show DemoCollection
 ```
 
 ## Page 6: List Documents
 
 ### Simple Document List
 ```bash
-./bin/weave docs ls WeaveDocs
+./bin/weave docs ls DemoCollection
 ```
 
 ### Virtual Document View with Summary
 ```bash
-./bin/weave docs ls WeaveDocs -w -S
+./bin/weave docs ls DemoCollection -w -S
 ```
 **Expected Output:**
 ```
-✅ Found 1 virtual documents in collection 'WeaveDocs' (aggregated from 3 total documents):
+✅ Found 1 virtual documents in collection 'DemoCollection' (aggregated from 3 total documents):
 
 1. 📄 Document: README.md
    📝 Chunks: 3
@@ -200,11 +200,11 @@ Available Commands:
 
 ### Show Collection Schema
 ```bash
-./bin/weave cols show WeaveDocs
+./bin/weave cols show DemoCollection
 ```
 **Expected Output:**
 ```
-📄 Collection: WeaveDocs
+📄 Collection: DemoCollection
   Documents: 2
   Schema: ragmedocs
   Fields: content, metadata, filename
@@ -216,11 +216,11 @@ Available Commands:
 
 ### Basic Semantic Search
 ```bash
-./bin/weave cols q WeaveDocs "weave-cli installation"
+./bin/weave cols q DemoCollection "weave-cli installation"
 ```
 **Expected Output:**
 ```
-✅ Semantic search results for 'weave-cli installation' in collection 'WeaveDocs':
+✅ Semantic search results for 'weave-cli installation' in collection 'DemoCollection':
 
 1. 🔍 Score: 1.000
    ID: c937af68-727e-4946-8df5-f26919df7645
@@ -234,11 +234,11 @@ Available Commands:
 
 ### Search with Custom Result Limit
 ```bash
-./bin/weave cols q WeaveDocs "machine learning" --top_k 3
+./bin/weave cols q DemoCollection "machine learning" --top_k 3
 ```
 **Expected Output:**
 ```
-✅ Semantic search results for 'machine learning' in collection 'WeaveDocs':
+✅ Semantic search results for 'machine learning' in collection 'DemoCollection':
 
 1. 🔍 Score: 1.000
    ID: doc1-chunk1
@@ -250,11 +250,11 @@ Available Commands:
 
 ### Search with Metadata (NEW!)
 ```bash
-./bin/weave cols q WeaveDocs "maximilien.org" --search-metadata
+./bin/weave cols q DemoCollection "maximilien.org" --search-metadata
 ```
 **Expected Output:**
 ```
-✅ Semantic search results for 'maximilien.org' in collection 'WeaveDocs':
+✅ Semantic search results for 'maximilien.org' in collection 'DemoCollection':
 
 1. 🔍 Score: 1.000
    ID: e0b3768f-2cc9-4962-aee2-913a95e5757c
@@ -266,11 +266,11 @@ Available Commands:
 
 ### BM25 Keyword Search (NEW!)
 ```bash
-./bin/weave cols q WeaveDocs "exact keywords" --bm25
+./bin/weave cols q DemoCollection "exact keywords" --bm25
 ```
 **Expected Output:**
 ```
-✅ Semantic search results for 'exact keywords' in collection 'WeaveDocs':
+✅ Semantic search results for 'exact keywords' in collection 'DemoCollection':
 
 1. 🔍 Score: 0.850
    ID: doc1-chunk1
@@ -303,7 +303,7 @@ Flags:
 
 ### Delete Single Document
 ```bash
-./bin/weave docs delete WeaveDocs README.md
+./bin/weave docs delete DemoCollection README.md
 ```
 **Expected Output:**
 ```
@@ -313,7 +313,7 @@ Flags:
 
 ### Delete with Force Flag
 ```bash
-./bin/weave docs delete WeaveImages screenshot1.png --force
+./bin/weave docs delete DemoCollectionImages screenshot1.png --force
 ```
 **Expected Output:**
 ```
@@ -326,20 +326,20 @@ Flags:
 
 ### Delete All Documents
 ```bash
-./bin/weave docs delete-all WeaveDocs --force
+./bin/weave docs delete-all DemoCollection --force
 ```
 **Expected Output:**
 ```
-✅ Successfully deleted all documents from collection: WeaveDocs
+✅ Successfully deleted all documents from collection: DemoCollection
 ```
 
 ### Delete Collection Schema
 ```bash
-./bin/weave cols delete-schema WeaveDocs --force
+./bin/weave cols delete-schema DemoCollection --force
 ```
 **Expected Output:**
 ```
-✅ Successfully deleted schema for collection: WeaveDocs
+✅ Successfully deleted schema for collection: DemoCollection
 ```
 
 ---
@@ -400,6 +400,6 @@ Weave CLI 0.2.1
 
 - **Duration**: ~5 minutes
 - **Prerequisites**: Weaviate Cloud instance configured
-- **Test Collections**: Uses WeaveDocs and WeaveImages for isolation
+- **Test Collections**: Uses DemoCollection and DemoCollectionImages for isolation
 - **Cleanup**: All demo collections are cleaned up automatically
 - **Recording**: Use `./tools/asciinema.sh` to record this demo

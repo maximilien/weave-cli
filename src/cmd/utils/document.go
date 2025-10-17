@@ -6,20 +6,150 @@ package utils
 import (
 	"context"
 	"encoding/base64"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
 	"github.com/fatih/color"
 	"github.com/google/uuid"
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/image"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
+
+// ProcessingReport tracks processing results for CSV reporting
+type ProcessingReport struct {
+	FilePath   string
+	Collection string
+	Timestamp  time.Time
+	TextChunks []ChunkReport
+	Images     []ImageReport
+	ReportPath string
+	ReportMode string
+}
+
+// ChunkReport tracks a single text chunk processing result
+type ChunkReport struct {
+	ChunkNumber int
+	Success     bool
+	Error       string
+	SizeBytes   int
+}
+
+// ImageReport tracks a single image processing result
+type ImageReport struct {
+	ImageNumber int
+	Filename    string
+	Success     bool
+	Error       string
+	SizeBytes   int
+	OCRWarnings []string
+}
+
+// GenerateDefaultReportPath generates a default CSV report path from input file
+func GenerateDefaultReportPath(filePath string) string {
+	dir := filepath.Dir(filePath)
+	baseName := filepath.Base(filePath)
+	ext := filepath.Ext(baseName)
+	nameWithoutExt := strings.TrimSuffix(baseName, ext)
+	return filepath.Join(dir, nameWithoutExt+".csv")
+}
+
+// WriteProcessingReport writes or appends a processing report to CSV
+func WriteProcessingReport(report *ProcessingReport) error {
+	if report.ReportPath == "" {
+		return nil // No report requested
+	}
+
+	// Determine if we need to create or append
+	fileExists := false
+	if _, err := os.Stat(report.ReportPath); err == nil {
+		fileExists = true
+	}
+
+	// Create means overwrite, append means add to existing
+	var file *os.File
+	var err error
+	if report.ReportMode == "create" || !fileExists {
+		file, err = os.Create(report.ReportPath)
+		if err != nil {
+			return fmt.Errorf("failed to create report file: %v", err)
+		}
+	} else {
+		file, err = os.OpenFile(report.ReportPath, os.O_APPEND|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to open report file: %v", err)
+		}
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	// Write header if creating new file
+	if report.ReportMode == "create" || !fileExists {
+		header := []string{"Timestamp", "File", "Collection", "Type", "Item", "Status", "Error", "Size_KB", "Warnings"}
+		if err := writer.Write(header); err != nil {
+			return fmt.Errorf("failed to write header: %v", err)
+		}
+	}
+
+	timestamp := report.Timestamp.Format("2006-01-02 15:04:05")
+
+	// Write text chunk records
+	for _, chunk := range report.TextChunks {
+		status := "success"
+		if !chunk.Success {
+			status = "failed"
+		}
+		record := []string{
+			timestamp,
+			filepath.Base(report.FilePath),
+			report.Collection,
+			"text_chunk",
+			fmt.Sprintf("chunk_%d", chunk.ChunkNumber),
+			status,
+			chunk.Error,
+			fmt.Sprintf("%.1f", float64(chunk.SizeBytes)/1024),
+			"",
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("failed to write chunk record: %v", err)
+		}
+	}
+
+	// Write image records
+	for _, img := range report.Images {
+		status := "success"
+		if !img.Success {
+			status = "failed"
+		}
+		warnings := strings.Join(img.OCRWarnings, "; ")
+		record := []string{
+			timestamp,
+			filepath.Base(report.FilePath),
+			report.Collection,
+			"image",
+			img.Filename,
+			status,
+			img.Error,
+			fmt.Sprintf("%.1f", float64(img.SizeBytes)/1024),
+			warnings,
+		}
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("failed to write image record: %v", err)
+		}
+	}
+
+	return nil
+}
 
 // ListWeaviateDocuments lists Weaviate documents
 func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool, summary bool) {
@@ -54,7 +184,7 @@ func ListMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 }
 
 // CreateWeaviateDocument creates a Weaviate document
-func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) error {
+func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string) error {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -67,24 +197,47 @@ func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 		return err
 	}
 
+	// Initialize report if requested
+	var report *ProcessingReport
+	if reportPath != "" {
+		report = &ProcessingReport{
+			FilePath:   filePath,
+			Collection: collectionName,
+			Timestamp:  time.Now(),
+			TextChunks: []ChunkReport{},
+			Images:     []ImageReport{},
+			ReportPath: reportPath,
+			ReportMode: reportMode,
+		}
+	}
+
 	// Determine file type and process accordingly
 	ext := strings.ToLower(filepath.Ext(filePath))
 
 	var processErr error
 	switch ext {
 	case ".pdf":
-		processErr = processPDFFile(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
+		processErr = processPDFFile(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, report)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		processErr = processImageFile(ctx, client, collectionName, filePath)
 	default:
 		processErr = processTextFile(ctx, client, collectionName, filePath, chunkSize)
 	}
 
+	// Write report if requested
+	if report != nil {
+		if err := WriteProcessingReport(report); err != nil {
+			PrintWarning(fmt.Sprintf("Failed to write report: %v", err))
+		} else {
+			PrintSuccess(fmt.Sprintf("Report written to: %s", reportPath))
+		}
+	}
+
 	return processErr
 }
 
 // CreateMockDocument creates a mock document
-func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) {
+func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string) {
 	client := CreateMockClient(cfg)
 
 	// Check if file exists
@@ -261,6 +414,10 @@ func DeleteWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, co
 		deletedCount, err = client.DeleteDocumentsBulk(ctx, collectionName, documentIDs)
 		if err != nil {
 			PrintError(fmt.Sprintf("Failed to delete documents by IDs: %v", err))
+			return
+		}
+		if deletedCount == 0 {
+			PrintError(fmt.Sprintf("Failed to delete any documents. All %d deletion(s) failed. Use --name flag to delete by filename.", len(documentIDs)))
 			return
 		}
 		PrintSuccess(fmt.Sprintf("✅ Successfully deleted %d document(s) by ID", deletedCount))
@@ -579,6 +736,29 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 	base64Data := base64.StdEncoding.EncodeToString(imageBytes)
 	dataURL := fmt.Sprintf("data:image/%s;base64,%s", strings.TrimPrefix(filepath.Ext(filePath), "."), base64Data)
 
+	// Record processing start time (Phase 5)
+	processingStartTime := time.Now()
+
+	// Extract EXIF metadata (Phase 1)
+	exifData, err := image.ExtractEXIFFromBytes(imageBytes)
+	if err != nil {
+		PrintWarning(fmt.Sprintf("Failed to extract EXIF data: %v", err))
+		exifData = &image.EXIFData{} // Use empty EXIF data
+	}
+
+	// Extract OCR text (Phase 3)
+	ocrData, err := image.ExtractOCRFromBytes(imageBytes)
+	if err != nil {
+		PrintWarning(fmt.Sprintf("Failed to extract OCR text: %v", err))
+		ocrData = &image.OCRData{} // Use empty OCR data
+	}
+
+	// Generate timestamped storage path (Phase 4)
+	timestampedPath := image.GenerateTimestampedPath(filePath)
+
+	// Calculate processing duration (Phase 5)
+	processingDuration := time.Since(processingStartTime)
+
 	// Determine if this is a WeaveImages collection (new schema) or RagMeImages (legacy)
 	isWeaveImages := isWeaveImagesCollection(collectionName)
 
@@ -589,33 +769,90 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 	if isWeaveImages {
 		// Use WeaveImages schema (flat metadata structure)
 		now := time.Now().Format(time.RFC3339)
+
+		// Build metadata with EXIF, OCR, and processing data
+		metadata := map[string]interface{}{
+			"id":                     docID,
+			"date_added":             now,
+			"creation_date":          now,
+			"modified_date":          now,
+			"creator":                "",
+			"producer":               "",
+			"title":                  filepath.Base(filePath),
+			"ai_summary":             "",
+			"filename":               filepath.Base(filePath),
+			"is_chunked":             false,
+			"total_chunks":           1,
+			"chunk_index":            0,
+			"chunk_sizes":            []int{len(imageBytes)},
+			"original_filename":      filepath.Base(filePath),
+			"storage_path":           filePath,        // Absolute path (original)
+			"storage_path_relative":  timestampedPath, // Phase 4: Timestamped relative path
+			"type":                   "image",
+			"file_size":              fileInfo.Size(),
+			"image_format":           strings.ToLower(filepath.Ext(filePath)),
+			"image_size":             len(imageBytes),
+			"content":                "",                                // Images don't have text content
+			"processing_timestamp":   now,                               // Phase 5: When processed
+			"processing_duration_ms": processingDuration.Milliseconds(), // Phase 5: How long it took
+		}
+
+		// Add EXIF data if available
+		if !exifData.IsEmpty() {
+			if exifData.Make != "" {
+				metadata["exif_make"] = exifData.Make
+			}
+			if exifData.Model != "" {
+				metadata["exif_model"] = exifData.Model
+			}
+			if exifData.DateTime != "" {
+				metadata["exif_datetime"] = exifData.DateTime
+			}
+			if exifData.Orientation != 0 {
+				metadata["exif_orientation"] = exifData.Orientation
+			}
+			if exifData.Width != 0 {
+				metadata["exif_width"] = exifData.Width
+			}
+			if exifData.Height != 0 {
+				metadata["exif_height"] = exifData.Height
+			}
+			if exifData.FNumber != 0 {
+				metadata["exif_f_number"] = exifData.FNumber
+			}
+			if exifData.ExposureTime != "" {
+				metadata["exif_exposure_time"] = exifData.ExposureTime
+			}
+			if exifData.ISO != 0 {
+				metadata["exif_iso"] = exifData.ISO
+			}
+			if exifData.FocalLength != "" {
+				metadata["exif_focal_length"] = exifData.FocalLength
+			}
+			if exifData.GPSLatitude != 0 || exifData.GPSLongitude != 0 {
+				metadata["exif_gps_latitude"] = exifData.GPSLatitude
+				metadata["exif_gps_longitude"] = exifData.GPSLongitude
+			}
+			if exifData.GPSAltitude != 0 {
+				metadata["exif_gps_altitude"] = exifData.GPSAltitude
+			}
+		}
+
+		// Add OCR data if text was extracted (Phase 3)
+		if !ocrData.IsEmpty() {
+			metadata["ocr_text"] = ocrData.Text
+			metadata["ocr_confidence"] = ocrData.Confidence
+			metadata["ocr_language"] = ocrData.Language
+			metadata["ocr_word_count"] = ocrData.WordCount()
+			metadata["ocr_text_summary"] = ocrData.GetTextSummary(200) // First 200 chars
+		}
+
 		document = weaviate.Document{
 			ID:        docID,
 			Image:     dataURL,
 			ImageData: base64Data,
 			URL:       fmt.Sprintf("file://%s", filePath),
-			Metadata: map[string]interface{}{
-				"id":                docID,
-				"date_added":        now,
-				"creation_date":     now,
-				"modified_date":     now,
-				"creator":           "",
-				"producer":          "",
-				"title":             filepath.Base(filePath),
-				"ai_summary":        "",
-				"filename":          filepath.Base(filePath),
-				"is_chunked":        false,
-				"total_chunks":      1,
-				"chunk_index":       0,
-				"chunk_sizes":       []int{len(imageBytes)},
-				"original_filename": filepath.Base(filePath),
-				"storage_path":      filePath,
-				"type":              "image",
-				"file_size":         fileInfo.Size(),
-				"image_format":      strings.ToLower(filepath.Ext(filePath)),
-				"image_size":        len(imageBytes),
-				"content":           "", // Images don't have text content
-			},
+			Metadata:  metadata,
 		}
 	} else {
 		// Use RagMeImages schema (legacy structure for backward compatibility)
@@ -649,59 +886,312 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 }
 
 // processPDFFile processes a PDF file and creates documents
-func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) error {
+func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, report *ProcessingReport) error {
+	fmt.Printf("📄 Processing PDF: %s\n", filepath.Base(filePath))
+
 	// Extract PDF content using the existing PDF processor
+	fmt.Println("🔍 Extracting content from PDF...")
 	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return err
 	}
 
-	// Create text documents
-	textSuccessCount := 0
-	for _, textDoc := range textData {
-		document := weaviate.Document{
-			ID:       textDoc.ID,
-			Content:  textDoc.Content,
-			URL:      textDoc.URL,
-			Metadata: textDoc.Metadata,
-		}
+	fmt.Printf("✅ Found %d text chunks and %d images\n", len(textData), len(imageData))
 
-		err := client.CreateDocument(ctx, collectionName, document)
-		if err != nil {
-			PrintError(fmt.Sprintf("Failed to create PDF text document %s: %v", textDoc.ID, err))
-			continue
+	// Create text documents with progress
+	textSuccessCount := 0
+	if len(textData) > 0 {
+		fmt.Printf("\n📝 Creating text documents (%d chunks):\n", len(textData))
+		for i, textDoc := range textData {
+			document := weaviate.Document{
+				ID:       textDoc.ID,
+				Content:  textDoc.Content,
+				URL:      textDoc.URL,
+				Metadata: textDoc.Metadata,
+			}
+
+			err := client.CreateDocument(ctx, collectionName, document)
+
+			// Track in report if requested
+			if report != nil {
+				chunkReport := ChunkReport{
+					ChunkNumber: i + 1,
+					Success:     err == nil,
+					Error:       "",
+					SizeBytes:   len(textDoc.Content),
+				}
+				if err != nil {
+					chunkReport.Error = err.Error()
+				}
+				report.TextChunks = append(report.TextChunks, chunkReport)
+			}
+
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to create PDF text document %s: %v", textDoc.ID, err))
+				continue
+			}
+			textSuccessCount++
+
+			// Progress indicator
+			if (i+1)%5 == 0 || i == len(textData)-1 {
+				fmt.Printf("  [%d/%d] chunks created\n", textSuccessCount, len(textData))
+			}
 		}
-		textSuccessCount++
 	}
 
 	// Create image documents if image collection is specified
 	imageSuccessCount := 0
+	imageFailureCount := 0
 	if imageCollection != "" && len(imageData) > 0 {
-		for _, imageDoc := range imageData {
-			document := weaviate.Document{
-				ID:        imageDoc.ID,
-				Image:     imageDoc.Image,
-				ImageData: imageDoc.ImageData,
-				URL:       imageDoc.URL,
-				Metadata:  imageDoc.Metadata,
+		fmt.Printf("\n🖼️  Processing extracted images (%d total):\n", len(imageData))
+
+		// Process images in batches to avoid memory issues with large PDFs
+		for i := 0; i < len(imageData); i++ {
+			imageDoc := imageData[i]
+
+			// Apply full image processing pipeline to extracted images
+			// Pass i+1 as sequential index for clean numbering (image_1, image_2, etc.)
+			processedDoc, ocrWarnings, err := processExtractedPDFImage(ctx, imageDoc, imageCollection, filePath, i+1)
+
+			// Get filename for reporting
+			filename := "unknown"
+			if fn, ok := processedDoc.Metadata["filename"].(string); ok && fn != "" {
+				filename = fn
 			}
 
-			err := client.CreateDocument(ctx, imageCollection, document)
 			if err != nil {
-				PrintError(fmt.Sprintf("Failed to create PDF image document %s: %v", imageDoc.ID, err))
+				PrintError(fmt.Sprintf("Failed to process PDF image %d: %v", i+1, err))
+
+				// Track in report if requested
+				if report != nil {
+					imgReport := ImageReport{
+						ImageNumber: i + 1,
+						Filename:    filename,
+						Success:     false,
+						Error:       err.Error(),
+						SizeBytes:   len(imageDoc.ImageData),
+						OCRWarnings: ocrWarnings,
+					}
+					report.Images = append(report.Images, imgReport)
+				}
+				continue
+			}
+
+			err = client.CreateDocument(ctx, imageCollection, processedDoc)
+
+			// Track in report if requested
+			if report != nil {
+				imgReport := ImageReport{
+					ImageNumber: i + 1,
+					Filename:    filename,
+					Success:     err == nil,
+					Error:       "",
+					SizeBytes:   len(imageDoc.ImageData),
+					OCRWarnings: ocrWarnings,
+				}
+				if err != nil {
+					imgReport.Error = err.Error()
+				}
+				report.Images = append(report.Images, imgReport)
+			}
+
+			if err != nil {
+				imageFailureCount++
+				// Check if it's a memory error and provide helpful message
+				if strings.Contains(err.Error(), "not enough memory") || strings.Contains(err.Error(), "memory") {
+					PrintError(fmt.Sprintf("Failed to create PDF image document %s: %v", imageDoc.ID, err))
+					if imageFailureCount == 1 {
+						PrintWarning("💡 Tip: Try reducing batch size with --batch-size flag (e.g., --batch-size 5)")
+						PrintWarning("💡 Or increase min-image-size to skip large images (e.g., --min-image-size 10240)")
+					}
+				} else {
+					PrintError(fmt.Sprintf("Failed to create PDF image document %s: %v", imageDoc.ID, err))
+				}
 				continue
 			}
 			imageSuccessCount++
+
+			// Progress indicator
+			fmt.Printf("  [%d/%d] Image %d: %s (%.1f KB)\n",
+				imageSuccessCount, len(imageData), i+1,
+				filename,
+				float64(len(imageDoc.ImageData))/1024)
+
+			// Force garbage collection every batch to free memory
+			// Also add small delay to let Weaviate server process and free memory
+			if (i+1)%batchSize == 0 {
+				runtime.GC()
+				time.Sleep(500 * time.Millisecond) // Half-second pause between batches
+			}
+		}
+
+		// Final garbage collection
+		runtime.GC()
+	}
+
+	fmt.Println()
+	PrintSuccess(fmt.Sprintf("✅ PDF processed: %s", filepath.Base(filePath)))
+	fmt.Printf("   • Text chunks: %d/%d created\n", textSuccessCount, len(textData))
+	if imageCollection != "" {
+		fmt.Printf("   • Images: %d/%d created", imageSuccessCount, len(imageData))
+		if imageFailureCount > 0 {
+			fmt.Printf(" (%d failed)\n", imageFailureCount)
+		} else {
+			fmt.Println()
 		}
 	}
 
-	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d text chunks)", filepath.Base(filePath), textSuccessCount))
-	if imageSuccessCount > 0 {
-		fmt.Printf(", %d images)", imageSuccessCount)
-	}
-	fmt.Println()
 	return nil
+}
+
+// processExtractedPDFImage processes an extracted PDF image with full metadata pipeline
+func processExtractedPDFImage(ctx context.Context, imageDoc pdf.PDFImageData, collectionName, sourcePDF string, sequentialIndex int) (weaviate.Document, []string, error) {
+	// Decode base64 image data
+	imageBytes, err := base64.StdEncoding.DecodeString(imageDoc.ImageData)
+	if err != nil {
+		return weaviate.Document{}, nil, fmt.Errorf("failed to decode image data: %w", err)
+	}
+
+	// Record processing start time
+	processingStartTime := time.Now()
+
+	// Track OCR warnings
+	var ocrWarnings []string
+
+	// Extract EXIF metadata
+	exifData, err := image.ExtractEXIFFromBytes(imageBytes)
+	if err != nil {
+		// Non-critical, continue with empty EXIF
+		exifData = &image.EXIFData{}
+	}
+
+	// Extract OCR text
+	ocrData, err := image.ExtractOCRFromBytes(imageBytes)
+	if err != nil {
+		// Non-critical, continue with empty OCR
+		ocrData = &image.OCRData{}
+		ocrWarnings = append(ocrWarnings, fmt.Sprintf("OCR extraction failed: %v", err))
+	}
+
+	// Check for common OCR warnings in the error message (these come from tesseract stderr)
+	if err != nil && strings.Contains(err.Error(), "Image too small") {
+		ocrWarnings = append(ocrWarnings, "Image too small to scale")
+	}
+	if err != nil && strings.Contains(err.Error(), "Line cannot be recognized") {
+		ocrWarnings = append(ocrWarnings, "Line cannot be recognized")
+	}
+
+	// Generate timestamped storage path
+	timestampedPath := image.GenerateTimestampedPathWithPrefix(sourcePDF, "images")
+
+	// Calculate processing duration
+	processingDuration := time.Since(processingStartTime)
+
+	// Determine if this is WeaveImages or RagMeImages
+	isWeaveImages := isWeaveImagesCollection(collectionName)
+
+	// Create RagMe-compatible URL format for grouping
+	// Format: pdf://filename.pdf/image_N (using sequential index for clean numbering)
+	pdfFilename := filepath.Base(sourcePDF)
+	pdfName := strings.TrimSuffix(pdfFilename, filepath.Ext(pdfFilename))
+
+	// Generate sequential filename (e.g., ragme-io_image_1.png)
+	imageExt := ".png" // Default to PNG for PDF-extracted images
+	if format, ok := imageDoc.Metadata["image_format"].(string); ok && format != "" {
+		imageExt = format
+		if !strings.HasPrefix(imageExt, ".") {
+			imageExt = "." + imageExt
+		}
+	}
+	sequentialFilename := fmt.Sprintf("%s_image_%d%s", pdfName, sequentialIndex, imageExt)
+
+	// Use RagMe-compatible URL format with sequential numbering
+	ragmeURL := fmt.Sprintf("pdf://%s/image_%d", pdfFilename, sequentialIndex)
+
+	now := time.Now().Format(time.RFC3339)
+
+	if isWeaveImages {
+		// Build comprehensive metadata with all enhancements
+
+		metadata := map[string]interface{}{
+			"id":                     imageDoc.ID,
+			"date_added":             now,
+			"creation_date":          now,
+			"modified_date":          now,
+			"creator":                "PDF Extraction",
+			"producer":               "Weave CLI",
+			"title":                  fmt.Sprintf("Image %d from %s", sequentialIndex, pdfFilename),
+			"ai_summary":             "",
+			"filename":               sequentialFilename,
+			"is_chunked":             false,
+			"total_chunks":           1,
+			"chunk_index":            0,
+			"chunk_sizes":            []int{len(imageBytes)},
+			"original_filename":      sequentialFilename,
+			"storage_path":           imageDoc.Metadata["source_pdf"],
+			"storage_path_relative":  timestampedPath,
+			"type":                   "image",
+			"source_pdf":             sourcePDF,
+			"pdf_filename":           pdfFilename, // RAGme-io compatibility
+			"pdf_page":               imageDoc.Metadata["pdf_page"],
+			"pdf_image_index":        sequentialIndex, // Use sequential index
+			"file_size":              len(imageBytes),
+			"image_format":           imageDoc.Metadata["image_format"],
+			"image_size":             len(imageBytes),
+			"content":                "",
+			"processing_timestamp":   now,
+			"processing_duration_ms": processingDuration.Milliseconds(),
+		}
+
+		// Add EXIF data
+		if !exifData.IsEmpty() {
+			if exifData.Make != "" {
+				metadata["exif_make"] = exifData.Make
+			}
+			if exifData.Model != "" {
+				metadata["exif_model"] = exifData.Model
+			}
+			if exifData.DateTime != "" {
+				metadata["exif_datetime"] = exifData.DateTime
+			}
+			if exifData.Orientation != 0 {
+				metadata["exif_orientation"] = exifData.Orientation
+			}
+			if exifData.Width != 0 {
+				metadata["exif_width"] = exifData.Width
+			}
+			if exifData.Height != 0 {
+				metadata["exif_height"] = exifData.Height
+			}
+		}
+
+		// Add OCR data
+		if !ocrData.IsEmpty() {
+			metadata["ocr_text"] = ocrData.Text
+			metadata["ocr_confidence"] = ocrData.Confidence
+			metadata["ocr_language"] = ocrData.Language
+			metadata["ocr_word_count"] = ocrData.WordCount()
+			metadata["ocr_text_summary"] = ocrData.GetTextSummary(200)
+		}
+
+		return weaviate.Document{
+			ID:        imageDoc.ID,
+			Image:     imageDoc.Image,
+			ImageData: imageDoc.ImageData,
+			URL:       ragmeURL, // Use RagMe-compatible URL format
+			Metadata:  metadata,
+		}, ocrWarnings, nil
+	}
+
+	// RagMeImages format (legacy)
+	return weaviate.Document{
+		ID:        imageDoc.ID,
+		Image:     imageDoc.Image,
+		ImageData: imageDoc.ImageData,
+		URL:       imageDoc.URL,
+		Metadata:  imageDoc.Metadata,
+	}, ocrWarnings, nil
 }
 
 // chunkText splits text into chunks of specified size

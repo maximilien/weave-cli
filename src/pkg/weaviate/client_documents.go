@@ -792,47 +792,52 @@ func (c *Client) DeleteDocumentsBulk(ctx context.Context, collectionName string,
 		return 0, nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	// Increase timeout for large image deletions (5 minutes per document)
+	timeout := time.Duration(len(documentIDs)) * 5 * time.Minute
+	if timeout > 30*time.Minute {
+		timeout = 30 * time.Minute // Cap at 30 minutes
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// Use concurrent individual deletions for better performance
-	// This is more reliable than batch API which may not be available in all Weaviate versions
-	type deleteResult struct {
-		success bool
-		err     error
-	}
-
-	// Create a channel to collect results
-	resultChan := make(chan deleteResult, len(documentIDs))
-
-	// Limit concurrent requests to avoid overwhelming the server
-	maxConcurrency := 10
-	semaphore := make(chan struct{}, maxConcurrency)
-
-	// Launch goroutines for concurrent deletions
-	for _, docID := range documentIDs {
-		go func(id string) {
-			semaphore <- struct{}{}        // Acquire semaphore
-			defer func() { <-semaphore }() // Release semaphore
-
-			err := c.DeleteDocument(ctx, collectionName, id)
-			resultChan <- deleteResult{success: err == nil, err: err}
-		}(docID)
-	}
-
-	// Collect results
+	// Delete in sequential batches to avoid overwhelming the server
+	// This is more reliable for large images than concurrent deletion
+	batchSize := 5 // Process 5 deletions at a time
 	successCount := 0
 	errorCount := 0
-	for i := 0; i < len(documentIDs); i++ {
-		result := <-resultChan
-		if result.success {
-			successCount++
-		} else {
-			errorCount++
-			// Log individual errors for debugging
-			if result.err != nil {
-				fmt.Printf("Warning: Failed to delete document: %v\n", result.err)
+
+	fmt.Printf("Deleting %d documents in batches of %d...\n", len(documentIDs), batchSize)
+
+	for i := 0; i < len(documentIDs); i += batchSize {
+		end := i + batchSize
+		if end > len(documentIDs) {
+			end = len(documentIDs)
+		}
+		batch := documentIDs[i:end]
+
+		// Process batch sequentially for large documents
+		for _, docID := range batch {
+			// Individual timeout per deletion (5 minutes)
+			deleteCtx, deleteCancel := context.WithTimeout(ctx, 5*time.Minute)
+			err := c.DeleteDocument(deleteCtx, collectionName, docID)
+			deleteCancel()
+
+			if err != nil {
+				errorCount++
+				fmt.Printf("Warning: Failed to delete document %s: %v\n", docID, err)
+			} else {
+				successCount++
 			}
+
+			// Show progress every 5 deletions
+			if (successCount+errorCount)%5 == 0 || (successCount+errorCount) == len(documentIDs) {
+				fmt.Printf("Progress: %d/%d deleted (%d failed)\n", successCount, len(documentIDs), errorCount)
+			}
+		}
+
+		// Small pause between batches
+		if end < len(documentIDs) {
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 
@@ -1058,11 +1063,12 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 	}
 
 	properties := map[string]interface{}{
-		"text":     doc.Content, // Use 'text' field for ragmedocs schema compatibility
-		"content":  doc.Content, // Keep 'content' for backward compatibility
-		"image":    doc.Image,
-		"url":      doc.URL,
-		"metadata": metadataJSON, // Store as JSON string for compatibility
+		"text":       doc.Content,   // Use 'text' field for ragmedocs schema compatibility
+		"content":    doc.Content,   // Keep 'content' for backward compatibility
+		"image":      doc.Image,     // Base64 image with data URI prefix
+		"image_data": doc.ImageData, // Raw base64 without prefix (required for RAGme-io display)
+		"url":        doc.URL,
+		"metadata":   metadataJSON, // Store as JSON string for compatibility
 	}
 
 	// Add PDF metadata fields as top-level properties for compatibility with RagMeDocs
@@ -1105,6 +1111,89 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 		}
 		if dateAdded, ok := doc.Metadata["date_added"]; ok {
 			properties["date_added"] = dateAdded
+		}
+
+		// Add EXIF metadata fields as top-level properties
+		if exifMake, ok := doc.Metadata["exif_make"]; ok && exifMake != "" {
+			properties["exif_make"] = exifMake
+		}
+		if exifModel, ok := doc.Metadata["exif_model"]; ok && exifModel != "" {
+			properties["exif_model"] = exifModel
+		}
+		if exifDateTime, ok := doc.Metadata["exif_datetime"]; ok && exifDateTime != "" {
+			properties["exif_datetime"] = exifDateTime
+		}
+		if exifOrientation, ok := doc.Metadata["exif_orientation"]; ok {
+			properties["exif_orientation"] = exifOrientation
+		}
+		if exifWidth, ok := doc.Metadata["exif_width"]; ok {
+			properties["exif_width"] = exifWidth
+		}
+		if exifHeight, ok := doc.Metadata["exif_height"]; ok {
+			properties["exif_height"] = exifHeight
+		}
+		if exifFNumber, ok := doc.Metadata["exif_f_number"]; ok {
+			properties["exif_f_number"] = exifFNumber
+		}
+		if exifExposureTime, ok := doc.Metadata["exif_exposure_time"]; ok && exifExposureTime != "" {
+			properties["exif_exposure_time"] = exifExposureTime
+		}
+		if exifISO, ok := doc.Metadata["exif_iso"]; ok {
+			properties["exif_iso"] = exifISO
+		}
+		if exifFocalLength, ok := doc.Metadata["exif_focal_length"]; ok && exifFocalLength != "" {
+			properties["exif_focal_length"] = exifFocalLength
+		}
+		if exifGPSLatitude, ok := doc.Metadata["exif_gps_latitude"]; ok {
+			properties["exif_gps_latitude"] = exifGPSLatitude
+		}
+		if exifGPSLongitude, ok := doc.Metadata["exif_gps_longitude"]; ok {
+			properties["exif_gps_longitude"] = exifGPSLongitude
+		}
+		if exifGPSAltitude, ok := doc.Metadata["exif_gps_altitude"]; ok {
+			properties["exif_gps_altitude"] = exifGPSAltitude
+		}
+
+		// Add OCR metadata fields as top-level properties (Phase 3)
+		if ocrText, ok := doc.Metadata["ocr_text"]; ok && ocrText != "" {
+			properties["ocr_text"] = ocrText
+		}
+		if ocrConfidence, ok := doc.Metadata["ocr_confidence"]; ok {
+			properties["ocr_confidence"] = ocrConfidence
+		}
+		if ocrLanguage, ok := doc.Metadata["ocr_language"]; ok && ocrLanguage != "" {
+			properties["ocr_language"] = ocrLanguage
+		}
+		if ocrWordCount, ok := doc.Metadata["ocr_word_count"]; ok {
+			properties["ocr_word_count"] = ocrWordCount
+		}
+		if ocrTextSummary, ok := doc.Metadata["ocr_text_summary"]; ok && ocrTextSummary != "" {
+			properties["ocr_text_summary"] = ocrTextSummary
+		}
+
+		// Add storage path and processing metadata (Phase 4 & 5)
+		if storagePathRelative, ok := doc.Metadata["storage_path_relative"]; ok && storagePathRelative != "" {
+			properties["storage_path_relative"] = storagePathRelative
+		}
+		if processingTimestamp, ok := doc.Metadata["processing_timestamp"]; ok {
+			properties["processing_timestamp"] = processingTimestamp
+		}
+		if processingDuration, ok := doc.Metadata["processing_duration_ms"]; ok {
+			properties["processing_duration_ms"] = processingDuration
+		}
+
+		// Add PDF-specific metadata fields for extracted images
+		if sourcePDF, ok := doc.Metadata["source_pdf"]; ok && sourcePDF != "" {
+			properties["source_pdf"] = sourcePDF
+		}
+		if pdfFilename, ok := doc.Metadata["pdf_filename"]; ok && pdfFilename != "" {
+			properties["pdf_filename"] = pdfFilename
+		}
+		if pdfPage, ok := doc.Metadata["pdf_page"]; ok {
+			properties["pdf_page"] = pdfPage
+		}
+		if pdfImageIndex, ok := doc.Metadata["pdf_image_index"]; ok {
+			properties["pdf_image_index"] = pdfImageIndex
 		}
 	}
 

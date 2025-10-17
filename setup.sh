@@ -164,6 +164,41 @@ else
     print_success "poppler-utils is already installed"
 fi
 
+# Install tesseract and leptonica (for OCR)
+print_header "Installing tesseract and leptonica (for OCR support)..."
+if ! command_exists tesseract; then
+    print_status "Installing tesseract..."
+    case $OS in
+        "macos")
+            if command_exists brew; then
+                brew install tesseract leptonica
+                print_success "tesseract and leptonica installed successfully via Homebrew!"
+            else
+                print_warning "Homebrew not found. Please install tesseract manually:"
+                print_status "Visit: https://github.com/tesseract-ocr/tesseract"
+            fi
+            ;;
+        "linux")
+            if command_exists apt-get; then
+                sudo apt-get update && sudo apt-get install -y tesseract-ocr libleptonica-dev
+                print_success "tesseract and leptonica installed successfully via apt-get!"
+            elif command_exists yum; then
+                sudo yum install -y tesseract leptonica-devel
+                print_success "tesseract and leptonica installed successfully via yum!"
+            else
+                print_warning "Package manager not found. Please install tesseract manually:"
+                print_status "Visit: https://github.com/tesseract-ocr/tesseract"
+            fi
+            ;;
+        *)
+            print_warning "Unknown OS. Please install tesseract manually:"
+            print_status "Visit: https://github.com/tesseract-ocr/tesseract"
+            ;;
+    esac
+else
+    print_success "tesseract is already installed"
+fi
+
 # Install shellcheck
 print_header "Installing shellcheck..."
 if ! command_exists shellcheck; then
@@ -289,7 +324,7 @@ fi
 print_header "Verifying installations..."
 echo ""
 
-tools=("go" "golangci-lint" "goimports" "govulncheck" "gosec" "pdftotext" "shellcheck" "yamllint" "markdownlint" "go-mod-outdated")
+tools=("go" "golangci-lint" "goimports" "govulncheck" "gosec" "pdftotext" "tesseract" "shellcheck" "yamllint" "markdownlint" "go-mod-outdated")
 
 all_installed=true
 for tool in "${tools[@]}"; do

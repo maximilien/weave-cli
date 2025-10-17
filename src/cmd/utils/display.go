@@ -21,6 +21,112 @@ type VirtualDocument struct {
 	Metadata         map[string]interface{}
 }
 
+// ImageGroup represents a group of images from the same source
+type ImageGroup struct {
+	SourcePDF   string
+	DisplayName string
+	TotalCount  int
+	Images      []VirtualDocument
+}
+
+// groupImagesBySource groups images by their PDF source for compact display
+func groupImagesBySource(virtualDocs []VirtualDocument) []ImageGroup {
+	// Check if these are image documents by looking for image naming pattern
+	if len(virtualDocs) == 0 {
+		return nil
+	}
+
+	// Group by source PDF (extract from filename like "ragme-io_image_1.png")
+	groups := make(map[string]*ImageGroup)
+
+	for _, vdoc := range virtualDocs {
+		filename := vdoc.OriginalFilename
+		// Check if this matches image pattern: source_image_N.ext
+		if strings.Contains(filename, "_image_") {
+			// Extract source name (everything before "_image_")
+			parts := strings.Split(filename, "_image_")
+			if len(parts) >= 2 {
+				sourceName := parts[0]
+
+				if _, exists := groups[sourceName]; !exists {
+					groups[sourceName] = &ImageGroup{
+						SourcePDF: sourceName,
+						Images:    []VirtualDocument{},
+					}
+				}
+				groups[sourceName].Images = append(groups[sourceName].Images, vdoc)
+			}
+		} else {
+			// Not an image pattern, return nil to use fallback
+			return nil
+		}
+	}
+
+	// Convert to slice and create compact display names
+	var result []ImageGroup
+	for _, group := range groups {
+		// Set total count to actual number of images in this group
+		group.TotalCount = len(group.Images)
+
+		// Sort images to find range
+		sort.Slice(group.Images, func(i, j int) bool {
+			return group.Images[i].OriginalFilename < group.Images[j].OriginalFilename
+		})
+
+		// Extract min and max image numbers
+		minNum, maxNum := extractImageNumbers(group.Images)
+
+		// Create display name with range
+		if minNum > 0 && maxNum > 0 {
+			group.DisplayName = fmt.Sprintf("%s_image_%d...%d.png", group.SourcePDF, minNum, maxNum)
+		} else {
+			group.DisplayName = fmt.Sprintf("%s (images)", group.SourcePDF)
+		}
+
+		result = append(result, *group)
+	}
+
+	// Sort by source name
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].SourcePDF < result[j].SourcePDF
+	})
+
+	return result
+}
+
+// extractImageNumbers extracts the min and max image numbers from filenames
+func extractImageNumbers(images []VirtualDocument) (int, int) {
+	if len(images) == 0 {
+		return 0, 0
+	}
+
+	min := -1
+	max := -1
+
+	for _, img := range images {
+		// Extract number from filename like "source_image_123.png"
+		filename := img.OriginalFilename
+		if strings.Contains(filename, "_image_") {
+			parts := strings.Split(filename, "_image_")
+			if len(parts) >= 2 {
+				// Get number part (before .ext)
+				numPart := strings.Split(parts[1], ".")[0]
+				var num int
+				fmt.Sscanf(numPart, "%d", &num)
+
+				if min == -1 || num < min {
+					min = num
+				}
+				if max == -1 || num > max {
+					max = num
+				}
+			}
+		}
+	}
+
+	return min, max
+}
+
 // DisplayRegularDocuments displays regular documents with styling
 func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
 	PrintSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
@@ -142,13 +248,40 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 	if summary {
 		PrintStyledKeyValueProminentWithEmoji("Summary", "", "📋")
 		fmt.Println()
-		for i, vdoc := range virtualDocs {
-			fmt.Printf("   %d. ", i+1)
-			PrintStyledFilename(vdoc.OriginalFilename)
-			fmt.Printf(" - ")
-			PrintStyledNumber(vdoc.TotalChunks)
-			fmt.Printf(" chunks")
-			fmt.Println()
+
+		// Group images by PDF source for compact display
+		imageGroups := groupImagesBySource(virtualDocs)
+
+		if len(imageGroups) > 0 {
+			// Display grouped images compactly
+			displayIdx := 1
+			for _, group := range imageGroups {
+				fmt.Printf("   %d. ", displayIdx)
+				PrintStyledFilename(group.DisplayName)
+				fmt.Printf(" - ")
+				PrintStyledNumber(group.TotalCount)
+
+				// Show range if there are gaps (actual count < range)
+				minNum, maxNum := extractImageNumbers(group.Images)
+				expectedCount := maxNum - minNum + 1
+				if expectedCount > group.TotalCount {
+					fmt.Printf(" of ")
+					PrintStyledNumber(expectedCount)
+				}
+				fmt.Printf(" images")
+				fmt.Println()
+				displayIdx++
+			}
+		} else {
+			// Fallback to original display for non-image documents
+			for i, vdoc := range virtualDocs {
+				fmt.Printf("   %d. ", i+1)
+				PrintStyledFilename(vdoc.OriginalFilename)
+				fmt.Printf(" - ")
+				PrintStyledNumber(vdoc.TotalChunks)
+				fmt.Printf(" chunks")
+				fmt.Println()
+			}
 		}
 		fmt.Println()
 	}

@@ -54,8 +54,11 @@ func init() {
 	CreateCmd.Flags().StringP("image-collection", "", "", "Collection name for extracted PDF images (default: same as main collection)")
 	CreateCmd.Flags().StringP("image-col", "", "", "Alias for --image-collection")
 	CreateCmd.Flags().StringP("image-cols", "", "", "Alias for --image-collection")
-	CreateCmd.Flags().Bool("skip-small-images", false, "Skip small images when extracting from PDFs")
-	CreateCmd.Flags().Int("min-image-size", 10240, "Minimum image size in bytes (default: 10240 = 10KB)")
+	CreateCmd.Flags().Bool("skip-small-images", true, "Skip small images when extracting from PDFs (default: true)")
+	CreateCmd.Flags().Int("min-image-size", 5120, "Minimum image size in bytes (default: 5120 = 5KB)")
+	CreateCmd.Flags().Int("batch-size", 10, "Number of images to process before pausing for memory cleanup (default: 10)")
+	CreateCmd.Flags().String("create-report", "", "Create a new CSV report of processing results (default: <filename>.csv in current directory)")
+	CreateCmd.Flags().String("append-report", "", "Append to an existing CSV report")
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
@@ -67,6 +70,9 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	imageCols, _ := cmd.Flags().GetString("image-cols")
 	skipSmallImages, _ := cmd.Flags().GetBool("skip-small-images")
 	minImageSize, _ := cmd.Flags().GetInt("min-image-size")
+	batchSize, _ := cmd.Flags().GetInt("batch-size")
+	createReport, _ := cmd.Flags().GetString("create-report")
+	appendReport, _ := cmd.Flags().GetString("append-report")
 
 	// Use image collection from flags if provided
 	if imageCollection == "" {
@@ -74,6 +80,24 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	}
 	if imageCollection == "" {
 		imageCollection = imageCols
+	}
+
+	// Determine report path
+	reportPath := ""
+	reportMode := ""
+	if createReport != "" || appendReport != "" {
+		if createReport != "" {
+			reportPath = createReport
+			reportMode = "create"
+		} else {
+			reportPath = appendReport
+			reportMode = "append"
+		}
+
+		// If report path is empty, generate default from filename
+		if reportPath == "" {
+			reportPath = utils.GenerateDefaultReportPath(filePath)
+		}
 	}
 
 	// Load configuration
@@ -94,12 +118,12 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize); err != nil {
+		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMock:
-		utils.CreateMockDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
+		utils.CreateMockDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)

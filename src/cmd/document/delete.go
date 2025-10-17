@@ -124,6 +124,5 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)
 	}
-
-	utils.PrintSuccess("Successfully deleted document(s)")
+	// Note: Success/error messages are printed by the deletion functions themselves
 }

@@ -34,6 +34,8 @@ cd weave-cli
 
 - Go 1.21 or later
 - Access to a Weaviate instance (cloud or local)
+- Tesseract OCR (optional, for OCR text extraction from images): `brew install tesseract`
+- Poppler (optional, for PDF text extraction): `brew install poppler`
 
 ### Quick Start
 
@@ -534,6 +536,7 @@ weave collection create MyImageCollection --image --field title:text,content:tex
 - **Use case**: Image documents, PDF extracted images
 - **Vectorization**: Enabled with text2vec-weaviate
 - **Usage**: `--schema RagMeImages` or `--image` flag
+- **Enhanced Metadata**: Automatically extracts EXIF data, OCR text, timestamped storage paths, and processing metrics from images and PDF-extracted images
 
 ### Defining Custom Schemas in config.yaml
 
@@ -625,6 +628,12 @@ weave docs create MyImageCollection image.jpg
 
 # PDF with both text and images
 weave docs create MyTextCollection document.pdf --image-collection MyImageCollection
+
+# PDF with image extraction (automatically filters images < 5KB)
+weave docs create MyTextCollection document.pdf --image-collection MyImageCollection
+
+# PDF with custom image size filter (e.g., 10KB minimum)
+weave docs create MyTextCollection document.pdf --image-collection MyImageCollection --min-image-size 10240
 
 # Using aliases
 weave docs c MyTextCollection document.txt
@@ -1156,6 +1165,119 @@ $ weave document list MyCollection --virtual
 - **Metadata keys** are dimmed for better hierarchy
 - **Important values** (IDs, filenames, numbers) are highlighted
 - **Emojis** provide visual structure (disabled with `--no-color`)
+
+## PDF and Image Processing
+
+### PDF Document Processing
+
+Weave CLI provides comprehensive PDF processing with intelligent text chunking and image extraction:
+
+```bash
+# Process PDF with text chunks only
+weave docs create MyTextCollection document.pdf --chunk-size 500
+
+# Process PDF with both text and images
+weave docs create MyTextCollection document.pdf --image-collection MyImageCollection
+
+# Process PDF with image size filtering (minimum 1KB)
+weave docs create MyTextCollection document.pdf \
+  --image-collection MyImageCollection \
+  --min-image-size 1024
+```
+
+#### PDF Processing Features
+
+- **📄 Text Chunking**: Automatically splits PDF text into manageable chunks
+- **🖼️ Image Extraction**: Extracts embedded images from PDFs
+- **📊 Progress Tracking**: Real-time progress for both text chunks and images
+- **🔍 Smart Image Filtering**: Automatically skips decorative images < 5KB (configurable with `--min-image-size`)
+- **📋 Metadata Preservation**: Maintains source PDF information for all extracted content
+
+#### Example Output
+
+```bash
+$ weave docs create WeaveDocs ~/Desktop/ragme-io.pdf --image-collection WeaveImages
+
+📄 Processing PDF: ragme-io.pdf
+🔍 Extracting content from PDF...
+✅ Found 3 text chunks and 4 images
+
+📝 Creating text documents (3 chunks):
+  [3/3] chunks created
+
+🖼️  Processing extracted images (4 total):
+  [1/4] Image 1: ragme-io_image_1.png (497.0 KB)
+  [2/4] Image 2: ragme-io_image_2.png (624.8 KB)
+  [3/4] Image 3: ragme-io_image_3.png (381.9 KB)
+  [4/4] Image 4: ragme-io_image_4.png (697.3 KB)
+
+✅ Successfully processed ragme-io.pdf
+   Text chunks: 3 created
+   Images: 4 extracted to WeaveImages (filtered out 20 small decorative images)
+```
+
+### Image Metadata Enhancement
+
+All images (both directly uploaded and PDF-extracted) automatically include rich metadata:
+
+#### EXIF Data Extraction
+- **Camera Information**: Make, model, camera settings
+- **Image Properties**: Width, height, orientation
+- **Capture Details**: DateTime, exposure, ISO, focal length
+- **GPS Location**: Latitude, longitude, altitude (when available)
+
+#### OCR Text Extraction
+- **Text Recognition**: Extracts readable text from images using Tesseract OCR
+- **Confidence Scoring**: Provides OCR confidence metrics
+- **Language Detection**: Identifies text language
+- **Screenshot Support**: Excellent for extracting text from screenshots
+
+#### Storage and Processing Metadata
+- **Timestamped Paths**: Cloud-friendly format: `YYYYMMDD_HHMMSS_microseconds_filename.ext`
+- **Processing Timestamps**: ISO 8601 format timestamps
+- **Processing Duration**: Millisecond precision timing
+- **Source Tracking**: PDF source information for extracted images
+
+#### Example Metadata Fields
+
+```yaml
+# EXIF Metadata
+exif_make: "Canon"
+exif_model: "EOS R5"
+exif_width: 5573
+exif_height: 3715
+exif_datetime: "2024:03:15 14:30:22"
+exif_orientation: 1
+
+# OCR Data
+ocr_text: "PortfolioMax.ai - AI-Powered Portfolio Management"
+ocr_word_count: 133
+ocr_has_text: true
+ocr_language: "eng"
+
+# Storage and Processing
+storage_path_relative: "images/20251015_102605_703162_screenshot.jpg"
+processing_timestamp: "2025-10-15T10:26:05.703162Z"
+processing_duration_ms: 1760
+
+# PDF Source (for extracted images)
+source_pdf: "/Users/max/Desktop/ragme-io.pdf"
+pdf_image_index: 3
+url: "pdf://ragme-io.pdf/image_4"
+```
+
+### Image Collection URLs
+
+Images extracted from PDFs use a special URL format for grouping in RAGme-io:
+
+```
+pdf://filename.pdf/image_N
+```
+
+This format enables:
+- **Document Grouping**: Images from the same PDF display together
+- **RAGme-io Compatibility**: Proper image stacking and preview in RAGme-io application
+- **Source Tracking**: Easy identification of image source
 
 ## Global Flags
 

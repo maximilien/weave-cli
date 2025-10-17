@@ -8,7 +8,9 @@ require (
 	github.com/fatih/color v1.16.0
 	github.com/google/uuid v1.4.0
 	github.com/joho/godotenv v1.5.1
+	github.com/otiai10/gosseract/v2 v2.4.1
 	github.com/pdfcpu/pdfcpu v0.11.0
+	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
 	github.com/weaviate/weaviate-go-client/v4 v4.12.0
