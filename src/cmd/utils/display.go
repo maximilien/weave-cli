@@ -21,12 +21,16 @@ type VirtualDocument struct {
 	Metadata         map[string]interface{}
 }
 
-// ImageGroup represents a group of images from the same source
+// ImageGroup represents a group of images or documents from the same source
 type ImageGroup struct {
 	SourcePDF   string
 	DisplayName string
 	TotalCount  int
+	TotalChunks int
 	Images      []VirtualDocument
+	MinPage     int
+	MaxPage     int
+	IsImage     bool // true for images, false for regular documents
 }
 
 // groupImagesBySource groups images by their PDF source for compact display
@@ -36,13 +40,32 @@ func groupImagesBySource(virtualDocs []VirtualDocument) []ImageGroup {
 		return nil
 	}
 
-	// Group by source PDF (extract from filename like "ragme-io_image_1.png")
+	// Group by source PDF (extract from filename like "ragme-io_image_1.png" or "ragme-io.pdf_page_3_image_2.png")
+	// Also handle standalone image files
 	groups := make(map[string]*ImageGroup)
 
 	for _, vdoc := range virtualDocs {
 		filename := vdoc.OriginalFilename
-		// Check if this matches image pattern: source_image_N.ext
-		if strings.Contains(filename, "_image_") {
+
+		// Check if this matches PDF page pattern: source.pdf_page_X_image_Y.ext
+		if strings.Contains(filename, "_page_") && strings.Contains(filename, "_image_") {
+			// Extract source PDF name (everything before "_page_")
+			parts := strings.Split(filename, "_page_")
+			if len(parts) >= 2 {
+				sourceName := parts[0]
+
+				if _, exists := groups[sourceName]; !exists {
+					groups[sourceName] = &ImageGroup{
+						SourcePDF: sourceName,
+						Images:    []VirtualDocument{},
+						MinPage:   -1,
+						MaxPage:   -1,
+					}
+				}
+				groups[sourceName].Images = append(groups[sourceName].Images, vdoc)
+			}
+		} else if strings.Contains(filename, "_image_") {
+			// Check if this matches image pattern: source_image_N.ext
 			// Extract source name (everything before "_image_")
 			parts := strings.Split(filename, "_image_")
 			if len(parts) >= 2 {
@@ -52,13 +75,20 @@ func groupImagesBySource(virtualDocs []VirtualDocument) []ImageGroup {
 					groups[sourceName] = &ImageGroup{
 						SourcePDF: sourceName,
 						Images:    []VirtualDocument{},
+						MinPage:   -1,
+						MaxPage:   -1,
 					}
 				}
 				groups[sourceName].Images = append(groups[sourceName].Images, vdoc)
 			}
 		} else {
-			// Not an image pattern, return nil to use fallback
-			return nil
+			// Standalone image file - treat as its own group
+			groups[filename] = &ImageGroup{
+				SourcePDF: filename,
+				Images:    []VirtualDocument{vdoc},
+				MinPage:   -1,
+				MaxPage:   -1,
+			}
 		}
 	}
 
@@ -68,19 +98,56 @@ func groupImagesBySource(virtualDocs []VirtualDocument) []ImageGroup {
 		// Set total count to actual number of images in this group
 		group.TotalCount = len(group.Images)
 
+		// Calculate total chunks
+		totalChunks := 0
+		for _, img := range group.Images {
+			totalChunks += img.TotalChunks
+		}
+		group.TotalChunks = totalChunks
+
+		// Determine if this group contains images by checking metadata
+		if len(group.Images) > 0 {
+			// Check if the first document has type: image in metadata
+			if docType, ok := group.Images[0].Metadata["type"].(string); ok && docType == "image" {
+				group.IsImage = true
+			}
+		}
+
 		// Sort images to find range
 		sort.Slice(group.Images, func(i, j int) bool {
 			return group.Images[i].OriginalFilename < group.Images[j].OriginalFilename
 		})
 
-		// Extract min and max image numbers
-		minNum, maxNum := extractImageNumbers(group.Images)
+		// Check if this is a single standalone image
+		if len(group.Images) == 1 && !strings.Contains(group.Images[0].OriginalFilename, "_page_") && !strings.Contains(group.Images[0].OriginalFilename, "_image_") {
+			// Single standalone image - use filename as-is
+			group.DisplayName = group.SourcePDF
+		} else if len(group.Images) > 0 && strings.Contains(group.Images[0].OriginalFilename, "_page_") {
+			// Extract page numbers for PDF pattern
+			minPage, maxPage := extractPageNumbers(group.Images)
+			group.MinPage = minPage
+			group.MaxPage = maxPage
 
-		// Create display name with range
-		if minNum > 0 && maxNum > 0 {
-			group.DisplayName = fmt.Sprintf("%s_image_%d...%d.png", group.SourcePDF, minNum, maxNum)
+			// Create display name for PDF pages
+			if minPage > 0 && maxPage > 0 {
+				if minPage == maxPage {
+					group.DisplayName = fmt.Sprintf("%s (page %d)", group.SourcePDF, minPage)
+				} else {
+					group.DisplayName = fmt.Sprintf("%s (pages %d-%d)", group.SourcePDF, minPage, maxPage)
+				}
+			} else {
+				group.DisplayName = fmt.Sprintf("%s (images)", group.SourcePDF)
+			}
 		} else {
-			group.DisplayName = fmt.Sprintf("%s (images)", group.SourcePDF)
+			// Extract min and max image numbers for non-PDF pattern
+			minNum, maxNum := extractImageNumbers(group.Images)
+
+			// Create display name with range
+			if minNum > 0 && maxNum > 0 {
+				group.DisplayName = fmt.Sprintf("%s_image_%d...%d.png", group.SourcePDF, minNum, maxNum)
+			} else {
+				group.DisplayName = fmt.Sprintf("%s (images)", group.SourcePDF)
+			}
 		}
 
 		result = append(result, *group)
@@ -123,6 +190,48 @@ func extractImageNumbers(images []VirtualDocument) (int, int) {
 				}
 				if max == -1 || num > max {
 					max = num
+				}
+			}
+		}
+	}
+
+	return min, max
+}
+
+// extractPageNumbers extracts the min and max page numbers from PDF image filenames
+func extractPageNumbers(images []VirtualDocument) (int, int) {
+	if len(images) == 0 {
+		return 0, 0
+	}
+
+	min := -1
+	max := -1
+
+	for _, img := range images {
+		// Extract page number from filename like "ragme-io.pdf_page_3_image_2.png"
+		filename := img.OriginalFilename
+		if strings.Contains(filename, "_page_") {
+			parts := strings.Split(filename, "_page_")
+			if len(parts) >= 2 {
+				// Get page number (between "_page_" and "_image_")
+				pageImagePart := parts[1]
+				if strings.Contains(pageImagePart, "_image_") {
+					pageParts := strings.Split(pageImagePart, "_image_")
+					if len(pageParts) >= 1 {
+						var pageNum int
+						_, err := fmt.Sscanf(pageParts[0], "%d", &pageNum)
+						if err != nil {
+							// If parsing fails, skip this file
+							continue
+						}
+
+						if min == -1 || pageNum < min {
+							min = pageNum
+						}
+						if max == -1 || pageNum > max {
+							max = pageNum
+						}
+					}
 				}
 			}
 		}
@@ -262,17 +371,30 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			for _, group := range imageGroups {
 				fmt.Printf("   %d. ", displayIdx)
 				PrintStyledFilename(group.DisplayName)
-				fmt.Printf(" - ")
+				fmt.Printf(" ")
 				PrintStyledNumber(group.TotalCount)
 
-				// Show range if there are gaps (actual count < range)
-				minNum, maxNum := extractImageNumbers(group.Images)
-				expectedCount := maxNum - minNum + 1
-				if expectedCount > group.TotalCount {
-					fmt.Printf(" of ")
-					PrintStyledNumber(expectedCount)
+				// Use "image" or "document" based on the group type
+				if group.IsImage {
+					if group.TotalCount == 1 {
+						fmt.Printf(" image - ")
+					} else {
+						fmt.Printf(" images - ")
+					}
+				} else {
+					if group.TotalCount == 1 {
+						fmt.Printf(" document - ")
+					} else {
+						fmt.Printf(" documents - ")
+					}
 				}
-				fmt.Printf(" images")
+
+				PrintStyledNumber(group.TotalChunks)
+				if group.TotalChunks == 1 {
+					fmt.Printf(" chunk")
+				} else {
+					fmt.Printf(" chunks")
+				}
 				fmt.Println()
 				displayIdx++
 			}
