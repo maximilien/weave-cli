@@ -19,8 +19,9 @@ import (
 
 // healthCmd represents the health command
 var healthCmd = &cobra.Command{
-	Use:   "health",
-	Short: "Health and connectivity management",
+	Use:        "health",
+	Short:      "Health and connectivity management",
+	SuggestFor: []string{"check", "status", "ping"},
 	Long: `Manage database health and connectivity.
 
 This command provides subcommands to check database health and connectivity.`,
@@ -28,8 +29,9 @@ This command provides subcommands to check database health and connectivity.`,
 
 // healthCheckCmd represents the health check command
 var healthCheckCmd = &cobra.Command{
-	Use:   "check [database-name]",
-	Short: "Check health of database connections",
+	Use:     "check [database-name]",
+	Aliases: []string{"c"},
+	Short:   "Check health of database connections",
 	Long: `Check the health of the configured vector database connections.
 
 This command:

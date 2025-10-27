@@ -26,8 +26,9 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "weave",
-	Short: "Weave VDB Management Tool",
+	Use:                        "weave",
+	Short:                      "Weave VDB Management Tool",
+	SuggestionsMinimumDistance: 2,
 	Long: `Weave is a command-line tool for managing Weaviate vector databases.
 
 📁 COLLECTION MANAGEMENT:

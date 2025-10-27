@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
@@ -125,10 +126,23 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		return
 	}
 
+	// Add timeout to context for API operations
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
 	// List collections
 	collections, err := client.ListCollections(ctx)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		if ctx.Err() == context.DeadlineExceeded {
+			PrintError(fmt.Sprintf("Failed to connect to Weaviate API at %s: connection timeout after 30 seconds", cfg.URL))
+			fmt.Println()
+			PrintInfo("Please check that:")
+			PrintInfo("  1. The Weaviate server is running and accessible")
+			PrintInfo("  2. The URL in your config is correct")
+			PrintInfo("  3. There are no network/firewall issues")
+		} else {
+			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		}
 		return
 	}
 
