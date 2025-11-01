@@ -29,4 +29,5 @@ func init() {
 	documentCmd.AddCommand(document.UpdateCmd)
 	documentCmd.AddCommand(document.DeleteCmd)
 	documentCmd.AddCommand(document.DeleteAllCmd)
+	documentCmd.AddCommand(document.BatchCmd)
 }

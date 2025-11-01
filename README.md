@@ -4,7 +4,18 @@ A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases.
 
-## 🚀 What's New in v0.2.10
+## 🚀 What's New in v0.2.11
+
+- **📦 Batch Document Creation**: Process entire directories with parallel
+  processing and automatic retry
+- **⚡ Parallel Processing**: Configure multiple workers for faster batch
+  operations
+- **📊 Progress Tracking**: Visual progress indicators with time estimation
+- **🔄 Smart Retry**: Automatic retry on failures with `.processed` file
+  tracking
+- **📈 Comprehensive Reporting**: CSV reports with detailed processing statistics
+
+### Previous Updates (v0.2.10)
 
 - **📄 Enhanced PDF Processing**: Improved PDF text extraction with better
   fallback handling
@@ -31,6 +42,8 @@ Watch Weave CLI in action with our interactive demos:
 - 🎭 **Mock Database** - Built-in mock database for testing and development
 - 📊 **Collection Management** - List, create, view, and delete collections
 - 📄 **Document Management** - Create, update, list, show, and delete documents
+- 📦 **Batch Processing** - Process entire directories with parallel workers and
+  automatic retry
 - 🔍 **Semantic Search** - Query collections with natural language
 - 📄 **PDF Processing** - Extract text from PDF files with intelligent chunking
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
@@ -83,6 +96,9 @@ cp config.yaml.example config.yaml
 ./bin/weave docs create MyCollection document.txt
 ./bin/weave docs create MyCollection document.pdf
 
+# Batch process documents
+./bin/weave docs batch --directory ./docs --collection MyCollection --parallel 3
+
 # Search documents
 ./bin/weave cols q MyCollection "search query"
 
@@ -94,6 +110,8 @@ cp config.yaml.example config.yaml
 
 - **[📖 User Guide](docs/USER_GUIDE.md)** - Comprehensive usage guide with
   examples
+- **[📦 Batch Processing Guide](docs/BATCH_DOCS_CREATION.md)** - Batch document
+  creation with parallel processing
 - **[🎬 Demo Guide](docs/DEMO.md)** - Interactive demo scripts and recordings
 - **[⚠️ Error Messages](docs/ERROR_MESSAGES.md)** - Human-friendly error message
   examples
