@@ -83,8 +83,12 @@ func init() {
 	// Required flags
 	BatchCmd.Flags().StringP("directory", "d", "", "Directory containing documents to process (required)")
 	BatchCmd.Flags().StringP("collection", "c", "", "Collection name for documents (required)")
-	BatchCmd.MarkFlagRequired("directory")
-	BatchCmd.MarkFlagRequired("collection")
+	if err := BatchCmd.MarkFlagRequired("directory"); err != nil {
+		panic(fmt.Sprintf("failed to mark 'directory' flag as required: %v", err))
+	}
+	if err := BatchCmd.MarkFlagRequired("collection"); err != nil {
+		panic(fmt.Sprintf("failed to mark 'collection' flag as required: %v", err))
+	}
 
 	// Processing options
 	BatchCmd.Flags().IntP("parallel", "p", 1, "Number of parallel workers (default: 1)")
@@ -352,7 +356,10 @@ func processFileWithRetry(ctx context.Context, dbConfig *config.VectorDBConfig, 
 			printFileSuccess(filePath, &status, progress)
 
 			// Save processed status
-			saveProcessedStatus(filePath+".processed", &status)
+			if err := saveProcessedStatus(filePath+".processed", &status); err != nil {
+				// Log error but don't fail the processing
+				fmt.Fprintf(os.Stderr, "Warning: failed to save processed status for %s: %v\n", filePath, err)
+			}
 			return status
 		}
 
@@ -375,7 +382,10 @@ func processFileWithRetry(ctx context.Context, dbConfig *config.VectorDBConfig, 
 	printFileFailure(filePath, &status, progress)
 
 	// Save failed status
-	saveProcessedStatus(filePath+".processed", &status)
+	if err := saveProcessedStatus(filePath+".processed", &status); err != nil {
+		// Log error but don't fail the processing
+		fmt.Fprintf(os.Stderr, "Warning: failed to save processed status for %s: %v\n", filePath, err)
+	}
 	return status
 }
 
