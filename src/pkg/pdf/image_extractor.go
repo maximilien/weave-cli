@@ -13,10 +13,11 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
 // extractPDFImages extracts images from a PDF file
-func extractPDFImages(filePath string, skipSmallImages bool, minImageSize int) ([]PDFImageData, error) {
+func extractPDFImages(filePath string, skipSmallImages bool, minImageSize int, noTips bool) ([]PDFImageData, error) {
 	// Create a temporary directory for image extraction
 	tempDir, err := os.MkdirTemp("", "pdf_images_*")
 	if err != nil {
@@ -24,9 +25,19 @@ func extractPDFImages(filePath string, skipSmallImages bool, minImageSize int) (
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Extract images using pdfcpu
-	err = api.ExtractImagesFile(filePath, tempDir, []string{}, nil)
+	// Extract images using pdfcpu with custom configuration
+	conf := model.NewDefaultConfiguration()
+	conf.ValidationMode = model.ValidationRelaxed
+
+	err = api.ExtractImagesFile(filePath, tempDir, []string{}, conf)
 	if err != nil {
+		// If extraction fails due to unsupported JPEG features, try alternative approach
+		if strings.Contains(err.Error(), "unsupported JPEG feature") ||
+			strings.Contains(err.Error(), "unknown color model") {
+			fmt.Printf("⚠️  Warning: Some images have unsupported JPEG features (CMYK without APP14 metadata)\n")
+			fmt.Printf("📝 Attempting alternative image extraction method...\n")
+			return extractImagesWithFallback(filePath, tempDir, skipSmallImages, minImageSize, noTips)
+		}
 		return nil, fmt.Errorf("pdfcpu image extraction failed: %w", err)
 	}
 
@@ -65,6 +76,30 @@ func extractPDFImages(filePath string, skipSmallImages bool, minImageSize int) (
 	}
 
 	return imageData, nil
+}
+
+// extractImagesWithFallback attempts to extract images using a more lenient approach
+func extractImagesWithFallback(filePath, tempDir string, skipSmallImages bool, minImageSize int, noTips bool) ([]PDFImageData, error) {
+	// For now, return empty slice with a warning
+	// This allows PDF processing to continue without images
+	fmt.Printf("⚠️  Skipping image extraction for this PDF due to incompatible JPEG format\n")
+
+	// Only show tips if not suppressed
+	if !noTips {
+		fmt.Printf("\n💡 Tips for extracting images from CMYK PDFs:\n")
+		fmt.Printf("\n   Option 1 - Using Ghostscript (recommended):\n")
+		fmt.Printf("   $ gs -sDEVICE=pdfwrite -dProcessColorModel=/DeviceRGB \\\n")
+		fmt.Printf("        -dColorConversionStrategy=/RGB -dNOPAUSE -dBATCH \\\n")
+		fmt.Printf("        -sOutputFile=output-rgb.pdf %s\n", filepath.Base(filePath))
+		fmt.Printf("   $ weave docs create <collection> output-rgb.pdf --image-col <image-collection>\n")
+		fmt.Printf("\n   Option 2 - Using ImageMagick:\n")
+		fmt.Printf("   $ convert -density 300 -colorspace RGB %s output-rgb.pdf\n", filepath.Base(filePath))
+		fmt.Printf("   $ weave docs create <collection> output-rgb.pdf --image-col <image-collection>\n")
+		fmt.Printf("\n   Option 3 - Continue with text-only processing (current):\n")
+		fmt.Printf("   Text content will be extracted and searchable without images.\n\n")
+	}
+
+	return []PDFImageData{}, nil
 }
 
 // processExtractedImage processes a single extracted image

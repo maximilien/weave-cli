@@ -33,7 +33,7 @@ type PDFTextData struct {
 }
 
 // ExtractPDFContent extracts both text and images from a PDF file
-func ExtractPDFContent(filePath string, chunkSize int, skipSmallImages bool, minImageSize int) ([]PDFTextData, []PDFImageData, error) {
+func ExtractPDFContent(filePath string, chunkSize int, skipSmallImages bool, minImageSize int, noTips bool) ([]PDFTextData, []PDFImageData, error) {
 	// Extract text content
 	textData, err := extractPDFText(filePath, chunkSize)
 	if err != nil {
@@ -41,7 +41,7 @@ func ExtractPDFContent(filePath string, chunkSize int, skipSmallImages bool, min
 	}
 
 	// Extract images
-	imageData, err := extractPDFImages(filePath, skipSmallImages, minImageSize)
+	imageData, err := extractPDFImages(filePath, skipSmallImages, minImageSize, noTips)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to extract images: %w", err)
 	}

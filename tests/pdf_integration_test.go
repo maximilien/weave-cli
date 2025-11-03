@@ -22,7 +22,7 @@ func TestPDFIntegration(t *testing.T) {
 
 	t.Run("ExtractPDFContent", func(t *testing.T) {
 		// Test with default chunk size (1000)
-		textData, imageData, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240)
+		textData, imageData, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240, false)
 		if err != nil {
 			t.Fatalf("ExtractPDFContent() error = %v", err)
 		}
@@ -95,7 +95,7 @@ func TestPDFIntegration(t *testing.T) {
 		chunkSizes := []int{500, 1000, 2000}
 
 		for _, chunkSize := range chunkSizes {
-			textData, _, err := pdf.ExtractPDFContent(fixturePath, chunkSize, true, 10240)
+			textData, _, err := pdf.ExtractPDFContent(fixturePath, chunkSize, true, 10240, false)
 			if err != nil {
 				t.Fatalf("ExtractPDFContent(chunkSize=%d) error = %v", chunkSize, err)
 			}
@@ -121,12 +121,12 @@ func TestPDFIntegration(t *testing.T) {
 
 	t.Run("ExtractPDFContentPreservesAllContent", func(t *testing.T) {
 		// Extract with different chunk sizes and verify total content is similar
-		textData1, _, err := pdf.ExtractPDFContent(fixturePath, 500, true, 10240)
+		textData1, _, err := pdf.ExtractPDFContent(fixturePath, 500, true, 10240, false)
 		if err != nil {
 			t.Fatalf("ExtractPDFContent() error = %v", err)
 		}
 
-		textData2, _, err := pdf.ExtractPDFContent(fixturePath, 2000, true, 10240)
+		textData2, _, err := pdf.ExtractPDFContent(fixturePath, 2000, true, 10240, false)
 		if err != nil {
 			t.Fatalf("ExtractPDFContent() error = %v", err)
 		}
@@ -164,7 +164,7 @@ func TestPDFMetadataExtraction(t *testing.T) {
 
 	fixturePath := filepath.Join("fixtures", "ragme-io.pdf")
 
-	textData, _, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240)
+	textData, _, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240, false)
 	if err != nil {
 		t.Fatalf("ExtractPDFContent() error = %v", err)
 	}
@@ -232,7 +232,7 @@ func TestPDFProcessingConsistency(t *testing.T) {
 	// Process the same PDF 3 times
 	var results [][]pdf.PDFTextData
 	for i := 0; i < 3; i++ {
-		textData, _, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240)
+		textData, _, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240, false)
 		if err != nil {
 			t.Fatalf("ExtractPDFContent() run %d error = %v", i+1, err)
 		}

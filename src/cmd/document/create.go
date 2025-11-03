@@ -36,13 +36,15 @@ For PDF files with images:
 - Text chunks go to the main collection
 - Extracted images go to a separate collection (use --image-collection)
 - Images include OCR text, EXIF data, and captions when available
+- Use --skip-all-images for text-only extraction (no image processing)
 
 Examples:
   weave docs create MyCollection document.txt
   weave docs create MyCollection image.jpg
   weave docs create MyCollection document.pdf --chunk-size 500
   weave docs create WeaveDocs document.pdf --image-collection WeaveImages
-  weave docs create RagMeDocs document.pdf --image-col RagMeImages`,
+  weave docs create RagMeDocs document.pdf --image-col RagMeImages
+  weave docs create MyDocs document.pdf --skip-all-images  # text only`,
 	Args: cobra.ExactArgs(2),
 	Run:  runDocumentCreate,
 }
@@ -54,6 +56,7 @@ func init() {
 	CreateCmd.Flags().StringP("image-collection", "", "", "Collection name for extracted PDF images (default: same as main collection)")
 	CreateCmd.Flags().StringP("image-col", "", "", "Alias for --image-collection")
 	CreateCmd.Flags().StringP("image-cols", "", "", "Alias for --image-collection")
+	CreateCmd.Flags().Bool("skip-all-images", false, "Skip all image extraction from PDFs (text-only mode)")
 	CreateCmd.Flags().Bool("skip-small-images", true, "Skip small images when extracting from PDFs (default: true)")
 	CreateCmd.Flags().Int("min-image-size", 5120, "Minimum image size in bytes (default: 5120 = 5KB)")
 	CreateCmd.Flags().Int("batch-size", 10, "Number of images to process before pausing for memory cleanup (default: 10)")
@@ -68,18 +71,24 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	imageCollection, _ := cmd.Flags().GetString("image-collection")
 	imageCol, _ := cmd.Flags().GetString("image-col")
 	imageCols, _ := cmd.Flags().GetString("image-cols")
+	skipAllImages, _ := cmd.Flags().GetBool("skip-all-images")
 	skipSmallImages, _ := cmd.Flags().GetBool("skip-small-images")
 	minImageSize, _ := cmd.Flags().GetInt("min-image-size")
 	batchSize, _ := cmd.Flags().GetInt("batch-size")
 	createReport, _ := cmd.Flags().GetString("create-report")
 	appendReport, _ := cmd.Flags().GetString("append-report")
 
-	// Use image collection from flags if provided
-	if imageCollection == "" {
-		imageCollection = imageCol
-	}
-	if imageCollection == "" {
-		imageCollection = imageCols
+	// If skip-all-images is set, clear the image collection to skip image processing
+	if skipAllImages {
+		imageCollection = ""
+	} else {
+		// Use image collection from flags if provided
+		if imageCollection == "" {
+			imageCollection = imageCol
+		}
+		if imageCollection == "" {
+			imageCollection = imageCols
+		}
 	}
 
 	// Determine report path

@@ -19,6 +19,7 @@ var (
 	envFile        string
 	noColor        bool
 	noTruncate     bool
+	noTips         bool
 	vectorDBType   string
 	weaviateAPIKey string
 	weaviateURL    string
@@ -87,6 +88,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("quiet", "q", false, "quiet output (minimal messages)")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colored output")
 	rootCmd.PersistentFlags().BoolVar(&noTruncate, "no-truncate", false, "show all data without truncation")
+	rootCmd.PersistentFlags().BoolVar(&noTips, "no-tips", false, "suppress helpful tips and suggestions")
 
 	// Environment variable override flags (highest priority)
 	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vector-db-type", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|mock)")
@@ -99,6 +101,7 @@ func init() {
 	_ = viper.BindPFlag("weaviate-url", rootCmd.PersistentFlags().Lookup("weaviate-url"))
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
+	_ = viper.BindPFlag("no-tips", rootCmd.PersistentFlags().Lookup("no-tips"))
 
 	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
@@ -169,4 +172,9 @@ func initColor() {
 	if noColor {
 		color.NoColor = true
 	}
+}
+
+// ShouldShowTips returns true if tips should be displayed to the user
+func ShouldShowTips() bool {
+	return !noTips
 }

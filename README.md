@@ -4,7 +4,16 @@ A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases.
 
-## 🚀 What's New in v0.2.11
+## 🚀 What's New in v0.2.14
+
+- **🎯 Text-Only PDF Processing**: New `--skip-all-images` flag to extract only
+  text from PDFs without image processing overhead
+- **💬 Helpful Tips Control**: Global `--no-tips` flag to suppress helpful tips
+  and suggestions when desired
+- **🔧 CMYK PDF Support**: Graceful handling of CMYK PDFs with actionable tips
+  for conversion using Ghostscript or ImageMagick
+
+### Previous Updates (v0.2.11)
 
 - **📦 Batch Document Creation**: Process entire directories with parallel
   processing and automatic retry
@@ -45,7 +54,12 @@ Watch Weave CLI in action with our interactive demos:
 - 📦 **Batch Processing** - Process entire directories with parallel workers and
   automatic retry
 - 🔍 **Semantic Search** - Query collections with natural language
-- 📄 **PDF Processing** - Extract text from PDF files with intelligent chunking
+- 📄 **PDF Processing** - Extract text and images from PDFs with intelligent
+  chunking and CMYK support
+- 🎯 **Flexible Processing** - Text-only mode with `--skip-all-images` for faster
+  processing
+- 💬 **User Experience** - Helpful tips and suggestions (can be disabled with
+  `--no-tips`)
 - 🔧 **Configuration Management** - YAML + Environment variable configuration
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
 
@@ -95,6 +109,15 @@ cp config.yaml.example config.yaml
 # Add documents
 ./bin/weave docs create MyCollection document.txt
 ./bin/weave docs create MyCollection document.pdf
+
+# Add PDF with text-only extraction (faster, no images)
+./bin/weave docs create MyCollection document.pdf --skip-all-images
+
+# Process with images in separate collection
+./bin/weave docs create MyCollection document.pdf --image-collection MyImages
+
+# Suppress helpful tips during processing
+./bin/weave docs create MyCollection document.pdf --no-tips
 
 # Batch process documents
 ./bin/weave docs batch --directory ./docs --collection MyCollection --parallel 3

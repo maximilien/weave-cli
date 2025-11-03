@@ -22,6 +22,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
 	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/spf13/viper"
 )
 
 // ProcessingReport tracks processing results for CSV reporting
@@ -905,7 +906,8 @@ func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName
 
 	// Extract PDF content using the existing PDF processor
 	fmt.Println("🔍 Extracting content from PDF...")
-	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize)
+	noTips := viper.GetBool("no-tips")
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, noTips)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return err
@@ -1015,7 +1017,7 @@ func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName
 				// Check if it's a memory error and provide helpful message
 				if strings.Contains(err.Error(), "not enough memory") || strings.Contains(err.Error(), "memory") {
 					PrintError(fmt.Sprintf("Failed to create PDF image document %s: %v", imageDoc.ID, err))
-					if imageFailureCount == 1 {
+					if imageFailureCount == 1 && !viper.GetBool("no-tips") {
 						PrintWarning("💡 Tip: Try reducing batch size with --batch-size flag (e.g., --batch-size 5)")
 						PrintWarning("💡 Or increase min-image-size to skip large images (e.g., --min-image-size 10240)")
 					}
@@ -1506,7 +1508,8 @@ func processImageFileMock(ctx context.Context, client *mock.Client, collectionNa
 
 func processPDFFileMock(ctx context.Context, client *mock.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) {
 	// Extract PDF content using the existing PDF processor
-	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize)
+	noTips := viper.GetBool("no-tips")
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, noTips)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return
