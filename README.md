@@ -6,6 +6,8 @@ collections of configured vector databases.
 
 ## 🚀 What's New in v0.2.14
 
+- **🔄 PDF Conversion Tool**: New `weave docs pdf-convert` command to convert CMYK
+  PDFs to RGB format using Ghostscript or ImageMagick
 - **🎯 Text-Only PDF Processing**: New `--skip-all-images` flag to extract only
   text from PDFs without image processing overhead
 - **💬 Helpful Tips Control**: Global `--no-tips` flag to suppress helpful tips
@@ -56,6 +58,8 @@ Watch Weave CLI in action with our interactive demos:
 - 🔍 **Semantic Search** - Query collections with natural language
 - 📄 **PDF Processing** - Extract text and images from PDFs with intelligent
   chunking and CMYK support
+- 🔄 **PDF Conversion** - Convert CMYK PDFs to RGB format with Ghostscript or
+  ImageMagick
 - 🎯 **Flexible Processing** - Text-only mode with `--skip-all-images` for faster
   processing
 - 💬 **User Experience** - Helpful tips and suggestions (can be disabled with
@@ -118,6 +122,10 @@ cp config.yaml.example config.yaml
 
 # Suppress helpful tips during processing
 ./bin/weave docs create MyCollection document.pdf --no-tips
+
+# Convert CMYK PDF to RGB format
+./bin/weave docs pdf-convert document.pdf --ghostscript
+./bin/weave docs pdf-convert document.pdf --rgb  # auto-detect tool
 
 # Batch process documents
 ./bin/weave docs batch --directory ./docs --collection MyCollection --parallel 3
