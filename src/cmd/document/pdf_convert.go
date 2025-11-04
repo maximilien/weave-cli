@@ -288,7 +288,6 @@ func runDirectoryConvert(cmd *cobra.Command, directory string, useGhostscript, u
 				pdfFiles = append(pdfFiles, filepath.Join(directory, entry.Name()))
 			}
 		}
-		err = nil
 	}
 	if err != nil {
 		utils.PrintError(fmt.Sprintf("Error scanning directory: %v", err))
