@@ -5,6 +5,7 @@ package document
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -24,7 +25,7 @@ const (
 
 // PdfConvertCmd represents the pdf-convert command
 var PdfConvertCmd = &cobra.Command{
-	Use:   "pdf-convert PDF_FILENAME",
+	Use:   "pdf-convert [PDF_FILENAME]",
 	Short: "Convert PDF with CMYK images to RGB format",
 	Long: `Convert a PDF file with CMYK images to RGB format using Ghostscript or ImageMagick.
 
@@ -40,8 +41,14 @@ The converted PDF will have the same text content and structure, but with RGB im
 that can be successfully extracted and processed.
 
 Examples:
-  # Convert using Ghostscript (default)
+  # Convert a single file using Ghostscript (default)
   weave docs pdf-convert document.pdf --ghostscript
+
+  # Convert all PDFs in a directory (non-recursive)
+  weave docs pdf-convert --directory /path/to/pdfs
+
+  # Convert all PDFs in a directory and subdirectories
+  weave docs pdf-convert --directory /path/to/pdfs --recurse
 
   # Convert using ImageMagick
   weave docs pdf-convert document.pdf --imagemagick
@@ -51,7 +58,7 @@ Examples:
 
   # Convert to RGB (auto-detects tool)
   weave docs pdf-convert document.pdf --rgb`,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.MaximumNArgs(1),
 	Run:  runPdfConvert,
 }
 
@@ -62,14 +69,46 @@ func init() {
 	PdfConvertCmd.Flags().Bool("imagemagick", false, "Use ImageMagick for conversion")
 	PdfConvertCmd.Flags().Bool("rgb", false, "Convert to RGB format (auto-detects available tool)")
 	PdfConvertCmd.Flags().String("converted-filename", "", "Output filename for converted PDF (default: <filename>-rgb-<tool>.pdf)")
+	PdfConvertCmd.Flags().StringP("directory", "d", "", "Convert all PDF files in the specified directory")
+	PdfConvertCmd.Flags().Bool("recurse", false, "Recursively process subdirectories when using --directory")
 }
 
 func runPdfConvert(cmd *cobra.Command, args []string) {
-	inputFile := args[0]
 	useGhostscript, _ := cmd.Flags().GetBool("ghostscript")
 	useImageMagick, _ := cmd.Flags().GetBool("imagemagick")
 	useRGB, _ := cmd.Flags().GetBool("rgb")
 	convertedFilename, _ := cmd.Flags().GetString("converted-filename")
+	directory, _ := cmd.Flags().GetString("directory")
+	recurse, _ := cmd.Flags().GetBool("recurse")
+
+	// Check if directory mode or single file mode
+	if directory != "" {
+		// Directory mode
+		if len(args) > 0 {
+			utils.PrintError("Cannot specify both a file and --directory flag")
+			os.Exit(1)
+		}
+		if convertedFilename != "" {
+			utils.PrintError("Cannot use --converted-filename with --directory flag")
+			os.Exit(1)
+		}
+		runDirectoryConvert(cmd, directory, useGhostscript, useImageMagick, useRGB, recurse)
+		return
+	}
+
+	// Check if --recurse is used without --directory
+	if recurse {
+		utils.PrintError("--recurse flag can only be used with --directory flag")
+		os.Exit(1)
+	}
+
+	// Single file mode
+	if len(args) == 0 {
+		utils.PrintError("Either specify a PDF file or use --directory flag")
+		os.Exit(1)
+	}
+
+	inputFile := args[0]
 
 	// Validate input file exists
 	if _, err := os.Stat(inputFile); os.IsNotExist(err) {
@@ -162,6 +201,148 @@ func runPdfConvert(cmd *cobra.Command, args []string) {
 	utils.PrintSuccess(fmt.Sprintf("PDF converted successfully: %s", outputFile))
 	fmt.Printf("\n💡 You can now process this PDF with:\n")
 	fmt.Printf("   weave docs create <collection> %s --image-collection <image-collection>\n", outputFile)
+}
+
+// runDirectoryConvert processes all PDF files in a directory
+func runDirectoryConvert(cmd *cobra.Command, directory string, useGhostscript, useImageMagick, useRGB, recurse bool) {
+	// Validate directory exists
+	info, err := os.Stat(directory)
+	if os.IsNotExist(err) {
+		utils.PrintError(fmt.Sprintf("Directory not found: %s", directory))
+		os.Exit(1)
+	}
+	if err != nil {
+		utils.PrintError(fmt.Sprintf("Error accessing directory: %v", err))
+		os.Exit(1)
+	}
+	if !info.IsDir() {
+		utils.PrintError(fmt.Sprintf("Not a directory: %s", directory))
+		os.Exit(1)
+	}
+
+	// Determine which tool to use
+	var tool ConversionTool
+	if useGhostscript {
+		tool = ToolGhostscript
+	} else if useImageMagick {
+		tool = ToolImageMagick
+	} else if useRGB {
+		// Auto-detect available tool
+		if isGhostscriptInstalled() {
+			tool = ToolGhostscript
+		} else if isImageMagickInstalled() {
+			tool = ToolImageMagick
+		} else {
+			utils.PrintError("Neither Ghostscript nor ImageMagick is installed")
+			printInstallationTips()
+			os.Exit(1)
+		}
+	} else {
+		// Default to Ghostscript if available
+		if isGhostscriptInstalled() {
+			tool = ToolGhostscript
+		} else if isImageMagickInstalled() {
+			tool = ToolImageMagick
+		} else {
+			utils.PrintError("No conversion tool specified and none found")
+			fmt.Println("\n💡 Please specify --ghostscript or --imagemagick, or use --rgb to auto-detect")
+			printInstallationTips()
+			os.Exit(1)
+		}
+	}
+
+	// Check if the selected tool is installed
+	if tool == ToolGhostscript && !isGhostscriptInstalled() {
+		utils.PrintError("Ghostscript is not installed")
+		printGhostscriptInstallationTip()
+		os.Exit(1)
+	}
+	if tool == ToolImageMagick && !isImageMagickInstalled() {
+		utils.PrintError("ImageMagick is not installed")
+		printImageMagickInstallationTip()
+		os.Exit(1)
+	}
+
+	// Find all PDF files in the directory
+	var pdfFiles []string
+	if recurse {
+		// Recursively scan subdirectories
+		err = filepath.WalkDir(directory, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if !d.IsDir() && strings.HasSuffix(strings.ToLower(d.Name()), ".pdf") {
+				pdfFiles = append(pdfFiles, path)
+			}
+			return nil
+		})
+	} else {
+		// Only scan the specified directory (non-recursive)
+		entries, err := os.ReadDir(directory)
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Error reading directory: %v", err))
+			os.Exit(1)
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(strings.ToLower(entry.Name()), ".pdf") {
+				pdfFiles = append(pdfFiles, filepath.Join(directory, entry.Name()))
+			}
+		}
+		err = nil
+	}
+	if err != nil {
+		utils.PrintError(fmt.Sprintf("Error scanning directory: %v", err))
+		os.Exit(1)
+	}
+
+	if len(pdfFiles) == 0 {
+		if recurse {
+			utils.PrintError(fmt.Sprintf("No PDF files found in directory (including subdirectories): %s", directory))
+		} else {
+			utils.PrintError(fmt.Sprintf("No PDF files found in directory: %s", directory))
+		}
+		os.Exit(1)
+	}
+
+	if recurse {
+		fmt.Printf("🔄 Found %d PDF file(s) in directory (including subdirectories): %s\n", len(pdfFiles), directory)
+	} else {
+		fmt.Printf("🔄 Found %d PDF file(s) in directory: %s\n", len(pdfFiles), directory)
+	}
+	fmt.Printf("   Using %s for conversion\n\n", getToolName(tool))
+
+	// Convert each PDF
+	successCount := 0
+	failCount := 0
+	for i, inputFile := range pdfFiles {
+		outputFile := generateOutputFilename(inputFile, tool)
+
+		fmt.Printf("[%d/%d] Converting: %s\n", i+1, len(pdfFiles), filepath.Base(inputFile))
+		fmt.Printf("        Output: %s\n", filepath.Base(outputFile))
+
+		if err := convertPDF(inputFile, outputFile, tool); err != nil {
+			utils.PrintError(fmt.Sprintf("Failed: %v", err))
+			failCount++
+		} else {
+			// Verify output file was created
+			if _, err := os.Stat(outputFile); os.IsNotExist(err) {
+				utils.PrintError("Conversion completed but output file was not created")
+				failCount++
+			} else {
+				utils.PrintSuccess("Converted successfully")
+				successCount++
+			}
+		}
+		fmt.Println()
+	}
+
+	// Print summary
+	fmt.Printf("📊 Conversion Summary:\n")
+	fmt.Printf("   Total:   %d files\n", len(pdfFiles))
+	fmt.Printf("   Success: %d files\n", successCount)
+	if failCount > 0 {
+		fmt.Printf("   Failed:  %d files\n", failCount)
+	}
 }
 
 // isGhostscriptInstalled checks if Ghostscript is installed
