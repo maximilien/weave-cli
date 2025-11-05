@@ -306,7 +306,7 @@ func (e *Executor) executePlan(ctx context.Context, plan *agents.ExecutionPlan) 
 				if depIdx >= i {
 					return reports, fmt.Errorf("invalid dependency: step %d depends on future step %d", i, depIdx)
 				}
-				if reports[depIdx].Success == false && !step.Optional {
+				if !reports[depIdx].Success && !step.Optional {
 					allDependenciesSuccess = false
 					break
 				}
@@ -354,9 +354,7 @@ func (e *Executor) executePlan(ctx context.Context, plan *agents.ExecutionPlan) 
 
 		// Stop on critical failure
 		if !report.Success && !step.Optional {
-			if e.config.MaxRetries > 0 {
-				// Could implement retry logic here
-			}
+			// TODO: Implement retry logic when MaxRetries > 0
 		}
 	}
 

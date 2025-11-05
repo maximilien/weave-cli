@@ -62,16 +62,13 @@ func (a *BashAgent) Execute(ctx context.Context, input interface{}) (interface{}
 	startTime := time.Now()
 
 	// Set timeout if specified
-	cmdCtx := ctx
+	var cmdCtx context.Context
 	if cmd.Timeout > 0 {
 		var cancel context.CancelFunc
 		cmdCtx, cancel = context.WithTimeout(ctx, cmd.Timeout)
 		defer cancel()
 	} else {
-		// Default timeout of 30 seconds
-		var cancel context.CancelFunc
-		cmdCtx, cancel = context.WithTimeout(ctx, 30*time.Second)
-		defer cancel()
+		cmdCtx = ctx
 	}
 
 	// Build the command

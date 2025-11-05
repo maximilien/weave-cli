@@ -213,6 +213,7 @@ func (r *REPL) executeQuery(query string) {
 	}
 
 	fmt.Println()
+	os.Stdout.Sync() // Ensure all output is flushed
 }
 
 // displayHelp shows help information
