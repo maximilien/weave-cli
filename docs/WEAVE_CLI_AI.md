@@ -662,54 +662,49 @@ Collection Status:
 
 ## Configuration
 
-### Agent Configuration in config.yaml
+### Quick Start (No config.yaml needed!)
+
+Just set your credentials in `.env`:
+
+```bash
+# Required for AI agents
+OPENAI_API_KEY="sk-proj-your-key"
+WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+WEAVIATE_API_KEY="your-api-key"
+
+# Optional for AI agents
+WEAVE_MCP_STDIO_PATH="/path/to/weave-mcp/bin/weave-mcp-stdio"
+OPIK_API_KEY="your-opik-key"  # For LLM observability
+```
+
+That's it! Defaults work great:
+
+- Model: `gpt-4o`
+- Max retries: 3
+- Timeout: 300s
+- Opik: Auto-enabled if `OPIK_API_KEY` is set
+
+### Advanced Configuration (Optional)
+
+Override defaults via environment variables:
+
+```bash
+export OPENAI_MODEL="gpt-4"              # Change default model
+export WEAVE_MCP_STDIO_PATH="/path"     # MCP binary location
+export OPIK_API_KEY="key"                # Enable Opik tracing
+```
+
+Or create `config.yaml` for persistent customization:
 
 ```yaml
-ai_agents:
-  enabled: true
+ai:
+  model: gpt-4o                   # LLM model to use
+  max_retries: 3                  # Max retry attempts
+  timeout: 300                    # Timeout in seconds
+  enable_opik: true               # Enable Opik observability
 
-  # LLM Configuration
-  llm:
-    provider: openai
-    model: gpt-4-turbo-preview
-    temperature: 0.1
-    max_tokens: 4096
-    timeout: 30s
-
-  # MCP Configuration
-  mcp:
-    stdio_path: /Users/maximilien/github/maximilien/weave-mcp/bin/weave-mcp-stdio
-    timeout: 60s
-    retry_attempts: 3
-
-  # Opik Configuration (optional)
-  opik:
-    enabled: false
-    api_key: ${OPIK_API_KEY}
-    project_id: weave-cli-queries
-    endpoint: https://api.opik.ai
-
-  # Execution Settings
-  execution:
-    dry_run_default: false
-    confirm_destructive: true
-    max_parallel_operations: 5
-    operation_timeout: 300s
-
-  # Safety Settings
-  safety:
-    allowed_bash_commands:
-      - ls
-      - file
-      - stat
-      - wc
-      - grep
-      - find
-    forbidden_bash_commands:
-      - rm
-      - sudo
-      - chmod
-      - chown
+# Note: Most settings have sensible defaults
+# Only customize what you need!
     require_confirmation_for:
       - delete
       - update

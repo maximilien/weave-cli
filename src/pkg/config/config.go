@@ -23,6 +23,22 @@ const (
 	VectorDBTypeMock  VectorDBType = "mock"
 )
 
+// Default configuration values
+const (
+	DefaultTextCollection  = "WeaveDocs"
+	DefaultImageCollection = "WeaveImages"
+	DefaultDatabaseType    = "weaviate-cloud"
+	DefaultLocalURL        = "http://localhost:8080"
+	DefaultBatchWorkers    = 3
+	DefaultRetryAttempts   = 3
+	DefaultLLMModel        = "gpt-4o"
+	DefaultLLMTimeout      = 300
+	DefaultBatchChunkSize  = 500
+	DefaultImageQuality    = 85
+	DefaultMaxImageSize    = 2048
+	DefaultEmbeddingDim    = 384
+)
+
 // Collection represents a collection configuration
 type Collection struct {
 	Name        string `yaml:"name"`
@@ -177,54 +193,59 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	return &config, nil
 }
 
+// autoDetectDatabaseType detects the database type from environment
+func autoDetectDatabaseType() string {
+	// Check if explicitly set
+	if dbType := os.Getenv("VECTOR_DB_TYPE"); dbType != "" {
+		return dbType
+	}
+
+	// Auto-detect based on available credentials
+	if os.Getenv("WEAVIATE_URL") != "" {
+		// If URL contains localhost, it's likely local
+		if strings.Contains(strings.ToLower(os.Getenv("WEAVIATE_URL")), "localhost") {
+			return string(VectorDBTypeLocal)
+		}
+		// Otherwise it's cloud
+		return string(VectorDBTypeCloud)
+	}
+
+	// Default to mock for testing if no credentials
+	return string(VectorDBTypeMock)
+}
+
 // createDefaultConfigFromEnv creates a default configuration from environment variables
 func createDefaultConfigFromEnv() map[string]interface{} {
-	// Get environment variables with defaults
-	vectorDBType := os.Getenv("VECTOR_DB_TYPE")
-	if vectorDBType == "" {
-		vectorDBType = "weaviate-cloud"
-	}
+	// Get environment variables with auto-detection
+	vectorDBType := autoDetectDatabaseType()
 
 	weaviateURL := os.Getenv("WEAVIATE_URL")
 	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
 
+	// Get collection names from environment or use defaults
+	textCollection := os.Getenv("WEAVIATE_COLLECTION")
+	if textCollection == "" {
+		textCollection = DefaultTextCollection
+	}
+
+	imageCollection := os.Getenv("WEAVIATE_COLLECTION_IMAGES")
+	if imageCollection == "" {
+		imageCollection = DefaultImageCollection
+	}
+
 	// Create default collections
-	collections := []map[string]interface{}{
+	validCollections := []map[string]interface{}{
 		{
-			"name":        os.Getenv("WEAVIATE_COLLECTION"),
+			"name":        textCollection,
 			"type":        "text",
 			"description": "Main text documents collection",
 		},
 		{
-			"name":        os.Getenv("WEAVIATE_COLLECTION_IMAGES"),
+			"name":        imageCollection,
 			"type":        "image",
 			"description": "Image documents collection",
 		},
-	}
-
-	// Filter out collections with empty names
-	var validCollections []map[string]interface{}
-	for _, col := range collections {
-		if name, ok := col["name"].(string); ok && name != "" {
-			validCollections = append(validCollections, col)
-		}
-	}
-
-	// If no collections specified, use defaults
-	if len(validCollections) == 0 {
-		validCollections = []map[string]interface{}{
-			{
-				"name":        "WeaveDocs",
-				"type":        "text",
-				"description": "Main text documents collection",
-			},
-			{
-				"name":        "WeaveImages",
-				"type":        "image",
-				"description": "Image documents collection",
-			},
-		}
 	}
 
 	// Create vector databases based on type

@@ -133,24 +133,35 @@ cd weave-cli
 
 ### Configuration
 
-#### Option 1: Environment Variables Only (Recommended)
+**Fastest Way to Get Started** (3 lines, no config files needed!):
 
 ```bash
-export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
-export WEAVIATE_API_KEY="your-weaviate-api-key"
-export OPENAI_API_KEY="sk-proj-your-openai-key"
+# Copy .env.example and add your credentials
+cp .env.example .env
 
-# For AI Agents (optional)
-export OPENAI_MODEL="gpt-4o"  # Default model for query command
-export WEAVE_MCP_STDIO_PATH="/path/to/weave-mcp/bin/weave-mcp-stdio"
+# Edit .env with your 3 required credentials:
+# - WEAVIATE_URL
+# - WEAVIATE_API_KEY
+# - OPENAI_API_KEY
+
+# That's it! Start using weave:
+weave health check
 ```
 
-#### Option 2: Configuration File
+**Configuration Precedence** (highest to lowest):
+
+1. **Command-line flags** - `weave query --model gpt-4`
+2. **Environment variables** - `export OPENAI_MODEL=gpt-4`
+3. **config.yaml** (optional) - For advanced customization
+4. **Built-in defaults** - Sensible defaults work out of the box
+
+**Advanced Configuration** (optional):
+
+For fine-tuning collection names, batch sizes, PDF settings, etc.:
 
 ```bash
-# Copy example config
 cp config.yaml.example config.yaml
-# Edit config.yaml with your settings
+# Edit config.yaml to customize defaults
 ```
 
 ### Interactive REPL Mode

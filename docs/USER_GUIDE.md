@@ -39,67 +39,79 @@ cd weave-cli
 
 ### Quick Start
 
-**Method 1: Environment Variables Only (Recommended)**
-```bash
-# Set your environment variables
-export VECTOR_DB_TYPE="weaviate-cloud"
-export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
-export WEAVIATE_API_KEY="your-weaviate-api-key"
-export OPENAI_API_KEY="sk-proj-your-openai-api-key"
+**Fastest Way (3 lines, no config files needed!)**:
 
-# Test the connection
-./bin/weave health check
-```
-
-**Method 2: Configuration Files**
 ```bash
-# Copy the example configuration
-cp config.yaml.example config.yaml
+# 1. Copy .env.example and add your credentials
 cp .env.example .env
 
-# Edit with your Weaviate details
-nano config.yaml
-nano .env
+# 2. Edit .env with 3 required values:
+#    - WEAVIATE_URL
+#    - WEAVIATE_API_KEY
+#    - OPENAI_API_KEY
+
+# 3. Test the connection
+weave health check
+
+# 4. List your collections
+weave cols ls
+
+# Done! No config.yaml needed.
 ```
 
-2. **Set environment variables**:
+**For Testing Without Credentials**:
 
-   ```bash
-   export WEAVIATE_URL="your-weaviate-url.weaviate.cloud"
-   export WEAVIATE_API_KEY="your-api-key"
-   export VECTOR_DB_TYPE="weaviate-cloud"
-   ```
-
-3. **Test your connection**:
-
-   ```bash
-   ./bin/weave health check
-   ```
-
-4. **List your collections**:
-
-   ```bash
-   ./bin/weave collection list
-   ```
+```bash
+# Use mock database (no credentials needed)
+export VECTOR_DB_TYPE=mock
+weave health check
+weave cols ls
+```
 
 ## Configuration
 
 Weave CLI supports flexible configuration through environment variables or YAML files.
-**Configuration files are optional** - you can use environment variables alone!
+**You don't need config.yaml to get started** - just use .env for secrets!
 
-### Configuration Methods
+### Configuration Precedence
 
-**Method 1: Environment Variables Only (Fastest)**
+Weave CLI uses this priority order (highest to lowest):
+
+1. **Command-line flags** (highest) - `weave query --model gpt-4`
+2. **Environment variables** - `export OPENAI_MODEL=gpt-4`
+3. **config.yaml** (optional) - For persistent customization
+4. **Built-in defaults** (lowest) - Sensible defaults work out of box
+
+### Quick Start Configuration
+
+**Step 1: Create .env (required)**
+
 ```bash
-export VECTOR_DB_TYPE="weaviate-cloud"
-export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
-export WEAVIATE_API_KEY="your-weaviate-api-key"
-export OPENAI_API_KEY="sk-proj-your-openai-api-key"
+cp .env.example .env
+# Edit .env with your 3 credentials
 ```
 
-**Method 2: Configuration Files**
+Your `.env` should contain:
 
-Weave CLI can use two configuration files:
+```bash
+WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+WEAVIATE_API_KEY="your-weaviate-api-key"
+OPENAI_API_KEY="sk-proj-your-openai-api-key"
+```
+
+**Step 2: You're done!**
+
+No config.yaml needed. Defaults work great:
+
+- Collections: `WeaveDocs` and `WeaveImages`
+- Database type: Auto-detected from WEAVIATE_URL
+- Model: `gpt-4o`
+- Batch workers: 3
+- All other sensible defaults
+
+### Advanced Configuration (Optional)
+
+Only create `config.yaml` if you need to customize defaults:
 
 #### config.yaml
 

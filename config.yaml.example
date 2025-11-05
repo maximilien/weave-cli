@@ -1,139 +1,145 @@
-# Weave CLI Configuration Example
-# Copy this file to config.yaml and update with your values
+# Weave CLI Configuration (Optional)
+# Only create this file if you need to customize default behavior
+# By default, Weave CLI works with just .env credentials!
 
 ---
-# Collection Schemas Directory
-# Directory containing schema YAML files (one schema per file)
-# Schemas defined inline in databases.schemas take precedence over directory schemas
-schemas_dir: ./schemas
+# =============================================================================
+# DATABASE CONFIGURATION
+# =============================================================================
 
-# Database Configuration
 databases:
-  # Default database type to use
+  # Default database type (auto-detected from environment)
   # Options: weaviate-cloud, weaviate-local, mock
-  default: ${VECTOR_DB_TYPE:-weaviate-cloud}
-  
-  # Available vector databases
+  # Default: weaviate-cloud (if WEAVIATE_URL set), otherwise mock
+  default: weaviate-cloud
+
   vector_databases:
-    
-    # Weaviate Cloud (Paid Service)
-    # Requires: WEAVIATE_URL, WEAVIATE_API_KEY, OPENAI_API_KEY
+    # Weaviate Cloud Configuration
     - name: weaviate-cloud
       type: weaviate-cloud
-      url: ${WEAVIATE_URL}                    # Your Weaviate Cloud URL
-      api_key: ${WEAVIATE_API_KEY}           # Your Weaviate Cloud API key
-      openai_api_key: ${OPENAI_API_KEY}      # OpenAI API key for embeddings
+      url: ${WEAVIATE_URL}
+      api_key: ${WEAVIATE_API_KEY}
+      openai_api_key: ${OPENAI_API_KEY}
+
+      # Default collection names (override if needed)
       collections:
-        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
+        - name: WeaveDocs           # Default text collection
           type: text
           description: Main text documents collection
-        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
+        - name: WeaveImages         # Default image collection
           type: image
           description: Image documents collection
-        - name: ${WEAVIATE_COLLECTION_TEST:-WeaveDocs_test}
-          type: text
-          description: Test text documents collection
 
-    # Weaviate Local (Open Source)
-    # Requires: Local Weaviate instance running on localhost:8080
+    # Weaviate Local Configuration
     - name: weaviate-local
       type: weaviate-local
-      url: http://localhost:8080              # Local Weaviate instance
-      collections:
-        - name: ${WEAVIATE_COLLECTION:-WeaveDocs}
-          type: text
-          description: Main text documents collection
-        - name: ${WEAVIATE_COLLECTION_IMAGES:-WeaveImages}
-          type: image
-          description: Image documents collection
+      url: http://localhost:8080    # Default local URL
+      openai_api_key: ${OPENAI_API_KEY}
 
-    # Mock Database (For Testing)
-    # No external dependencies required
-    - name: mock
-      type: mock
-      enabled: true
-      simulate_embeddings: true              # Simulate embedding generation
-      embedding_dimension: 384               # Embedding vector dimension
       collections:
         - name: WeaveDocs
           type: text
-          description: Mock text documents collection
+          description: Local text documents collection
         - name: WeaveImages
           type: image
-          description: Mock image documents collection
+          description: Local image documents collection
 
-  # Collection Schemas (inline)
-  # Define named schemas inline that can be used to create collections
-  # Use: weave collection create MyCollection --schema RagMeDocs
-  # Note: Inline schemas take precedence over schemas in schemas_dir
-  schemas:
-    # Text document schema optimized for RAG (Retrieval-Augmented Generation)
-    - name: RagMeDocs
-      schema:
-        class: RagMeDocs
-        vectorizer: text2vec-weaviate
-        properties:
-          - name: url
-            datatype:
-              - text
-            description: the source URL of the webpage
-          - name: text
-            datatype:
-              - text
-            description: the content of the webpage
-          - name: metadata
-            datatype:
-              - text
-            description: additional metadata in JSON format
-      metadata:
-        id:
-          type: string
-        metadata:
-          type: string
-        text:
-          type: string
-        url:
-          type: string
+    # Mock Database (for testing)
+    - name: mock
+      type: mock
+      enabled: true
+      simulate_embeddings: true
+      embedding_dimension: 384
 
-    # Image document schema optimized for RAG
-    - name: RagMeImages
-      schema:
-        class: RagMeImages
-        vectorizer: text2vec-weaviate
-        properties:
-          - name: url
-            datatype:
-              - text
-            description: the source URL or filename of the image
-          - name: image
-            datatype:
-              - text
-            description: the image reference (truncated base64 or URL)
-          - name: metadata
-            datatype:
-              - text
-            description: additional metadata in JSON format
-          - name: image_data
-            datatype:
-              - text
-            description: full image data or reference
-      metadata:
-        id:
-          type: string
-        image:
-          type: string
-        image_data:
-          type: string
-        metadata:
-          type: string
-        url:
-          type: string
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Mock text collection for testing
+        - name: WeaveImages
+          type: image
+          description: Mock image collection for testing
 
-# Environment Variables Reference:
-# VECTOR_DB_TYPE: Database type to use (weaviate-cloud, weaviate-local, mock)
-# WEAVIATE_URL: Your Weaviate Cloud URL
-# WEAVIATE_API_KEY: Your Weaviate Cloud API key
-# OPENAI_API_KEY: OpenAI API key for embeddings (required for weaviate-cloud)
-# WEAVIATE_COLLECTION: Main text collection name
-# WEAVIATE_COLLECTION_IMAGES: Image collection name
-# WEAVIATE_COLLECTION_TEST: Test collection name
+# =============================================================================
+# ADVANCED FEATURES (Optional)
+# =============================================================================
+
+# Custom collection schemas directory
+# schemas_dir: ./schemas
+
+# Batch processing defaults
+batch:
+  parallel_workers: 3              # Number of parallel workers
+  retry_attempts: 3                # Retry failed documents
+  chunk_size: 500                  # Documents per batch
+
+# PDF processing defaults
+pdf:
+  extract_images: true             # Extract images from PDFs
+  skip_all_images: false           # Text-only mode
+  skip_small_images: false         # Don't process small images
+  image_quality: 85                # JPEG quality (1-100)
+  max_image_size: 2048             # Max image dimension (pixels)
+
+# AI agents configuration
+ai:
+  model: gpt-4o                    # Default LLM model
+  max_retries: 3                   # Max retries for LLM calls
+  timeout: 300                     # Timeout in seconds
+  enable_opik: true                # Enable Opik observability
+
+# Output preferences
+output:
+  format: text                     # Options: text, json, yaml
+  no_color: false                  # Disable colored output
+  verbose: false                   # Enable verbose logging
+  show_tips: true                  # Show helpful tips
+
+# =============================================================================
+# CUSTOM COLLECTION SCHEMAS (Optional)
+# =============================================================================
+# Define reusable schemas for creating collections
+# Usage: weave cols create MyCollection --schema RagMeDocs
+
+# Uncomment and customize as needed:
+# databases:
+#   schemas:
+#     - name: RagMeDocs
+#       schema:
+#         class: RagMeDocs
+#         vectorizer: text2vec-openai
+#         properties:
+#           - name: url
+#             datatype: [text]
+#             description: Source URL
+#           - name: text
+#             datatype: [text]
+#             description: Document content
+#           - name: metadata
+#             datatype: [text]
+#             description: Additional metadata (JSON)
+
+# =============================================================================
+# NOTES
+# =============================================================================
+#
+# Quick Start:
+# - You don't need this file to get started!
+# - Just set credentials in .env and run commands
+# - Create config.yaml only if you need customization
+#
+# Configuration Precedence:
+# 1. Command-line flags (highest priority)
+# 2. Environment variables
+# 3. config.yaml
+# 4. Built-in defaults (lowest priority)
+#
+# Environment Variable Reference:
+# - VECTOR_DB_TYPE: Database type override
+# - WEAVIATE_URL: Weaviate instance URL
+# - WEAVIATE_API_KEY: Weaviate authentication
+# - OPENAI_API_KEY: OpenAI for embeddings/LLM
+# - OPENAI_MODEL: Override default model
+# - WEAVE_MCP_STDIO_PATH: Path to MCP binary
+# - OPIK_API_KEY: Opik observability
+#
+# For more details, see: https://github.com/maximilien/weave-cli

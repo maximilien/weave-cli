@@ -8,13 +8,17 @@ release.
 
 ## Prerequisites
 
-1. **Environment variables** - Create a `.env` file in the project root with:
+1. **Environment variables** - Create a `.env` file in the project root:
 
    ```bash
+   # Copy the example and edit with your credentials
+   cp .env.example .env
+
+   # Required for MCP tests:
    OPENAI_API_KEY=sk-proj-your-key
-   WEAVE_MCP_STDIO_PATH=/path/to/weave-mcp/bin/weave-mcp-stdio
    WEAVIATE_URL=https://your-cluster.weaviate.cloud
    WEAVIATE_API_KEY=your-weaviate-key
+   WEAVE_MCP_STDIO_PATH=/path/to/weave-mcp/bin/weave-mcp-stdio
    ```
 
 2. **weave-mcp server** - Ensure the weave-mcp binary is built and accessible
