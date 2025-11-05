@@ -6,6 +6,7 @@ package agents
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
@@ -14,13 +15,20 @@ import (
 // WeaveAgent executes weave-cli commands via MCP
 type WeaveAgent struct {
 	mcpClient *mcp.Client
+	verbose   bool
 }
 
 // NewWeaveAgent creates a new WeaveAgent
 func NewWeaveAgent(mcpClient *mcp.Client) *WeaveAgent {
 	return &WeaveAgent{
 		mcpClient: mcpClient,
+		verbose:   false,
 	}
+}
+
+// SetVerbose sets verbose mode for debug logging
+func (a *WeaveAgent) SetVerbose(verbose bool) {
+	a.verbose = verbose
 }
 
 // Name returns the agent's name
@@ -54,6 +62,18 @@ func (a *WeaveAgent) Execute(ctx context.Context, input interface{}) (interface{
 
 		// Call the MCP tool
 		result, err = a.mcpClient.CallTool(cmdCtx, cmd.Tool, cmd.Arguments)
+
+		// Debug logging in verbose mode
+		if a.verbose {
+			fmt.Fprintf(os.Stderr, "\n[DEBUG] MCP Tool: %s\n", cmd.Tool)
+			fmt.Fprintf(os.Stderr, "[DEBUG] MCP Arguments: %+v\n", cmd.Arguments)
+			fmt.Fprintf(os.Stderr, "[DEBUG] MCP Result: %+v\n", result)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "[DEBUG] MCP Error: %v\n", err)
+			}
+			fmt.Fprintln(os.Stderr)
+		}
+
 		if err == nil {
 			break
 		}
