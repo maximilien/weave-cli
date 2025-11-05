@@ -6,9 +6,23 @@ collections of configured vector databases.
 
 ## 🚀 What's New in v0.3.0
 
+### Latest Updates (Pending Release)
+
+- **📦 MCP Integration Tests**: Automated test suite for weave-mcp compatibility
+  - Comprehensive integration tests for all MCP operations
+  - Collection and document operation testing
+  - Error handling and edge case validation
+  - Automated testing workflow for MCP releases
+  - See [tests/README_MCP_TESTS.md](tests/README_MCP_TESTS.md) for details
+- **🎨 Version Display in Banner**: REPL banner now shows version info
+  - Displays version string in dimmed text below ASCII art
+  - Consistent with `weave -V` output format
+
+### Core Features (v0.3.0)
+
 - **🔄 Interactive REPL Mode**: Run `weave` without arguments for an
   interactive session
-  - Beautiful ASCII art banner with GitHub link
+  - Beautiful ASCII art banner with version and GitHub link
   - Natural language query support in interactive mode
   - Built-in help, examples, and history commands
   - CTRL-C to stop commands, twice to exit (like Claude CLI)
@@ -25,7 +39,8 @@ collections of configured vector databases.
   - WeaveAgent: Executes weave-cli commands via MCP protocol
   - BashAgent: Safely executes bash commands with user approval
   - OutputAgent: Beautiful, color-coded user-friendly output
-  - ReportAgent: Comprehensive operation reports with LLM-generated recommendations
+  - ReportAgent: Comprehensive operation reports with
+    LLM-generated recommendations
   - EvalAgent: Tracks metrics and evaluates success
 - **📊 OpenTelemetry Integration**: Opik tracing for LLM observability
   - Automatic cost tracking for all LLM calls
