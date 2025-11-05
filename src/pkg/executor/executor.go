@@ -353,9 +353,7 @@ func (e *Executor) executePlan(ctx context.Context, plan *agents.ExecutionPlan) 
 		fmt.Println() // Add spacing between steps
 
 		// Stop on critical failure
-		if !report.Success && !step.Optional {
-			// TODO: Implement retry logic when MaxRetries > 0
-		}
+		// TODO: Implement retry logic when MaxRetries > 0 and !report.Success && !step.Optional
 	}
 
 	return reports, nil
