@@ -178,6 +178,19 @@ run_integration_tests() {
         print_warning "Skipping Weaviate integration tests - no credentials provided"
         print_status "Set WEAVIATE_URL and WEAVIATE_API_KEY to run Weaviate tests"
     fi
+
+    # Run MCP integration tests if configured
+    if [ -n "$OPENAI_API_KEY" ] && [ -n "$WEAVE_MCP_STDIO_PATH" ]; then
+        print_status "Running MCP integration tests..."
+        if go test -v -tags=integration -timeout=5m ./tests -run="TestMCP"; then
+            print_success "MCP integration tests passed!"
+        else
+            print_warning "MCP integration tests failed"
+        fi
+    else
+        print_warning "Skipping MCP integration tests - no configuration provided"
+        print_status "Set OPENAI_API_KEY and WEAVE_MCP_STDIO_PATH to run MCP tests"
+    fi
 }
 
 # Function to run fast tests
