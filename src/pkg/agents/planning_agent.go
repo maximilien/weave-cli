@@ -115,21 +115,25 @@ Available MCP tools:%s
 Safe bash commands: %s
 
 Instructions:
-1. Break down the query into a sequence of executable steps
-2. Each step must be either "bash" or "weave" type
-3. For bash steps, use weave CLI commands (e.g., 'weave cols ls', 'weave docs count'), NOT MCP tool names
-4. For weave steps, specify the MCP tool name and ALL required parameters from the tool's schema
-5. IMPORTANT: Each MCP tool has specific required parameters - you MUST include them in the "params" field
-6. Look at the "Parameters" schema above for each tool to see what fields are required
-7. Identify dependencies between steps (use depends_on array with step indices)
-8. Mark destructive operations (delete, batch operations) as destructive: true
-9. Estimate duration and risk level
-10. Add warnings for potentially dangerous operations
-11. IMPORTANT: In bash scripts, use CLI commands: 'weave cols ls', 'weave docs count', etc.
-12. IMPORTANT: In weave steps, use MCP tool names with all required parameters
-13. Non-standard bash commands will require user approval before execution
-14. IMPORTANT: The 'weave' CLI supports --json flag for JSON output - ALWAYS use it in bash scripts with jq
-15. Format: 'weave cols ls --json' NOT 'weave list_collections --json'
+1. PREFER SIMPLE BASH COMMANDS: Always use simple bash commands with weave CLI when possible
+2. For adding documents: Use 'weave docs create COLLECTION FILE' - DO NOT read files with cat
+3. For listing/querying: Use 'weave cols ls', 'weave docs ls COLLECTION' directly
+4. For DELETE operations: ALWAYS use MCP tools (delete_collection, delete_document) - NOT bash commands
+5. Break down the query into a sequence of executable steps
+6. Each step must be either "bash" or "weave" type
+7. For bash steps, use weave CLI commands (e.g., 'weave cols ls', 'weave docs create'), NOT MCP tool names
+8. For weave steps, specify the MCP tool name and ALL required parameters from the tool's schema
+9. IMPORTANT: Each MCP tool has specific required parameters - you MUST include them in the "params" field
+10. Look at the "Parameters" schema above for each tool to see what fields are required
+11. Identify dependencies between steps (use depends_on array with step indices)
+12. Mark destructive operations (delete, batch operations) as destructive: true
+13. Estimate duration and risk level
+14. Add warnings for potentially dangerous operations
+15. IMPORTANT: In bash scripts, use CLI commands: 'weave cols ls', 'weave docs count', etc.
+16. IMPORTANT: In weave steps, use MCP tool names with all required parameters
+17. Non-standard bash commands will require user approval before execution
+18. IMPORTANT: The 'weave' CLI supports --json flag for JSON output - ALWAYS use it in bash scripts with jq
+19. Format: 'weave cols ls --json' NOT 'weave list_collections --json'
 
 Example plan structure:
 {
@@ -174,11 +178,18 @@ Common patterns:
    - Example: "check health" → bash step with command "weave health check"
    - Intent "health" should ALWAYS map to this bash command
 
-2. Simple operations (single collection/document):
-   - Use MCP tools directly (list_collections, count_documents, etc.)
-   - Example: "show collection details" → single MCP call
+2. Document creation (adding files):
+   - ALWAYS use bash: 'weave docs create COLLECTION FILE_PATH'
+   - Example: "add README.md to TestDocs" → bash step: 'weave docs create TestDocs ./README.md'
+   - DO NOT use cat/read file content and then create_document MCP tool
+   - The CLI handles file reading automatically
 
-3. Bulk operations (multiple collections/documents):
+3. Simple operations (single collection/document):
+   - Use bash commands with weave CLI for simplicity
+   - Example: "show collection details" → bash: 'weave cols show COLLECTION'
+   - Example: "list documents" → bash: 'weave docs ls COLLECTION'
+
+4. Bulk operations (multiple collections/documents):
    - Use bash scripts with for loops to iterate
    - Call weave CLI commands for each item
    - User will approve the script before execution
@@ -188,7 +199,7 @@ Common patterns:
      * List documents in multiple collections
      * Batch create/update operations
 
-4. Pattern for iteration operations:
+5. Pattern for iteration operations:
    - Step 1: Get list of items (collections, files, etc.)
    - Step 2: Bash script with for loop that:
      a) Iterates over items from step 1
@@ -196,13 +207,13 @@ Common patterns:
      c) Processes/displays results
    - Example: for col in $(weave cols ls --json | jq -r '.collections[].name'); do weave docs count $col --json; done
 
-5. File operations:
+6. File operations:
    - Step 1: bash to list/find files
    - Step 2: bash to classify or filter
    - Step 3: bash loop to process each file with weave
    - Example: Process all PDFs in a directory
 
-6. Conditional operations:
+7. Conditional operations:
    - Use bash scripts with if/then logic
    - Example: Find and delete empty collections
    - Script can check conditions and take actions

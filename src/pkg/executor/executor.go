@@ -134,6 +134,9 @@ func NewExecutor(config *Config) (*Executor, error) {
 	// Set output agent on bash agent for user approvals
 	bashAgent.SetOutputAgent(outputAgent)
 
+	// Set verbose mode on weave agent for MCP debug logging
+	weaveAgent.SetVerbose(config.Verbose)
+
 	return &Executor{
 		queryAgent:    queryAgent,
 		planningAgent: planningAgent,
