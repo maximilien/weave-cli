@@ -15,6 +15,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/joho/godotenv"
 	"github.com/maximilien/weave-cli/src/pkg/executor"
+	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/viper"
 )
 
@@ -148,6 +149,7 @@ func (r *REPL) displayBanner() {
 `
 
 	fmt.Println(cyan(banner))
+	fmt.Println(dim(fmt.Sprintf("  v%s", version.Version)))
 	fmt.Println(bold("  Weave CLI - AI-Powered Vector Database Management"))
 	fmt.Println(dim("  https://github.com/maximilien/weave-cli"))
 	fmt.Println()
