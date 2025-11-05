@@ -175,7 +175,7 @@ if find . -name "*.md" -not -path "./src/vendor/*" -not -path "./node_modules/*"
             ./tools/fix_markdown_lint.sh > /dev/null 2>&1
         fi
 
-        if npx markdownlint "**/*.md" --ignore node_modules --ignore src/vendor --ignore docs; then
+        if markdownlint "**/*.md" --ignore node_modules --ignore src/vendor --ignore docs; then
             print_success "Markdown linting passed!"
         else
             print_warning "Markdown linting issues found"

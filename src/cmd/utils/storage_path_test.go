@@ -117,7 +117,7 @@ func TestFilepathAbsConversion(t *testing.T) {
 func TestStoragePathRegression(t *testing.T) {
 	t.Run("README.md scenario", func(t *testing.T) {
 		// This replicates the exact scenario from the bug report:
-		// User runs: ./bin/weave docs create WeaveDocs README.md
+		// User runs: weave docs create WeaveDocs README.md
 		// The filePath parameter receives "README.md" (relative)
 		// storage_path should be absolute, not "README.md"
 

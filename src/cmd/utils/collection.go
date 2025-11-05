@@ -5,6 +5,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -119,7 +120,7 @@ func CreateMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 }
 
 // ListWeaviateCollections lists Weaviate collections
-func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool) {
+func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -147,7 +148,12 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 	}
 
 	if len(collections) == 0 {
-		PrintWarning("No collections found in the database")
+		if !jsonOutput {
+			PrintWarning("No collections found in the database")
+		} else {
+			// Output empty JSON
+			fmt.Println(`{"collections": [], "total": 0}`)
+		}
 		return
 	}
 
@@ -159,11 +165,13 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		collections = collections[:limit]
 	}
 
-	PrintSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
-	if limit > 0 && len(collections) == limit {
-		fmt.Printf("(showing first %d collections)\n", limit)
+	if !jsonOutput {
+		PrintSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
+		if limit > 0 && len(collections) == limit {
+			fmt.Printf("(showing first %d collections)\n", limit)
+		}
+		fmt.Println()
 	}
-	fmt.Println()
 
 	// Get collection information for each collection
 	type CollectionInfo struct {
@@ -213,6 +221,45 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			IsImageCollection: isImageCollection,
 			SchemaType:        schemaType,
 		})
+	}
+
+	// Output in JSON format if requested
+	if jsonOutput {
+		type JSONCollection struct {
+			Name          string `json:"name"`
+			DocumentCount int    `json:"document_count"`
+			SchemaType    string `json:"schema_type"`
+			IsImage       bool   `json:"is_image"`
+		}
+
+		type JSONOutput struct {
+			Collections []JSONCollection `json:"collections"`
+			Total       int              `json:"total"`
+		}
+
+		jsonCollections := make([]JSONCollection, len(collectionInfos))
+		for i, info := range collectionInfos {
+			jsonCollections[i] = JSONCollection{
+				Name:          info.Name,
+				DocumentCount: info.DocumentCount,
+				SchemaType:    info.SchemaType,
+				IsImage:       info.IsImageCollection,
+			}
+		}
+
+		output := JSONOutput{
+			Collections: jsonCollections,
+			Total:       len(jsonCollections),
+		}
+
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+
+		fmt.Println(string(jsonBytes))
+		return
 	}
 
 	// Display collections in compact format
@@ -266,7 +313,7 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 }
 
 // ListMockCollections lists mock collections
-func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool) {
+func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
 	client := CreateMockClient(cfg)
 
 	// List collections
@@ -277,7 +324,12 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 	}
 
 	if len(collections) == 0 {
-		PrintWarning("No collections found in the database")
+		if !jsonOutput {
+			PrintWarning("No collections found in the database")
+		} else {
+			// Output empty JSON
+			fmt.Println(`{"collections": [], "total": 0}`)
+		}
 		return
 	}
 
@@ -289,11 +341,13 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 		collections = collections[:limit]
 	}
 
-	PrintSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
-	if limit > 0 && len(collections) == limit {
-		fmt.Printf("(showing first %d collections)\n", limit)
+	if !jsonOutput {
+		PrintSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
+		if limit > 0 && len(collections) == limit {
+			fmt.Printf("(showing first %d collections)\n", limit)
+		}
+		fmt.Println()
 	}
-	fmt.Println()
 
 	// Get collection information for each collection
 	type CollectionInfo struct {
@@ -344,6 +398,45 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 			IsImageCollection: isImageCollection,
 			SchemaType:        schemaType,
 		})
+	}
+
+	// Output in JSON format if requested
+	if jsonOutput {
+		type JSONCollection struct {
+			Name          string `json:"name"`
+			DocumentCount int    `json:"document_count"`
+			SchemaType    string `json:"schema_type"`
+			IsImage       bool   `json:"is_image"`
+		}
+
+		type JSONOutput struct {
+			Collections []JSONCollection `json:"collections"`
+			Total       int              `json:"total"`
+		}
+
+		jsonCollections := make([]JSONCollection, len(collectionInfos))
+		for i, info := range collectionInfos {
+			jsonCollections[i] = JSONCollection{
+				Name:          info.Name,
+				DocumentCount: info.DocumentCount,
+				SchemaType:    info.SchemaType,
+				IsImage:       info.IsImageCollection,
+			}
+		}
+
+		output := JSONOutput{
+			Collections: jsonCollections,
+			Total:       len(jsonCollections),
+		}
+
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+
+		fmt.Println(string(jsonBytes))
+		return
 	}
 
 	// Display collections in compact format

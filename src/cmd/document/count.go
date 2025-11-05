@@ -5,6 +5,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -36,6 +37,8 @@ func init() {
 }
 
 func runDocumentCount(cmd *cobra.Command, args []string) {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
 	if err != nil {
@@ -52,6 +55,13 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 
 	ctx := context.Background()
 
+	type CollectionCount struct {
+		Collection string `json:"collection"`
+		Count      int    `json:"count"`
+	}
+
+	var results []CollectionCount
+
 	// Count documents in each collection
 	for _, collectionName := range args {
 		var count int
@@ -66,11 +76,36 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		}
 
 		if err != nil {
-			utils.PrintError(fmt.Sprintf("Failed to count documents in collection '%s': %v", collectionName, err))
+			if !jsonOutput {
+				utils.PrintError(fmt.Sprintf("Failed to count documents in collection '%s': %v", collectionName, err))
+			}
 			continue
 		}
 
-		utils.PrintHeader(fmt.Sprintf("Document Count - %s", collectionName))
-		fmt.Printf("Total documents: %d\n", count)
+		results = append(results, CollectionCount{
+			Collection: collectionName,
+			Count:      count,
+		})
+
+		if !jsonOutput {
+			utils.PrintHeader(fmt.Sprintf("Document Count - %s", collectionName))
+			fmt.Printf("Total documents: %d\n", count)
+		}
+	}
+
+	// Output JSON if requested
+	if jsonOutput {
+		// For single collection, output simplified JSON
+		if len(results) == 1 {
+			fmt.Printf(`{"collection": "%s", "count": %d}`+"\n", results[0].Collection, results[0].Count)
+		} else {
+			// For multiple collections, output array
+			jsonBytes, err := json.MarshalIndent(results, "", "  ")
+			if err != nil {
+				utils.PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+				os.Exit(1)
+			}
+			fmt.Println(string(jsonBytes))
+		}
 	}
 }

@@ -40,6 +40,7 @@ func init() {
 func runCollectionList(cmd *cobra.Command, args []string) {
 	limit, _ := cmd.Flags().GetInt("limit")
 	virtual, _ := cmd.Flags().GetBool("virtual")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
@@ -70,9 +71,9 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.ListWeaviateCollections(ctx, dbConfig, limit, virtual)
+		utils.ListWeaviateCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	case config.VectorDBTypeMock:
-		utils.ListMockCollections(ctx, dbConfig, limit, virtual)
+		utils.ListMockCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)

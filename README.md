@@ -4,7 +4,42 @@ A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases.
 
-## 🚀 What's New in v0.2.14
+## 🚀 What's New in v0.3.0
+
+- **🔄 Interactive REPL Mode**: Run `weave` without arguments for an
+  interactive session
+  - Beautiful ASCII art banner with GitHub link
+  - Natural language query support in interactive mode
+  - Built-in help, examples, and history commands
+  - CTRL-C to stop commands, twice to exit (like Claude CLI)
+  - Command history saved to `~/.weave_history`
+- **🤖 AI Agents Query Command**: New `weave query` (or `weave q`) command
+  for natural language queries using GPT-4o
+  - Automatically understands your intent and plans appropriate commands
+  - Executes weave-cli and bash commands intelligently
+  - Provides comprehensive reports with recommendations
+  - Supports dry-run mode to preview execution plans
+- **🧠 Multi-Agent Architecture**: 7 specialized agents working together
+  - QueryAgent: Validates and fixes user queries with MCP tool awareness
+  - PlanningAgent: Creates detailed execution plans with full tool schemas
+  - WeaveAgent: Executes weave-cli commands via MCP protocol
+  - BashAgent: Safely executes bash commands with user approval
+  - OutputAgent: Beautiful, color-coded user-friendly output
+  - ReportAgent: Comprehensive operation reports with LLM-generated recommendations
+  - EvalAgent: Tracks metrics and evaluates success
+- **📊 OpenTelemetry Integration**: Opik tracing for LLM observability
+  - Automatic cost tracking for all LLM calls
+  - Token usage metrics (prompt, completion, total)
+  - Color-coded cost display (green/yellow/red)
+  - Direct link to Opik dashboard for detailed traces
+- **✨ Enhanced User Experience**:
+  - Smart error detection in command output
+  - Step progress with duration display
+  - JSON output with syntax highlighting
+  - Auto-approval for simple weave commands
+  - Health check support via natural language
+
+### Previous Updates (v0.2.14)
 
 - **🔄 PDF Conversion Tool**: New `weave docs pdf-convert` command to convert CMYK
   PDFs to RGB format using Ghostscript or ImageMagick
@@ -48,6 +83,7 @@ Watch Weave CLI in action with our interactive demos:
 
 ## Features
 
+- 🤖 **AI Agents** - Natural language queries with GPT-4o powered multi-agent system
 - 🌐 **Weaviate Cloud Support** - Connect to Weaviate Cloud instances
 - 🏠 **Weaviate Local Support** - Connect to local Weaviate instances
 - 🎭 **Mock Database** - Built-in mock database for testing and development
@@ -88,6 +124,10 @@ cd weave-cli
 export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
 export WEAVIATE_API_KEY="your-weaviate-api-key"
 export OPENAI_API_KEY="sk-proj-your-openai-key"
+
+# For AI Agents (optional)
+export OPENAI_MODEL="gpt-4o"  # Default model for query command
+export WEAVE_MCP_STDIO_PATH="/path/to/weave-mcp/bin/weave-mcp-stdio"
 ```
 
 #### Option 2: Configuration File
@@ -98,47 +138,97 @@ cp config.yaml.example config.yaml
 # Edit config.yaml with your settings
 ```
 
+### Interactive REPL Mode
+
+Simply run `weave` without any arguments to start the interactive mode:
+
+```bash
+weave
+
+# You'll see the ASCII art banner and prompt:
+ __      __
+/  \    /  \ ____ _____ ___  __ ____
+\   \/\/   // __ \\__  \\  \/ // __ \
+ \        /\  ___/ / __ \\   /\  ___/
+  \__/\  /  \___  >____  /\_/  \___  >
+       \/       \/     \/          \/
+
+  Weave CLI - AI-Powered Vector Database Management
+  https://github.com/maximilien/weave-cli
+
+  Use natural language to manage your vector databases
+  Type /help for commands, /exit to quit
+  Press CTRL-C to stop current command, twice to exit
+
+>
+```
+
+**REPL Commands:**
+
+- `/help` - Show help and available commands
+- `/examples` - Show example natural language queries
+- `/history` - Show command history location
+- `/clear` - Clear the screen
+- `/exit` - Exit the REPL
+
+**Keyboard Shortcuts:**
+
+- `CTRL-C` - Stop current command
+- `CTRL-C` (twice) - Exit the REPL
+- `CTRL-D` - Exit the REPL
+- `↑/↓` - Navigate command history
+
 ### Basic Usage
 
 ```bash
 # Check database health
-./bin/weave health check
+weave health check
 
 # List collections
-./bin/weave cols ls
+weave cols ls
 
 # Create a collection
-./bin/weave cols create MyCollection --text
+weave cols create MyCollection --text
 
 # Add documents
-./bin/weave docs create MyCollection document.txt
-./bin/weave docs create MyCollection document.pdf
+weave docs create MyCollection document.txt
+weave docs create MyCollection document.pdf
 
 # Add PDF with text-only extraction (faster, no images)
-./bin/weave docs create MyCollection document.pdf --skip-all-images
+weave docs create MyCollection document.pdf --skip-all-images
 
 # Process with images in separate collection
-./bin/weave docs create MyCollection document.pdf --image-collection MyImages
+weave docs create MyCollection document.pdf --image-collection MyImages
 
 # Suppress helpful tips during processing
-./bin/weave docs create MyCollection document.pdf --no-tips
+weave docs create MyCollection document.pdf --no-tips
 
 # Convert CMYK PDF to RGB format
-./bin/weave docs pdf-convert document.pdf --ghostscript
-./bin/weave docs pdf-convert document.pdf --rgb  # auto-detect tool
+weave docs pdf-convert document.pdf --ghostscript
+weave docs pdf-convert document.pdf --rgb  # auto-detect tool
 
 # Batch process documents
-./bin/weave docs batch --directory ./docs --collection MyCollection --parallel 3
+weave docs batch --directory ./docs --collection MyCollection --parallel 3
 
 # Search documents
-./bin/weave cols q MyCollection "search query"
+weave cols q MyCollection "search query"
 
 # List documents
-./bin/weave docs ls MyCollection
+weave docs ls MyCollection
+
+# 🤖 AI Agents - Natural Language Queries
+weave query "show me all my collections"
+weave q "find all empty collections"
+weave query "create TestDocs and TestImages collections"
+weave q "check health"
+weave query "add files in /tmp/docs to MyCollection" --dry-run
+weave q "convert CMYK PDFs in ./pdfs directory" --verbose
 ```
 
 ## Documentation
 
+- **[🤖 AI Agents Guide](docs/WEAVE_CLI_AI.md)** - Natural language query
+  system with multi-agent architecture
 - **[📖 User Guide](docs/USER_GUIDE.md)** - Comprehensive usage guide with
   examples
 - **[📦 Batch Processing Guide](docs/BATCH_DOCS_CREATION.md)** - Batch document
