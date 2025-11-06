@@ -61,4 +61,5 @@ playwright-report/
 
 # Demo recordings (keep README and template, ignore actual recordings and URLs)
 videos/*.cast
+!videos/weave-cli-repl-demo.cast
 videos/latest-demo-uploads.txt

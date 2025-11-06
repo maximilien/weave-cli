@@ -45,6 +45,7 @@ print_help() {
     echo "Commands:"
     echo "  demo        Record the full demo (5 minutes)"
     echo "  quick       Record a quick 2-minute demo"
+    echo "  repl        Record REPL AI-assisted demo (NEW!)"
     echo "  install     Install asciinema if not available"
     echo "  upload [FILE] Upload recording to asciinema.org (or latest if no file specified)"
     echo "  list        List available recordings"
@@ -54,6 +55,7 @@ print_help() {
     echo "Examples:"
     echo "  ./tools/asciinema.sh demo     # Record full demo"
     echo "  ./tools/asciinema.sh quick    # Record quick demo"
+    echo "  ./tools/asciinema.sh repl     # Record REPL AI demo"
     echo "  ./tools/asciinema.sh upload   # Upload latest recording to asciinema.org"
     echo "  ./tools/asciinema.sh upload videos/weave-cli-quick-demo.cast  # Upload specific file"
     echo ""
@@ -617,6 +619,52 @@ clean_recordings() {
     fi
 }
 
+# Function to record REPL demo
+record_repl_demo() {
+    local output_file="videos/weave-cli-repl-demo.cast"
+
+    print_header "Recording REPL AI-assisted demo..."
+
+    # Check if we have the required environment variables
+    if [ -z "$WEAVIATE_URL" ] || [ -z "$WEAVIATE_API_KEY" ] || [ -z "$OPENAI_API_KEY" ]; then
+        print_error "❌ Required environment variables not set"
+        print_error "Please set: WEAVIATE_URL, WEAVIATE_API_KEY, OPENAI_API_KEY"
+        return 1
+    fi
+
+    # Check for WEAVE_MCP_STDIO_PATH
+    if [ -z "$WEAVE_MCP_STDIO_PATH" ]; then
+        print_error "❌ WEAVE_MCP_STDIO_PATH not set"
+        print_error "Please set the path to your weave-mcp stdio binary"
+        return 1
+    fi
+
+    if ! check_asciinema; then
+        return 1
+    fi
+
+    mkdir -p videos
+
+    # Record using the batch query mode
+    print_header "Starting REPL demo recording..."
+    print_header "This will execute queries from videos/weave-repl-demo-queries.txt"
+    echo ""
+
+    asciinema rec "$output_file" --command "./bin/weave --query-strings videos/weave-repl-demo-queries.txt --no-confirm"
+
+    if [ -f "$output_file" ]; then
+        print_success "REPL demo recorded: $output_file"
+        print_header "To play the recording:"
+        echo "  asciinema play $output_file"
+        echo ""
+        print_header "To upload to asciinema.org:"
+        echo "  asciinema upload $output_file"
+    else
+        print_error "REPL demo recording failed"
+        return 1
+    fi
+}
+
 # Main script logic
 case "${1:-help}" in
     "demo")
@@ -624,6 +672,9 @@ case "${1:-help}" in
         ;;
     "quick")
         record_quick_demo
+        ;;
+    "repl")
+        record_repl_demo
         ;;
     "install")
         install_asciinema

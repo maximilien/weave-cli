@@ -91,10 +91,14 @@ collections of configured vector databases.
 
 Watch Weave CLI in action with our interactive demos:
 
-- **📹 [Full Demo](https://asciinema.org/a/feoupxMVzhHaNIzmWGTEuLpCR)**
+- **📹 [Full Demo](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
   (5 minutes): Complete feature showcase with PDF processing
-- **⚡ [Quick Demo](https://asciinema.org/a/qUgPvpBpqsJwlVrjVWVtnonKX)**
+- **⚡ [Quick Demo](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)**
   (2 minutes): Rapid overview with environment variables
+- **🤖 [REPL AI Demo](https://asciinema.org/a/U504HN4FSeMsOA0qS0os0NWUE)** (NEW!):
+  AI-powered natural language interface in action
+
+To record your own demos, use `./tools/asciinema.sh [demo|quick|repl]`
 
 ## Features
 
@@ -204,6 +208,26 @@ weave
 - `CTRL-D` - Exit the REPL
 - `↑/↓` - Navigate command history
 
+**Batch Query Mode:**
+
+Execute multiple queries from a file (great for demos and automation):
+
+```bash
+# Create a file with queries (one per line)
+cat > my-queries.txt << EOF
+check health
+list my collections
+create TestDocs collection
+add README.md to TestDocs
+EOF
+
+# Execute all queries in batch mode
+weave --query-strings my-queries.txt --no-confirm
+
+# Record a demo
+./tools/asciinema.sh repl
+```
+
 ### Basic Usage
 
 ```bash
@@ -249,6 +273,9 @@ weave query "create TestDocs and TestImages collections"
 weave q "check health"
 weave query "add files in /tmp/docs to MyCollection" --dry-run
 weave q "convert CMYK PDFs in ./pdfs directory" --verbose
+
+# Skip confirmations for automation/demos
+weave query "delete TestDocs collection" --no-confirm
 ```
 
 ## Documentation

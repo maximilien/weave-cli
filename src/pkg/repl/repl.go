@@ -4,6 +4,7 @@
 package repl
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -19,22 +20,37 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Options holds REPL configuration options
+type Options struct {
+	QueryStringsFile string
+	NoConfirm        bool
+}
+
 // REPL represents the interactive Read-Eval-Print Loop
 type REPL struct {
-	executor    *executor.Executor
-	rl          *readline.Instance
-	interrupted bool
+	executor         *executor.Executor
+	rl               *readline.Instance
+	interrupted      bool
+	queryStringsFile string
+	batchMode        bool
+	queries          []string
+	queryIndex       int
 }
 
 // New creates a new REPL instance
 func New() (*REPL, error) {
+	return NewWithOptions(Options{})
+}
+
+// NewWithOptions creates a new REPL instance with options
+func NewWithOptions(opts Options) (*REPL, error) {
 	// Load .env file
 	_ = godotenv.Load()
 
 	// Create executor
 	config := &executor.Config{
 		DryRun:       false,
-		NoConfirm:    false,
+		NoConfirm:    opts.NoConfirm || viper.GetBool("no-confirm"),
 		Verbose:      viper.GetBool("verbose"),
 		Quiet:        viper.GetBool("quiet"),
 		NoColor:      viper.GetBool("no-color"),
@@ -49,35 +65,110 @@ func New() (*REPL, error) {
 		return nil, fmt.Errorf("failed to create executor: %w", err)
 	}
 
-	// Create readline instance
-	rl, err := readline.NewEx(&readline.Config{
-		Prompt:          "\033[36m>\033[0m ",
-		HistoryFile:     os.ExpandEnv("$HOME/.weave_history"),
-		InterruptPrompt: "^C",
-		EOFPrompt:       "exit",
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create readline: %w", err)
+	// Initialize REPL struct
+	repl := &REPL{
+		executor:         exec,
+		interrupted:      false,
+		queryStringsFile: opts.QueryStringsFile,
+		batchMode:        opts.QueryStringsFile != "",
 	}
 
-	return &REPL{
-		executor:    exec,
-		rl:          rl,
-		interrupted: false,
-	}, nil
+	// Load queries from file if in batch mode
+	if repl.batchMode {
+		queries, err := loadQueriesFromFile(opts.QueryStringsFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load queries: %w", err)
+		}
+		repl.queries = queries
+		repl.queryIndex = 0
+	} else {
+		// Create readline instance for interactive mode
+		rl, err := readline.NewEx(&readline.Config{
+			Prompt:          "\033[36m>\033[0m ",
+			HistoryFile:     os.ExpandEnv("$HOME/.weave_history"),
+			InterruptPrompt: "^C",
+			EOFPrompt:       "exit",
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create readline: %w", err)
+		}
+		repl.rl = rl
+	}
+
+	return repl, nil
+}
+
+// loadQueriesFromFile loads queries from a file (one per line)
+func loadQueriesFromFile(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	var queries []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		// Skip empty lines and comments
+		if line != "" && !strings.HasPrefix(line, "#") {
+			queries = append(queries, line)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	return queries, nil
 }
 
 // Run starts the REPL
 func (r *REPL) Run() error {
-	defer r.rl.Close()
+	// Cleanup
 	defer r.executor.Close()
-
-	// Track interrupt count for double CTRL-C to exit
-	interruptCount := 0
-	var interruptTimer *time.Timer
+	if r.rl != nil {
+		defer r.rl.Close()
+	}
 
 	// Display welcome banner
 	r.displayBanner()
+
+	// Batch mode: execute all queries sequentially
+	if r.batchMode {
+		return r.runBatchMode()
+	}
+
+	// Interactive mode
+	return r.runInteractiveMode()
+}
+
+// runBatchMode executes queries from file sequentially
+func (r *REPL) runBatchMode() error {
+	fmt.Printf("📝 Batch mode: executing %d queries\n\n", len(r.queries))
+
+	for i, query := range r.queries {
+		// Show query number and text
+		fmt.Printf("Query %d/%d: %s\n", i+1, len(r.queries), query)
+
+		// Execute the query
+		r.executeQuery(query)
+
+		// Add separator between queries
+		if i < len(r.queries)-1 {
+			fmt.Println("\n" + strings.Repeat("─", 60) + "\n")
+		}
+	}
+
+	fmt.Printf("\n✅ Completed %d queries\n", len(r.queries))
+	return nil
+}
+
+// runInteractiveMode runs the traditional interactive REPL
+func (r *REPL) runInteractiveMode() error {
+	// Track interrupt count for double CTRL-C to exit
+	interruptCount := 0
+	var interruptTimer *time.Timer
 
 	// Main REPL loop
 	for {

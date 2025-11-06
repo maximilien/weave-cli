@@ -1,0 +1,23 @@
+# Weave CLI REPL Demo Queries
+# This file demonstrates the AI-powered natural language interface
+
+# a. Health check
+check health
+
+# b. List my collections
+list my collections
+
+# c. Show empty collections
+show empty collections
+
+# d. Create TestDocs collection if it doesn't exist
+create TestDocs collection if it doesn't exist
+
+# e. Add README.md to TestDocs collection
+add README.md to TestDocs collection
+
+# f. Show chunks in TestDocs
+show chunks in TestDocs
+
+# g. Delete TestDocs collection
+delete TestDocs collection

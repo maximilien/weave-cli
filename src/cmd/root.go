@@ -25,6 +25,8 @@ var (
 	vectorDBType   string
 	weaviateAPIKey string
 	weaviateURL    string
+	noConfirm      bool
+	queryStrings   string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -93,6 +95,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noTruncate, "no-truncate", false, "show all data without truncation")
 	rootCmd.PersistentFlags().BoolVar(&noTips, "no-tips", false, "suppress helpful tips and suggestions")
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "output results in JSON format")
+	rootCmd.PersistentFlags().BoolVar(&noConfirm, "no-confirm", false, "skip confirmation prompts for destructive operations")
+
+	// REPL-specific flags
+	rootCmd.Flags().StringVar(&queryStrings, "query-strings", "", "file with queries to execute (one per line, batch mode)")
 
 	// Environment variable override flags (highest priority)
 	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vector-db-type", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|mock)")
@@ -110,6 +116,7 @@ func init() {
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	_ = viper.BindPFlag("quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 	_ = viper.BindPFlag("no-color", rootCmd.PersistentFlags().Lookup("no-color"))
+	_ = viper.BindPFlag("no-confirm", rootCmd.PersistentFlags().Lookup("no-confirm"))
 
 	// Add version flag with custom handler
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
@@ -194,8 +201,13 @@ func IsJSONOutput() bool {
 
 // runREPL starts the interactive REPL mode
 func runREPL(cmd *cobra.Command, args []string) {
-	// Create and run REPL
-	r, err := repl.New()
+	// Create REPL with options
+	opts := repl.Options{
+		QueryStringsFile: queryStrings,
+		NoConfirm:        noConfirm,
+	}
+
+	r, err := repl.NewWithOptions(opts)
 	if err != nil {
 		printError(fmt.Sprintf("Failed to start REPL: %v", err))
 		os.Exit(1)
