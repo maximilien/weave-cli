@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 dr.max
+
+package config
+
+import (
+	"github.com/spf13/cobra"
+)
+
+// Cmd represents the config command
+var Cmd = &cobra.Command{
+	Use:   "config",
+	Short: "Configuration management",
+	Long: `Manage Weave CLI configuration.
+
+This command provides subcommands to view and manage configuration settings.`,
+}
+
+func init() {
+	// Register all subcommands
+	Cmd.AddCommand(showCmd)
+	Cmd.AddCommand(listCmd)
+	Cmd.AddCommand(listSchemasCmd)
+	Cmd.AddCommand(showSchemaCmd)
+	Cmd.AddCommand(createCmd)
+	Cmd.AddCommand(updateCmd)
+
+	// Add flags for show-schema command
+	showSchemaCmd.Flags().Bool("yaml", false, "Output schema as YAML")
+	showSchemaCmd.Flags().Bool("json", false, "Output schema as JSON")
+}

@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	configcmd "github.com/maximilien/weave-cli/src/cmd/config"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/repl"
 	"github.com/maximilien/weave-cli/src/pkg/version"
@@ -57,6 +58,8 @@ var rootCmd = &cobra.Command{
   weave docs da COLLECTION             # Delete all documents in collection
 
 ⚙️ CONFIGURATION & HEALTH:
+  weave config create --env            # Create new .env file interactively
+  weave config update --env            # Update existing .env file
   weave config show                    # Show current configuration
   weave config list                    # List all configured databases
   weave health check                   # Check database health
@@ -85,6 +88,9 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig, initColor)
+
+	// Register command packages
+	rootCmd.AddCommand(configcmd.Cmd)
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")

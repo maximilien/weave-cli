@@ -39,13 +39,13 @@ cd weave-cli
 
 ### Quick Start
 
-**Fastest Way (3 lines, no config files needed!)**:
+**Fastest Way (Interactive Configuration)**:
 
 ```bash
-# 1. Copy .env.example and add your credentials
-cp .env.example .env
+# 1. Use the interactive configuration tool
+weave config update --env
 
-# 2. Edit .env with 3 required values:
+# 2. Follow the prompts to enter your credentials:
 #    - WEAVIATE_URL
 #    - WEAVIATE_API_KEY
 #    - OPENAI_API_KEY
@@ -57,6 +57,18 @@ weave health check
 weave cols ls
 
 # Done! No config.yaml needed.
+```
+
+**Alternative: Manual Setup**:
+
+```bash
+# 1. Copy .env.example and add your credentials
+cp .env.example .env
+
+# 2. Edit .env manually with your credentials
+
+# 3. Test the connection
+weave health check
 ```
 
 **For Testing Without Credentials**:
@@ -84,9 +96,33 @@ Weave CLI uses this priority order (highest to lowest):
 
 ### Quick Start Configuration
 
-**Step 1: Create .env (required)**
+**Option 1: Interactive Configuration (Recommended)**
+
+Use the interactive configuration tool to create your `.env` file:
 
 ```bash
+# Interactive setup with guided prompts
+weave config update --env
+
+# Follow the prompts for each variable:
+# - WEAVIATE_URL: Your Weaviate Cloud URL
+# - WEAVIATE_API_KEY: Your API key (hidden input)
+# - OPENAI_API_KEY: Your OpenAI key (hidden input)
+# - OPIK_API_KEY: Optional for LLM observability
+# - WEAVE_MCP_STDIO_PATH: Optional for AI agents
+
+# The tool will:
+# ✓ Create .env from .env.example if needed
+# ✓ Load existing values if .env exists
+# ✓ Hide secrets during input
+# ✓ Allow you to skip/keep current values
+# ✓ Confirm before saving
+```
+
+**Option 2: Manual Configuration**
+
+```bash
+# Create .env manually
 cp .env.example .env
 # Edit .env with your 3 credentials
 ```
@@ -99,7 +135,7 @@ WEAVIATE_API_KEY="your-weaviate-api-key"
 OPENAI_API_KEY="sk-proj-your-openai-api-key"
 ```
 
-**Step 2: You're done!**
+**You're done!**
 
 No config.yaml needed. Defaults work great:
 
@@ -360,11 +396,19 @@ Weave follows a consistent command pattern:
 ### Configuration Management
 
 ```bash
+# Interactive configuration update (recommended)
+weave config update --env              # Update .env file interactively
+weave config update --config-yaml      # Update config.yaml file interactively
+weave config update --env --config-yaml  # Update both files
+
 # Show current configuration
 weave config show
 
 # Show configuration with custom files
 weave config show --config /path/to/config.yaml --env /path/to/.env
+
+# List all configured databases
+weave config list
 
 # List all configured schemas
 weave config list-schemas
@@ -379,6 +423,7 @@ weave config show-schema RagMeDocs --json
 
 # Using aliases
 weave config ls-schemas
+weave config ls
 ```
 
 ### Health Management

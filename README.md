@@ -137,19 +137,32 @@ cd weave-cli
 
 ### Configuration
 
-**Fastest Way to Get Started** (3 lines, no config files needed!):
+**Fastest Way to Get Started** (Interactive Setup):
 
 ```bash
-# Copy .env.example and add your credentials
-cp .env.example .env
+# Create new .env file interactively (recommended for first-time setup)
+weave config create --env
 
-# Edit .env with your 3 required credentials:
+# Or update existing .env file
+weave config update --env
+
+# Follow the prompts to enter your credentials:
 # - WEAVIATE_URL
 # - WEAVIATE_API_KEY
 # - OPENAI_API_KEY
 
 # That's it! Start using weave:
 weave health check
+```
+
+**Alternative: Manual Setup**:
+
+```bash
+# Copy .env.example and add your credentials
+cp .env.example .env
+
+# Edit .env with your 3 required credentials
+# Then run: weave health check
 ```
 
 **Configuration Precedence** (highest to lowest):
@@ -164,6 +177,13 @@ weave health check
 For fine-tuning collection names, batch sizes, PDF settings, etc.:
 
 ```bash
+# Create new config.yaml file interactively
+weave config create --config-yaml
+
+# Or update existing config.yaml file
+weave config update --config-yaml
+
+# Or manual setup
 cp config.yaml.example config.yaml
 # Edit config.yaml to customize defaults
 ```
