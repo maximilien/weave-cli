@@ -181,7 +181,12 @@ func (c *Client) ListTools(ctx context.Context) ([]Tool, error) {
 	// Parse tools from response
 	toolsData, ok := response.Result["tools"].([]interface{})
 	if !ok {
-		return nil, fmt.Errorf("invalid tools response format")
+		// Provide detailed error for debugging
+		resultJSON, err := json.Marshal(response.Result)
+		if err != nil {
+			return nil, fmt.Errorf("invalid tools response format: expected 'tools' array, result type: %T, marshal error: %v", response.Result["tools"], err)
+		}
+		return nil, fmt.Errorf("invalid tools response format: expected 'tools' array, got: %s", string(resultJSON))
 	}
 
 	var tools []Tool

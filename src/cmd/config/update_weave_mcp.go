@@ -178,32 +178,88 @@ func runWeaveMCPUpdate() error {
 	}
 	fmt.Println()
 
-	// Provide next steps
-	printHeader("Next Steps")
-	fmt.Println()
+	// Track whether user updated .env file
+	updatedEnvFile := false
 
-	// Check if install directory is in PATH
-	pathEnv := os.Getenv("PATH")
-	inPath := strings.Contains(pathEnv, installDir)
+	// Update .env file if path is different from current setting
+	if currentPath != "" && currentPath != binaryPath {
+		if fileExists(".env") {
+			fmt.Println()
+			color.New(color.FgYellow).Printf("⚠️  Your .env file has a different path for WEAVE_MCP_STDIO_PATH:\n")
+			color.New(color.FgYellow).Printf("   Current: %s\n", currentPath)
+			color.New(color.FgGreen).Printf("   New:     %s\n\n", binaryPath)
 
-	if !inPath {
-		color.New(color.FgYellow).Printf("⚠️  %s is not in your PATH\n\n", installDir)
-		fmt.Println("Add it to your PATH by adding this to your shell profile:")
-		fmt.Printf("  export PATH=\"%s:$PATH\"\n\n", installDir)
+			fmt.Print("Update .env file with the new path? (Y/n): ")
+			response, _ := reader.ReadString('\n')
+			response = strings.ToLower(strings.TrimSpace(response))
+
+			if response == "" || response == "y" || response == "yes" {
+				// Load current .env values
+				envValues := loadEnvFile(".env")
+				// Update the path
+				envValues["WEAVE_MCP_STDIO_PATH"] = binaryPath
+				// Save back to .env
+				if err := saveEnvFile(".env", envValues); err != nil {
+					color.New(color.FgRed).Printf("❌ Failed to update .env file: %v\n", err)
+				} else {
+					color.New(color.FgGreen).Println("✅ Updated .env file with new path")
+					updatedEnvFile = true
+				}
+				fmt.Println()
+			}
+		}
+	} else if currentPath == "" && fileExists(".env") {
+		// No current path set, but .env exists - offer to add it
+		fmt.Println()
+		color.New(color.FgCyan).Printf("💡 Would you like to add WEAVE_MCP_STDIO_PATH to your .env file?\n")
+		fmt.Printf("   Path: %s\n\n", binaryPath)
+
+		fmt.Print("Add to .env file? (Y/n): ")
+		response, _ := reader.ReadString('\n')
+		response = strings.ToLower(strings.TrimSpace(response))
+
+		if response == "" || response == "y" || response == "yes" {
+			// Load current .env values
+			envValues := loadEnvFile(".env")
+			// Add the path
+			envValues["WEAVE_MCP_STDIO_PATH"] = binaryPath
+			// Save back to .env
+			if err := saveEnvFile(".env", envValues); err != nil {
+				color.New(color.FgRed).Printf("❌ Failed to update .env file: %v\n", err)
+			} else {
+				color.New(color.FgGreen).Println("✅ Added WEAVE_MCP_STDIO_PATH to .env file")
+				updatedEnvFile = true
+			}
+			fmt.Println()
+		}
 	}
 
-	fmt.Println("Set the WEAVE_MCP_STDIO_PATH environment variable:")
-	fmt.Printf("  export WEAVE_MCP_STDIO_PATH=\"%s\"\n\n", binaryPath)
+	// Only show next steps if user updated .env
+	if updatedEnvFile {
+		printHeader("Next Steps")
+		fmt.Println()
 
-	fmt.Println("Or add it to your .env file:")
-	fmt.Printf("  echo 'WEAVE_MCP_STDIO_PATH=\"%s\"' >> .env\n\n", binaryPath)
+		// Check if install directory is in PATH
+		pathEnv := os.Getenv("PATH")
+		inPath := strings.Contains(pathEnv, installDir)
 
-	fmt.Println("Test the installation:")
-	fmt.Printf("  %s --version\n\n", binaryPath)
+		if !inPath {
+			color.New(color.FgYellow).Printf("⚠️  %s is not in your PATH\n\n", installDir)
+			fmt.Println("Add it to your PATH by adding this to your shell profile:")
+			fmt.Printf("  export PATH=\"%s:$PATH\"\n\n", installDir)
+		}
 
-	fmt.Println("Start using REPL mode:")
-	fmt.Println("  weave")
-	fmt.Println()
+		color.New(color.FgGreen).Printf("✅ WEAVE_MCP_STDIO_PATH is set in .env file\n\n")
+		fmt.Println("To use it in your current shell session:")
+		fmt.Printf("  export WEAVE_MCP_STDIO_PATH=\"%s\"\n\n", binaryPath)
+
+		fmt.Println("Test the installation:")
+		fmt.Printf("  %s --version\n\n", binaryPath)
+
+		fmt.Println("Start using REPL mode:")
+		fmt.Println("  weave")
+		fmt.Println()
+	}
 
 	return nil
 }

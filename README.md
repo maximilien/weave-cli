@@ -246,13 +246,12 @@ weave config update --weave-mcp
 # ✓ Verifies checksum for security
 # ✓ Prompts for installation location (default: ~/.local/bin)
 # ✓ Makes binary executable
+# ✓ Automatically updates .env file with the new path (if different)
 # ✓ Provides setup instructions for PATH and environment variables
 
-# After installation, set the environment variable:
+# The installer will offer to update your .env file automatically!
+# Otherwise, you can manually set the environment variable:
 export WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"
-
-# Or add to your .env file:
-echo 'WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"' >> .env
 
 # Test the installation:
 weave

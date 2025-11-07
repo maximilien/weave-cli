@@ -598,13 +598,18 @@ Make binary executable? (Y/n): y
 Testing installation...
 ✅ Binary is executable
 
+💡 Would you like to add WEAVE_MCP_STDIO_PATH to your .env file?
+   Path: /Users/username/.local/bin/weave-mcp-stdio
+
+Add to .env file? (Y/n): y
+✅ Added WEAVE_MCP_STDIO_PATH to .env file
+
 🔧 Next Steps
 
-Set the WEAVE_MCP_STDIO_PATH environment variable:
-  export WEAVE_MCP_STDIO_PATH="/Users/username/.local/bin/weave-mcp-stdio"
+✅ WEAVE_MCP_STDIO_PATH is already set in .env file
 
-Or add it to your .env file:
-  echo 'WEAVE_MCP_STDIO_PATH="/Users/username/.local/bin/weave-mcp-stdio"' >> .env
+To use it in your current shell session:
+  export WEAVE_MCP_STDIO_PATH="/Users/username/.local/bin/weave-mcp-stdio"
 
 Test the installation:
   /Users/username/.local/bin/weave-mcp-stdio --version
@@ -620,6 +625,7 @@ The installer:
 - **Prompts for install location** with sensible defaults
 - **Makes the binary executable** on Unix-like systems
 - **Tests the installation** to ensure it works
+- **Automatically updates .env file** if the path differs from existing configuration
 - **Provides setup instructions** for environment variables and PATH
 
 #### Testing Without Credentials
@@ -1838,14 +1844,10 @@ This will automatically:
 - Download the latest release
 - Verify the checksum
 - Install to ~/.local/bin (or your chosen location)
+- **Offer to update your .env file** with the correct path
 - Provide setup instructions
 
-After installation, set the environment variable:
-```bash
-export WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"
-# Or add to .env file
-echo 'WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"' >> .env
-```
+The installer will prompt you to add/update WEAVE_MCP_STDIO_PATH in your .env file automatically!
 
 ### Q: I get "WEAVE_MCP_STDIO_PATH must be configured" error
 

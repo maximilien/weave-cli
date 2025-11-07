@@ -307,14 +307,49 @@ func formatMCPConnectionError(errMsg string) string {
 		return sb.String()
 	}
 
+	// Check if it's a "binary not found" error
+	mcpPath := os.Getenv("WEAVE_MCP_STDIO_PATH")
+	binaryNotFound := strings.Contains(errMsg, "no such file or directory") ||
+		strings.Contains(errMsg, "executable file not found")
+
+	if binaryNotFound {
+		sb.WriteString(fmt.Sprintf("Error: %s\n\n", errMsg))
+
+		sb.WriteString("💡 Quick Fix - Install weave-mcp with one command:\n\n")
+		sb.WriteString("   weave config update --weave-mcp\n\n")
+		sb.WriteString("   This will automatically:\n")
+		sb.WriteString("   • Detect your platform (macOS/Linux/Windows)\n")
+		sb.WriteString("   • Download the latest release from GitHub\n")
+		sb.WriteString("   • Verify the checksum\n")
+		sb.WriteString("   • Install to ~/.local/bin (or your chosen location)\n")
+		sb.WriteString("   • Provide setup instructions\n\n")
+
+		if mcpPath != "" {
+			sb.WriteString(fmt.Sprintf("Current WEAVE_MCP_STDIO_PATH: %s\n", mcpPath))
+			if _, err := os.Stat(mcpPath); os.IsNotExist(err) {
+				sb.WriteString("⚠️  Binary not found at this path!\n\n")
+			}
+		} else {
+			sb.WriteString("⚠️  WEAVE_MCP_STDIO_PATH environment variable is not set\n\n")
+		}
+
+		sb.WriteString("For more information:\n")
+		sb.WriteString("  • weave-mcp repo: https://github.com/maximilien/weave-mcp\n")
+		sb.WriteString("  • Run: weave config update --weave-mcp --help\n")
+
+		return sb.String()
+	}
+
 	// Generic MCP error handling
 	sb.WriteString(fmt.Sprintf("Error: %s\n\n", errMsg))
+
+	sb.WriteString("💡 Quick Fix - Install or reinstall weave-mcp:\n\n")
+	sb.WriteString("   weave config update --weave-mcp\n\n")
 
 	// Troubleshooting steps
 	sb.WriteString("Troubleshooting steps:\n\n")
 
 	sb.WriteString("1. Verify weave-mcp binary path:\n")
-	mcpPath := os.Getenv("WEAVE_MCP_STDIO_PATH")
 	if mcpPath != "" {
 		sb.WriteString(fmt.Sprintf("   Current path: %s\n", mcpPath))
 		if _, err := os.Stat(mcpPath); os.IsNotExist(err) {
@@ -329,18 +364,12 @@ func formatMCPConnectionError(errMsg string) string {
 	}
 	sb.WriteString("\n")
 
-	sb.WriteString("2. Check if weave-mcp is installed:\n")
+	sb.WriteString("2. Install weave-mcp using the installer:\n")
+	sb.WriteString("   weave config update --weave-mcp\n\n")
+
+	sb.WriteString("3. Or manually build from source:\n")
 	sb.WriteString("   git clone https://github.com/maximilien/weave-mcp.git\n")
 	sb.WriteString("   cd weave-mcp && go build -o bin/weave-mcp-stdio cmd/stdio/main.go\n\n")
-
-	sb.WriteString("3. Verify the binary is executable:\n")
-	if mcpPath != "" {
-		sb.WriteString(fmt.Sprintf("   chmod +x %s\n", mcpPath))
-		sb.WriteString(fmt.Sprintf("   %s --version\n\n", mcpPath))
-	} else {
-		sb.WriteString("   chmod +x /path/to/weave-mcp/bin/weave-mcp-stdio\n")
-		sb.WriteString("   /path/to/weave-mcp/bin/weave-mcp-stdio --version\n\n")
-	}
 
 	sb.WriteString("4. Check environment variables are set:\n")
 	sb.WriteString("   echo $WEAVE_MCP_STDIO_PATH\n")

@@ -119,8 +119,26 @@ func saveEnvFile(filename string, values map[string]string) error {
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 
-		// Keep comments and empty lines
-		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+		// Handle empty lines
+		if trimmed == "" {
+			output = append(output, line)
+			continue
+		}
+
+		// Handle commented lines - check if they contain a key we want to set
+		if strings.HasPrefix(trimmed, "#") {
+			// Try to parse commented KEY=VALUE
+			uncommented := strings.TrimSpace(strings.TrimPrefix(trimmed, "#"))
+			parts := strings.SplitN(uncommented, "=", 2)
+			if len(parts) == 2 {
+				key := strings.TrimSpace(parts[0])
+				// If we have a value for this key, uncomment and set it
+				if value, ok := values[key]; ok && value != "" {
+					output = append(output, fmt.Sprintf("%s=\"%s\"", key, value))
+					continue
+				}
+			}
+			// Otherwise keep the comment
 			output = append(output, line)
 			continue
 		}
