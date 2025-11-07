@@ -1,6 +1,7 @@
 # Weave CLI
 
-A fast, AI-powered command-line tool for managing Weaviate vector databases. Built in Go for performance and ease of use.
+A fast, AI-powered command-line tool for managing Weaviate vector databases.
+Built in Go for performance and ease of use.
 
 ## Quick Start
 
@@ -72,7 +73,7 @@ weave
 
 ### Configuration Options
 
-**Auto-Configuration**
+#### Auto-Configuration
 
 Weave CLI automatically detects missing configuration:
 
@@ -91,7 +92,8 @@ weave config update --weave-mcp
 3. config.yaml (optional) - For advanced customization
 4. Built-in defaults
 
-See the [User Guide](docs/USER_GUIDE.md#configuration) for detailed configuration options.
+See the [User Guide](docs/USER_GUIDE.md#configuration) for detailed
+configuration options.
 
 ### More Examples
 

@@ -114,8 +114,9 @@ func GetBinaryAsset(release *Release, platform Platform) (*Asset, error) {
 	}
 
 	// Look for binary asset matching platform
-	// Binary names in releases: weave-mcp-darwin-arm64, weave-mcp-linux-amd64, etc.
-	binaryName := fmt.Sprintf("weave-mcp-%s-%s", osName, archName)
+	// Binary names in releases: weave-mcp-stdio-darwin-arm64, weave-mcp-stdio-linux-amd64, etc.
+	// Note: We need the stdio version, not the HTTP server version
+	binaryName := fmt.Sprintf("weave-mcp-stdio-%s-%s", osName, archName)
 	if platform.OS == "windows" {
 		binaryName += ".exe"
 	}
