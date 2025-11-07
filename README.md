@@ -24,6 +24,14 @@ collections of configured vector databases.
     for troubleshooting
   - **Better collection/database errors** with actionable suggestions
   - All commands now use enhanced error handling for consistent UX
+- **🔧 weave-mcp Binary Installer**: One-command installation of weave-mcp
+  - **Automatic platform detection** - supports macOS, Linux, Windows
+  - **Download with progress bar** - visual feedback for large downloads
+  - **Checksum verification** - ensures download integrity
+  - **Interactive prompts** - choose install location and permissions
+  - **Smart PATH detection** - warns if install directory not in PATH
+  - **Installation testing** - verifies binary is executable
+  - Run `weave config update --weave-mcp` to install
 - **📦 MCP Integration Tests**: Automated test suite for weave-mcp compatibility
   - Comprehensive integration tests for all MCP operations
   - Collection and document operation testing
@@ -223,6 +231,32 @@ cp .env.example .env
 2. **Environment variables** - `export OPENAI_MODEL=gpt-4`
 3. **config.yaml** (optional) - For advanced customization
 4. **Built-in defaults** - Sensible defaults work out of the box
+
+**Installing weave-mcp for REPL Mode** (New in v0.3.1):
+
+The REPL mode requires the weave-mcp binary. Install it with one command:
+
+```bash
+# Install weave-mcp binary (detects your platform automatically)
+weave config update --weave-mcp
+
+# What it does:
+# ✓ Detects your OS (macOS/Linux/Windows) and architecture
+# ✓ Downloads latest release from GitHub with progress bar
+# ✓ Verifies checksum for security
+# ✓ Prompts for installation location (default: ~/.local/bin)
+# ✓ Makes binary executable
+# ✓ Provides setup instructions for PATH and environment variables
+
+# After installation, set the environment variable:
+export WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"
+
+# Or add to your .env file:
+echo 'WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"' >> .env
+
+# Test the installation:
+weave
+```
 
 **Advanced Configuration** (optional):
 

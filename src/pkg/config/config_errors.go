@@ -224,27 +224,41 @@ func formatREPLConfigError(err *ConfigError) string {
 
 	// Special note about WEAVE_MCP_STDIO_PATH
 	if containsString(err.MissingVars, "WEAVE_MCP_STDIO_PATH") {
-		sb.WriteString("⚠️  Note: REPL mode requires the weave-mcp server binary.\n")
-		sb.WriteString("   See: https://github.com/maximilien/weave-mcp for installation\n\n")
+		sb.WriteString("⚠️  Note: REPL mode requires the weave-mcp server binary.\n\n")
+		sb.WriteString("💡 Quick fix - Install weave-mcp with one command:\n")
+		sb.WriteString("   weave config update --weave-mcp\n\n")
+		sb.WriteString("   This will automatically download and install the binary for your platform.\n")
+		sb.WriteString("   See: https://github.com/maximilien/weave-mcp for more information\n\n")
 	}
 
 	// How to fix
 	sb.WriteString("How to fix this:\n\n")
 
-	// Option 1: Set environment variables
-	sb.WriteString("Option 1: Set environment variables in your shell\n")
+	// Option 1: Install weave-mcp (if missing)
+	if containsString(err.MissingVars, "WEAVE_MCP_STDIO_PATH") {
+		sb.WriteString("Option 1: Install weave-mcp binary (recommended)\n")
+		sb.WriteString("  Run: weave config update --weave-mcp\n\n")
+	}
+
+	// Option 2: Set environment variables
+	optionNum := 1
+	if containsString(err.MissingVars, "WEAVE_MCP_STDIO_PATH") {
+		optionNum = 2
+	}
+	sb.WriteString(fmt.Sprintf("Option %d: Set environment variables in your shell\n", optionNum))
 	for _, v := range err.MissingVars {
 		example := getEnvVarExample(v)
 		sb.WriteString(fmt.Sprintf("  export %s=\"%s\"\n", v, example))
 	}
 	sb.WriteString("\n")
 
-	// Option 2: Update .env file
+	// Option 3: Update .env file
+	optionNum++
 	if err.EnvFileExists {
-		sb.WriteString("Option 2: Update your existing .env file\n")
+		sb.WriteString(fmt.Sprintf("Option %d: Update your existing .env file\n", optionNum))
 		sb.WriteString("  Run: weave config update --env\n\n")
 	} else {
-		sb.WriteString("Option 2: Create a .env file\n")
+		sb.WriteString(fmt.Sprintf("Option %d: Create a .env file\n", optionNum))
 		sb.WriteString("  Run: weave config create --env\n\n")
 	}
 

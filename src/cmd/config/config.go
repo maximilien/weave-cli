@@ -13,7 +13,11 @@ var Cmd = &cobra.Command{
 	Short: "Configuration management",
 	Long: `Manage Weave CLI configuration.
 
-This command provides subcommands to view and manage configuration settings.`,
+This command provides subcommands to view and manage configuration settings:
+  • create/update - Interactively create or update .env and config.yaml files
+  • update --weave-mcp - Download and install weave-mcp binary for REPL mode
+  • show - Display current configuration
+  • list - List configured databases and schemas`,
 }
 
 func init() {

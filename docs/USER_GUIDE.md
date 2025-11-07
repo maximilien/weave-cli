@@ -14,7 +14,8 @@ A comprehensive guide to using the Weave CLI tool for managing Weaviate vector d
 6. [Global Flags](#global-flags)
 7. [Advanced Usage](#advanced-usage)
 8. [Troubleshooting](#troubleshooting)
-9. [Examples](#examples)
+9. [FAQ (Frequently Asked Questions)](#faq-frequently-asked-questions)
+10. [Examples](#examples)
 
 ## Getting Started
 
@@ -560,6 +561,67 @@ databases:
 
 This works in any directory, not just within the git repository.
 
+#### Installing weave-mcp Binary (New in v0.3.1)
+
+The REPL mode requires the `weave-mcp` binary to communicate with the Weave CLI. You can install it automatically with a single command:
+
+```bash
+$ weave config update --weave-mcp
+
+🔧 Weave MCP Binary Installer
+
+📋 Platform: darwin-arm64
+
+Fetching latest release information from GitHub...
+✅ Found release: Weave MCP Release v0.1.3 (v0.1.3)
+
+📦 Binary: weave-mcp-stdio-darwin-arm64 (19.53 MB)
+
+📂 Where would you like to install weave-mcp?
+   Default: /Users/username/.local/bin
+   Note: This directory should be in your PATH
+
+Install directory (press Enter for default):
+
+Installing to: /Users/username/.local/bin/weave-mcp-stdio
+
+Downloading  100% |████████████████████████████| (19.5/19.5 MB, 5.2 MB/s)
+
+Verifying checksum...
+✅ Checksum verified
+
+Make binary executable? (Y/n): y
+✅ Binary made executable
+
+✅ weave-mcp installed successfully!
+
+Testing installation...
+✅ Binary is executable
+
+🔧 Next Steps
+
+Set the WEAVE_MCP_STDIO_PATH environment variable:
+  export WEAVE_MCP_STDIO_PATH="/Users/username/.local/bin/weave-mcp-stdio"
+
+Or add it to your .env file:
+  echo 'WEAVE_MCP_STDIO_PATH="/Users/username/.local/bin/weave-mcp-stdio"' >> .env
+
+Test the installation:
+  /Users/username/.local/bin/weave-mcp-stdio --version
+
+Start using REPL mode:
+  weave
+```
+
+The installer:
+- **Auto-detects your platform** (macOS, Linux, Windows) and architecture (amd64, arm64)
+- **Downloads** the latest release from GitHub with a progress bar
+- **Verifies checksum** for security
+- **Prompts for install location** with sensible defaults
+- **Makes the binary executable** on Unix-like systems
+- **Tests the installation** to ensure it works
+- **Provides setup instructions** for environment variables and PATH
+
 #### Testing Without Credentials
 
 Use the mock database for testing without real Weaviate credentials:
@@ -601,6 +663,9 @@ Weave follows a consistent command pattern:
 weave config update --env              # Update .env file interactively
 weave config update --config-yaml      # Update config.yaml file interactively
 weave config update --env --config-yaml  # Update both files
+
+# Install weave-mcp binary for REPL mode (NEW in v0.3.1)
+weave config update --weave-mcp        # Download and install weave-mcp
 
 # Show current configuration
 weave config show
@@ -1757,6 +1822,139 @@ weave document list --help
 # Version information
 weave --version
 ```
+
+## FAQ (Frequently Asked Questions)
+
+### Q: How do I install weave-mcp for REPL mode?
+
+**A:** Use the built-in installer:
+
+```bash
+weave config update --weave-mcp
+```
+
+This will automatically:
+- Detect your platform (macOS/Linux/Windows)
+- Download the latest release
+- Verify the checksum
+- Install to ~/.local/bin (or your chosen location)
+- Provide setup instructions
+
+After installation, set the environment variable:
+```bash
+export WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"
+# Or add to .env file
+echo 'WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"' >> .env
+```
+
+### Q: I get "WEAVE_MCP_STDIO_PATH must be configured" error
+
+**A:** This means the REPL mode can't find the weave-mcp binary. Solutions:
+
+1. **Install weave-mcp** (recommended):
+   ```bash
+   weave config update --weave-mcp
+   ```
+
+2. **Set the environment variable** if you already have it installed:
+   ```bash
+   export WEAVE_MCP_STDIO_PATH="/path/to/weave-mcp-stdio"
+   ```
+
+3. **Add to .env file** for permanent configuration:
+   ```bash
+   echo 'WEAVE_MCP_STDIO_PATH="/path/to/weave-mcp-stdio"' >> .env
+   ```
+
+### Q: How do I fix "no vector databases configured" error?
+
+**A:** This means you haven't set up your Weaviate credentials. Fix it interactively:
+
+```bash
+weave config update --env
+```
+
+Or set environment variables manually:
+```bash
+export WEAVIATE_URL="https://your-cluster.weaviate.cloud"
+export WEAVIATE_API_KEY="your-api-key"
+export OPENAI_API_KEY="your-openai-key"
+```
+
+### Q: Can I test weave without setting up Weaviate?
+
+**A:** Yes! Use the mock database:
+
+```bash
+export VECTOR_DB_TYPE=mock
+weave health check
+weave cols ls
+```
+
+The mock database works for all commands without requiring real credentials.
+
+### Q: Where should I install weave-mcp?
+
+**A:** The installer defaults to:
+- **macOS/Linux**: `~/.local/bin`
+- **Windows**: `~/AppData/Local/Programs`
+
+These locations are commonly in PATH. If not, the installer will warn you and provide instructions to add it.
+
+### Q: How do I update weave-mcp to the latest version?
+
+**A:** Run the installer again with the `--force` flag:
+
+```bash
+weave config update --weave-mcp
+# When prompted, answer 'y' to reinstall
+```
+
+The installer will download and install the latest release.
+
+### Q: What if config.yaml is missing for REPL mode?
+
+**A:** Weave CLI will automatically create a minimal config.yaml for you:
+
+```bash
+weave  # Run REPL mode
+
+# First run creates config.yaml automatically
+# ✅ Created minimal config.yaml for you!
+# Run 'weave' again to start the REPL.
+
+weave  # Run again to start REPL
+```
+
+### Q: How do I check if weave-mcp is installed correctly?
+
+**A:** Test the installation:
+
+```bash
+# Check if environment variable is set
+echo $WEAVE_MCP_STDIO_PATH
+
+# Test the binary
+$WEAVE_MCP_STDIO_PATH --version
+
+# Or if installed to default location
+~/.local/bin/weave-mcp-stdio --version
+
+# Try REPL mode
+weave
+```
+
+### Q: Can I use weave-cli without REPL mode?
+
+**A:** Yes! All commands work without REPL mode:
+
+```bash
+weave health check
+weave cols ls
+weave docs create MyCollection document.txt
+```
+
+REPL mode (running just `weave`) is optional and provides natural language query features.
 
 ## Examples
 

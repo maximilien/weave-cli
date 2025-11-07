@@ -15,9 +15,10 @@ import (
 // updateCmd represents the config update command
 var updateCmd = &cobra.Command{
 	Use:   "update",
-	Short: "Interactively update configuration files",
-	Long: `Interactively create or update .env and config.yaml files.
+	Short: "Interactively update configuration files or install weave-mcp",
+	Long: `Interactively create or update .env and config.yaml files, or install weave-mcp binary.
 
+CONFIGURATION FILES:
 This command provides a guided, interactive way to:
 - Create .env file from .env.example with your credentials
 - Create config.yaml from config.yaml.example with your settings
@@ -31,6 +32,15 @@ The command will:
 5. Allow you to quit at any time (Ctrl+C or type 'quit')
 6. Confirm before saving changes
 
+WEAVE-MCP INSTALLER:
+For REPL mode, you need the weave-mcp binary. The installer will:
+- Auto-detect your platform (macOS/Linux/Windows, amd64/arm64)
+- Download the latest release from GitHub with progress bar
+- Verify checksum for security
+- Prompt for installation location (default: ~/.local/bin)
+- Make binary executable
+- Provide setup instructions for environment variables
+
 Examples:
   # Update .env file interactively
   weave config update --env
@@ -38,7 +48,10 @@ Examples:
   # Update config.yaml file interactively
   weave config update --config-yaml
 
-  # Update both files
+  # Install weave-mcp binary for REPL mode
+  weave config update --weave-mcp
+
+  # Update both configuration files
   weave config update --env --config-yaml`,
 	Run: runConfigUpdate,
 }
@@ -46,21 +59,33 @@ Examples:
 var (
 	updateEnv        bool
 	updateConfigYAML bool
+	weaveMCP         bool
 )
 
 func init() {
 	updateCmd.Flags().BoolVar(&updateEnv, "env", false, "Update .env file")
 	updateCmd.Flags().BoolVar(&updateConfigYAML, "config-yaml", false, "Update config.yaml file")
+	updateCmd.Flags().BoolVar(&weaveMCP, "weave-mcp", false, "Download and install weave-mcp binary")
 }
 
 func runConfigUpdate(cmd *cobra.Command, args []string) {
+	// Handle weave-mcp installation separately
+	if weaveMCP {
+		if err := runWeaveMCPUpdate(); err != nil {
+			printError(fmt.Sprintf("Failed to install weave-mcp: %v", err))
+			os.Exit(1)
+		}
+		return
+	}
+
 	// Check if at least one flag is set
 	if !updateEnv && !updateConfigYAML {
-		printError("Please specify at least one flag: --env or --config-yaml")
+		printError("Please specify at least one flag: --env, --config-yaml, or --weave-mcp")
 		fmt.Println()
 		fmt.Println("Examples:")
 		fmt.Println("  weave config update --env")
 		fmt.Println("  weave config update --config-yaml")
+		fmt.Println("  weave config update --weave-mcp")
 		fmt.Println("  weave config update --env --config-yaml")
 		os.Exit(1)
 	}

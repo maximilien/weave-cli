@@ -60,6 +60,7 @@ var rootCmd = &cobra.Command{
 ⚙️ CONFIGURATION & HEALTH:
   weave config create --env            # Create new .env file interactively
   weave config update --env            # Update existing .env file
+  weave config update --weave-mcp      # Install weave-mcp binary for REPL
   weave config show                    # Show current configuration
   weave config list                    # List all configured databases
   weave health check                   # Check database health
