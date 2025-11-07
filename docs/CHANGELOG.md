@@ -7,6 +7,107 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - Pending Release
+
+### Added
+
+- **🎯 Smart Error Handling & Configuration UX**: Dramatically improved user experience for configuration issues
+  - **Detailed error messages** showing exactly what's missing (environment variables, config files)
+  - **Interactive configuration fixes** - prompts to create/update .env file on the spot
+  - **Auto-creates config.yaml** - when REPL detects missing config.yaml, automatically creates a minimal one
+  - **Multiple fix options** clearly explained (flags, shell exports, .env file)
+  - **Context-aware tips** for config.yaml setup and mock database testing
+  - **Better MCP error diagnostics** - captures stderr from weave-mcp for troubleshooting
+  - **Better collection/database errors** with actionable suggestions
+  - All commands now use enhanced error handling for consistent UX
+
+- **🔧 weave-mcp Binary Installer**: One-command installation of weave-mcp
+  - **Automatic platform detection** - supports macOS, Linux, Windows
+  - **Download with progress bar** - visual feedback for large downloads
+  - **Checksum verification** - ensures download integrity
+  - **Interactive prompts** - choose install location and permissions
+  - **Smart PATH detection** - warns if install directory not in PATH
+  - **Installation testing** - verifies binary is executable
+  - Run `weave config update --weave-mcp` to install
+
+- **📦 MCP Integration Tests**: Automated test suite for weave-mcp compatibility
+  - Comprehensive integration tests for all MCP operations
+  - Collection and document operation testing
+  - Error handling and edge case validation
+  - Automated testing workflow for MCP releases
+  - See [tests/README_MCP_TESTS.md](../tests/README_MCP_TESTS.md) for details
+
+- **🎨 Version Display in Banner**: REPL banner now shows version info
+  - Displays version string in dimmed text below ASCII art
+  - Consistent with `weave -V` output format
+
+## [0.3.0] - 2025-11-01
+
+### Added
+
+- **🔄 Interactive REPL Mode**: Run `weave` without arguments for an interactive session
+  - Beautiful ASCII art banner with version and GitHub link
+  - Natural language query support in interactive mode
+  - Built-in help, examples, and history commands
+  - CTRL-C to stop commands, twice to exit (like Claude CLI)
+  - Command history saved to `~/.weave_history`
+
+- **🤖 AI Agents Query Command**: New `weave query` (or `weave q`) command for natural language queries using GPT-4o
+  - Automatically understands your intent and plans appropriate commands
+  - Executes weave-cli and bash commands intelligently
+  - Provides comprehensive reports with recommendations
+  - Supports dry-run mode to preview execution plans
+
+- **🧠 Multi-Agent Architecture**: 7 specialized agents working together
+  - QueryAgent: Validates and fixes user queries with MCP tool awareness
+  - PlanningAgent: Creates detailed execution plans with full tool schemas
+  - WeaveAgent: Executes weave-cli commands via MCP protocol
+  - BashAgent: Safely executes bash commands with user approval
+  - OutputAgent: Beautiful, color-coded user-friendly output
+  - ReportAgent: Comprehensive operation reports with LLM-generated recommendations
+  - EvalAgent: Tracks metrics and evaluates success
+
+- **📊 OpenTelemetry Integration**: Opik tracing for LLM observability
+  - Automatic cost tracking for all LLM calls
+  - Token usage metrics (prompt, completion, total)
+  - Color-coded cost display (green/yellow/red)
+  - Direct link to Opik dashboard for detailed traces
+
+- **✨ Enhanced User Experience**:
+  - Smart error detection in command output
+  - Step progress with duration display
+  - JSON output with syntax highlighting
+  - Auto-approval for simple weave commands
+  - Health check support via natural language
+
+## [0.2.14] - 2025-10-15
+
+### Added
+
+- **🔄 PDF Conversion Tool**: New `weave docs pdf-convert` command to convert CMYK PDFs to RGB format using Ghostscript or ImageMagick
+- **🎯 Text-Only PDF Processing**: New `--skip-all-images` flag to extract only text from PDFs without image processing overhead
+- **💬 Helpful Tips Control**: Global `--no-tips` flag to suppress helpful tips and suggestions when desired
+- **🔧 CMYK PDF Support**: Graceful handling of CMYK PDFs with actionable tips for conversion using Ghostscript or ImageMagick
+
+## [0.2.11] - 2025-10-10
+
+### Added
+
+- **📦 Batch Document Creation**: Process entire directories with parallel processing and automatic retry
+- **⚡ Parallel Processing**: Configure multiple workers for faster batch operations
+- **📊 Progress Tracking**: Visual progress indicators with time estimation
+- **🔄 Smart Retry**: Automatic retry on failures with `.processed` file tracking
+- **📈 Comprehensive Reporting**: CSV reports with detailed processing statistics
+
+## [0.2.10] - 2025-10-08
+
+### Added
+
+- **📄 Enhanced PDF Processing**: Improved PDF text extraction with better fallback handling
+- **💬 Human-Friendly Error Messages**: Simplified, actionable error messages with helpful suggestions
+- **🎬 Updated Demos**: New demo recordings showcasing PDF processing capabilities
+- **🔧 Better UX**: Fixed PDF success message formatting and improved user experience
+
 ## [0.2.8] - 2025-10-04
 
 ### Added

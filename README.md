@@ -1,344 +1,36 @@
 # Weave CLI
 
-A command-line tool for managing Weaviate vector databases, written in Go.
-This tool provides a fast and easy way to manage content in text and image
-collections of configured vector databases.
-
-## 🚀 What's New in v0.3.1
-
-### Latest Updates (Pending Release)
-
-- **🎯 Smart Error Handling & Configuration UX**: Dramatically improved
-  user experience for configuration issues
-  - **Detailed error messages** showing exactly what's missing
-    (environment variables, config files)
-  - **Interactive configuration fixes** - prompts to create/update
-    .env file on the spot
-  - **Auto-creates config.yaml** - when REPL detects missing config.yaml,
-    automatically creates a minimal one
-  - **Multiple fix options** clearly explained (flags, shell exports,
-    .env file)
-  - **Context-aware tips** for config.yaml setup and mock database
-    testing
-  - **Better MCP error diagnostics** - captures stderr from weave-mcp
-    for troubleshooting
-  - **Better collection/database errors** with actionable suggestions
-  - All commands now use enhanced error handling for consistent UX
-- **🔧 weave-mcp Binary Installer**: One-command installation of weave-mcp
-  - **Automatic platform detection** - supports macOS, Linux, Windows
-  - **Download with progress bar** - visual feedback for large downloads
-  - **Checksum verification** - ensures download integrity
-  - **Interactive prompts** - choose install location and permissions
-  - **Smart PATH detection** - warns if install directory not in PATH
-  - **Installation testing** - verifies binary is executable
-  - Run `weave config update --weave-mcp` to install
-- **📦 MCP Integration Tests**: Automated test suite for weave-mcp compatibility
-  - Comprehensive integration tests for all MCP operations
-  - Collection and document operation testing
-  - Error handling and edge case validation
-  - Automated testing workflow for MCP releases
-  - See [tests/README_MCP_TESTS.md](tests/README_MCP_TESTS.md) for details
-- **🎨 Version Display in Banner**: REPL banner now shows version info
-  - Displays version string in dimmed text below ASCII art
-  - Consistent with `weave -V` output format
-
-### Previous Updates (v0.3.0)
-
-### Core Features (v0.3.0)
-
-- **🔄 Interactive REPL Mode**: Run `weave` without arguments for an
-  interactive session
-  - Beautiful ASCII art banner with version and GitHub link
-  - Natural language query support in interactive mode
-  - Built-in help, examples, and history commands
-  - CTRL-C to stop commands, twice to exit (like Claude CLI)
-  - Command history saved to `~/.weave_history`
-- **🤖 AI Agents Query Command**: New `weave query` (or `weave q`) command
-  for natural language queries using GPT-4o
-  - Automatically understands your intent and plans appropriate commands
-  - Executes weave-cli and bash commands intelligently
-  - Provides comprehensive reports with recommendations
-  - Supports dry-run mode to preview execution plans
-- **🧠 Multi-Agent Architecture**: 7 specialized agents working together
-  - QueryAgent: Validates and fixes user queries with MCP tool awareness
-  - PlanningAgent: Creates detailed execution plans with full tool schemas
-  - WeaveAgent: Executes weave-cli commands via MCP protocol
-  - BashAgent: Safely executes bash commands with user approval
-  - OutputAgent: Beautiful, color-coded user-friendly output
-  - ReportAgent: Comprehensive operation reports with
-    LLM-generated recommendations
-  - EvalAgent: Tracks metrics and evaluates success
-- **📊 OpenTelemetry Integration**: Opik tracing for LLM observability
-  - Automatic cost tracking for all LLM calls
-  - Token usage metrics (prompt, completion, total)
-  - Color-coded cost display (green/yellow/red)
-  - Direct link to Opik dashboard for detailed traces
-- **✨ Enhanced User Experience**:
-  - Smart error detection in command output
-  - Step progress with duration display
-  - JSON output with syntax highlighting
-  - Auto-approval for simple weave commands
-  - Health check support via natural language
-
-### Previous Updates (v0.2.14)
-
-- **🔄 PDF Conversion Tool**: New `weave docs pdf-convert` command to convert CMYK
-  PDFs to RGB format using Ghostscript or ImageMagick
-- **🎯 Text-Only PDF Processing**: New `--skip-all-images` flag to extract only
-  text from PDFs without image processing overhead
-- **💬 Helpful Tips Control**: Global `--no-tips` flag to suppress helpful tips
-  and suggestions when desired
-- **🔧 CMYK PDF Support**: Graceful handling of CMYK PDFs with actionable tips
-  for conversion using Ghostscript or ImageMagick
-
-### Previous Updates (v0.2.11)
-
-- **📦 Batch Document Creation**: Process entire directories with parallel
-  processing and automatic retry
-- **⚡ Parallel Processing**: Configure multiple workers for faster batch
-  operations
-- **📊 Progress Tracking**: Visual progress indicators with time estimation
-- **🔄 Smart Retry**: Automatic retry on failures with `.processed` file
-  tracking
-- **📈 Comprehensive Reporting**: CSV reports with detailed processing statistics
-
-### Previous Updates (v0.2.10)
-
-- **📄 Enhanced PDF Processing**: Improved PDF text extraction with better
-  fallback handling
-- **💬 Human-Friendly Error Messages**: Simplified, actionable error messages
-  with helpful suggestions
-- **🎬 Updated Demos**: New demo recordings showcasing PDF processing
-  capabilities
-- **🔧 Better UX**: Fixed PDF success message formatting and improved user
-  experience
-
-## 🎬 Demo
-
-Watch Weave CLI in action with our interactive demos:
-
-- **📹 [Full Demo](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
-  (5 minutes): Complete feature showcase with PDF processing
-- **⚡ [Quick Demo](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)**
-  (2 minutes): Rapid overview with environment variables
-- **🤖 [REPL AI Demo](https://asciinema.org/a/U504HN4FSeMsOA0qS0os0NWUE)** (NEW!):
-  AI-powered natural language interface in action
-
-To record your own demos, use `./tools/asciinema.sh [demo|quick|repl]`
-
-## Features
-
-- 🤖 **AI Agents** - Natural language queries with GPT-4o powered multi-agent system
-- 🌐 **Weaviate Cloud Support** - Connect to Weaviate Cloud instances
-- 🏠 **Weaviate Local Support** - Connect to local Weaviate instances
-- 🎭 **Mock Database** - Built-in mock database for testing and development
-- 📊 **Collection Management** - List, create, view, and delete collections
-- 📄 **Document Management** - Create, update, list, show, and delete documents
-- 📦 **Batch Processing** - Process entire directories with parallel workers and
-  automatic retry
-- 🔍 **Semantic Search** - Query collections with natural language
-- 📄 **PDF Processing** - Extract text and images from PDFs with intelligent
-  chunking and CMYK support
-- 🔄 **PDF Conversion** - Convert CMYK PDFs to RGB format with Ghostscript or
-  ImageMagick
-- 🎯 **Flexible Processing** - Text-only mode with `--skip-all-images` for faster
-  processing
-- 💬 **User Experience** - Helpful tips and suggestions (can be disabled with
-  `--no-tips`)
-- 🔧 **Configuration Management** - YAML + Environment variable configuration
-- 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
+A fast, AI-powered command-line tool for managing Weaviate vector databases. Built in Go for performance and ease of use.
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# Clone and build
 git clone https://github.com/maximilien/weave-cli.git
 cd weave-cli
 ./build.sh
-
-# The binary will be available at bin/weave
+# Binary available at bin/weave
 ```
 
-### Configuration
-
-**Fastest Way to Get Started** (Interactive Setup):
+### Setup (Interactive - Recommended)
 
 ```bash
-# Create new .env file interactively (recommended for first-time setup)
+# Interactive configuration - fastest way to get started
 weave config create --env
 
-# Or update existing .env file
-weave config update --env
-
-# Follow the prompts to enter your credentials:
+# Follow prompts to enter:
 # - WEAVIATE_URL
 # - WEAVIATE_API_KEY
 # - OPENAI_API_KEY
 
-# That's it! Start using weave:
+# Verify setup
 weave health check
-```
-
-**Smart Error Handling & Auto-Configuration** (New in v0.3.1):
-
-Weave CLI automatically detects and fixes configuration issues:
-
-```bash
-# Try to use weave without configuration
-weave docs ls MyCollection
-
-# You'll see a helpful error message with:
-# ✓ List of missing environment variables
-# ✓ Multiple fix options (flags, shell exports, .env file)
-# ✓ Interactive prompt to create/update .env file
-# ✓ Tips about config.yaml and mock database for testing
-
-# Just answer "Y" to fix the configuration interactively!
-
-# For REPL mode, if config.yaml is missing:
-weave
-
-# Automatically creates minimal config.yaml:
-# ✓ Created minimal config.yaml for you!
-# ✓ Run 'weave' again to start the REPL.
-```
-
-The CLI now provides:
-
-- **Detailed error messages** showing exactly what's missing
-- **Auto-creates config.yaml** when missing (for REPL/MCP mode)
-- **Multiple fix options** (command-line flags, environment variables,
-  .env file)
-- **Interactive configuration** - fix issues on the spot
-- **Better diagnostics** - captures stderr from weave-mcp for troubleshooting
-- **Context-aware tips** - different suggestions based on your setup
-
-**Alternative: Manual Setup**:
-
-```bash
-# Copy .env.example and add your credentials
-cp .env.example .env
-
-# Edit .env with your 3 required credentials
-# Then run: weave health check
-```
-
-**Configuration Precedence** (highest to lowest):
-
-1. **Command-line flags** - `weave query --model gpt-4`
-2. **Environment variables** - `export OPENAI_MODEL=gpt-4`
-3. **config.yaml** (optional) - For advanced customization
-4. **Built-in defaults** - Sensible defaults work out of the box
-
-**Installing weave-mcp for REPL Mode** (New in v0.3.1):
-
-The REPL mode requires the weave-mcp binary. Install it with one command:
-
-```bash
-# Install weave-mcp binary (detects your platform automatically)
-weave config update --weave-mcp
-
-# What it does:
-# ✓ Detects your OS (macOS/Linux/Windows) and architecture
-# ✓ Downloads latest release from GitHub with progress bar
-# ✓ Verifies checksum for security
-# ✓ Prompts for installation location (default: ~/.local/bin)
-# ✓ Makes binary executable
-# ✓ Automatically updates .env file with the new path (if different)
-# ✓ Provides setup instructions for PATH and environment variables
-
-# The installer will offer to update your .env file automatically!
-# Otherwise, you can manually set the environment variable:
-export WEAVE_MCP_STDIO_PATH="$HOME/.local/bin/weave-mcp-stdio"
-
-# Test the installation:
-weave
-```
-
-**Advanced Configuration** (optional):
-
-For fine-tuning collection names, batch sizes, PDF settings, etc.:
-
-```bash
-# Create new config.yaml file interactively
-weave config create --config-yaml
-
-# Or update existing config.yaml file
-weave config update --config-yaml
-
-# Or manual setup
-cp config.yaml.example config.yaml
-# Edit config.yaml to customize defaults
-```
-
-### Interactive REPL Mode
-
-Simply run `weave` without any arguments to start the interactive mode:
-
-```bash
-weave
-
-# You'll see the ASCII art banner and prompt:
- __      __
-/  \    /  \ ____ _____ ___  __ ____
-\   \/\/   // __ \\__  \\  \/ // __ \
- \        /\  ___/ / __ \\   /\  ___/
-  \__/\  /  \___  >____  /\_/  \___  >
-       \/       \/     \/          \/
-
-  Weave CLI - AI-Powered Vector Database Management
-  https://github.com/maximilien/weave-cli
-
-  Use natural language to manage your vector databases
-  Type /help for commands, /exit to quit
-  Press CTRL-C to stop current command, twice to exit
-
->
-```
-
-**REPL Commands:**
-
-- `/help` - Show help and available commands
-- `/examples` - Show example natural language queries
-- `/history` - Show command history location
-- `/clear` - Clear the screen
-- `/exit` - Exit the REPL
-
-**Keyboard Shortcuts:**
-
-- `CTRL-C` - Stop current command
-- `CTRL-C` (twice) - Exit the REPL
-- `CTRL-D` - Exit the REPL
-- `↑/↓` - Navigate command history
-
-**Batch Query Mode:**
-
-Execute multiple queries from a file (great for demos and automation):
-
-```bash
-# Create a file with queries (one per line)
-cat > my-queries.txt << EOF
-check health
-list my collections
-create TestDocs collection
-add README.md to TestDocs
-EOF
-
-# Execute all queries in batch mode
-weave --query-strings my-queries.txt --no-confirm
-
-# Record a demo
-./tools/asciinema.sh repl
 ```
 
 ### Basic Usage
 
 ```bash
-# Check database health
-weave health check
-
 # List collections
 weave cols ls
 
@@ -349,57 +41,74 @@ weave cols create MyCollection --text
 weave docs create MyCollection document.txt
 weave docs create MyCollection document.pdf
 
-# Add PDF with text-only extraction (faster, no images)
-weave docs create MyCollection document.pdf --skip-all-images
-
-# Process with images in separate collection
-weave docs create MyCollection document.pdf --image-collection MyImages
-
-# Suppress helpful tips during processing
-weave docs create MyCollection document.pdf --no-tips
-
-# Convert CMYK PDF to RGB format
-weave docs pdf-convert document.pdf --ghostscript
-weave docs pdf-convert document.pdf --rgb  # auto-detect tool
-
-# Batch process documents
-weave docs batch --directory ./docs --collection MyCollection --parallel 3
-
-# Search documents
+# Search with natural language
 weave cols q MyCollection "search query"
 
-# List documents
-weave docs ls MyCollection
-
-# 🤖 AI Agents - Natural Language Queries
-weave query "show me all my collections"
-weave q "find all empty collections"
-weave query "create TestDocs and TestImages collections"
-weave q "check health"
-weave query "add files in /tmp/docs to MyCollection" --dry-run
-weave q "convert CMYK PDFs in ./pdfs directory" --verbose
-
-# Skip confirmations for automation/demos
-weave query "delete TestDocs collection" --no-confirm
+# AI-powered REPL mode
+weave
+> show me all my collections
+> create TestDocs collection
+> add README.md to TestDocs
 ```
+
+## Key Features
+
+- 🤖 **AI-Powered** - Natural language interface with GPT-4o multi-agent system
+- ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
+- 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
+- 📦 **Batch Processing** - Parallel processing of entire directories
+- 📄 **PDF Support** - Intelligent text extraction and image processing
+- 🔍 **Semantic Search** - Vector-based similarity search with natural language
 
 ## Documentation
 
-- **[🤖 AI Agents Guide](docs/WEAVE_CLI_AI.md)** - Natural language query
-  system with multi-agent architecture
-- **[📖 User Guide](docs/USER_GUIDE.md)** - Comprehensive usage guide with
-  examples
-- **[📦 Batch Processing Guide](docs/BATCH_DOCS_CREATION.md)** - Batch document
-  creation with parallel processing
-- **[🎬 Demo Guide](docs/DEMO.md)** - Interactive demo scripts and recordings
-- **[⚠️ Error Messages](docs/ERROR_MESSAGES.md)** - Human-friendly error message
-  examples
-- **[📋 Configuration Guide](docs/USER_GUIDE.md#configuration)** - Detailed
-  configuration options
-- **[🔍 Search Guide](docs/USER_GUIDE.md#semantic-search)** - Advanced search
-  capabilities
-- **[📄 PDF Processing](docs/USER_GUIDE.md#pdf-processing)** - PDF text
-  extraction features
+- **[📖 User Guide](docs/USER_GUIDE.md)** - Complete feature documentation
+- **[🤖 AI Agents](docs/WEAVE_CLI_AI.md)** - Natural language query system
+- **[📦 Batch Processing](docs/BATCH_DOCS_CREATION.md)** - Directory processing guide
+- **[🎬 Demos](docs/DEMO.md)** - Video demos and tutorials
+- **[📋 Changelog](docs/CHANGELOG.md)** - Version history and updates
+
+## Advanced Usage
+
+### Configuration Options
+
+**Auto-Configuration**
+
+Weave CLI automatically detects missing configuration:
+
+```bash
+# Try any command - you'll get prompted to configure interactively
+weave cols ls
+
+# Or install weave-mcp for REPL mode
+weave config update --weave-mcp
+```
+
+**Configuration Precedence** (highest to lowest):
+
+1. Command-line flags - `weave query --model gpt-4`
+2. Environment variables - `export OPENAI_MODEL=gpt-4`
+3. config.yaml (optional) - For advanced customization
+4. Built-in defaults
+
+See the [User Guide](docs/USER_GUIDE.md#configuration) for detailed configuration options.
+
+### More Examples
+
+```bash
+# Batch process documents with parallel workers
+weave docs batch --directory ./docs --collection MyCollection --parallel 3
+
+# Convert CMYK PDFs to RGB
+weave docs pdf-convert document.pdf --rgb
+
+# Text-only PDF extraction (faster, no images)
+weave docs create MyCollection document.pdf --skip-all-images
+
+# Natural language queries with AI agents
+weave q "find all empty collections"
+weave query "create TestDocs and add README.md" --dry-run
+```
 
 ## Database Support
 
@@ -409,50 +118,35 @@ weave query "delete TestDocs collection" --no-confirm
 
 ## Development
 
-### Setup Development Environment
-
 ```bash
-# Install all required development tools (linters, PDF tools, etc.)
+# Setup development environment (installs linters, PDF tools, etc.)
 ./setup.sh
-```
 
-This will install:
-
-- Go tools: `golangci-lint`, `goimports`, `govulncheck`, `gosec`
-- PDF processing: `poppler` (provides `pdftotext` for better PDF text extraction)
-- Shell linting: `shellcheck`
-- YAML linting: `yamllint`
-- Markdown linting: `markdownlint`
-- Dependency checking: `go-mod-outdated`
-
-### Build and Test
-
-```bash
-# Build the project
+# Build, test, and lint
 ./build.sh
-
-# Run tests
 ./test.sh
-
-# Run linting
 ./lint.sh
-
-# Record demos
-./tools/asciinema.sh demo
 ```
+
+See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 
 ## Contributing
 
+Contributions welcome! Please:
+
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
-4. Run tests and linting
+3. Make your changes with tests
+4. Run `./test.sh` and `./lint.sh`
 5. Submit a pull request
+
+## Links
+
+- **[GitHub Repository](https://github.com/maximilien/weave-cli)**
+- **[Full Demo (5 min)](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
+- **[Quick Demo (2 min)](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)**
+- **[REPL Demo](https://asciinema.org/a/U504HN4FSeMsOA0qS0os0NWUE)**
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-Built with ❤️ by [github.com/maximilien](https://github.com/maximilien)
