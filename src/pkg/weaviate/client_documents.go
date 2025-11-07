@@ -120,7 +120,7 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 	if err != nil {
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			return 0, fmt.Errorf("collection %s not found, check database configuration", collectionName)
+			return 0, fmt.Errorf("collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
 		}
 		return 0, fmt.Errorf("failed to count documents in collection %s: %w", collectionName, err)
 	}
@@ -232,7 +232,7 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 		}
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			return nil, fmt.Errorf("collection %s not found, check database configuration", collectionName)
+			return nil, fmt.Errorf("collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
 		}
 		// If the schema-based query fails, fall back to simple query
 		return c.listDocumentsSimple(ctx, collectionName, limit)
@@ -511,7 +511,7 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 	if err != nil {
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			return nil, fmt.Errorf("collection %s not found, check database configuration", collectionName)
+			return nil, fmt.Errorf("collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
 		}
 		return nil, fmt.Errorf("failed to query documents: %w", err)
 	}

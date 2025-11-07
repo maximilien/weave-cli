@@ -175,7 +175,24 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 			PrintInfo("  2. The URL in your config is correct")
 			PrintInfo("  3. There are no network/firewall issues")
 		} else {
-			PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			// Check if this might be a configuration error
+			formattedErr := config.FormatConfigError(err)
+			if formattedErr != err.Error() {
+				// Error was enhanced with configuration tips
+				PrintError(formattedErr)
+
+				// Check if we can prompt for fix
+				if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+					shouldFix, promptErr := config.PromptToFixConfig(configErr)
+					if promptErr == nil && shouldFix {
+						if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+							PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+						}
+					}
+				}
+			} else {
+				PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			}
 		}
 		return
 	}
@@ -277,7 +294,24 @@ func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		}
 		return
 	}
 
@@ -285,7 +319,24 @@ func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 	if len(documentIDs) == 0 {
 		documents, err := client.ListDocuments(ctx, collectionName, 50) // Limit to 50 for show
 		if err != nil {
-			PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			// Check if this might be a configuration error
+			formattedErr := config.FormatConfigError(err)
+			if formattedErr != err.Error() {
+				// Error was enhanced with configuration tips
+				PrintError(formattedErr)
+
+				// Check if we can prompt for fix
+				if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+					shouldFix, promptErr := config.PromptToFixConfig(configErr)
+					if promptErr == nil && shouldFix {
+						if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+							PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+						}
+					}
+				}
+			} else {
+				PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			}
 			return
 		}
 
@@ -343,7 +394,24 @@ func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 		for _, docID := range documentIDs {
 			doc, err := client.GetDocument(ctx, collectionName, docID)
 			if err != nil {
-				PrintError(fmt.Sprintf("Failed to get document '%s': %v", docID, err))
+				// Check if this might be a configuration error
+				formattedErr := config.FormatConfigError(err)
+				if formattedErr != err.Error() {
+					// Error was enhanced with configuration tips
+					PrintError(formattedErr)
+
+					// Check if we can prompt for fix
+					if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+						shouldFix, promptErr := config.PromptToFixConfig(configErr)
+						if promptErr == nil && shouldFix {
+							if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+								PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+							}
+						}
+					}
+				} else {
+					PrintError(fmt.Sprintf("Failed to get document '%s': %v", docID, err))
+				}
 				continue
 			}
 
@@ -415,7 +483,24 @@ func CountMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collect
 func DeleteWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, metadataFilters []string, virtual bool, pattern string, name string) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		}
 		return
 	}
 
@@ -574,14 +659,48 @@ func DeleteMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collec
 func DeleteAllWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		}
 		return
 	}
 
 	// Delete all documents in the collection
 	err = client.DeleteAllDocuments(ctx, collectionName)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to delete all documents from collection '%s': %v", collectionName, err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to delete all documents from collection '%s': %v", collectionName, err))
+		}
 		return
 	}
 

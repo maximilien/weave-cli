@@ -8,12 +8,13 @@ A comprehensive guide to using the Weave CLI tool for managing Weaviate vector d
 
 1. [Getting Started](#getting-started)
 2. [Configuration](#configuration)
-3. [Basic Commands](#basic-commands)
-4. [Virtual Document View](#virtual-document-view)
-5. [Global Flags](#global-flags)
-6. [Advanced Usage](#advanced-usage)
-7. [Troubleshooting](#troubleshooting)
-8. [Examples](#examples)
+3. [Error Handling & Help](#error-handling--help)
+4. [Basic Commands](#basic-commands)
+5. [Virtual Document View](#virtual-document-view)
+6. [Global Flags](#global-flags)
+7. [Advanced Usage](#advanced-usage)
+8. [Troubleshooting](#troubleshooting)
+9. [Examples](#examples)
 
 ## Getting Started
 
@@ -384,6 +385,206 @@ weave collection show MyCollection --schema --compact --yaml-file schema.yaml
 
 # Create new collection from exported schema
 weave collection create NewCollection --schema-yaml-file schema.yaml
+```
+
+## Error Handling & Help
+
+### Smart Configuration Error Handling (New in v0.3.1)
+
+Weave CLI now provides intelligent error handling with interactive fixes for configuration issues.
+
+#### What You Get
+
+When configuration is missing or invalid, you'll see:
+
+1. **Clear Error Messages** - Exactly what's wrong and what's missing
+2. **Auto-creates config.yaml** - REPL mode automatically creates minimal config.yaml when missing
+3. **Multiple Fix Options** - Command flags, shell exports, or .env file
+4. **Interactive Prompts** - Option to fix configuration on the spot
+5. **Better Diagnostics** - Captures stderr from weave-mcp for troubleshooting
+6. **Context-Aware Tips** - Suggestions based on your current setup
+
+#### Example: Missing Configuration
+
+```bash
+# Try to use weave without configuration
+$ weave docs ls MyCollection
+
+❌ Configuration Error: Missing required information
+
+Missing environment variables:
+  • WEAVIATE_URL
+  • WEAVIATE_API_KEY
+  • OPENAI_API_KEY
+
+How to fix this:
+
+Option 1: Use command-line flags
+  weave docs ls COLLECTION --weaviate-url="https://your-cluster.weaviate.cloud" \
+                           --weaviate-api-key="your-api-key" \
+                           --vector-db-type="weaviate-cloud"
+
+Option 2: Set environment variables in your shell
+  export WEAVIATE_URL="https://your-cluster-id.weaviate.cloud"
+  export WEAVIATE_API_KEY="your-weaviate-api-key"
+  export OPENAI_API_KEY="sk-proj-your-openai-api-key"
+
+Option 3: Create a .env file
+  Run: weave config create --env
+
+💡 Tip: You can also create a config.yaml file for more control.
+   See: https://github.com/maximilien/weave-cli for examples
+   Or copy: config.yaml.example to config.yaml and customize it
+
+For testing without Weaviate:
+  export VECTOR_DB_TYPE="mock"
+
+For more help:
+  weave config show    # Show current configuration
+  weave --help         # Show all available commands
+
+Would you like to create a .env file now? (Y/n):
+```
+
+#### Interactive Configuration Fix
+
+If you answer "Y", Weave CLI will guide you through the configuration process:
+
+```bash
+🔧 Interactive Configuration Setup
+
+Weaviate Cloud URL:
+  Example: https://your-cluster-id.weaviate.cloud
+  Enter value: https://my-cluster.weaviate.cloud
+
+Weaviate API Key:
+  Enter value: ********
+
+OpenAI API Key:
+  Enter value: ********
+
+📋 Configuration Summary:
+
+  WEAVIATE_URL: https://my-cluster.weaviate.cloud
+  WEAVIATE_API_KEY: my-c...e-key
+  OPENAI_API_KEY: sk-p...j-abc
+
+💾 Save changes to .env? (Y/n): y
+
+✅ Configuration saved successfully!
+
+You can now run your command again.
+```
+
+#### Helpful Error Messages for Common Issues
+
+**Collection Not Found:**
+```bash
+$ weave docs ls NonExistentCollection
+
+❌ collection NonExistentCollection not found - this may indicate a database
+   configuration issue. Run 'weave config show' to verify your setup
+```
+
+**Database Configuration Issues:**
+```bash
+$ weave cols ls
+
+❌ Configuration Error: Missing required information
+
+Missing environment variables:
+  • WEAVIATE_URL
+  • WEAVIATE_API_KEY
+
+# ... followed by interactive fix options
+```
+
+#### Auto-Configuration for REPL Mode
+
+When running `weave` in REPL mode without a config.yaml file, it will be automatically created:
+
+```bash
+# First run without config.yaml
+$ weave
+
+❌ REPL MCP Connection Error
+
+⚠️  weave-mcp failed because it couldn't find config.yaml
+
+The weave-mcp server requires a config.yaml file to run.
+This is different from weave-cli which can work without config.yaml.
+
+✅ Created minimal config.yaml for you!
+
+Run 'weave' again to start the REPL.
+
+Note: The config.yaml uses environment variables from your .env file.
+You can customize it later. See config.yaml.example for all options.
+
+For more information:
+  • Full example: https://github.com/maximilien/weave-cli/blob/main/config.yaml.example
+  • weave-mcp repo: https://github.com/maximilien/weave-mcp
+
+# Second run with auto-created config.yaml
+$ weave
+
+ __      __
+/  \    /  \ ____ _____ ___  __ ____
+\   \/\/   // __ \\__  \\  \/ // __ \
+ \        /\  ___/ / __ \\   /\  ___/
+  \__/\  /  \___  >____  /\_/  \___  >
+       \/       \/     \/          \/
+
+  Weave CLI - AI-Powered Vector Database Management
+  https://github.com/maximilien/weave-cli
+
+  Use natural language to manage your vector databases
+  Type /help for commands, /exit to quit
+  Press CTRL-C to stop current command, twice to exit
+
+>
+```
+
+The auto-created config.yaml is minimal and uses environment variable interpolation:
+
+```yaml
+databases:
+  default: weaviate-cloud
+  vector_databases:
+    - name: weaviate-cloud
+      type: weaviate-cloud
+      url: ${WEAVIATE_URL}
+      api_key: ${WEAVIATE_API_KEY}
+      openai_api_key: ${OPENAI_API_KEY}
+```
+
+This works in any directory, not just within the git repository.
+
+#### Testing Without Credentials
+
+Use the mock database for testing without real Weaviate credentials:
+
+```bash
+# Set mock database type
+export VECTOR_DB_TYPE=mock
+
+# Now all commands work without credentials
+weave health check
+weave cols ls
+weave docs create TestDocs test.txt
+```
+
+#### Command-Line Override Flags
+
+Override configuration for individual commands:
+
+```bash
+# Use different Weaviate instance for one command
+weave cols ls --weaviate-url="https://test.weaviate.cloud" \
+              --weaviate-api-key="test-key"
+
+# Use mock database for one command
+weave docs ls MyCollection --vector-db-type=mock
 ```
 
 ## Basic Commands

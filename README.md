@@ -4,10 +4,26 @@ A command-line tool for managing Weaviate vector databases, written in Go.
 This tool provides a fast and easy way to manage content in text and image
 collections of configured vector databases.
 
-## 🚀 What's New in v0.3.0
+## 🚀 What's New in v0.3.1
 
 ### Latest Updates (Pending Release)
 
+- **🎯 Smart Error Handling & Configuration UX**: Dramatically improved
+  user experience for configuration issues
+  - **Detailed error messages** showing exactly what's missing
+    (environment variables, config files)
+  - **Interactive configuration fixes** - prompts to create/update
+    .env file on the spot
+  - **Auto-creates config.yaml** - when REPL detects missing config.yaml,
+    automatically creates a minimal one
+  - **Multiple fix options** clearly explained (flags, shell exports,
+    .env file)
+  - **Context-aware tips** for config.yaml setup and mock database
+    testing
+  - **Better MCP error diagnostics** - captures stderr from weave-mcp
+    for troubleshooting
+  - **Better collection/database errors** with actionable suggestions
+  - All commands now use enhanced error handling for consistent UX
 - **📦 MCP Integration Tests**: Automated test suite for weave-mcp compatibility
   - Comprehensive integration tests for all MCP operations
   - Collection and document operation testing
@@ -17,6 +33,8 @@ collections of configured vector databases.
 - **🎨 Version Display in Banner**: REPL banner now shows version info
   - Displays version string in dimmed text below ASCII art
   - Consistent with `weave -V` output format
+
+### Previous Updates (v0.3.0)
 
 ### Core Features (v0.3.0)
 
@@ -154,6 +172,40 @@ weave config update --env
 # That's it! Start using weave:
 weave health check
 ```
+
+**Smart Error Handling & Auto-Configuration** (New in v0.3.1):
+
+Weave CLI automatically detects and fixes configuration issues:
+
+```bash
+# Try to use weave without configuration
+weave docs ls MyCollection
+
+# You'll see a helpful error message with:
+# ✓ List of missing environment variables
+# ✓ Multiple fix options (flags, shell exports, .env file)
+# ✓ Interactive prompt to create/update .env file
+# ✓ Tips about config.yaml and mock database for testing
+
+# Just answer "Y" to fix the configuration interactively!
+
+# For REPL mode, if config.yaml is missing:
+weave
+
+# Automatically creates minimal config.yaml:
+# ✓ Created minimal config.yaml for you!
+# ✓ Run 'weave' again to start the REPL.
+```
+
+The CLI now provides:
+
+- **Detailed error messages** showing exactly what's missing
+- **Auto-creates config.yaml** when missing (for REPL/MCP mode)
+- **Multiple fix options** (command-line flags, environment variables,
+  .env file)
+- **Interactive configuration** - fix issues on the spot
+- **Better diagnostics** - captures stderr from weave-mcp for troubleshooting
+- **Context-aware tips** - different suggestions based on your setup
 
 **Alternative: Manual Setup**:
 

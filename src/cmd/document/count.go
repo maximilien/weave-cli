@@ -40,16 +40,16 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Load configuration
-	cfg, err := utils.LoadConfigWithOverrides()
+	cfg, err := utils.LoadConfigWithInteractiveHelp()
 	if err != nil {
-		utils.PrintError(fmt.Sprintf("Failed to load configuration: %v", err))
+		// Error already formatted and displayed by LoadConfigWithInteractiveHelp
 		os.Exit(1)
 	}
 
 	// Get default database
 	dbConfig, err := cfg.GetDefaultDatabase()
 	if err != nil {
-		utils.PrintError(fmt.Sprintf("Failed to get default database: %v", err))
+		utils.HandleConfigError(err, true)
 		os.Exit(1)
 	}
 

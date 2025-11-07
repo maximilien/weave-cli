@@ -123,7 +123,24 @@ func CreateMockCollection(ctx context.Context, cfg *config.VectorDBConfig, colle
 func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		}
 		return
 	}
 
@@ -142,7 +159,24 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			PrintInfo("  2. The URL in your config is correct")
 			PrintInfo("  3. There are no network/firewall issues")
 		} else {
-			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+			// Check if this might be a configuration error
+			formattedErr := config.FormatConfigError(err)
+			if formattedErr != err.Error() {
+				// Error was enhanced with configuration tips
+				PrintError(formattedErr)
+
+				// Check if we can prompt for fix
+				if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+					shouldFix, promptErr := config.PromptToFixConfig(configErr)
+					if promptErr == nil && shouldFix {
+						if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+							PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+						}
+					}
+				}
+			} else {
+				PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+			}
 		}
 		return
 	}
@@ -498,14 +532,48 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string, compact bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		}
 		return
 	}
 
 	// Check if collection exists by listing all collections
 	collections, err := client.ListCollections(ctx)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		}
 		return
 	}
 
@@ -526,7 +594,24 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 	// Get document count using efficient method
 	documentCount, err := client.CountDocuments(ctx, collectionName)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to get document count: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to get document count: %v", err))
+		}
 		return
 	}
 
@@ -917,14 +1002,48 @@ func DeleteMockCollectionsByPattern(ctx context.Context, cfg *config.VectorDBCon
 func DeleteAllWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		}
 		return
 	}
 
 	// Get all collections
 	collections, err := client.ListCollections(ctx)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		}
 		return
 	}
 
@@ -1431,14 +1550,48 @@ func convertSchemaDefinitionToCollectionSchema(schemaDef *config.SchemaDefinitio
 func QueryWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
+		}
 		return
 	}
 
 	// Perform the semantic search
 	results, err := client.Query(ctx, collectionName, queryText, options)
 	if err != nil {
-		PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, err))
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+
+			// Check if we can prompt for fix
+			if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+				shouldFix, promptErr := config.PromptToFixConfig(configErr)
+				if promptErr == nil && shouldFix {
+					if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+						PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+					}
+				}
+			}
+		} else {
+			PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, err))
+		}
 		return
 	}
 

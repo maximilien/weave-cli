@@ -215,8 +215,62 @@ func runREPL(cmd *cobra.Command, args []string) {
 
 	r, err := repl.NewWithOptions(opts)
 	if err != nil {
-		printError(fmt.Sprintf("Failed to start REPL: %v", err))
-		os.Exit(1)
+		// Check if this is a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			printError(formattedErr)
+
+			// Check if we can prompt for fix - use REPL-specific check
+			configErr := config.CheckREPLRequiredEnvVars()
+			if configErr != nil {
+				// For WEAVE_MCP_STDIO_PATH, we can't fix it interactively (it's a path to a binary)
+				// So only prompt if other vars are missing
+				hasMCPPath := true
+				for _, v := range configErr.MissingVars {
+					if v == "WEAVE_MCP_STDIO_PATH" {
+						hasMCPPath = false
+						break
+					}
+				}
+
+				// Only prompt for interactive fix if we're not just missing MCP path
+				if len(configErr.MissingVars) > 0 && (len(configErr.MissingVars) > 1 || hasMCPPath) {
+					shouldFix, promptErr := config.PromptToFixConfig(configErr)
+					if promptErr == nil && shouldFix {
+						if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+							printError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+							os.Exit(1)
+						}
+
+						// If WEAVE_MCP_STDIO_PATH is still missing, inform user
+						if !hasMCPPath {
+							printWarning("\nNote: WEAVE_MCP_STDIO_PATH still needs to be set manually.")
+							printWarning("Please install weave-mcp and set the path to the binary.")
+							os.Exit(1)
+						}
+
+						// After fixing, try creating REPL again
+						r, err = repl.NewWithOptions(opts)
+						if err != nil {
+							printError(fmt.Sprintf("Failed to start REPL after configuration fix: %v", err))
+							os.Exit(1)
+						}
+						// Continue to Run() below
+					} else {
+						os.Exit(1)
+					}
+				} else {
+					// Only WEAVE_MCP_STDIO_PATH is missing, can't fix interactively
+					os.Exit(1)
+				}
+			} else {
+				os.Exit(1)
+			}
+		} else {
+			printError(fmt.Sprintf("Failed to start REPL: %v", err))
+			os.Exit(1)
+		}
 	}
 
 	if err := r.Run(); err != nil {

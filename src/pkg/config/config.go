@@ -392,23 +392,11 @@ func GetEnvFile() string {
 // GetDefaultDatabase returns the default vector database configuration
 func (c *Config) GetDefaultDatabase() (*VectorDBConfig, error) {
 	if len(c.Databases.VectorDatabases) == 0 {
-		return nil, fmt.Errorf(`no vector databases configured
-
-To fix this issue, you need to set up your Weaviate configuration:
-
-1. Set the required environment variables:
-   export WEAVIATE_URL="your-weaviate-url"
-   export WEAVIATE_API_KEY="your-api-key"
-   export OPENAI_API_KEY="your-openai-key"
-
-2. Or use the mock database for testing:
-   export VECTOR_DB_TYPE="mock"
-
-3. Optionally create a config.yaml file (see config.yaml.example for reference)
-
-Note: config.yaml is optional - you can use environment variables alone!
-
-For more help, run: weave config show`)
+		// Check for missing environment variables and return a detailed error
+		if configErr := CheckRequiredEnvVars(); configErr != nil {
+			return nil, configErr
+		}
+		return nil, fmt.Errorf("no vector databases configured")
 	}
 
 	// Get the default database name
@@ -432,23 +420,11 @@ For more help, run: weave config show`)
 // GetDatabase returns a specific vector database configuration by name
 func (c *Config) GetDatabase(name string) (*VectorDBConfig, error) {
 	if len(c.Databases.VectorDatabases) == 0 {
-		return nil, fmt.Errorf(`no vector databases configured
-
-To fix this issue, you need to set up your Weaviate configuration:
-
-1. Set the required environment variables:
-   export WEAVIATE_URL="your-weaviate-url"
-   export WEAVIATE_API_KEY="your-api-key"
-   export OPENAI_API_KEY="your-openai-key"
-
-2. Or use the mock database for testing:
-   export VECTOR_DB_TYPE="mock"
-
-3. Optionally create a config.yaml file (see config.yaml.example for reference)
-
-Note: config.yaml is optional - you can use environment variables alone!
-
-For more help, run: weave config show`)
+		// Check for missing environment variables and return a detailed error
+		if configErr := CheckRequiredEnvVars(); configErr != nil {
+			return nil, configErr
+		}
+		return nil, fmt.Errorf("no vector databases configured")
 	}
 
 	for i := range c.Databases.VectorDatabases {

@@ -16,14 +16,16 @@ import (
 
 // Client is an MCP client that communicates with weave-mcp via stdio
 type Client struct {
-	cmd       *exec.Cmd
-	stdin     io.WriteCloser
-	stdout    io.ReadCloser
-	stderr    io.ReadCloser
-	reader    *bufio.Reader
-	mu        sync.Mutex
-	requestID int
-	tools     []Tool
+	cmd        *exec.Cmd
+	stdin      io.WriteCloser
+	stdout     io.ReadCloser
+	stderr     io.ReadCloser
+	reader     *bufio.Reader
+	mu         sync.Mutex
+	requestID  int
+	tools      []Tool
+	stderrBuf  []byte
+	stderrDone chan struct{}
 }
 
 // Tool represents an MCP tool
@@ -80,17 +82,26 @@ func NewClient(stdioPath string) (*Client, error) {
 	}
 
 	client := &Client{
-		cmd:       cmd,
-		stdin:     stdin,
-		stdout:    stdout,
-		stderr:    stderr,
-		reader:    bufio.NewReader(stdout),
-		requestID: 0,
+		cmd:        cmd,
+		stdin:      stdin,
+		stdout:     stdout,
+		stderr:     stderr,
+		reader:     bufio.NewReader(stdout),
+		requestID:  0,
+		stderrDone: make(chan struct{}),
 	}
+
+	// Start goroutine to capture stderr
+	go client.captureStderr()
 
 	// Initialize connection
 	if err := client.initialize(); err != nil {
 		_ = client.Close()
+		// Include stderr in error message if available
+		stderrMsg := string(client.stderrBuf)
+		if stderrMsg != "" {
+			return nil, fmt.Errorf("failed to initialize MCP connection: %w\nweave-mcp stderr: %s", err, stderrMsg)
+		}
 		return nil, fmt.Errorf("failed to initialize MCP connection: %w", err)
 	}
 
@@ -230,6 +241,27 @@ func (c *Client) CallTool(ctx context.Context, tool string, args map[string]inte
 	return response.Result, nil
 }
 
+// captureStderr captures stderr output from the MCP server
+func (c *Client) captureStderr() {
+	defer close(c.stderrDone)
+	if c.stderr == nil {
+		return
+	}
+
+	buf := make([]byte, 4096)
+	for {
+		n, err := c.stderr.Read(buf)
+		if n > 0 {
+			c.mu.Lock()
+			c.stderrBuf = append(c.stderrBuf, buf[:n]...)
+			c.mu.Unlock()
+		}
+		if err != nil {
+			return
+		}
+	}
+}
+
 // Close closes the MCP client connection
 func (c *Client) Close() error {
 	c.mu.Lock()
@@ -248,6 +280,11 @@ func (c *Client) Close() error {
 	if c.cmd != nil && c.cmd.Process != nil {
 		_ = c.cmd.Process.Kill()
 		_ = c.cmd.Wait()
+	}
+
+	// Wait for stderr capture to finish
+	if c.stderrDone != nil {
+		<-c.stderrDone
 	}
 
 	return nil
