@@ -46,6 +46,7 @@ type Config struct {
 	URL          string
 	APIKey       string
 	OpenAIAPIKey string
+	Timeout      int // Timeout in seconds for operations (default: 10)
 }
 
 // SchemaType represents the type of collection schema
@@ -112,9 +113,18 @@ func NewClient(config *Config) (*Client, error) {
 	}, nil
 }
 
+// getTimeout returns the timeout duration for operations
+func (c *Client) getTimeout() time.Duration {
+	timeout := c.config.Timeout
+	if timeout == 0 {
+		timeout = 10 // default 10 seconds
+	}
+	return time.Duration(timeout) * time.Second
+}
+
 // Health checks the health of the Weaviate instance
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
 	// Try to get the meta information

@@ -15,7 +15,7 @@ import (
 
 // ListCollections returns a list of all collections
 func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
 	collections, err := c.client.Schema().Getter().Do(ctx)
@@ -33,7 +33,7 @@ func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
 
 // DeleteCollection deletes all objects from a collection
 func (c *Client) DeleteCollection(ctx context.Context, collectionName string) error {
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
 	// Use the WeaveClient which has better REST API support
@@ -47,7 +47,7 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 
 // DeleteCollectionSchema deletes the collection schema completely
 func (c *Client) DeleteCollectionSchema(ctx context.Context, collectionName string) error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
 	// Use the WeaveClient which has better REST API support
@@ -66,7 +66,7 @@ func (c *Client) CreateCollection(ctx context.Context, collectionName, embedding
 
 // CreateCollectionWithSchema creates a new collection with the specified schema type
 func (c *Client) CreateCollectionWithSchema(ctx context.Context, collectionName, embeddingModel string, customFields []FieldDefinition, schemaType string) error {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
 	// Check if collection already exists

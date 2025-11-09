@@ -20,6 +20,7 @@ databases:
       url: ${WEAVIATE_URL}
       api_key: ${WEAVIATE_API_KEY}
       openai_api_key: ${OPENAI_API_KEY}
+      timeout: 10                       # Timeout in seconds (default: 10s)
 
       # Default collection names (override if needed)
       collections:
@@ -35,6 +36,7 @@ databases:
       type: weaviate-local
       url: http://localhost:8080    # Default local URL
       openai_api_key: ${OPENAI_API_KEY}
+      timeout: 10                   # Timeout in seconds (default: 10s)
 
       collections:
         - name: WeaveDocs
@@ -50,6 +52,7 @@ databases:
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 384
+      timeout: 10                   # Timeout in seconds (default: 10s)
 
       collections:
         - name: WeaveDocs

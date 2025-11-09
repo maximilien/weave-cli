@@ -26,6 +26,7 @@ var (
 	vectorDBType   string
 	weaviateAPIKey string
 	weaviateURL    string
+	timeout        string
 	noConfirm      bool
 	queryStrings   string
 )
@@ -116,11 +117,13 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vector-db-type", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|mock)")
 	rootCmd.PersistentFlags().StringVar(&weaviateAPIKey, "weaviate-api-key", "", "override WEAVIATE_API_KEY")
 	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
+	rootCmd.PersistentFlags().StringVar(&timeout, "timeout", "", "timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)")
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("vector-db-type", rootCmd.PersistentFlags().Lookup("vector-db-type"))
 	_ = viper.BindPFlag("weaviate-api-key", rootCmd.PersistentFlags().Lookup("weaviate-api-key"))
 	_ = viper.BindPFlag("weaviate-url", rootCmd.PersistentFlags().Lookup("weaviate-url"))
+	_ = viper.BindPFlag("timeout", rootCmd.PersistentFlags().Lookup("timeout"))
 	_ = viper.BindPFlag("config", rootCmd.PersistentFlags().Lookup("config"))
 	_ = viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
 	_ = viper.BindPFlag("no-tips", rootCmd.PersistentFlags().Lookup("no-tips"))
@@ -171,6 +174,7 @@ func LoadConfigWithOverrides() (*config.Config, error) {
 		VectorDBType:   vectorDBType,
 		WeaviateAPIKey: weaviateAPIKey,
 		WeaviateURL:    weaviateURL,
+		Timeout:        timeout,
 	})
 }
 

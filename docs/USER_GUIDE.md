@@ -166,6 +166,7 @@ databases:
       type: "weaviate-cloud"
       url: "${WEAVIATE_URL}"
       api_key: "${WEAVIATE_API_KEY}"
+      timeout: 10                       # Timeout in seconds (default: 10s)
       collections:
         - name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
           type: "text"
@@ -176,6 +177,7 @@ databases:
     - name: "weaviate-local"
       type: "weaviate-local"
       url: "http://localhost:8080"
+      timeout: 10                   # Timeout in seconds (default: 10s)
       collections:
         - name: "${WEAVIATE_COLLECTION:-WeaveDocs}"
           type: "text"
@@ -188,6 +190,7 @@ databases:
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 384
+      timeout: 10                   # Timeout in seconds (default: 10s)
       collections:
         - name: "WeaveDocs"
           type: "text"
@@ -1706,6 +1709,27 @@ weave collection list --quiet
 # Quiet document listing
 weave document list MyCollection --quiet
 ```
+
+### --timeout
+
+Configure operation timeout using duration format (default: 10s).
+
+```bash
+# Set custom timeout for slow connections
+weave health check --timeout 30s
+weave cols ls --timeout 60s
+
+# Quick timeout for fast-fail behavior
+weave docs create MyCollection file.txt --timeout 5s
+
+# Use minutes for very long operations
+weave docs batch MyCollection ./files --timeout 5m
+```
+
+The timeout accepts duration strings (e.g., `5s`, `10s`, `30s`, `1m`, `5m`) and can also be configured via:
+- Environment variable: `WEAVIATE_TIMEOUT=30` (integer seconds, for backward compatibility)
+- config.yaml: `timeout: 30` in database configuration (integer seconds)
+- Command-line flag: `--timeout 5s` (highest priority, accepts duration format)
 
 ## Advanced Usage
 

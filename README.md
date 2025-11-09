@@ -65,6 +65,7 @@ weave emb ls --verbose
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural language
 - 📊 **Embeddings** - List and explore available embedding models
+- ⏱️ **Configurable Timeouts** - Default 10s timeout, adjustable per command (e.g., `--timeout 5s`)
 
 ## Documentation
 
@@ -115,6 +116,10 @@ weave docs create MyCollection document.pdf --skip-all-images
 # Natural language queries with AI agents
 weave q "find all empty collections"
 weave query "create TestDocs and add README.md" --dry-run
+
+# Configure timeout for slow connections
+weave cols ls --timeout 30s
+weave health check --timeout 60s
 ```
 
 ## Database Support

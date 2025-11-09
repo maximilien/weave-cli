@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
@@ -37,6 +38,7 @@ const (
 	DefaultImageQuality    = 85
 	DefaultMaxImageSize    = 2048
 	DefaultEmbeddingDim    = 384
+	DefaultTimeout         = 10 // Default timeout in seconds for vector DB operations
 )
 
 // Collection represents a collection configuration
@@ -68,6 +70,7 @@ type VectorDBConfig struct {
 	URL                string       `yaml:"url,omitempty"`
 	APIKey             string       `yaml:"api_key,omitempty"`
 	OpenAIAPIKey       string       `yaml:"openai_api_key,omitempty"`
+	Timeout            int          `yaml:"timeout,omitempty"` // Timeout in seconds for DB operations
 	Enabled            bool         `yaml:"enabled,omitempty"`
 	SimulateEmbeddings bool         `yaml:"simulate_embeddings,omitempty"`
 	EmbeddingDimension int          `yaml:"embedding_dimension,omitempty"`
@@ -102,6 +105,7 @@ type LoadConfigOptions struct {
 	VectorDBType   string
 	WeaviateAPIKey string
 	WeaviateURL    string
+	Timeout        string // Timeout as duration string (e.g., "5s", "10s") or empty for default
 }
 
 func LoadConfig(configFile, envFile string) (*Config, error) {
@@ -137,6 +141,11 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	}
 	if opts.WeaviateURL != "" {
 		os.Setenv("WEAVIATE_URL", opts.WeaviateURL)
+	}
+	if opts.Timeout != "" {
+		// Parse duration string to seconds for environment variable
+		timeoutSeconds := parseTimeoutToSeconds(opts.Timeout)
+		os.Setenv("WEAVIATE_TIMEOUT", fmt.Sprintf("%d", timeoutSeconds))
 	}
 
 	// Set up viper
@@ -223,6 +232,16 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
 
+	// Get timeout from environment or use default
+	timeout := DefaultTimeout
+	if timeoutEnv := os.Getenv("WEAVIATE_TIMEOUT"); timeoutEnv != "" {
+		if t, err := fmt.Sscanf(timeoutEnv, "%d", &timeout); err == nil && t == 1 {
+			// Successfully parsed timeout
+		} else {
+			timeout = DefaultTimeout
+		}
+	}
+
 	// Get collection names from environment or use defaults
 	textCollection := os.Getenv("WEAVIATE_COLLECTION")
 	if textCollection == "" {
@@ -259,6 +278,7 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 			"enabled":             true,
 			"simulate_embeddings": true,
 			"embedding_dimension": 384,
+			"timeout":             timeout,
 			"collections":         validCollections,
 		})
 	} else if vectorDBType == "weaviate-local" {
@@ -267,6 +287,7 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 			"name":        "weaviate-local",
 			"type":        "weaviate-local",
 			"url":         "http://localhost:8080",
+			"timeout":     timeout,
 			"collections": validCollections,
 		})
 	} else {
@@ -274,6 +295,7 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 		weaviateConfig := map[string]interface{}{
 			"name":        "weaviate-cloud",
 			"type":        "weaviate-cloud",
+			"timeout":     timeout,
 			"collections": validCollections,
 		}
 
@@ -387,6 +409,33 @@ func GetEnvFile() string {
 	}
 
 	return ""
+}
+
+// parseTimeoutToSeconds parses a timeout string (duration or integer) to seconds
+// Supports formats: "5s", "10s", "30s", "1m", "5" (integer seconds)
+// Returns default timeout (10s) if parsing fails
+func parseTimeoutToSeconds(timeoutStr string) int {
+	if timeoutStr == "" {
+		return DefaultTimeout
+	}
+
+	// Try parsing as duration string first (e.g., "5s", "10s", "1m")
+	if duration, err := time.ParseDuration(timeoutStr); err == nil {
+		seconds := int(duration.Seconds())
+		if seconds <= 0 {
+			return DefaultTimeout
+		}
+		return seconds
+	}
+
+	// Try parsing as integer seconds (for backward compatibility)
+	var timeout int
+	if _, err := fmt.Sscanf(timeoutStr, "%d", &timeout); err == nil && timeout > 0 {
+		return timeout
+	}
+
+	// If parsing fails, return default
+	return DefaultTimeout
 }
 
 // GetDefaultDatabase returns the default vector database configuration

@@ -14,10 +14,16 @@ import (
 // CreateWeaviateClient creates a Weaviate client from configuration
 func CreateWeaviateClient(cfg *config.VectorDBConfig) (*weaviate.Client, error) {
 	// Convert VectorDBConfig to weaviate.Config
+	timeout := cfg.Timeout
+	if timeout == 0 {
+		timeout = config.DefaultTimeout
+	}
+
 	weaviateConfig := &weaviate.Config{
 		URL:          cfg.URL,
 		APIKey:       cfg.APIKey,
 		OpenAIAPIKey: cfg.OpenAIAPIKey,
+		Timeout:      timeout,
 	}
 
 	client, err := weaviate.NewClient(weaviateConfig)
