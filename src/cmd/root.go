@@ -65,6 +65,11 @@ var rootCmd = &cobra.Command{
   weave config list                    # List all configured databases
   weave health check                   # Check database health
 
+📊 EMBEDDINGS:
+  weave embeddings list                # List all available embedding models
+  weave emb ls                         # Same as above (alias)
+  weave embeddings list COLLECTION     # Show embeddings for specific collection
+
 🔧 FILE SUPPORT:
   - Text files (.txt, .md, .json) → chunked text content
   - Image files (.jpg, .png, .gif) → base64 image data

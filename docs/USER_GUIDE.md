@@ -781,6 +781,50 @@ weave document delete MyCollection --pattern "tmp.*\.png"
 weave document delete-all MyCollection
 ```
 
+### Embeddings Management
+
+List and explore available embedding models for text and image vectorization:
+
+```bash
+# List all available embedding models
+weave embeddings list
+weave emb ls            # Short alias
+weave embeds ls         # Alternative alias
+
+# List with detailed information
+weave embeddings list --verbose
+weave emb ls -v
+
+# Show embeddings for a specific collection
+weave embeddings list MyCollection
+```
+
+**Embedding Models by Provider:**
+
+- **OpenAI**: text-embedding-3-small, text-embedding-3-large, ada,
+babbage, curie, davinci
+- **Cohere**: embed-english-v3.0, embed-multilingual-v3.0,
+embed-english-light-v3.0
+- **Hugging Face**: all-MiniLM-L6-v2, all-mpnet-base-v2,
+paraphrase-MiniLM-L6-v2
+- **Weaviate**: weaviate-default (built-in, free)
+- **Google PaLM**: textembedding-gecko@001
+- **AWS Bedrock**: amazon.titan-embed-text-v1
+- **Jina AI**: jina-embeddings-v2-base-en
+- **Image**: clip-vit-base-patch32 (multimodal), resnet50
+
+**API Key Requirements:**
+
+The verbose flag shows which embeddings require API keys:
+
+```bash
+weave emb ls -v
+# Output shows:
+# ⚠️  Requires: OPENAI_API_KEY
+# ⚠️  Requires: COHERE_API_KEY
+# etc.
+```
+
 ### Command Aliases
 
 For convenience, shorter aliases are available:
@@ -795,7 +839,7 @@ weave cols c MyCol      # Same as: weave collection create MyCol
 weave col delete MyCol  # Same as: weave collection delete MyCol
 weave cols d Col1 Col2  # Same as: weave collection delete Col1 Col2
 
-# Document commands  
+# Document commands
 weave doc list MyCol    # Same as: weave document list MyCol
 weave docs list MyCol   # Same as: weave document list MyCol
 weave doc C MyCol       # Same as: weave document count MyCol
@@ -803,6 +847,11 @@ weave docs C MyCol      # Same as: weave document count MyCol
 weave docs C RagMeDocs RagMeImages  # Count multiple collections
 weave doc show MyCol ID # Same as: weave document show MyCol ID
 weave docs d MyCol doc1 doc2  # Same as: weave document delete MyCol doc1 doc2
+
+# Embeddings commands
+weave emb ls            # Same as: weave embeddings list
+weave embed ls          # Same as: weave embeddings list
+weave embeds ls         # Same as: weave embeddings list
 ```
 
 ## Collection Create Command

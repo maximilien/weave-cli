@@ -50,6 +50,10 @@ weave
 > show me all my collections
 > create TestDocs collection
 > add README.md to TestDocs
+
+# List available embeddings
+weave embeddings list
+weave emb ls --verbose
 ```
 
 ## Key Features
@@ -60,6 +64,7 @@ weave
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural language
+- 📊 **Embeddings** - List and explore available embedding models
 
 ## Documentation
 
