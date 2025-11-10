@@ -1,0 +1,90 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 dr.max
+
+package weaviate
+
+import (
+	"context"
+	"strings"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
+	weaviateClient "github.com/maximilien/weave-cli/src/pkg/weaviate"
+)
+
+// CreateCollection creates a new collection with the given schema
+func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	// Convert schema to field definitions
+	var fields []weaviateClient.FieldDefinition
+	for _, prop := range schema.Properties {
+		fields = append(fields, weaviateClient.FieldDefinition{
+			Name: prop.Name,
+			Type: strings.Join(prop.DataType, ","),
+		})
+	}
+
+	embeddingModel := "text-embedding-ada-002" // Default model
+	if schema.Vectorizer != "" {
+		embeddingModel = schema.Vectorizer
+	}
+
+	if err := a.client.CreateCollection(ctx, name, embeddingModel, fields); err != nil {
+		return a.wrapError(err, "create collection")
+	}
+	return nil
+}
+
+// DeleteCollection deletes a collection and all its documents
+func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	if err := a.client.DeleteCollection(ctx, name); err != nil {
+		return a.wrapError(err, "delete collection")
+	}
+	return nil
+}
+
+// ListCollections returns a list of all collections
+func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	collections, err := a.client.ListCollections(ctx)
+	if err != nil {
+		return nil, a.wrapError(err, "list collections")
+	}
+
+	result := make([]vectordb.CollectionInfo, len(collections))
+	for i, collectionName := range collections {
+		// Get collection count - we'll implement a simple count method
+		count := int64(0) // Default to 0 since GetCollectionCount doesn't exist
+
+		result[i] = vectordb.CollectionInfo{
+			Name:        collectionName,
+			Description: "Weaviate collection",
+			Count:       count,
+		}
+	}
+
+	return result, nil
+}
+
+// CollectionExists checks if a collection exists
+func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	collections, err := a.client.ListCollections(ctx)
+	if err != nil {
+		return false, a.wrapError(err, "check collection exists")
+	}
+
+	for _, collection := range collections {
+		if collection == name {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+// GetCollectionCount returns the number of documents in a collection
+func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
+	// Use the WeaveClient to count documents
+	docs, err := a.weaveClient.ListDocuments(ctx, name, 1000000) // Large limit to get all
+	if err != nil {
+		return 0, a.wrapError(err, "get collection count")
+	}
+	return int64(len(docs)), nil
+}

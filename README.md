@@ -65,6 +65,7 @@ weave cols create MyCollection -e text-embedding-ada-002
 - 🤖 **AI-Powered** - Natural language interface with GPT-4o multi-agent system
 - ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
+- 🔌 **Extensible** - Vector database abstraction layer for easy addition of new backends (Supabase PGVector, Milvus planned)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -77,7 +78,10 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 - **[📖 User Guide](docs/USER_GUIDE.md)** - Complete feature documentation
 - **[🤖 AI Agents](docs/WEAVE_CLI_AI.md)** - Natural language query system
-- **[📦 Batch Processing](docs/BATCH_DOCS_CREATION.md)** - Directory processing guide
+- **[📦 Batch Processing](docs/BATCH_DOCS_CREATION.md)** - Directory
+  processing guide
+- **[📚 Vector DB Abstraction](docs/VECTOR_DB_ABSTRACTION.md)** -
+  Multi-database support architecture
 - **[🎬 Demos](docs/DEMO.md)** - Video demos and tutorials
 - **[📋 Changelog](docs/CHANGELOG.md)** - Version history and updates
 
@@ -135,9 +139,39 @@ weave docs create MyCollection report.pdf --embedding text-embedding-ada-002
 
 ## Database Support
 
-- **Weaviate Cloud** - Production-ready cloud instances
-- **Weaviate Local** - Self-hosted Weaviate instances
-- **Mock Database** - Built-in testing database (no external dependencies)
+Weave CLI features a **pluggable vector database abstraction layer** that
+allows seamless switching between different vector database backends:
+
+### Currently Supported
+
+- **Weaviate Cloud** (`weaviate-cloud`) - Production-ready cloud instances
+- **Weaviate Local** (`weaviate-local`) - Self-hosted Weaviate instances
+- **Mock Database** (`mock`) - Built-in testing database (no external
+  dependencies)
+
+### Planned Support
+
+- **Supabase PGVector** (`supabase`) - Supabase with PGVector extension
+- **Milvus** (`milvus`) - Milvus vector database
+
+See [Vector DB Abstraction Documentation](docs/VECTOR_DB_ABSTRACTION.md) for
+details on the architecture and how to add support for new vector databases.
+
+### Coming Soon
+
+- **Supabase PGVector** (`supabase`) - PostgreSQL with vector extensions
+- **Milvus** (`milvus`) - Open-source vector database
+
+### Abstraction Benefits
+
+- **Unified Interface** - Same commands work across all database types
+- **Easy Migration** - Switch databases without changing workflows
+- **Extensible** - Add new vector databases with minimal code changes
+- **Type Safety** - Compile-time validation of database operations
+- **Error Handling** - Structured error types with context and recovery
+
+See **[📚 Vector DB Abstraction Guide](docs/VECTOR_DB_ABSTRACTION.md)** for
+implementation details and adding new database support.
 
 ## Development
 
