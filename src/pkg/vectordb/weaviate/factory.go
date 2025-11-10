@@ -71,9 +71,8 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 	// Validate local-specific requirements
 	if config.Type == vectordb.VectorDBTypeWeaviateLocal {
 		// Local instances typically use HTTP and localhost
-		if strings.HasPrefix(config.URL, "https://") && !strings.Contains(config.URL, "localhost") {
-			// This is just a warning case, not an error
-		}
+		// HTTPS with non-localhost is unusual but not an error
+		_ = strings.HasPrefix(config.URL, "https://") && !strings.Contains(config.URL, "localhost")
 	}
 
 	// Validate timeout

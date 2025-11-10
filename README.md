@@ -29,7 +29,11 @@ weave config create --env
 weave health check
 ```
 
-### Supabase Setup
+### Supabase Setup (EXPERIMENTAL)
+
+> **⚠️ EXPERIMENTAL**: Supabase support is currently experimental and under active
+> development. Some features may not work as expected. Please report issues at
+> <https://github.com/maximilien/weave-cli/issues>
 
 To use Supabase as your vector database:
 
@@ -212,11 +216,12 @@ allows seamless switching between different vector database backends:
 
 ### Currently Supported
 
-- **Weaviate Cloud** (`weaviate-cloud`) - Production-ready cloud instances
-- **Weaviate Local** (`weaviate-local`) - Self-hosted Weaviate instances
-- **Supabase PGVector** (`supabase`) - PostgreSQL with pgvector extension
+- **Weaviate Cloud** (`weaviate-cloud`) - Production-ready cloud instances ✅
+- **Weaviate Local** (`weaviate-local`) - Self-hosted Weaviate instances ✅
+- **Supabase PGVector** (`supabase`) - PostgreSQL with pgvector extension ⚠️
+  EXPERIMENTAL
 - **Mock Database** (`mock`) - Built-in testing database (no external
-  dependencies)
+  dependencies) ✅
 
 ### Planned Support
 

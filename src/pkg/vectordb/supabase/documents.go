@@ -80,7 +80,9 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	if err != nil {
 		return a.wrapError(err, "begin transaction")
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback() // Ignore rollback error (expected if commit succeeded)
+	}()
 
 	query := fmt.Sprintf(`
 		INSERT INTO %s (id, content, text, image, image_data, url, metadata)

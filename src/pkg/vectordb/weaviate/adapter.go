@@ -86,18 +86,6 @@ func (a *Adapter) convertDocumentFromWeaviate(doc *Document) *vectordb.Document 
 	}
 }
 
-// convertDocuments converts a slice of vectordb.Document to weaviate.Document
-func (a *Adapter) convertDocuments(docs []*vectordb.Document) []*Document {
-	if docs == nil {
-		return nil
-	}
-	result := make([]*Document, len(docs))
-	for i, doc := range docs {
-		result[i] = a.convertDocument(doc)
-	}
-	return result
-}
-
 // convertDocumentsFromWeaviate converts a slice of weaviate.Document to vectordb.Document
 func (a *Adapter) convertDocumentsFromWeaviate(docs []*Document) []*vectordb.Document {
 	if docs == nil {
@@ -124,50 +112,6 @@ func (a *Adapter) convertQueryOptions(opts *vectordb.QueryOptions) *QueryOptions
 	}
 }
 
-// convertQueryResults converts weaviate query results to vectordb query results
-func (a *Adapter) convertQueryResults(results []*Document, scores []float64) []*vectordb.QueryResult {
-	if results == nil {
-		return nil
-	}
-
-	queryResults := make([]*vectordb.QueryResult, len(results))
-	for i, doc := range results {
-		score := 0.0
-		if i < len(scores) {
-			score = scores[i]
-		}
-		queryResults[i] = &vectordb.QueryResult{
-			Document: *a.convertDocumentFromWeaviate(doc),
-			Score:    score,
-		}
-	}
-	return queryResults
-}
-
-// convertSchema converts between vectordb.CollectionSchema and weaviate.CollectionSchema
-func (a *Adapter) convertSchema(schema *vectordb.CollectionSchema) *CollectionSchema {
-	if schema == nil {
-		return nil
-	}
-
-	properties := make([]SchemaProperty, len(schema.Properties))
-	for i, prop := range schema.Properties {
-		properties[i] = SchemaProperty{
-			Name:             prop.Name,
-			DataType:         prop.DataType,
-			Description:      prop.Description,
-			NestedProperties: a.convertNestedProperties(prop.NestedProperties),
-			JSONSchema:       prop.JSONSchema,
-		}
-	}
-
-	return &CollectionSchema{
-		Class:      schema.Class,
-		Vectorizer: schema.Vectorizer,
-		Properties: properties,
-	}
-}
-
 // convertSchemaFromWeaviate converts from weaviate.CollectionSchema to vectordb.CollectionSchema
 func (a *Adapter) convertSchemaFromWeaviate(schema *CollectionSchema) *vectordb.CollectionSchema {
 	if schema == nil {
@@ -190,25 +134,6 @@ func (a *Adapter) convertSchemaFromWeaviate(schema *CollectionSchema) *vectordb.
 		Vectorizer: schema.Vectorizer,
 		Properties: properties,
 	}
-}
-
-// convertNestedProperties converts nested properties to Weaviate format
-func (a *Adapter) convertNestedProperties(props []vectordb.SchemaProperty) []SchemaProperty {
-	if props == nil {
-		return nil
-	}
-
-	result := make([]SchemaProperty, len(props))
-	for i, prop := range props {
-		result[i] = SchemaProperty{
-			Name:             prop.Name,
-			DataType:         prop.DataType,
-			Description:      prop.Description,
-			NestedProperties: a.convertNestedProperties(prop.NestedProperties),
-			JSONSchema:       prop.JSONSchema,
-		}
-	}
-	return result
 }
 
 // convertNestedPropertiesFromWeaviate converts nested properties from Weaviate format

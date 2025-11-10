@@ -13,9 +13,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
-	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
 )
 
@@ -167,82 +165,6 @@ func getDisplayURL(dbConfig *config.VectorDBConfig) string {
 	return "configured location"
 }
 
-func checkWeaviateCloudHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, string) {
-	if cfg.URL == "" {
-		return false, "Weaviate Cloud URL is not configured"
-	}
-
-	if cfg.APIKey == "" {
-		return false, "Weaviate Cloud API key is not configured"
-	}
-
-	// Create client
-	client, err := weaviate.NewClient(&weaviate.Config{
-		URL:          cfg.URL,
-		APIKey:       cfg.APIKey,
-		OpenAIAPIKey: cfg.OpenAIAPIKey,
-	})
-	if err != nil {
-		return false, fmt.Sprintf("Failed to create Weaviate client: %v", err)
-	}
-
-	// Test connection
-	if err := client.Health(ctx); err != nil {
-		return false, fmt.Sprintf("Failed to connect to Weaviate Cloud: %v", err)
-	}
-
-	return true, fmt.Sprintf("Successfully connected to Weaviate Cloud at %s", cfg.URL)
-}
-
-func checkWeaviateLocalHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, string) {
-	if cfg.URL == "" {
-		return false, "Weaviate Local URL is not configured"
-	}
-
-	// Create client
-	client, err := weaviate.NewClient(&weaviate.Config{
-		URL:          cfg.URL,
-		OpenAIAPIKey: cfg.OpenAIAPIKey,
-	})
-	if err != nil {
-		return false, fmt.Sprintf("Failed to create Weaviate client: %v", err)
-	}
-
-	// Test connection
-	if err := client.Health(ctx); err != nil {
-		return false, fmt.Sprintf("Failed to connect to Weaviate Local: %v", err)
-	}
-
-	return true, fmt.Sprintf("Successfully connected to Weaviate Local at %s", cfg.URL)
-}
-
-func checkMockHealth(ctx context.Context, cfg *config.VectorDBConfig) (bool, string) {
-	if !cfg.Enabled {
-		return false, "Mock database is not enabled"
-	}
-
-	// Create mock client - we need to convert to the old MockConfig structure
-	mockConfig := &config.MockConfig{
-		Enabled:            cfg.Enabled,
-		SimulateEmbeddings: cfg.SimulateEmbeddings,
-		EmbeddingDimension: cfg.EmbeddingDimension,
-		Collections:        make([]config.MockCollection, len(cfg.Collections)),
-	}
-
-	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection(col)
-	}
-
-	client := mock.NewClient(mockConfig)
-
-	// Test connection
-	if err := client.Health(ctx); err != nil {
-		return false, fmt.Sprintf("Mock database health check failed: %v", err)
-	}
-
-	return true, "Mock database is working correctly"
-}
-
 func testCollectionAccessForDatabase(ctx context.Context, client vectordb.VectorDBClient) {
 	// List collections using vectordb interface
 	collectionsInfo, err := client.ListCollections(ctx)
@@ -263,67 +185,6 @@ func testCollectionAccessForDatabase(ctx context.Context, client vectordb.Vector
 		sort.Strings(collectionNames)
 		for _, name := range collectionNames {
 			fmt.Printf("  - %s\n", name)
-		}
-	}
-}
-
-func testWeaviateCollectionAccess(ctx context.Context, cfg *config.VectorDBConfig) {
-	client, err := createWeaviateClient(cfg)
-
-	if err != nil {
-		printError(fmt.Sprintf("Failed to create client for collection test: %v", err))
-		return
-	}
-
-	// List collections
-	collections, err := client.ListCollections(ctx)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to list collections: %v", err))
-		return
-	}
-
-	if len(collections) == 0 {
-		printWarning("No collections found in the database")
-	} else {
-		printSuccess(fmt.Sprintf("Found %d collections:", len(collections)))
-		// Sort collections alphabetically
-		sort.Strings(collections)
-		for _, collection := range collections {
-			fmt.Printf("  - %s\n", collection)
-		}
-	}
-}
-
-func testMockCollectionAccess(ctx context.Context, cfg *config.VectorDBConfig) {
-	// Convert to MockConfig for backward compatibility
-	mockConfig := &config.MockConfig{
-		Enabled:            cfg.Enabled,
-		SimulateEmbeddings: cfg.SimulateEmbeddings,
-		EmbeddingDimension: cfg.EmbeddingDimension,
-		Collections:        make([]config.MockCollection, len(cfg.Collections)),
-	}
-
-	for i, col := range cfg.Collections {
-		mockConfig.Collections[i] = config.MockCollection(col)
-	}
-
-	client := mock.NewClient(mockConfig)
-
-	// List collections
-	collections, err := client.ListCollections(ctx)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to list mock collections: %v", err))
-		return
-	}
-
-	if len(collections) == 0 {
-		printWarning("No collections found in the mock database")
-	} else {
-		printSuccess(fmt.Sprintf("Found %d mock collections:", len(collections)))
-		// Sort collections alphabetically
-		sort.Strings(collections)
-		for _, collection := range collections {
-			fmt.Printf("  - %s\n", collection)
 		}
 	}
 }

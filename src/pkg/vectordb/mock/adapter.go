@@ -71,18 +71,6 @@ func (a *Adapter) convertDocumentFromMock(doc *mockClient.Document) *vectordb.Do
 	}
 }
 
-// convertDocuments converts a slice of vectordb.Document to mockClient.Document
-func (a *Adapter) convertDocuments(docs []*vectordb.Document) []*mockClient.Document {
-	if docs == nil {
-		return nil
-	}
-	result := make([]*mockClient.Document, len(docs))
-	for i, doc := range docs {
-		result[i] = a.convertDocument(doc)
-	}
-	return result
-}
-
 // convertDocumentsFromMock converts a slice of mockClient.Document to vectordb.Document
 func (a *Adapter) convertDocumentsFromMock(docs []*mockClient.Document) []*vectordb.Document {
 	if docs == nil {
@@ -105,24 +93,4 @@ func (a *Adapter) convertQueryOptions(opts *vectordb.QueryOptions) (int, float64
 		topK = 10
 	}
 	return topK, opts.Distance
-}
-
-// convertQueryResults converts mock search results to vectordb query results
-func (a *Adapter) convertQueryResults(results []*mockClient.Document, scores []float64) []*vectordb.QueryResult {
-	if results == nil {
-		return nil
-	}
-
-	queryResults := make([]*vectordb.QueryResult, len(results))
-	for i, doc := range results {
-		score := 0.0
-		if i < len(scores) {
-			score = scores[i]
-		}
-		queryResults[i] = &vectordb.QueryResult{
-			Document: *a.convertDocumentFromMock(doc),
-			Score:    score,
-		}
-	}
-	return queryResults
 }

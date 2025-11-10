@@ -148,11 +148,6 @@ func getAllConfiguredDatabases(cfg *config.Config) (*VectorDBSelection, error) {
 	}, nil
 }
 
-// getDefaultVectorDBConfig returns the default vector database configuration
-func getDefaultVectorDBConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
-	return cfg.GetDefaultDatabase()
-}
-
 // getWeaviateConfigs returns Weaviate configurations (both cloud and local)
 func getWeaviateConfigs(cfg *config.Config) ([]config.VectorDBConfig, error) {
 	var configs []config.VectorDBConfig
