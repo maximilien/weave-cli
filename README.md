@@ -157,11 +157,6 @@ allows seamless switching between different vector database backends:
 See [Vector DB Abstraction Documentation](docs/VECTOR_DB_ABSTRACTION.md) for
 details on the architecture and how to add support for new vector databases.
 
-### Coming Soon
-
-- **Supabase PGVector** (`supabase`) - PostgreSQL with vector extensions
-- **Milvus** (`milvus`) - Open-source vector database
-
 ### Abstraction Benefits
 
 - **Unified Interface** - Same commands work across all database types
