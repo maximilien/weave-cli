@@ -21,6 +21,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/image"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/viper"
 )
@@ -153,6 +154,77 @@ func WriteProcessingReport(report *ProcessingReport) error {
 }
 
 // ListWeaviateDocuments lists Weaviate documents
+// ListDocuments lists documents using the vector database abstraction (works for all DB types)
+func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool, summary bool) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Add timeout to context for API operations
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// Get documents from collection (offset 0 means start from beginning)
+	vdbDocuments, err := client.ListDocuments(ctx, collectionName, limit, 0)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			PrintError(fmt.Sprintf("Failed to connect to database: connection timeout after 30 seconds"))
+			fmt.Println()
+			PrintInfo("Please check that:")
+			PrintInfo("  1. The database server is running and accessible")
+			PrintInfo("  2. The URL/connection string in your config is correct")
+			PrintInfo("  3. There are no network/firewall issues")
+		} else {
+			// Check if this might be a configuration error
+			formattedErr := config.FormatConfigError(err)
+			if formattedErr != err.Error() {
+				// Error was enhanced with configuration tips
+				PrintError(formattedErr)
+
+				// Check if we can prompt for fix
+				if configErr := config.CheckRequiredEnvVars(); configErr != nil {
+					shouldFix, promptErr := config.PromptToFixConfig(configErr)
+					if promptErr == nil && shouldFix {
+						if fixErr := config.InteractiveConfigFix(configErr.EnvFileExists); fixErr != nil {
+							PrintError(fmt.Sprintf("Failed to fix configuration: %v", fixErr))
+						}
+					}
+				}
+			} else {
+				PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			}
+		}
+		return
+	}
+
+	if len(vdbDocuments) == 0 {
+		PrintWarning(fmt.Sprintf("No documents found in collection '%s'", collectionName))
+		return
+	}
+
+	// Convert vectordb.Document to weaviate.Document for display functions
+	documents := make([]weaviate.Document, len(vdbDocuments))
+	for i, doc := range vdbDocuments {
+		documents[i] = weaviate.Document{
+			ID:        doc.ID,
+			Text:      doc.Text,
+			Content:   doc.Content,
+			Image:     doc.Image,
+			ImageData: doc.ImageData,
+			URL:       doc.URL,
+			Metadata:  doc.Metadata,
+		}
+	}
+
+	if virtual {
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary)
+	} else {
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines)
+	}
+}
+
 func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool, summary bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
@@ -268,6 +340,53 @@ func validateEmbeddingForCollection(ctx context.Context, client *weaviate.Client
 }
 
 // CreateWeaviateDocument creates a Weaviate document
+// CreateDocument creates a document using the vectordb abstraction (works for all DB types)
+func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string, embeddingModel string) error {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return err
+	}
+
+	// Check if file exists
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		PrintError(fmt.Sprintf("File not found: %s", filePath))
+		return err
+	}
+
+	// Read file content
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to read file: %v", err))
+		return err
+	}
+
+	// Create document with basic metadata
+	doc := &vectordb.Document{
+		ID:      uuid.New().String(),
+		Text:    string(content),
+		Content: string(content),
+		Metadata: map[string]interface{}{
+			"filename":          filepath.Base(filePath),
+			"original_filename": filepath.Base(filePath),
+			"file_size":         len(content),
+			"date_added":        time.Now().Format(time.RFC3339),
+			"storage_path":      filePath,
+			"type":              "text",
+		},
+	}
+
+	// Add document to collection
+	err = client.CreateDocument(ctx, collectionName, doc)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create document: %v", err))
+		return err
+	}
+
+	PrintSuccess(fmt.Sprintf("Document created successfully with ID: %s", doc.ID))
+	return nil
+}
+
 func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string, embeddingModel string) error {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
@@ -351,6 +470,57 @@ func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 }
 
 // ShowWeaviateDocument shows Weaviate document details
+// ShowDocument shows document(s) using the vectordb abstraction (works for all DB types)
+func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// If document IDs are provided, show them directly
+	if len(documentIDs) > 0 {
+		for i, docID := range documentIDs {
+			doc, err := client.GetDocument(ctx, collectionName, docID)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to get document '%s': %v", docID, err))
+				continue
+			}
+
+			if i > 0 {
+				fmt.Println(strings.Repeat("=", 80))
+				fmt.Println()
+			}
+
+			// Display document details
+			color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
+			fmt.Printf("Collection: %s\n", collectionName)
+			fmt.Println()
+
+			fmt.Printf("Content:\n")
+			if showLong {
+				fmt.Printf("%s\n", doc.Content)
+			} else {
+				preview := TruncateStringByLines(doc.Content, shortLines)
+				fmt.Printf("%s\n", preview)
+			}
+			fmt.Println()
+
+			if len(doc.Metadata) > 0 {
+				fmt.Printf("Metadata:\n")
+				for key, value := range doc.Metadata {
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := SmartTruncate(valueStr, key, shortLines)
+					fmt.Printf("  %s: %s\n", key, truncatedValue)
+				}
+			}
+		}
+		return
+	}
+
+	PrintWarning("Metadata and name-based document lookup not yet implemented for generic document show")
+}
+
 func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
@@ -537,6 +707,30 @@ func CountWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 func CountMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
 	PrintInfo("Mock document count not yet implemented in new structure")
 	return 0, fmt.Errorf("document count not yet implemented")
+}
+
+// DeleteDocuments deletes documents using the vectordb abstraction (works for all DB types)
+func DeleteDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, metadataFilters []string, virtual bool, pattern string, name string) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// If document IDs are provided, delete them directly
+	if len(documentIDs) > 0 {
+		for _, docID := range documentIDs {
+			err := client.DeleteDocument(ctx, collectionName, docID)
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to delete document '%s': %v", docID, err))
+				continue
+			}
+			PrintSuccess(fmt.Sprintf("Document '%s' deleted successfully", docID))
+		}
+		return
+	}
+
+	PrintWarning("Metadata, virtual, pattern, and name-based document deletion not yet implemented for generic delete")
 }
 
 // DeleteWeaviateDocuments deletes Weaviate documents

@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2025-11-10
+
+### Fixed
+
+- **🐛 Supabase Collection Creation**: Fixed duplicate column errors when creating collections with custom schemas
+  - Added `fixedColumns` map to track reserved column names (id, content, text, image, image_data, url, metadata, embedding)
+  - Schema properties that conflict with fixed columns are now automatically skipped
+  - Prevents PostgreSQL errors when creating collections with custom properties
+
+- **🐛 Supabase Document Operations**: Added complete Supabase support to all document commands
+  - **Create**: `weave docs create` now works with Supabase
+  - **Show**: `weave docs show` now works with Supabase (improved database selection)
+  - **Delete**: `weave docs delete` now works with Supabase
+  - **List**: `weave docs list` now works with Supabase
+  - Implemented generic document utility functions using vectordb abstraction for consistency
+
+### Added
+
+- **🧪 Comprehensive Integration Tests**: Created comprehensive Weaviate integration test suite
+  - Full test coverage matching Supabase test structure
+  - Tests cover: health checks, collections, documents, search operations, schema operations, batch operations
+  - Uses vectordb abstraction for consistency across both adapters
+  - All integration tests verified passing for both Weaviate and Supabase
+
+- **🧪 Test Infrastructure Improvements**: Enhanced test execution capabilities
+  - Added selective integration test execution flags to `test.sh`
+  - `--weaviate` flag for Weaviate-only tests
+  - `--supabase` flag for Supabase-only tests
+  - `--mcp` flag for MCP-only tests
+  - Improved test documentation and help text
+
+- **🔧 MCP Client Configuration**: Improved MCP server startup reliability
+  - Added project root detection to find `.env`/`go.mod` files
+  - Ensures MCP server can locate configuration when started from subdirectories
+
+### Changed
+
+- **Document Show Command**: Improved database selection logic
+  - Uses `GetSelectedVectorDBs()` for consistent database selection
+  - Validates that only one database is selected for read operations
+  - Clear error messages when multiple databases are specified
+
 ## [0.3.9] - 2025-11-10
 
 ### Added

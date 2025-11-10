@@ -6,34 +6,39 @@ package tests
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	"github.com/maximilien/weave-cli/src/pkg/vectordb/supabase"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
-func TestSupabaseIntegration(t *testing.T) {
-	// Skip if no Supabase credentials are provided
-	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
-	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
+func TestWeaviateComprehensiveIntegration(t *testing.T) {
+	// Skip if no Weaviate credentials are provided
+	weaviateURL := os.Getenv("WEAVIATE_URL")
+	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
+	openAIAPIKey := os.Getenv("OPENAI_API_KEY")
 
-	if databaseURL == "" || databaseKey == "" {
-		t.Skip("Skipping Supabase integration test: SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY environment variables not set")
+	if weaviateURL == "" || weaviateAPIKey == "" {
+		t.Skip("Skipping Weaviate integration test: WEAVIATE_URL and WEAVIATE_API_KEY environment variables not set")
 	}
 
-	// Create Supabase client
+	if openAIAPIKey == "" {
+		t.Skip("Skipping Weaviate integration test: OPENAI_API_KEY environment variable not set")
+	}
+
+	// Create Weaviate client through vectordb abstraction
 	config := &vectordb.Config{
-		Type:        vectordb.VectorDBTypeSupabase,
-		DatabaseURL: databaseURL,
-		DatabaseKey: databaseKey,
-		Timeout:     30,
+		Type:         vectordb.VectorDBTypeWeaviateCloud,
+		URL:          weaviateURL,
+		APIKey:       weaviateAPIKey,
+		OpenAIAPIKey: openAIAPIKey,
+		Timeout:      30,
 	}
 
-	client, err := supabase.NewAdapter(config)
+	client, err := vectordb.CreateClient(config)
 	if err != nil {
-		t.Fatalf("Failed to create Supabase client: %v", err)
+		t.Fatalf("Failed to create Weaviate client: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -48,7 +53,10 @@ func TestSupabaseIntegration(t *testing.T) {
 	})
 
 	// Test collection operations
-	collectionName := "test_collection_supabase"
+	collectionName := "TestCollectionWeaviate"
+
+	// Clean up any existing test collection first
+	_ = client.DeleteCollection(ctx, collectionName) // Ignore error if doesn't exist
 
 	t.Run("CreateCollection", func(t *testing.T) {
 		schema := &vectordb.CollectionSchema{
@@ -88,27 +96,22 @@ func TestSupabaseIntegration(t *testing.T) {
 			t.Errorf("Failed to list collections: %v", err)
 		}
 
-		// Supabase normalizes collection names (underscores -> hyphens)
-		expectedName := strings.ReplaceAll(collectionName, "_", "-")
-		t.Logf("Found %d collections, looking for '%s'", len(collections), expectedName)
-
 		found := false
 		for _, collection := range collections {
-			t.Logf("Collection: %s", collection.Name)
-			if collection.Name == expectedName {
+			if collection.Name == collectionName {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("Created collection '%s' (normalized: '%s') should appear in list of %d collections", collectionName, expectedName, len(collections))
+			t.Error("Created collection should appear in list")
 		}
 	})
 
 	// Test document operations
 	testDoc := &vectordb.Document{
 		ID:      "test-doc-1",
-		Content: "This is a test document for Supabase integration",
+		Content: "This is a test document for Weaviate integration",
 		Text:    "Test content",
 		Metadata: map[string]interface{}{
 			"title":    "Test Document",
@@ -152,12 +155,18 @@ func TestSupabaseIntegration(t *testing.T) {
 		err := client.UpdateDocument(ctx, collectionName, updatedDoc)
 		if err != nil {
 			t.Errorf("Failed to update document: %v", err)
+			return
 		}
 
 		// Verify update
 		doc, err := client.GetDocument(ctx, collectionName, testDoc.ID)
 		if err != nil {
 			t.Errorf("Failed to get updated document: %v", err)
+			return
+		}
+		if doc == nil {
+			t.Error("GetDocument returned nil document")
+			return
 		}
 		if doc.Content != updatedDoc.Content {
 			t.Errorf("Expected updated content %s, got %s", updatedDoc.Content, doc.Content)
@@ -236,7 +245,6 @@ func TestSupabaseIntegration(t *testing.T) {
 		if err != nil {
 			t.Errorf("Failed to search with BM25: %v", err)
 		}
-		// BM25 search might not return results if full-text search is not properly configured
 		t.Logf("BM25 search returned %d results", len(results))
 	})
 
@@ -265,7 +273,7 @@ func TestSupabaseIntegration(t *testing.T) {
 
 	t.Run("ValidateSchema", func(t *testing.T) {
 		schema := &vectordb.CollectionSchema{
-			Class:      "valid_test_collection",
+			Class:      "ValidTestCollection",
 			Vectorizer: "text2vec-openai",
 			Properties: []vectordb.SchemaProperty{
 				{
@@ -350,24 +358,26 @@ func TestSupabaseIntegration(t *testing.T) {
 	})
 }
 
-func TestSupabaseFactoryIntegration(t *testing.T) {
+func TestWeaviateFactoryIntegration(t *testing.T) {
 	// Test factory with real configuration
-	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
-	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
+	weaviateURL := os.Getenv("WEAVIATE_URL")
+	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
+	openAIAPIKey := os.Getenv("OPENAI_API_KEY")
 
-	if databaseURL == "" || databaseKey == "" {
-		t.Skip("Skipping Supabase factory integration test: SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY environment variables not set")
+	if weaviateURL == "" || weaviateAPIKey == "" || openAIAPIKey == "" {
+		t.Skip("Skipping Weaviate factory integration test: WEAVIATE_URL, WEAVIATE_API_KEY, or OPENAI_API_KEY environment variables not set")
 	}
 
 	config := &vectordb.Config{
-		Type:        vectordb.VectorDBTypeSupabase,
-		DatabaseURL: databaseURL,
-		DatabaseKey: databaseKey,
-		Timeout:     30,
+		Type:         vectordb.VectorDBTypeWeaviateCloud,
+		URL:          weaviateURL,
+		APIKey:       weaviateAPIKey,
+		OpenAIAPIKey: openAIAPIKey,
+		Timeout:      30,
 	}
 
 	// Test factory creation
-	factory := supabase.NewFactory()
+	factory := weaviate.NewFactory()
 
 	// Test config validation
 	err := factory.ValidateConfig(config)
@@ -391,20 +401,22 @@ func TestSupabaseFactoryIntegration(t *testing.T) {
 	}
 }
 
-func TestSupabaseVectorDBRegistry(t *testing.T) {
-	// Test that Supabase can be created through the global registry
-	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
-	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
+func TestWeaviateVectorDBRegistry(t *testing.T) {
+	// Test that Weaviate can be created through the global registry
+	weaviateURL := os.Getenv("WEAVIATE_URL")
+	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
+	openAIAPIKey := os.Getenv("OPENAI_API_KEY")
 
-	if databaseURL == "" || databaseKey == "" {
-		t.Skip("Skipping Supabase registry test: SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY environment variables not set")
+	if weaviateURL == "" || weaviateAPIKey == "" || openAIAPIKey == "" {
+		t.Skip("Skipping Weaviate registry test: WEAVIATE_URL, WEAVIATE_API_KEY, or OPENAI_API_KEY environment variables not set")
 	}
 
 	config := &vectordb.Config{
-		Type:        vectordb.VectorDBTypeSupabase,
-		DatabaseURL: databaseURL,
-		DatabaseKey: databaseKey,
-		Timeout:     30,
+		Type:         vectordb.VectorDBTypeWeaviateCloud,
+		URL:          weaviateURL,
+		APIKey:       weaviateAPIKey,
+		OpenAIAPIKey: openAIAPIKey,
+		Timeout:      30,
 	}
 
 	// Test creation through global registry

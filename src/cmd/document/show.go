@@ -71,18 +71,27 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get default database
-	dbConfig, err := cfg.GetDefaultDatabase()
+	// Get selected databases based on flags
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
 	if err != nil {
-		utils.HandleConfigError(err, true)
+		utils.PrintError(fmt.Sprintf("Failed to get database selection: %v", err))
 		os.Exit(1)
 	}
 
+	// Validate that only one database is selected for read operations
+	if len(selection.Configs) > 1 {
+		utils.PrintError("Document show requires a single database. Please specify --weaviate, --supabase, or --mock")
+		os.Exit(1)
+	}
+
+	dbConfig := &selection.Configs[0]
 	ctx := context.Background()
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.ShowWeaviateDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata)
+	case config.VectorDBTypeSupabase:
+		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata)
 	case config.VectorDBTypeMock:
 		utils.ShowMockDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata)
 	default:

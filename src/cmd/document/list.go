@@ -9,7 +9,6 @@ import (
 	"os"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
-	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -54,22 +53,22 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get default database
-	dbConfig, err := cfg.GetDefaultDatabase()
+	// Get selected databases based on flags
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
 	if err != nil {
-		utils.HandleConfigError(err, true)
+		utils.PrintError(fmt.Sprintf("Failed to get database selection: %v", err))
 		os.Exit(1)
 	}
 
+	// Validate that only one database is selected for read operations
+	if len(selection.Configs) > 1 {
+		utils.PrintError("Document list requires a single database. Please specify --weaviate, --supabase, or --mock")
+		os.Exit(1)
+	}
+
+	dbConfig := &selection.Configs[0]
 	ctx := context.Background()
 
-	switch dbConfig.Type {
-	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.ListWeaviateDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
-	case config.VectorDBTypeMock:
-		utils.ListMockDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
-	default:
-		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
-		os.Exit(1)
-	}
+	// Use generic ListDocuments that works with all database types via vectordb abstraction
+	utils.ListDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
 }

@@ -127,6 +127,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.DeleteWeaviateDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
+	case config.VectorDBTypeSupabase:
+		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	case config.VectorDBTypeMock:
 		utils.DeleteMockDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	default:

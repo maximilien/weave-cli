@@ -9,7 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -61,6 +63,12 @@ type MCPError struct {
 // NewClient creates a new MCP client
 func NewClient(stdioPath string) (*Client, error) {
 	cmd := exec.Command(stdioPath)
+
+	// Try to find project root by looking for .env file
+	// This ensures the MCP server can find configuration files
+	if workDir := findProjectRoot(); workDir != "" {
+		cmd.Dir = workDir
+	}
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
@@ -356,5 +364,40 @@ func getString(m map[string]interface{}, key string) string {
 	if v, ok := m[key].(string); ok {
 		return v
 	}
+	return ""
+}
+
+// findProjectRoot tries to find the project root by looking for .env or go.mod
+// This ensures the MCP server can find configuration files when started from subdirectories
+func findProjectRoot() string {
+	// Start from current directory
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+
+	// Walk up the directory tree looking for .env or go.mod
+	for {
+		// Check if .env exists in this directory
+		envPath := filepath.Join(dir, ".env")
+		if _, err := os.Stat(envPath); err == nil {
+			return dir
+		}
+
+		// Check if go.mod exists in this directory
+		goModPath := filepath.Join(dir, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			return dir
+		}
+
+		// Move up one directory
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root directory
+			break
+		}
+		dir = parent
+	}
+
 	return ""
 }

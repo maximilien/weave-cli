@@ -30,9 +30,19 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 	columns = append(columns, "metadata JSONB")
 	columns = append(columns, "embedding vector(1536)") // Default OpenAI embedding dimension
 
-	// Add custom properties from schema
+	// Track fixed column names to avoid duplicates
+	fixedColumns := map[string]bool{
+		"id": true, "content": true, "text": true, "image": true,
+		"image_data": true, "url": true, "metadata": true, "embedding": true,
+	}
+
+	// Add custom properties from schema (skip if already in fixed columns)
 	if schema != nil {
 		for _, prop := range schema.Properties {
+			// Skip if this property is already a fixed column
+			if fixedColumns[prop.Name] {
+				continue
+			}
 			columnType := a.convertDataTypeToPostgreSQL(prop.DataType)
 			if columnType != "" {
 				columns = append(columns, fmt.Sprintf("%s %s", prop.Name, columnType))

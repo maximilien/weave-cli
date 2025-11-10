@@ -6,6 +6,7 @@ package tests
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -183,15 +184,17 @@ func testSupabaseCollectionOperations(t *testing.T, adapter *supabase.Adapter, c
 		t.Errorf("ListCollections failed: %v", err)
 	}
 
+	// Supabase normalizes collection names (underscores -> hyphens)
+	expectedName := strings.ReplaceAll(collectionName, "_", "-")
 	found := false
 	for _, collection := range collections {
-		if collection.Name == collectionName {
+		if collection.Name == expectedName {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("Created collection not found in list")
+		t.Errorf("Created collection '%s' (normalized: '%s') not found in list", collectionName, expectedName)
 	}
 
 	// Test GetCollectionCount
