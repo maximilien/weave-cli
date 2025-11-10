@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 // VirtualDocument represents a virtual document structure

@@ -9,7 +9,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 // TestQueryBM25Search tests BM25 keyword search functionality

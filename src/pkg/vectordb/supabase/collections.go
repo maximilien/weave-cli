@@ -79,14 +79,18 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	if err := a.requireDBConnection("ListCollections"); err != nil {
+		return nil, err
+	}
+
 	query := `
-		SELECT table_name, 
+		SELECT table_name,
 		       COALESCE(obj_description(c.oid), '') as description,
 		       COALESCE(n_tup_ins, 0) as count
 		FROM information_schema.tables t
 		LEFT JOIN pg_class c ON c.relname = t.table_name
 		LEFT JOIN pg_stat_user_tables s ON s.relname = t.table_name
-		WHERE t.table_schema = 'public' 
+		WHERE t.table_schema = 'public'
 		  AND t.table_name LIKE 'collection_%'
 		  AND t.table_type = 'BASE TABLE'
 	`

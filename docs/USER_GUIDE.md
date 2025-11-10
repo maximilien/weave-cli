@@ -1772,7 +1772,82 @@ This format enables:
 
 ## Global Flags
 
-### --no-color
+### Vector Database Selection Flags
+
+Control which vector database(s) to operate on:
+
+**Important**: Database selection behavior depends on how many databases you have configured:
+
+- **Single Database**: If only one database is configured (e.g., only Weaviate OR only Supabase), all commands automatically use that database. No flags needed!
+- **Multiple Databases**: If multiple databases are configured (e.g., both Weaviate AND Supabase):
+  - **Read operations** (ls, show, count, query) - Use all databases by default
+  - **Write operations** (create, update, batch) - **Must** specify which database with a flag
+  - **Delete operations** (delete, delete-all) - **Must** specify which database with a flag
+
+#### --weaviate
+Use Weaviate vector database (weaviate-cloud or weaviate-local).
+
+```bash
+# List collections from Weaviate only (with multiple DBs configured)
+weave collection list --weaviate
+
+# Create document in Weaviate (required when multiple DBs configured)
+weave document create MyCollection document.txt --weaviate
+
+# With single DB configured, --weaviate is optional:
+weave document create MyCollection document.txt  # Works if Weaviate is the only DB
+```
+
+#### --supabase
+Use Supabase PGVector database.
+
+```bash
+# List collections from Supabase only (with multiple DBs configured)
+weave collection list --supabase
+
+# Create document in Supabase (required when multiple DBs configured)
+weave document create MyCollection document.txt --supabase
+
+# With single DB configured, --supabase is optional:
+weave document create MyCollection document.txt  # Works if Supabase is the only DB
+```
+
+#### --mock
+Use mock vector database (useful for testing).
+
+```bash
+# List collections from mock database
+weave collection list --mock
+
+# Test commands without affecting real data
+weave document create TestCollection --mock --content "test content"
+```
+
+#### --all
+Operate on all configured vector databases.
+
+```bash
+# List collections from all configured databases
+weave collection list --all
+
+# Show results from multiple databases with clear headers
+weave collection count --all
+```
+
+#### Combining Database Flags
+You can combine multiple database flags to operate on specific databases:
+
+```bash
+# List collections from both Weaviate and mock databases
+weave collection list --weaviate --mock
+
+# Query multiple databases
+weave collection query MyCollection "search term" --weaviate --supabase
+```
+
+### Output Control Flags
+
+#### --no-color
 
 Disables colored output for better compatibility with scripts and logs.
 

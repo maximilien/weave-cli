@@ -8,20 +8,19 @@ import (
 	"fmt"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	weaviateClient "github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
 // Adapter wraps the existing Weaviate client to implement the VectorDBClient interface
 type Adapter struct {
-	client      *weaviateClient.Client
-	weaveClient *weaviateClient.WeaveClient
+	client      *Client
+	weaveClient *WeaveClient
 	config      *vectordb.Config
 }
 
 // NewAdapter creates a new Weaviate adapter
 func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 	// Convert vectordb.Config to weaviate.Config
-	weaviateConfig := &weaviateClient.Config{
+	weaviateConfig := &Config{
 		URL:          config.URL,
 		APIKey:       config.APIKey,
 		OpenAIAPIKey: config.OpenAIAPIKey,
@@ -29,13 +28,13 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 	}
 
 	// Create the original Weaviate client
-	client, err := weaviateClient.NewClient(weaviateConfig)
+	client, err := NewClient(weaviateConfig)
 	if err != nil {
 		return nil, vectordb.ErrConnectionFailed("failed to create Weaviate client", err)
 	}
 
 	// Create the enhanced WeaveClient
-	weaveClient, err := weaviateClient.NewWeaveClient(weaviateConfig)
+	weaveClient, err := NewWeaveClient(weaviateConfig)
 	if err != nil {
 		return nil, vectordb.ErrConnectionFailed("failed to create WeaveClient", err)
 	}
@@ -56,11 +55,11 @@ func (a *Adapter) Health(ctx context.Context) error {
 }
 
 // convertDocument converts between vectordb.Document and weaviate.Document
-func (a *Adapter) convertDocument(doc *vectordb.Document) *weaviateClient.Document {
+func (a *Adapter) convertDocument(doc *vectordb.Document) *Document {
 	if doc == nil {
 		return nil
 	}
-	return &weaviateClient.Document{
+	return &Document{
 		ID:        doc.ID,
 		Text:      doc.Text,
 		Content:   doc.Content,
@@ -72,7 +71,7 @@ func (a *Adapter) convertDocument(doc *vectordb.Document) *weaviateClient.Docume
 }
 
 // convertDocumentFromWeaviate converts from weaviate.Document to vectordb.Document
-func (a *Adapter) convertDocumentFromWeaviate(doc *weaviateClient.Document) *vectordb.Document {
+func (a *Adapter) convertDocumentFromWeaviate(doc *Document) *vectordb.Document {
 	if doc == nil {
 		return nil
 	}
@@ -88,11 +87,11 @@ func (a *Adapter) convertDocumentFromWeaviate(doc *weaviateClient.Document) *vec
 }
 
 // convertDocuments converts a slice of vectordb.Document to weaviate.Document
-func (a *Adapter) convertDocuments(docs []*vectordb.Document) []*weaviateClient.Document {
+func (a *Adapter) convertDocuments(docs []*vectordb.Document) []*Document {
 	if docs == nil {
 		return nil
 	}
-	result := make([]*weaviateClient.Document, len(docs))
+	result := make([]*Document, len(docs))
 	for i, doc := range docs {
 		result[i] = a.convertDocument(doc)
 	}
@@ -100,7 +99,7 @@ func (a *Adapter) convertDocuments(docs []*vectordb.Document) []*weaviateClient.
 }
 
 // convertDocumentsFromWeaviate converts a slice of weaviate.Document to vectordb.Document
-func (a *Adapter) convertDocumentsFromWeaviate(docs []*weaviateClient.Document) []*vectordb.Document {
+func (a *Adapter) convertDocumentsFromWeaviate(docs []*Document) []*vectordb.Document {
 	if docs == nil {
 		return nil
 	}
@@ -112,11 +111,11 @@ func (a *Adapter) convertDocumentsFromWeaviate(docs []*weaviateClient.Document) 
 }
 
 // convertQueryOptions converts vectordb.QueryOptions to weaviate.QueryOptions
-func (a *Adapter) convertQueryOptions(opts *vectordb.QueryOptions) *weaviateClient.QueryOptions {
+func (a *Adapter) convertQueryOptions(opts *vectordb.QueryOptions) *QueryOptions {
 	if opts == nil {
-		return &weaviateClient.QueryOptions{}
+		return &QueryOptions{}
 	}
-	return &weaviateClient.QueryOptions{
+	return &QueryOptions{
 		TopK:           opts.TopK,
 		Distance:       opts.Distance,
 		SearchMetadata: opts.SearchMetadata,
@@ -126,7 +125,7 @@ func (a *Adapter) convertQueryOptions(opts *vectordb.QueryOptions) *weaviateClie
 }
 
 // convertQueryResults converts weaviate query results to vectordb query results
-func (a *Adapter) convertQueryResults(results []*weaviateClient.Document, scores []float64) []*vectordb.QueryResult {
+func (a *Adapter) convertQueryResults(results []*Document, scores []float64) []*vectordb.QueryResult {
 	if results == nil {
 		return nil
 	}
@@ -146,14 +145,14 @@ func (a *Adapter) convertQueryResults(results []*weaviateClient.Document, scores
 }
 
 // convertSchema converts between vectordb.CollectionSchema and weaviate.CollectionSchema
-func (a *Adapter) convertSchema(schema *vectordb.CollectionSchema) *weaviateClient.CollectionSchema {
+func (a *Adapter) convertSchema(schema *vectordb.CollectionSchema) *CollectionSchema {
 	if schema == nil {
 		return nil
 	}
 
-	properties := make([]weaviateClient.SchemaProperty, len(schema.Properties))
+	properties := make([]SchemaProperty, len(schema.Properties))
 	for i, prop := range schema.Properties {
-		properties[i] = weaviateClient.SchemaProperty{
+		properties[i] = SchemaProperty{
 			Name:             prop.Name,
 			DataType:         prop.DataType,
 			Description:      prop.Description,
@@ -162,7 +161,7 @@ func (a *Adapter) convertSchema(schema *vectordb.CollectionSchema) *weaviateClie
 		}
 	}
 
-	return &weaviateClient.CollectionSchema{
+	return &CollectionSchema{
 		Class:      schema.Class,
 		Vectorizer: schema.Vectorizer,
 		Properties: properties,
@@ -170,7 +169,7 @@ func (a *Adapter) convertSchema(schema *vectordb.CollectionSchema) *weaviateClie
 }
 
 // convertSchemaFromWeaviate converts from weaviate.CollectionSchema to vectordb.CollectionSchema
-func (a *Adapter) convertSchemaFromWeaviate(schema *weaviateClient.CollectionSchema) *vectordb.CollectionSchema {
+func (a *Adapter) convertSchemaFromWeaviate(schema *CollectionSchema) *vectordb.CollectionSchema {
 	if schema == nil {
 		return nil
 	}
@@ -194,14 +193,14 @@ func (a *Adapter) convertSchemaFromWeaviate(schema *weaviateClient.CollectionSch
 }
 
 // convertNestedProperties converts nested properties to Weaviate format
-func (a *Adapter) convertNestedProperties(props []vectordb.SchemaProperty) []weaviateClient.SchemaProperty {
+func (a *Adapter) convertNestedProperties(props []vectordb.SchemaProperty) []SchemaProperty {
 	if props == nil {
 		return nil
 	}
 
-	result := make([]weaviateClient.SchemaProperty, len(props))
+	result := make([]SchemaProperty, len(props))
 	for i, prop := range props {
-		result[i] = weaviateClient.SchemaProperty{
+		result[i] = SchemaProperty{
 			Name:             prop.Name,
 			DataType:         prop.DataType,
 			Description:      prop.Description,
@@ -213,7 +212,7 @@ func (a *Adapter) convertNestedProperties(props []vectordb.SchemaProperty) []wea
 }
 
 // convertNestedPropertiesFromWeaviate converts nested properties from Weaviate format
-func (a *Adapter) convertNestedPropertiesFromWeaviate(props []weaviateClient.SchemaProperty) []vectordb.SchemaProperty {
+func (a *Adapter) convertNestedPropertiesFromWeaviate(props []SchemaProperty) []vectordb.SchemaProperty {
 	if props == nil {
 		return nil
 	}

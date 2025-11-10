@@ -45,16 +45,33 @@ weave config create --database-type supabase
 weave health check
 ```
 
-**Note**: Ensure your Supabase project has the pgvector extension enabled:
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-```
+**Important Notes**:
+
+1. **IPv6 Requirement**: Supabase database endpoints are IPv6-only. If your
+   network doesn't support IPv6, use the connection pooler instead:
+
+   ```bash
+   # Get pooler URL from: Project Settings → Database → Connection Pooling
+   export SUPABASE_DATABASE_URL="postgresql://postgres.[project].[string]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
+   ```
+
+2. **pgvector Extension**: Ensure your Supabase project has pgvector enabled:
+
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS vector;
+   ```
 
 ### Basic Usage
 
 ```bash
 # List collections
 weave cols ls
+
+# List collections from specific database types
+weave cols ls --weaviate    # Weaviate only
+weave cols ls --supabase    # Supabase only
+weave cols ls --mock        # Mock database only
+weave cols ls --all         # All configured databases
 
 # Create a collection
 weave cols create MyCollection --text
@@ -86,7 +103,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 - 🤖 **AI-Powered** - Natural language interface with GPT-4o multi-agent system
 - ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
-- 🔌 **Extensible** - Vector database abstraction layer supporting multiple backends (Supabase PGVector implemented, Milvus planned)
+- 🔌 **Extensible** - Vector database abstraction layer supporting multiple
+  backends (Supabase PGVector implemented, Milvus planned)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -131,6 +149,35 @@ weave config update --weave-mcp
 
 See the [User Guide](docs/USER_GUIDE.md#configuration) for detailed
 configuration options.
+
+### Vector Database Selection
+
+Control which vector database(s) to operate on with these flags:
+
+**Important**: Database selection behavior depends on your configuration:
+
+- **Single Database**: If only one DB is configured, it's used
+  automatically (no flags needed!)
+- **Multiple Databases**:
+  - Read operations (ls, show, count) use all databases by default
+  - Write/delete operations **require** specifying which database with a flag
+
+```bash
+# Single database setup - no flags needed!
+weave docs create MyCollection doc.txt       # Uses your only configured DB
+
+# Multiple databases - specify database for write operations
+weave docs create MyCollection doc.txt --weaviate
+weave docs create MyCollection doc.txt --supabase
+
+# Read operations work with specific or all databases
+weave cols ls --weaviate                    # Weaviate only
+weave cols ls --supabase                    # Supabase only
+weave cols ls --all                         # All configured databases (default)
+
+# Query multiple databases at once
+weave cols query MyCollection "search" --weaviate --supabase
+```
 
 ### More Examples
 

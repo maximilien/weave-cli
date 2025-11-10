@@ -8,6 +8,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"net"
+	"net/url"
 	"strings"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
@@ -24,21 +26,43 @@ type Adapter struct {
 
 // NewAdapter creates a new Supabase adapter
 func NewAdapter(config *vectordb.Config) (*Adapter, error) {
-	// Create Supabase client
-	client, err := supabase.NewClient(config.DatabaseURL, config.DatabaseKey, nil)
+	// For Supabase, we need the HTTP URL (SUPABASE_PROJECT_URL) not the database URL
+	// Try to extract project URL from database URL if not provided separately
+	projectURL := config.URL
+	if projectURL == "" {
+		// Extract from database URL: postgresql://...@db.PROJECT.supabase.co -> https://PROJECT.supabase.co
+		if strings.Contains(config.DatabaseURL, "supabase.co") {
+			parts := strings.Split(config.DatabaseURL, "@")
+			if len(parts) >= 2 {
+				hostPart := strings.Split(parts[1], ":")[0]
+				hostPart = strings.Replace(hostPart, "db.", "", 1)
+				hostPart = strings.Split(hostPart, "/")[0]
+				projectURL = "https://" + hostPart
+			}
+		}
+	}
+
+	// Create Supabase HTTP client
+	client, err := supabase.NewClient(projectURL, config.DatabaseKey, nil)
 	if err != nil {
 		return nil, vectordb.ErrConnectionFailed("failed to create Supabase client", err)
 	}
 
-	// Create direct database connection for vector operations
-	db, err := sql.Open("postgres", config.DatabaseURL)
-	if err != nil {
-		return nil, vectordb.ErrConnectionFailed("failed to connect to Supabase database", err)
-	}
-
-	// Test the connection
-	if err := db.Ping(); err != nil {
-		return nil, vectordb.ErrConnectionFailed("failed to ping Supabase database", err)
+	// Try to create direct database connection (optional - falls back to REST API)
+	var db *sql.DB
+	if config.DatabaseURL != "" {
+		connStr, err := prepareConnectionString(config.DatabaseURL)
+		if err == nil {
+			db, err = sql.Open("postgres", connStr)
+			if err == nil {
+				// Test the connection (don't fail if this doesn't work)
+				if pingErr := db.Ping(); pingErr != nil {
+					// Connection failed, will use REST API fallback
+					db.Close()
+					db = nil
+				}
+			}
+		}
 	}
 
 	return &Adapter{
@@ -48,10 +72,84 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 	}, nil
 }
 
+// prepareConnectionString prepares the connection string with IPv4 resolution
+func prepareConnectionString(dbURL string) (string, error) {
+	// Parse the database URL
+	parsedURL, err := url.Parse(dbURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid database URL: %w", err)
+	}
+
+	// Extract hostname
+	hostname := parsedURL.Hostname()
+	port := parsedURL.Port()
+	if port == "" {
+		port = "5432"
+	}
+
+	// Try to resolve to IPv4 address
+	ips, err := net.LookupIP(hostname)
+	if err != nil {
+		// If resolution fails, use original URL with connection parameters
+		connStr := dbURL
+		if !strings.Contains(connStr, "?") {
+			connStr += "?"
+		} else {
+			connStr += "&"
+		}
+		connStr += "sslmode=require&connect_timeout=10"
+		return connStr, nil
+	}
+
+	// Find first IPv4 address
+	var ipv4 string
+	for _, ip := range ips {
+		if ip.To4() != nil {
+			ipv4 = ip.String()
+			break
+		}
+	}
+
+	// If we found an IPv4 address, replace hostname with it
+	if ipv4 != "" {
+		parsedURL.Host = fmt.Sprintf("%s:%s", ipv4, port)
+	}
+
+	// Add connection parameters
+	query := parsedURL.Query()
+	query.Set("sslmode", "require")
+	query.Set("connect_timeout", "10")
+	parsedURL.RawQuery = query.Encode()
+
+	return parsedURL.String(), nil
+}
+
 // Health checks the health of the Supabase instance
 func (a *Adapter) Health(ctx context.Context) error {
+	if a.db == nil {
+		// No direct database connection, but HTTP client should work
+		// We can't do a full health check without SQL access
+		return vectordb.ErrConnectionFailed("Supabase database connection not available (IPv6 only or connection failed)",
+			fmt.Errorf("direct PostgreSQL connection failed - only REST API available (limited functionality)"))
+	}
 	if err := a.db.PingContext(ctx); err != nil {
 		return vectordb.ErrConnectionFailed("Supabase health check failed", err)
+	}
+	return nil
+}
+
+// hasDBConnection returns true if direct database connection is available
+func (a *Adapter) hasDBConnection() bool {
+	return a.db != nil
+}
+
+// requireDBConnection returns an error if database connection is not available
+func (a *Adapter) requireDBConnection(operation string) error {
+	if !a.hasDBConnection() {
+		return vectordb.ErrUnsupported(fmt.Sprintf(
+			"%s: direct PostgreSQL connection not available (IPv6-only endpoint or connection failed). "+
+				"Please check SUPABASE_DATABASE_URL configuration or enable IPv6 connectivity",
+			operation))
 	}
 	return nil
 }

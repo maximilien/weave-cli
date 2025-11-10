@@ -10,7 +10,7 @@ import (
 
 	mockClient "github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 // Collection operations

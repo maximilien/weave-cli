@@ -121,6 +121,8 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 		Type:               VectorDBType(cfg.Type),
 		URL:                cfg.URL,
 		APIKey:             cfg.APIKey,
+		DatabaseURL:        cfg.DatabaseURL, // For Supabase
+		DatabaseKey:        cfg.DatabaseKey, // For Supabase
 		OpenAIAPIKey:       cfg.OpenAIAPIKey,
 		Timeout:            cfg.Timeout,
 		Enabled:            cfg.Enabled,

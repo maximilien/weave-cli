@@ -119,12 +119,21 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get default database
-	dbConfig, err := cfg.GetDefaultDatabase()
+	// Get selected databases
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
 	if err != nil {
-		utils.HandleConfigError(err, true)
+		utils.PrintError(fmt.Sprintf("Failed to get database selection: %v", err))
 		os.Exit(1)
 	}
+
+	// Validate that exactly one database is selected for write operations
+	if err := utils.ValidateDatabaseSelection(selection, utils.OperationTypeWrite, "Document create"); err != nil {
+		utils.PrintError(err.Error())
+		os.Exit(1)
+	}
+
+	// Use the selected database
+	dbConfig := &selection.Configs[0]
 
 	ctx := context.Background()
 

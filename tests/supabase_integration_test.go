@@ -17,7 +17,7 @@ func TestSupabaseIntegration(t *testing.T) {
 	// Skip if no Supabase credentials are provided
 	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
 	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
-	
+
 	if databaseURL == "" || databaseKey == "" {
 		t.Skip("Skipping Supabase integration test: SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY environment variables not set")
 	}
@@ -48,7 +48,7 @@ func TestSupabaseIntegration(t *testing.T) {
 
 	// Test collection operations
 	collectionName := "test_collection_supabase"
-	
+
 	t.Run("CreateCollection", func(t *testing.T) {
 		schema := &vectordb.CollectionSchema{
 			Class:      collectionName,
@@ -348,7 +348,7 @@ func TestSupabaseFactoryIntegration(t *testing.T) {
 	// Test factory with real configuration
 	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
 	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
-	
+
 	if databaseURL == "" || databaseKey == "" {
 		t.Skip("Skipping Supabase factory integration test: SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY environment variables not set")
 	}
@@ -362,7 +362,7 @@ func TestSupabaseFactoryIntegration(t *testing.T) {
 
 	// Test factory creation
 	factory := supabase.NewFactory()
-	
+
 	// Test config validation
 	err := factory.ValidateConfig(config)
 	if err != nil {
@@ -389,7 +389,7 @@ func TestSupabaseVectorDBRegistry(t *testing.T) {
 	// Test that Supabase can be created through the global registry
 	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
 	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
-	
+
 	if databaseURL == "" || databaseKey == "" {
 		t.Skip("Skipping Supabase registry test: SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY environment variables not set")
 	}

@@ -8,7 +8,6 @@ import (
 	"strconv"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	weaviateClient "github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
 // CreateDocument creates a new document in the specified collection
@@ -94,7 +93,7 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 	}
 
 	// Convert to pointers and apply offset
-	docPtrs := make([]*weaviateClient.Document, len(docs))
+	docPtrs := make([]*Document, len(docs))
 	for i := range docs {
 		docPtrs[i] = &docs[i]
 	}

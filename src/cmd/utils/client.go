@@ -8,7 +8,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 // CreateWeaviateClient creates a Weaviate client from configuration

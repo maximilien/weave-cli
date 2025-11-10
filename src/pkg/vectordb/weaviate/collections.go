@@ -8,15 +8,14 @@ import (
 	"strings"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	weaviateClient "github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
 	// Convert schema to field definitions
-	var fields []weaviateClient.FieldDefinition
+	var fields []FieldDefinition
 	for _, prop := range schema.Properties {
-		fields = append(fields, weaviateClient.FieldDefinition{
+		fields = append(fields, FieldDefinition{
 			Name: prop.Name,
 			Type: strings.Join(prop.DataType, ","),
 		})

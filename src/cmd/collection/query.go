@@ -10,7 +10,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
 )
 

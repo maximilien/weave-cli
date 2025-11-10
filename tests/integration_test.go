@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 // TestWeaviateIntegration runs fast integration tests with Weaviate

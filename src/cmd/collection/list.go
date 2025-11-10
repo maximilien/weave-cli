@@ -49,33 +49,56 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get database config
-	var dbConfig *config.VectorDBConfig
-	if len(args) > 0 {
-		// Use specified database
-		dbConfig, err = cfg.GetDatabase(args[0])
-		if err != nil {
-			utils.HandleConfigError(err, true)
-			os.Exit(1)
-		}
-	} else {
-		// Use default database
-		dbConfig, err = cfg.GetDefaultDatabase()
-		if err != nil {
-			utils.HandleConfigError(err, true)
-			os.Exit(1)
-		}
-	}
-
 	ctx := context.Background()
 
+	// Check if a specific database name is provided (legacy behavior)
+	if len(args) > 0 {
+		// Use specified database (legacy behavior)
+		dbConfig, err := cfg.GetDatabase(args[0])
+		if err != nil {
+			utils.HandleConfigError(err, true)
+			os.Exit(1)
+		}
+		listCollectionsForDatabase(ctx, dbConfig, limit, virtual, jsonOutput)
+		return
+	}
+
+	// Use new vector database selector based on flags
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
+	if err != nil {
+		utils.PrintError(fmt.Sprintf("Failed to determine vector databases: %v", err))
+		os.Exit(1)
+	}
+
+	// List collections for each selected database
+	for i, dbConfig := range selection.Configs {
+		// If multiple databases, show which database we're listing
+		if len(selection.Configs) > 1 {
+			dbType := utils.GetVectorDBTypeFromConfig(&dbConfig)
+			if !jsonOutput {
+				utils.PrintInfo(fmt.Sprintf("\n=== %s ===", dbType))
+			}
+		}
+
+		listCollectionsForDatabase(ctx, &dbConfig, limit, virtual, jsonOutput)
+
+		// Add spacing between databases (except for the last one)
+		if i < len(selection.Configs)-1 && !jsonOutput {
+			fmt.Println()
+		}
+	}
+}
+
+// listCollectionsForDatabase lists collections for a specific database configuration
+func listCollectionsForDatabase(ctx context.Context, dbConfig *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.ListWeaviateCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	case config.VectorDBTypeMock:
 		utils.ListMockCollections(ctx, dbConfig, limit, virtual, jsonOutput)
+	case config.VectorDBTypeSupabase:
+		utils.ListSupabaseCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
-		os.Exit(1)
 	}
 }

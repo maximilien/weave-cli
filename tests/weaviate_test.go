@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 func TestWeaviateClientCreation(t *testing.T) {

@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"gopkg.in/yaml.v3"
 )
 

@@ -25,20 +25,37 @@ type envVariable struct {
 // getEnvVariables returns the list of environment variables to configure
 func getEnvVariables() []envVariable {
 	return []envVariable{
+		// Weaviate Configuration
 		{
 			Key:         "WEAVIATE_URL",
-			Description: "Your Weaviate Cloud URL",
+			Description: "Your Weaviate Cloud URL (optional if using Supabase)",
 			Example:     "https://your-cluster-id.c0.us-west3.gcp.weaviate.cloud",
 			IsSecret:    false,
-			Required:    true,
+			Required:    false,
 		},
 		{
 			Key:         "WEAVIATE_API_KEY",
-			Description: "Your Weaviate Cloud API Key",
+			Description: "Your Weaviate Cloud API Key (optional if using Supabase)",
 			Example:     "your-weaviate-api-key-here",
 			IsSecret:    true,
-			Required:    true,
+			Required:    false,
 		},
+		// Supabase Configuration
+		{
+			Key:         "SUPABASE_DATABASE_URL",
+			Description: "Supabase PostgreSQL connection URL (optional if using Weaviate)",
+			Example:     "postgres://postgres:password@db.project.supabase.co:6543/postgres",
+			IsSecret:    false,
+			Required:    false,
+		},
+		{
+			Key:         "SUPABASE_DATABASE_KEY",
+			Description: "Supabase Anon/Service Key (optional if using Weaviate)",
+			Example:     "eyJhbGc...",
+			IsSecret:    true,
+			Required:    false,
+		},
+		// OpenAI Configuration
 		{
 			Key:         "OPENAI_API_KEY",
 			Description: "OpenAI API Key (for embeddings and AI agents)",
@@ -46,6 +63,7 @@ func getEnvVariables() []envVariable {
 			IsSecret:    true,
 			Required:    true,
 		},
+		// Optional Services
 		{
 			Key:         "OPIK_API_KEY",
 			Description: "Opik API Key (optional - for LLM observability)",

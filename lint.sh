@@ -96,11 +96,11 @@ if command_exists go; then
         fi
         
         print_status "Checking go fmt..."
-        if [ "$(gofmt -s -l src/)" ]; then
-            print_warning "Code is not formatted with go fmt!"
-            print_status "Auto-fixing formatting..."
+        UNFORMATTED=$(gofmt -s -l src/)
+        if [ -n "$UNFORMATTED" ]; then
+            print_status "Auto-formatting files..."
             gofmt -s -w src/
-            print_success "Code formatting fixed!"
+            print_success "go fmt check passed (auto-formatted)!"
         else
             print_success "go fmt check passed!"
         fi

@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	weaviateClient "github.com/maximilien/weave-cli/src/pkg/weaviate"
 )
 
 // SearchSemantic performs semantic search using vector embeddings
@@ -73,7 +72,7 @@ func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, m
 }
 
 // convertWeaviateQueryResults converts Weaviate QueryResult to vectordb QueryResult
-func (a *Adapter) convertWeaviateQueryResults(results []weaviateClient.QueryResult) []*vectordb.QueryResult {
+func (a *Adapter) convertWeaviateQueryResults(results []QueryResult) []*vectordb.QueryResult {
 	if results == nil {
 		return nil
 	}

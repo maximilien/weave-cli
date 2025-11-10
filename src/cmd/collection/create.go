@@ -10,7 +10,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
 )
 
@@ -98,12 +98,21 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get default database
-	dbConfig, err := cfg.GetDefaultDatabase()
+	// Get selected databases
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
 	if err != nil {
-		utils.HandleConfigError(err, true)
+		utils.PrintError(fmt.Sprintf("Failed to get database selection: %v", err))
 		os.Exit(1)
 	}
+
+	// Validate that exactly one database is selected for write operations
+	if err := utils.ValidateDatabaseSelection(selection, utils.OperationTypeWrite, "Collection create"); err != nil {
+		utils.PrintError(err.Error())
+		os.Exit(1)
+	}
+
+	// Use the selected database
+	dbConfig := &selection.Configs[0]
 
 	ctx := context.Background()
 
@@ -145,7 +154,19 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	// Handle named schema from config.yaml or schemas_dir
 	if schemaName != "" {
-		// Validate that the schema exists
+		// For Supabase, we don't need config.yaml schemas - use simple collection creation
+		if dbConfig.Type == config.VectorDBTypeSupabase {
+			// Supabase doesn't use Weaviate schemas - create simple collection with standard fields
+			err = utils.CreateSupabaseCollection(ctx, dbConfig, collectionName, embeddingModel)
+			if err != nil {
+				utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
+				os.Exit(1)
+			}
+			utils.PrintSuccess(fmt.Sprintf("Successfully created Supabase collection: %s", collectionName))
+			return
+		}
+
+		// For Weaviate and Mock, validate schema exists
 		_, err := cfg.GetSchema(schemaName)
 		if err != nil {
 			utils.PrintError(fmt.Sprintf("Schema '%s' not found in config.yaml or schemas_dir: %v", schemaName, err))
@@ -225,6 +246,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		err = utils.CreateWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
+	case config.VectorDBTypeSupabase:
+		err = utils.CreateSupabaseCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeMock:
 		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	default:

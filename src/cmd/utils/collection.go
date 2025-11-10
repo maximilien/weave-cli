@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 // isImageCollection checks if a collection name suggests it's an image collection
@@ -43,6 +43,23 @@ func CreateWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, c
 	}
 
 	err = client.CreateCollectionWithSchema(ctx, collectionName, embeddingModel, customFields, "default")
+	if err != nil {
+		return fmt.Errorf("failed to create collection: %v", err)
+	}
+
+	return nil
+}
+
+// CreateSupabaseCollection creates a Supabase collection with default schema
+func CreateSupabaseCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string) error {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Supabase client: %v", err)
+	}
+
+	// Create simple collection schema for Supabase
+	// Supabase collections have standard fields: id, content, text, image, image_data, url, metadata, embedding
+	err = client.CreateCollection(ctx, collectionName, nil)
 	if err != nil {
 		return fmt.Errorf("failed to create collection: %v", err)
 	}
@@ -343,6 +360,94 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			// Show virtual structure summary for collections with documents
 			showCollectionVirtualSummary(ctx, client, info.Name)
 		}
+	}
+}
+
+// ListSupabaseCollections lists Supabase collections
+func ListSupabaseCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Supabase client: %v", err))
+		}
+		return
+	}
+
+	// Add timeout to context for API operations
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// List collections
+	collectionInfos, err := client.ListCollections(ctx)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			PrintError(fmt.Sprintf("Failed to connect to Supabase database: connection timeout after 30 seconds"))
+			fmt.Println()
+			PrintInfo("Please check that:")
+			PrintInfo("  1. The Supabase database URL is correct")
+			PrintInfo("  2. The database key is valid")
+			PrintInfo("  3. There are no network/firewall issues")
+		} else {
+			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		}
+		return
+	}
+
+	if len(collectionInfos) == 0 {
+		if !jsonOutput {
+			PrintWarning("No collections found in the Supabase database")
+		} else {
+			// Output empty JSON
+			fmt.Println(`{"collections": [], "total": 0}`)
+		}
+		return
+	}
+
+	// Sort collections alphabetically by name
+	sort.Slice(collectionInfos, func(i, j int) bool {
+		return collectionInfos[i].Name < collectionInfos[j].Name
+	})
+
+	// Apply limit if specified
+	if limit > 0 && len(collectionInfos) > limit {
+		collectionInfos = collectionInfos[:limit]
+	}
+
+	if !jsonOutput {
+		PrintSuccess(fmt.Sprintf("Found %d collections:", len(collectionInfos)))
+		if limit > 0 && len(collectionInfos) == limit {
+			PrintInfo(fmt.Sprintf("(showing first %d collections)", limit))
+		}
+		fmt.Println()
+
+		// Display collections in a table format
+		for _, info := range collectionInfos {
+			fmt.Printf("📁 %s", info.Name)
+			if info.Count > 0 {
+				fmt.Printf(" (%d documents)", info.Count)
+			}
+			if info.Description != "" {
+				fmt.Printf(" - %s", info.Description)
+			}
+			fmt.Println()
+		}
+	} else {
+		// JSON output
+		output := map[string]interface{}{
+			"collections": collectionInfos,
+			"total":       len(collectionInfos),
+		}
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
 	}
 }
 

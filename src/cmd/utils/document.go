@@ -21,7 +21,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/image"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/viper"
 )
 

@@ -19,9 +19,10 @@ import (
 type VectorDBType string
 
 const (
-	VectorDBTypeCloud VectorDBType = "weaviate-cloud"
-	VectorDBTypeLocal VectorDBType = "weaviate-local"
-	VectorDBTypeMock  VectorDBType = "mock"
+	VectorDBTypeCloud    VectorDBType = "weaviate-cloud"
+	VectorDBTypeLocal    VectorDBType = "weaviate-local"
+	VectorDBTypeMock     VectorDBType = "mock"
+	VectorDBTypeSupabase VectorDBType = "supabase"
 )
 
 // Default configuration values
@@ -69,6 +70,8 @@ type VectorDBConfig struct {
 	Type               VectorDBType `yaml:"type"`
 	URL                string       `yaml:"url,omitempty"`
 	APIKey             string       `yaml:"api_key,omitempty"`
+	DatabaseURL        string       `yaml:"database_url,omitempty"` // For Supabase
+	DatabaseKey        string       `yaml:"database_key,omitempty"` // For Supabase
 	OpenAIAPIKey       string       `yaml:"openai_api_key,omitempty"`
 	Timeout            int          `yaml:"timeout,omitempty"` // Timeout in seconds for DB operations
 	Enabled            bool         `yaml:"enabled,omitempty"`
@@ -219,6 +222,22 @@ func autoDetectDatabaseType() string {
 		return string(VectorDBTypeCloud)
 	}
 
+	// Check for Supabase credentials (multiple possible variable names)
+	supabaseURL := os.Getenv("SUPABASE_DATABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
+
+	// Also check alternative names
+	if supabaseURL == "" && os.Getenv("SUPABASE_PROJECT_URL") != "" && os.Getenv("SUPABASE_DATABASE_PASSWORD") != "" {
+		supabaseURL = "constructed" // We can construct it
+	}
+	if supabaseKey == "" {
+		supabaseKey = os.Getenv("SUPABASE_PROJECT_API_KEY")
+	}
+
+	if supabaseURL != "" && supabaseKey != "" {
+		return string(VectorDBTypeSupabase)
+	}
+
 	// Default to mock for testing if no credentials
 	return string(VectorDBTypeMock)
 }
@@ -230,6 +249,26 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 
 	weaviateURL := os.Getenv("WEAVIATE_URL")
 	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
+	// Check for Supabase environment variables (multiple possible names)
+	supabaseDatabaseURL := os.Getenv("SUPABASE_DATABASE_URL")
+	if supabaseDatabaseURL == "" {
+		// Try to construct from project URL and password
+		projectURL := os.Getenv("SUPABASE_PROJECT_URL")
+		password := os.Getenv("SUPABASE_DATABASE_PASSWORD")
+		if projectURL != "" && password != "" {
+			// Convert https://project.supabase.co to postgresql://postgres:password@db.project.supabase.co:5432/postgres
+			if strings.HasPrefix(projectURL, "https://") {
+				projectID := strings.TrimPrefix(projectURL, "https://")
+				projectID = strings.TrimSuffix(projectID, ".supabase.co")
+				supabaseDatabaseURL = fmt.Sprintf("postgresql://postgres:%s@db.%s.supabase.co:5432/postgres", password, projectID)
+			}
+		}
+	}
+
+	supabaseDatabaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
+	if supabaseDatabaseKey == "" {
+		supabaseDatabaseKey = os.Getenv("SUPABASE_PROJECT_API_KEY")
+	}
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
 
 	// Get timeout from environment or use default
@@ -290,6 +329,26 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 			"timeout":     timeout,
 			"collections": validCollections,
 		})
+	} else if vectorDBType == "supabase" {
+		// Supabase
+		supabaseConfig := map[string]interface{}{
+			"name":        "supabase",
+			"type":        "supabase",
+			"timeout":     timeout,
+			"collections": validCollections,
+		}
+
+		if supabaseDatabaseURL != "" {
+			supabaseConfig["database_url"] = supabaseDatabaseURL
+		}
+		if supabaseDatabaseKey != "" {
+			supabaseConfig["database_key"] = supabaseDatabaseKey
+		}
+		if openaiAPIKey != "" {
+			supabaseConfig["openai_api_key"] = openaiAPIKey
+		}
+
+		vectorDatabases = append(vectorDatabases, supabaseConfig)
 	} else {
 		// Cloud Weaviate (default)
 		weaviateConfig := map[string]interface{}{

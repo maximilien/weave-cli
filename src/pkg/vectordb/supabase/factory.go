@@ -66,11 +66,12 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 		return vectordb.ErrInvalidConfig("database URL must contain authentication information")
 	}
 
-	// Check if URL contains supabase.co (for hosted Supabase instances)
-	if strings.Contains(config.DatabaseURL, "supabase.co") {
+	// Check if URL contains supabase.co or supabase.com (for hosted Supabase instances)
+	if strings.Contains(config.DatabaseURL, "supabase.co") || strings.Contains(config.DatabaseURL, "supabase.com") {
 		// Additional validation for hosted Supabase
-		if !strings.Contains(config.DatabaseURL, "db.") {
-			return vectordb.ErrInvalidConfig("Supabase hosted database URL should contain 'db.' subdomain")
+		// Allow both direct connection (db.) and pooler (pooler.)
+		if !strings.Contains(config.DatabaseURL, "db.") && !strings.Contains(config.DatabaseURL, "pooler.") {
+			return vectordb.ErrInvalidConfig("Supabase hosted database URL should contain 'db.' (direct) or 'pooler.' (pooled) subdomain")
 		}
 	}
 

@@ -1,0 +1,332 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 dr.max
+
+package utils
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/spf13/cobra"
+)
+
+// VectorDBSelection represents the selected vector databases
+type VectorDBSelection struct {
+	Configs []config.VectorDBConfig
+	Types   []string
+}
+
+// OperationType defines the type of operation being performed
+type OperationType string
+
+const (
+	OperationTypeRead   OperationType = "read"   // ls, show, count - can use multiple DBs
+	OperationTypeWrite  OperationType = "write"  // create, update - requires single DB
+	OperationTypeDelete OperationType = "delete" // delete, da, ds - requires single DB
+)
+
+// ValidateDatabaseSelection validates that the database selection is appropriate for the operation type
+func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationType, operationName string) error {
+	if selection == nil || len(selection.Configs) == 0 {
+		return fmt.Errorf("no database selected")
+	}
+
+	// For write and delete operations, require exactly one database
+	// Only enforce this when multiple databases are configured (convenience for single DB setups)
+	if opType == OperationTypeWrite || opType == OperationTypeDelete {
+		if len(selection.Configs) > 1 {
+			return fmt.Errorf(
+				"%s operation requires a single database. "+
+					"Please specify --weaviate, --supabase, or --mock (found %d databases). "+
+					"Use 'weave config list' to see configured databases",
+				operationName, len(selection.Configs))
+		}
+		// If only one database configured, allow it (convenience)
+	}
+
+	return nil
+}
+
+// GetSelectedVectorDBs determines which vector databases to use based on command flags
+func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSelection, error) {
+	// Get flags
+	useWeaviate, _ := cmd.Flags().GetBool("weaviate")
+	useSupabase, _ := cmd.Flags().GetBool("supabase")
+	useMock, _ := cmd.Flags().GetBool("mock")
+	useAll, _ := cmd.Flags().GetBool("all")
+
+	var configs []config.VectorDBConfig
+	var types []string
+
+	// Check if any specific database flags are set
+	hasSpecificFlags := useWeaviate || useSupabase || useMock
+
+	// If --all flag is used OR no specific flags are set, return all configured databases
+	if useAll || !hasSpecificFlags {
+		return getAllConfiguredDatabases(cfg)
+	}
+
+	// Handle specific database type flags
+	if useWeaviate {
+		weaviateConfigs, err := getWeaviateConfigs(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Weaviate configuration: %w", err)
+		}
+		configs = append(configs, weaviateConfigs...)
+		for _, config := range weaviateConfigs {
+			types = append(types, string(config.Type))
+		}
+	}
+
+	if useSupabase {
+		supabaseConfig, err := getSupabaseConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Supabase configuration: %w", err)
+		}
+		configs = append(configs, *supabaseConfig)
+		types = append(types, string(supabaseConfig.Type))
+	}
+
+	if useMock {
+		mockConfig, err := getMockConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get mock configuration: %w", err)
+		}
+		configs = append(configs, *mockConfig)
+		types = append(types, string(mockConfig.Type))
+	}
+
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("no valid vector database configurations found")
+	}
+
+	return &VectorDBSelection{
+		Configs: configs,
+		Types:   types,
+	}, nil
+}
+
+// getAllConfiguredDatabases returns all configured vector databases
+func getAllConfiguredDatabases(cfg *config.Config) (*VectorDBSelection, error) {
+	var configs []config.VectorDBConfig
+	var types []string
+
+	// Get all configured databases from config.yaml
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		configs = append(configs, dbConfig)
+		types = append(types, string(dbConfig.Type))
+	}
+
+	// Also check for Supabase from environment variables if not already in config
+	hasSupabase := false
+	for _, dbConfig := range configs {
+		if dbConfig.Type == config.VectorDBTypeSupabase {
+			hasSupabase = true
+			break
+		}
+	}
+
+	if !hasSupabase {
+		if supabaseConfig := tryCreateSupabaseConfigFromLoadedConfig(cfg); supabaseConfig != nil {
+			configs = append(configs, *supabaseConfig)
+			types = append(types, string(supabaseConfig.Type))
+		} else if supabaseConfig := tryCreateSupabaseConfigFromEnv(); supabaseConfig != nil {
+			configs = append(configs, *supabaseConfig)
+			types = append(types, string(supabaseConfig.Type))
+		}
+	}
+
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("no vector database configurations found")
+	}
+
+	return &VectorDBSelection{
+		Configs: configs,
+		Types:   types,
+	}, nil
+}
+
+// getDefaultVectorDBConfig returns the default vector database configuration
+func getDefaultVectorDBConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	return cfg.GetDefaultDatabase()
+}
+
+// getWeaviateConfigs returns Weaviate configurations (both cloud and local)
+func getWeaviateConfigs(cfg *config.Config) ([]config.VectorDBConfig, error) {
+	var configs []config.VectorDBConfig
+
+	// Check all configured databases for Weaviate types
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeCloud || dbConfig.Type == config.VectorDBTypeLocal {
+			configs = append(configs, dbConfig)
+		}
+	}
+
+	if len(configs) == 0 {
+		return nil, fmt.Errorf("no Weaviate configuration found")
+	}
+
+	return configs, nil
+}
+
+// getSupabaseConfig returns Supabase configuration
+func getSupabaseConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Supabase type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeSupabase {
+			return &dbConfig, nil
+		}
+	}
+
+	// If no explicit Supabase config found, check if we can create one from the loaded configuration
+	// This allows using --supabase flag even when Supabase isn't the default database
+	if supabaseConfig := tryCreateSupabaseConfigFromLoadedConfig(cfg); supabaseConfig != nil {
+		return supabaseConfig, nil
+	}
+
+	// Fallback to environment variables (for cases where config isn't loaded yet)
+	if supabaseConfig := tryCreateSupabaseConfigFromEnv(); supabaseConfig != nil {
+		return supabaseConfig, nil
+	}
+
+	return nil, fmt.Errorf("no Supabase configuration found")
+}
+
+// getMockConfig returns mock configuration
+func getMockConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Mock type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeMock {
+			return &dbConfig, nil
+		}
+	}
+
+	// If no mock database is configured, create a default one
+	return &config.VectorDBConfig{
+		Name:    "mock",
+		Type:    config.VectorDBTypeMock,
+		Enabled: true,
+		Timeout: 10, // Default timeout
+	}, nil
+}
+
+// GetVectorDBTypeFromConfig determines the vector DB type from a VectorDBConfig
+func GetVectorDBTypeFromConfig(dbConfig *config.VectorDBConfig) string {
+	switch dbConfig.Type {
+	case config.VectorDBTypeCloud:
+		return "weaviate-cloud"
+	case config.VectorDBTypeLocal:
+		return "weaviate-local"
+	case config.VectorDBTypeMock:
+		return "mock"
+	case config.VectorDBTypeSupabase:
+		return "supabase"
+	default:
+		return string(dbConfig.Type)
+	}
+}
+
+// tryCreateSupabaseConfigFromLoadedConfig attempts to create a Supabase config from the loaded configuration
+// This handles cases where Supabase credentials are in .env files or other config sources
+func tryCreateSupabaseConfigFromLoadedConfig(cfg *config.Config) *config.VectorDBConfig {
+	// Check if the main config has Supabase credentials loaded
+	// This would happen if SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY are in .env files
+
+	// The config system might have loaded these into various fields, let's check them all
+	var databaseURL, databaseKey string
+
+	// Check if they're loaded in any of the configured databases
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.DatabaseURL != "" {
+			databaseURL = dbConfig.DatabaseURL
+		}
+		if dbConfig.DatabaseKey != "" {
+			databaseKey = dbConfig.DatabaseKey
+		}
+		// If we found both, we can stop looking
+		if databaseURL != "" && databaseKey != "" {
+			break
+		}
+	}
+
+	// Also check environment variables that might have been loaded by viper
+	if databaseURL == "" {
+		databaseURL = os.Getenv("SUPABASE_DATABASE_URL")
+		if databaseURL == "" {
+			databaseURL = os.Getenv("DATABASE_URL")
+		}
+	}
+	if databaseKey == "" {
+		databaseKey = os.Getenv("SUPABASE_DATABASE_KEY")
+		if databaseKey == "" {
+			databaseKey = os.Getenv("SUPABASE_ANON_KEY")
+		}
+		if databaseKey == "" {
+			databaseKey = os.Getenv("SUPABASE_KEY")
+		}
+	}
+
+	// Need both URL and key to create a valid Supabase config
+	if databaseURL == "" || databaseKey == "" {
+		return nil
+	}
+
+	return &config.VectorDBConfig{
+		Name:        "supabase-from-config",
+		Type:        config.VectorDBTypeSupabase,
+		DatabaseURL: databaseURL,
+		DatabaseKey: databaseKey,
+		Enabled:     true,
+		Timeout:     30, // Default timeout
+	}
+}
+
+// tryCreateSupabaseConfigFromEnv attempts to create a Supabase config from environment variables
+func tryCreateSupabaseConfigFromEnv() *config.VectorDBConfig {
+	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
+	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
+
+	// Also check alternative environment variable names
+	if databaseURL == "" {
+		databaseURL = os.Getenv("DATABASE_URL")
+		// Try to construct from project URL and password
+		if databaseURL == "" {
+			projectURL := os.Getenv("SUPABASE_PROJECT_URL")
+			password := os.Getenv("SUPABASE_DATABASE_PASSWORD")
+			if projectURL != "" && password != "" {
+				// Convert https://project.supabase.co to postgresql://postgres:password@db.project.supabase.co:5432/postgres
+				if strings.HasPrefix(projectURL, "https://") {
+					projectID := strings.TrimPrefix(projectURL, "https://")
+					projectID = strings.TrimSuffix(projectID, ".supabase.co")
+					databaseURL = fmt.Sprintf("postgresql://postgres:%s@db.%s.supabase.co:5432/postgres", password, projectID)
+				}
+			}
+		}
+	}
+
+	if databaseKey == "" {
+		databaseKey = os.Getenv("SUPABASE_PROJECT_API_KEY")
+		if databaseKey == "" {
+			databaseKey = os.Getenv("SUPABASE_ANON_KEY")
+		}
+		if databaseKey == "" {
+			databaseKey = os.Getenv("SUPABASE_KEY")
+		}
+	}
+
+	// Need both URL and key to create a valid Supabase config
+	if databaseURL == "" || databaseKey == "" {
+		return nil
+	}
+
+	return &config.VectorDBConfig{
+		Name:        "supabase-env",
+		Type:        config.VectorDBTypeSupabase,
+		DatabaseURL: databaseURL,
+		DatabaseKey: databaseKey,
+		Enabled:     true,
+		Timeout:     30, // Default timeout
+	}
+}

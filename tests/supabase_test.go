@@ -277,13 +277,13 @@ func testSupabaseDocumentOperations(t *testing.T, adapter *supabase.Adapter, col
 	// Test CreateDocuments (batch)
 	documents := []*vectordb.Document{
 		{
-			ID:      "test-doc-2",
-			Content: "Second test document",
+			ID:       "test-doc-2",
+			Content:  "Second test document",
 			Metadata: map[string]interface{}{"batch": true},
 		},
 		{
-			ID:      "test-doc-3",
-			Content: "Third test document",
+			ID:       "test-doc-3",
+			Content:  "Third test document",
 			Metadata: map[string]interface{}{"batch": true},
 		},
 	}

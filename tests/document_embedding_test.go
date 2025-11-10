@@ -7,17 +7,17 @@ import (
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
-	"github.com/maximilien/weave-cli/src/pkg/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 func TestEmbeddingValidation(t *testing.T) {
 	tests := []struct {
-		name          string
+		name           string
 		collectionName string
 		embeddingModel string
-		vectorizer    string
-		expectError   bool
-		description   string
+		vectorizer     string
+		expectError    bool
+		description    string
 	}{
 		{
 			name:           "Valid OpenAI embedding with text2vec-openai",
@@ -98,10 +98,10 @@ func TestEmbeddingFlagIntegration(t *testing.T) {
 
 	// Create a test client with mock config
 	cfg := &config.VectorDBConfig{
-		Name:         "test",
-		Type:         config.VectorDBTypeMock,
-		URL:          "http://localhost:8080",
-		Enabled:      true,
+		Name:    "test",
+		Type:    config.VectorDBTypeMock,
+		URL:     "http://localhost:8080",
+		Enabled: true,
 	}
 
 	// Test with mock database (no actual Weaviate connection needed)
@@ -193,11 +193,11 @@ func TestRecommendedEmbeddingModels(t *testing.T) {
 
 	t.Run("Model name validation", func(t *testing.T) {
 		validModels := map[string]bool{
-			"text-embedding-3-small":   true,
-			"text-embedding-3-large":   true,
-			"text-embedding-ada-002":   true,
-			"custom-model":             false,
-			"":                          false,
+			"text-embedding-3-small": true,
+			"text-embedding-3-large": true,
+			"text-embedding-ada-002": true,
+			"custom-model":           false,
+			"":                       false,
 		}
 
 		for model, shouldBeValid := range validModels {
