@@ -1115,17 +1115,54 @@ weave cols c MyCollection
 
 ### Custom Embedding Models
 
+The `--embedding` flag (short form: `-e`) allows you to specify which embedding
+model the collection will use for vectorization. This is set at collection
+creation and applies to all documents added to the collection.
+
+**Important**: The embedding model is configured at the **collection level**,
+not the document level. Once a collection is created with an embedding model,
+all documents added to it will automatically use that model for vectorization
+by default. The `--embedding` flag in `weave docs create` can be used to
+validate the embedding model matches the collection's configuration, but the
+collection's embedding model is always used for vectorization.
+
 ```bash
 # Create collection with specific embedding model
 weave collection create MyCollection --embedding text-embedding-3-small
 
-# Using alias
-weave cols c MyCollection --embedding text-embedding-ada-002
+# Using short form
+weave cols c MyCollection -e text-embedding-ada-002
+
+# Create with both custom embedding and fields
+weave collection create MyCollection \
+  --embedding text-embedding-3-small \
+  --fields title:text,content:text
 
 # Example output:
 # ✅ Successfully created collection: MyCollection
 # ℹ️  Embedding model: text-embedding-3-small
+#     Documents added to this collection will use this embedding model for vectorization
 ```
+
+**Default Embedding Model**: If no `--embedding` flag is provided, collections
+are created with `text-embedding-ada-002` (the legacy OpenAI embedding model).
+
+**Recommended Embedding Models**:
+- `text-embedding-3-small` - Fast, efficient, recommended for most use cases
+- `text-embedding-3-large` - Higher quality, larger dimensions (1536D)
+- `text-embedding-ada-002` - Legacy model, still widely used (1536D)
+
+**When to Specify Embeddings**:
+1. **Performance optimization** - Use `text-embedding-3-small` for faster processing
+2. **Quality requirements** - Use `text-embedding-3-large` for better accuracy
+3. **Consistency** - Match embeddings with existing collections
+4. **Cost management** - Different models have different pricing
+
+**Important Notes**:
+- Image collections (created with `--image` flag) use `vectorizer: none` and
+  ignore the embedding flag
+- The embedding model cannot be changed after collection creation
+- To use a different embedding, create a new collection
 
 ### Custom Fields
 

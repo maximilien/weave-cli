@@ -47,10 +47,12 @@ Examples:
   # Create collection from a YAML schema file
   weave collection create MyCollection --schema-yaml-file schema.yaml
 
-  # Create collection with default schema and custom options
-  weave collection create MyCollection
-  weave collection create MyCollection --embedding-model text-embedding-ada-002
-  weave collection create MyCollection --fields "title:string,description:text"`,
+  # Create collection with custom embedding model
+  weave collection create MyCollection --embedding text-embedding-3-small
+  weave collection create MyCollection -e text-embedding-ada-002
+
+  # Create collection with custom options
+  weave collection create MyCollection --embedding text-embedding-3-small --fields "title:string,description:text"`,
 	Args: cobra.ExactArgs(1),
 	Run:  runCollectionCreate,
 }
@@ -58,7 +60,8 @@ Examples:
 func init() {
 	CollectionCmd.AddCommand(CreateCmd)
 
-	CreateCmd.Flags().StringP("embedding-model", "e", "text-embedding-ada-002", "Embedding model to use")
+	CreateCmd.Flags().StringP("embedding", "e", "text-embedding-ada-002", "Embedding model to use for this collection (e.g., text-embedding-3-small, text-embedding-ada-002)")
+	CreateCmd.Flags().StringP("embedding-model", "", "", "Alias for --embedding (deprecated, use --embedding instead)")
 	CreateCmd.Flags().StringP("fields", "f", "", "Custom fields (format: field1:type1,field2:type2)")
 	CreateCmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
 	CreateCmd.Flags().String("schema", "", "Use a named schema from config.yaml or schemas_dir (e.g., RagMeDocs, WeaveDocs, WeaveImages)")
@@ -70,7 +73,16 @@ func init() {
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {
 	collectionName := args[0]
-	embeddingModel, _ := cmd.Flags().GetString("embedding-model")
+
+	// Get embedding model - prefer --embedding, fallback to --embedding-model for backward compatibility
+	embeddingModel, _ := cmd.Flags().GetString("embedding")
+	if embeddingModel == "text-embedding-ada-002" { // Default value, check if --embedding-model was used
+		if embeddingModelFlag, _ := cmd.Flags().GetString("embedding-model"); embeddingModelFlag != "" {
+			embeddingModel = embeddingModelFlag
+			utils.PrintWarning("⚠️  --embedding-model is deprecated, use --embedding or -e instead")
+		}
+	}
+
 	fieldsStr, _ := cmd.Flags().GetString("fields")
 	schemaYAMLFile, _ := cmd.Flags().GetString("schema-yaml-file")
 	schemaName, _ := cmd.Flags().GetString("schema")
@@ -226,4 +238,6 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	}
 
 	utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+	utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
+	utils.PrintInfo("    Documents added to this collection will use this embedding model for vectorization")
 }

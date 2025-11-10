@@ -54,6 +54,10 @@ weave
 # List available embeddings
 weave embeddings list
 weave emb ls --verbose
+
+# Create collection with specific embedding (used as default for all documents)
+weave cols create MyCollection --embedding text-embedding-3-small
+weave cols create MyCollection -e text-embedding-ada-002
 ```
 
 ## Key Features
@@ -63,9 +67,11 @@ weave emb ls --verbose
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
-- 🔍 **Semantic Search** - Vector-based similarity search with natural language
+- 🔍 **Semantic Search** - Vector-based similarity search with natural
+  language
 - 📊 **Embeddings** - List and explore available embedding models
-- ⏱️ **Configurable Timeouts** - Default 10s timeout, adjustable per command (e.g., `--timeout 5s`)
+- ⏱️ **Configurable Timeouts** - Default 10s timeout, adjustable per
+  command
 
 ## Documentation
 
@@ -121,7 +127,8 @@ weave query "create TestDocs and add README.md" --dry-run
 weave cols ls --timeout 30s
 weave health check --timeout 60s
 
-# Specify embedding model for document creation
+# Create collections and documents with specific embeddings
+weave cols create MyCollection --embedding text-embedding-3-small
 weave docs create MyCollection document.txt --embedding text-embedding-3-small
 weave docs create MyCollection report.pdf --embedding text-embedding-ada-002
 ```
