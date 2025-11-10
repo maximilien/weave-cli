@@ -44,7 +44,8 @@ Examples:
   weave docs create MyCollection document.pdf --chunk-size 500
   weave docs create WeaveDocs document.pdf --image-collection WeaveImages
   weave docs create RagMeDocs document.pdf --image-col RagMeImages
-  weave docs create MyDocs document.pdf --skip-all-images  # text only`,
+  weave docs create MyDocs document.pdf --skip-all-images  # text only
+  weave docs create MyCollection document.txt --embedding text-embedding-3-small`,
 	Args: cobra.ExactArgs(2),
 	Run:  runDocumentCreate,
 }
@@ -62,6 +63,7 @@ func init() {
 	CreateCmd.Flags().Int("batch-size", 10, "Number of images to process before pausing for memory cleanup (default: 10)")
 	CreateCmd.Flags().String("create-report", "", "Create a new CSV report of processing results (default: <filename>.csv in current directory)")
 	CreateCmd.Flags().String("append-report", "", "Append to an existing CSV report")
+	CreateCmd.Flags().StringP("embedding", "e", "", "Embedding model to use for this document (e.g., text-embedding-3-small, text-embedding-ada-002)")
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
@@ -77,6 +79,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	batchSize, _ := cmd.Flags().GetInt("batch-size")
 	createReport, _ := cmd.Flags().GetString("create-report")
 	appendReport, _ := cmd.Flags().GetString("append-report")
+	embeddingModel, _ := cmd.Flags().GetString("embedding")
 
 	// If skip-all-images is set, clear the image collection to skip image processing
 	if skipAllImages {
@@ -127,7 +130,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode); err != nil {
+		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode, embeddingModel); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}

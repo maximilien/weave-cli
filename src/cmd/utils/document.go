@@ -214,8 +214,61 @@ func ListMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collecti
 	PrintInfo("Mock document listing not yet implemented in new structure")
 }
 
+// validateEmbeddingForCollection validates the embedding model against the collection's schema
+func validateEmbeddingForCollection(ctx context.Context, client *weaviate.Client, collectionName, embeddingModel string) error {
+	// Get the collection's schema
+	schema, err := client.GetFullCollectionSchema(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("failed to get collection schema: %w", err)
+	}
+
+	// Check if collection uses text2vec-openai vectorizer
+	if schema.Vectorizer != "text2vec-openai" {
+		if schema.Vectorizer == "none" {
+			PrintWarning(fmt.Sprintf("⚠️  Collection '%s' has vectorization disabled (vectorizer: none)", collectionName))
+			PrintWarning("    The --embedding flag will be ignored for this collection.")
+			PrintWarning("    This is normal for image collections that store base64 data.")
+			return nil
+		}
+		PrintWarning(fmt.Sprintf("⚠️  Collection '%s' uses vectorizer '%s'", collectionName, schema.Vectorizer))
+		PrintWarning("    The --embedding flag only works with 'text2vec-openai' vectorizer.")
+		PrintWarning(fmt.Sprintf("    Your embedding model '%s' will be ignored.", embeddingModel))
+		return nil
+	}
+
+	// For text2vec-openai, we can suggest compatible models but allow any value
+	// since the user might know better than we do
+	PrintInfo(fmt.Sprintf("ℹ️  Using embedding model: %s", embeddingModel))
+	PrintInfo(fmt.Sprintf("    Collection '%s' is configured for text2vec-openai vectorizer", collectionName))
+
+	// Provide helpful suggestions for common embedding models
+	suggestedModels := []string{
+		"text-embedding-3-small",
+		"text-embedding-3-large",
+		"text-embedding-ada-002",
+	}
+
+	isValidModel := false
+	for _, model := range suggestedModels {
+		if model == embeddingModel {
+			isValidModel = true
+			break
+		}
+	}
+
+	if !isValidModel {
+		PrintWarning("    Note: Recommended OpenAI embedding models are:")
+		for _, model := range suggestedModels {
+			PrintWarning(fmt.Sprintf("      • %s", model))
+		}
+		PrintWarning(fmt.Sprintf("    Your model '%s' will be used as specified.", embeddingModel))
+	}
+
+	return nil
+}
+
 // CreateWeaviateDocument creates a Weaviate document
-func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string) error {
+func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string, embeddingModel string) error {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -226,6 +279,13 @@ func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		PrintError(fmt.Sprintf("File not found: %s", filePath))
 		return err
+	}
+
+	// Validate embedding model if provided
+	if embeddingModel != "" {
+		if err := validateEmbeddingForCollection(ctx, client, collectionName, embeddingModel); err != nil {
+			return err
+		}
 	}
 
 	// Initialize report if requested

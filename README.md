@@ -120,6 +120,10 @@ weave query "create TestDocs and add README.md" --dry-run
 # Configure timeout for slow connections
 weave cols ls --timeout 30s
 weave health check --timeout 60s
+
+# Specify embedding model for document creation
+weave docs create MyCollection document.txt --embedding text-embedding-3-small
+weave docs create MyCollection report.pdf --embedding text-embedding-ada-002
 ```
 
 ## Database Support

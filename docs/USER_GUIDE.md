@@ -753,6 +753,10 @@ weave docs create MyTextCollection document.txt --text
 weave docs create MyImageCollection image.jpg --image
 weave docs create MyTextCollection document.pdf --text --chunk-size 500
 
+# Create documents with specific embedding model
+weave docs create MyCollection document.txt --embedding text-embedding-3-small
+weave docs create MyCollection report.pdf --embedding text-embedding-ada-002 --chunk-size 500
+
 # List documents in a collection
 weave document list MyCollection
 
@@ -1019,6 +1023,75 @@ weave docs create MyTextCollection document.pdf --image-collection MyImageCollec
 # Using aliases
 weave docs c MyTextCollection document.txt
 weave docs c MyImageCollection image.jpg
+```
+
+### Specifying Embedding Models
+
+The `--embedding` flag allows you to specify or validate which embedding model
+is used for document vectorization. This is useful for:
+
+- **Validation**: Confirming the collection uses the expected embedding model
+- **Documentation**: Making it explicit which embedding is being used
+- **Team Collaboration**: Ensuring team members use consistent embeddings
+
+**Important Notes:**
+- Embedding models are configured at the **collection level**, not the document level
+- The `--embedding` flag validates your choice against the collection's schema
+- For `text2vec-openai` vectorizer, the flag confirms the embedding model
+- For other vectorizers (e.g., `none`, `text2vec-cohere`), a warning is shown
+
+```bash
+# Specify embedding model for validation
+weave docs create MyCollection document.txt --embedding text-embedding-3-small
+weave docs create MyCollection report.pdf --embedding text-embedding-ada-002
+
+# Short form
+weave docs create MyCollection file.txt -e text-embedding-3-small
+
+# With other flags
+weave docs create MyCollection document.pdf \
+  --embedding text-embedding-3-small \
+  --chunk-size 500 \
+  --image-collection MyImages
+```
+
+**Recommended OpenAI Embedding Models:**
+- `text-embedding-3-small` - Fast and efficient (default)
+- `text-embedding-3-large` - Higher quality, larger dimensions
+- `text-embedding-ada-002` - Legacy model, still widely used
+
+**Behavior by Vectorizer Type:**
+
+1. **text2vec-openai** (most common):
+   - ✅ Validates the embedding model name
+   - ℹ️  Shows confirmation message
+   - ⚠️  Warns if using non-standard model name
+
+2. **none** (image collections):
+   - ⚠️  Shows warning that flag will be ignored
+   - ℹ️  Explains this is normal for image collections
+   - ✅ Continues with document creation
+
+3. **Other vectorizers** (e.g., text2vec-cohere):
+   - ⚠️  Shows warning about incompatibility
+   - ℹ️  Suggests checking collection configuration
+   - ✅ Continues with document creation
+
+**Example Output:**
+
+```bash
+$ weave docs create MyCollection document.txt --embedding text-embedding-3-small
+
+ℹ️  Using embedding model: text-embedding-3-small
+    Collection 'MyCollection' is configured for text2vec-openai vectorizer
+✅ Successfully created document from document.txt
+
+$ weave docs create ImageCollection image.jpg --embedding text-embedding-3-small
+
+⚠️  Collection 'ImageCollection' has vectorization disabled (vectorizer: none)
+    The --embedding flag will be ignored for this collection.
+    This is normal for image collections that store base64 data.
+✅ Successfully created document from image.jpg
 ```
 
 ## Collection Create Command (Legacy)
