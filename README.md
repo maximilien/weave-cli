@@ -29,6 +29,27 @@ weave config create --env
 weave health check
 ```
 
+### Supabase Setup
+
+To use Supabase as your vector database:
+
+```bash
+# Set Supabase configuration
+export SUPABASE_DATABASE_URL="postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres"
+export SUPABASE_DATABASE_KEY="your-supabase-anon-key"
+
+# Configure weave to use Supabase
+weave config create --database-type supabase
+
+# Verify Supabase connection
+weave health check
+```
+
+**Note**: Ensure your Supabase project has the pgvector extension enabled:
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
 ### Basic Usage
 
 ```bash
@@ -65,7 +86,7 @@ weave cols create MyCollection -e text-embedding-ada-002
 - 🤖 **AI-Powered** - Natural language interface with GPT-4o multi-agent system
 - ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
-- 🔌 **Extensible** - Vector database abstraction layer for easy addition of new backends (Supabase PGVector, Milvus planned)
+- 🔌 **Extensible** - Vector database abstraction layer supporting multiple backends (Supabase PGVector implemented, Milvus planned)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -146,12 +167,12 @@ allows seamless switching between different vector database backends:
 
 - **Weaviate Cloud** (`weaviate-cloud`) - Production-ready cloud instances
 - **Weaviate Local** (`weaviate-local`) - Self-hosted Weaviate instances
+- **Supabase PGVector** (`supabase`) - PostgreSQL with pgvector extension
 - **Mock Database** (`mock`) - Built-in testing database (no external
   dependencies)
 
 ### Planned Support
 
-- **Supabase PGVector** (`supabase`) - Supabase with PGVector extension
 - **Milvus** (`milvus`) - Milvus vector database
 
 See [Vector DB Abstraction Documentation](docs/VECTOR_DB_ABSTRACTION.md) for

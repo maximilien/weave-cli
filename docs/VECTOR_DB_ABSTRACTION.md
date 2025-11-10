@@ -41,7 +41,9 @@ The Weave CLI uses a vector database abstraction layer that allows support for m
 
 ### Supabase PGVector
 - **Type**: `supabase`
-- **Status**: ?? Planned
+- **Adapter**: `src/pkg/vectordb/supabase/adapter.go`
+- **Factory**: `src/pkg/vectordb/supabase/factory.go`
+- **Status**: ? Fully implemented
 
 ### Milvus
 - **Type**: `milvus`
@@ -206,6 +208,139 @@ for _, result := range results {
 }
 ```
 
+## Supabase PGVector Implementation
+
+### Overview
+
+The Supabase implementation provides full vector database functionality using PostgreSQL with the pgvector extension. This implementation leverages Supabase's managed PostgreSQL service to provide scalable vector storage and search capabilities.
+
+### Features
+
+- **Full CRUD Operations**: Create, read, update, and delete documents
+- **Vector Search**: Semantic search using pgvector similarity functions
+- **Full-Text Search**: BM25-style search using PostgreSQL's built-in full-text search
+- **Hybrid Search**: Combines vector and keyword search results
+- **Metadata Filtering**: Search and filter documents by metadata fields
+- **Schema Management**: Dynamic schema creation and validation
+- **Batch Operations**: Efficient batch document creation and deletion
+- **JSONB Support**: Rich metadata storage using PostgreSQL's JSONB type
+
+### Configuration
+
+To use Supabase as your vector database, configure it as follows:
+
+```go
+config := &vectordb.Config{
+    Type:        vectordb.VectorDBTypeSupabase,
+    DatabaseURL: "postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres",
+    DatabaseKey: "your-supabase-anon-key",
+    Timeout:     30,
+}
+
+client, err := vectordb.CreateClient(config)
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+### Environment Variables
+
+For integration testing and production use, set these environment variables:
+
+```bash
+export SUPABASE_DATABASE_URL="postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres"
+export SUPABASE_DATABASE_KEY="your-supabase-anon-key"
+```
+
+### Database Setup
+
+Before using the Supabase implementation, ensure your Supabase project has the pgvector extension enabled:
+
+1. Go to your Supabase project dashboard
+2. Navigate to the SQL Editor
+3. Run the following SQL command:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+### Implementation Details
+
+#### Architecture
+
+The Supabase implementation consists of several key components:
+
+- **Adapter** (`adapter.go`): Main implementation of the VectorDBClient interface
+- **Collections** (`collections.go`): Collection management and schema operations
+- **Documents** (`documents.go`): Document CRUD operations
+- **Queries** (`queries.go`): Search and query operations
+- **Schema** (`schema.go`): Schema validation and management
+- **Factory** (`factory.go`): Factory pattern implementation and registration
+
+#### Table Structure
+
+Each collection is stored as a PostgreSQL table with the following standard columns:
+
+- `id` (TEXT PRIMARY KEY): Document identifier
+- `content` (TEXT): Main document content
+- `text` (TEXT): Additional text content
+- `image` (TEXT): Image URL or reference
+- `image_data` (TEXT): Base64 encoded image data
+- `url` (TEXT): Associated URL
+- `metadata` (JSONB): Document metadata as JSON
+- `embedding` (VECTOR(1536)): Vector embeddings for semantic search
+
+#### Search Capabilities
+
+1. **Semantic Search**: Uses vector similarity with pgvector
+2. **BM25 Search**: PostgreSQL full-text search with ranking
+3. **Hybrid Search**: Combines semantic and keyword search results
+4. **Metadata Search**: Filters documents by metadata fields using JSONB operators
+
+#### Error Handling
+
+The implementation provides comprehensive error handling with proper categorization:
+
+- Connection errors for database connectivity issues
+- Authentication errors for invalid credentials
+- Not found errors for missing resources
+- Invalid configuration errors for setup issues
+
+### Testing
+
+The Supabase implementation includes comprehensive test coverage:
+
+#### Unit Tests
+
+Run unit tests that don't require a database connection:
+
+```bash
+go test ./tests/supabase_test.go -v
+```
+
+#### Integration Tests
+
+Run integration tests with a real Supabase instance:
+
+```bash
+export SUPABASE_DATABASE_URL="your-database-url"
+export SUPABASE_DATABASE_KEY="your-database-key"
+go test ./tests/supabase_integration_test.go -v
+```
+
+### Performance Considerations
+
+- **Indexing**: Automatic creation of vector and JSONB indexes for optimal performance
+- **Batch Operations**: Use batch document creation for better throughput
+- **Connection Pooling**: Leverages PostgreSQL connection pooling
+- **Query Optimization**: Optimized queries for vector similarity search
+
+### Limitations
+
+- **Vector Dimensions**: Currently configured for 1536-dimensional vectors (OpenAI embeddings)
+- **Extension Dependency**: Requires pgvector extension to be installed
+- **PostgreSQL Version**: Requires PostgreSQL 11+ with pgvector support
+
 ## Adding a New Vector Database
 
 To add support for a new vector database (e.g., Supabase PGVector or Milvus):
@@ -308,6 +443,7 @@ The abstraction layer is implemented and Weaviate adapter is complete. The codeb
 - ? Error handling
 - ? Weaviate adapter
 - ? Mock adapter
+- ? Supabase PGVector adapter
 - ? Basic client creation utilities
 
 ### In Progress
@@ -315,7 +451,6 @@ The abstraction layer is implemented and Weaviate adapter is complete. The codeb
 - ?? Migration of command handlers to use VectorDBClient
 
 ### Planned
-- ?? Supabase PGVector adapter
 - ?? Milvus adapter
 - ?? Complete migration from direct client calls
 
