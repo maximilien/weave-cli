@@ -170,7 +170,7 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	vdbDocuments, err := client.ListDocuments(ctx, collectionName, limit, 0)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
-			PrintError(fmt.Sprintf("Failed to connect to database: connection timeout after 30 seconds"))
+			PrintError("Failed to connect to database: connection timeout after 30 seconds")
 			fmt.Println()
 			PrintInfo("Please check that:")
 			PrintInfo("  1. The database server is running and accessible")
