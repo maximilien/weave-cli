@@ -7,19 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.3.1] - Pending Release
+## [0.3.9] - 2025-11-10
 
 ### Added
 
-- **🎯 Smart Error Handling & Configuration UX**: Dramatically improved user experience for configuration issues
-  - **Detailed error messages** showing exactly what's missing (environment variables, config files)
-  - **Interactive configuration fixes** - prompts to create/update .env file on the spot
-  - **Auto-creates config.yaml** - when REPL detects missing config.yaml, automatically creates a minimal one
-  - **Multiple fix options** clearly explained (flags, shell exports, .env file)
-  - **Context-aware tips** for config.yaml setup and mock database testing
-  - **Better MCP error diagnostics** - captures stderr from weave-mcp for troubleshooting
-  - **Better collection/database errors** with actionable suggestions
-  - All commands now use enhanced error handling for consistent UX
+- **🗄️ Vector Database Abstraction Layer**: Multi-database support architecture
+  - **Abstract Interface**: Unified `VectorDBClient` interface for all vector databases
+  - **Factory Pattern**: Clean abstraction layer for easy addition of new database backends
+  - **Weaviate Support**: Full support maintained for Weaviate Cloud and Local instances
+  - **Supabase Support**: New PostgreSQL-based vector database adapter using pgvector
+  - **Modular Design**: Database-specific adapters with consistent API
+  - See [docs/VECTOR_DB_ABSTRACTION.md](../docs/VECTOR_DB_ABSTRACTION.md) for details
+
+- **🐘 Supabase Integration**: Complete Supabase adapter implementation
+  - **Collection Management**: Create, list, delete collections with PostgreSQL tables
+  - **Document Operations**: Full CRUD operations for documents
+  - **Metadata Support**: JSON metadata storage and querying
+  - **Schema Management**: Automatic table creation with proper indexes
+  - **Connection Handling**: Robust connection management with IPv4/IPv6 support
+  - **Error Handling**: Comprehensive error wrapping and user-friendly messages
+  - Set `VECTOR_DB_TYPE=supabase` to use Supabase adapter
+
+- **🔤 Embeddings Management**: New `weave embeddings` command
+  - **List Embeddings**: `weave embeddings list` (or `weave embeddings ls`) to view available models
+  - **Model Selection**: Choose embedding models for document creation
+  - **`--embedding` flag** for `weave docs create` command
+  - **`--embedding` flag** for `weave collection create` command
+  - Allows users to specify custom embedding models per operation
+
+- **⚙️ Enhanced Configuration Management**: Streamlined configuration setup
+  - **Interactive Config Commands**: `weave config create` and `weave config update`
+  - **Smart Defaults**: Sensible defaults for quick setup
+  - **Environment Variable Fallback**: Config.yaml optional with env var support
+  - **Auto-creates config.yaml**: When REPL detects missing config.yaml, automatically creates a minimal one
 
 - **🔧 weave-mcp Binary Installer**: One-command installation of weave-mcp
   - **Automatic platform detection** - supports macOS, Linux, Windows
@@ -27,8 +47,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Checksum verification** - ensures download integrity
   - **Interactive prompts** - choose install location and permissions
   - **Smart PATH detection** - warns if install directory not in PATH
+  - **Auto .env Update**: Automatically updates .env file with weave-mcp path
   - **Installation testing** - verifies binary is executable
   - Run `weave config update --weave-mcp` to install
+
+- **🎯 Smart Error Handling & Configuration UX**: Dramatically improved user experience
+  - **Detailed error messages** showing exactly what's missing (environment variables, config files)
+  - **Interactive configuration fixes** - prompts to create/update .env file on the spot
+  - **Multiple fix options** clearly explained (flags, shell exports, .env file)
+  - **Context-aware tips** for config.yaml setup and mock database testing
+  - **Better MCP error diagnostics** - captures stderr from weave-mcp for troubleshooting
+  - **Better collection/database errors** with actionable suggestions
+  - All commands now use enhanced error handling for consistent UX
+
+- **🔄 REPL Enhancements**:
+  - **Version Display in Banner**: REPL banner now shows version info
+    - Displays version string in dimmed text below ASCII art
+    - Consistent with `weave -V` output format
+  - **REPL Batch Query Mode**: Execute multiple queries in batch mode with demo infrastructure
+
+- **🛠️ Developer Experience**:
+  - **Global Timeout Flag**: New `--timeout` flag with duration format support (e.g., "30s", "5m", "1h")
+  - **Code Organization**: Refactored Weaviate code into vectordb/weaviate package
+  - **Better Maintainability**: Cleaner separation of concerns
 
 - **📦 MCP Integration Tests**: Automated test suite for weave-mcp compatibility
   - Comprehensive integration tests for all MCP operations
@@ -37,9 +78,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Automated testing workflow for MCP releases
   - See [tests/README_MCP_TESTS.md](../tests/README_MCP_TESTS.md) for details
 
-- **🎨 Version Display in Banner**: REPL banner now shows version info
-  - Displays version string in dimmed text below ASCII art
-  - Consistent with `weave -V` output format
+### Changed
+
+- **Vector DB Architecture**: Refactored to support multiple database backends
+  - Weaviate code moved to `src/pkg/vectordb/weaviate/` package
+  - New factory pattern for database creation
+  - Unified error handling across all adapters
+
+- **Documentation**: Updated and refactored documentation
+  - README.md simplified and reorganized
+  - New vector DB abstraction guide
+  - Updated user guide with new features
+  - Comprehensive technical blog post draft
+
+### Fixed
+
+- **Linting Errors**: Resolved all staticcheck SA9003 errors
+  - Fixed empty branch in transaction rollback handling
+  - Improved error handling patterns
+  - All CI linting checks passing
 
 ## [0.3.0] - 2025-11-01
 
