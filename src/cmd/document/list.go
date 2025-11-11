@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -60,13 +61,43 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Validate that only one database is selected for read operations
+	// For single-database operations, handle multiple databases intelligently
+	var dbConfig *config.VectorDBConfig
 	if len(selection.Configs) > 1 {
-		utils.PrintError("Document list requires a single database. Please specify --weaviate, --supabase, or --mock")
-		os.Exit(1)
+		// Try to use the default database type from config/env
+		defaultDB := utils.SelectDefaultDatabase(selection.Configs, cfg)
+		if defaultDB != nil {
+			dbConfig = defaultDB
+			utils.PrintInfo(fmt.Sprintf("Using default database: %s (%s)", dbConfig.Name, dbConfig.Type))
+			fmt.Println()
+		} else {
+			// If multiple Weaviate databases, try each until one works
+			if utils.AreAllWeaviateDatabases(selection.Configs) {
+				utils.PrintInfo(fmt.Sprintf("Trying %d Weaviate databases...", len(selection.Configs)))
+				fmt.Println()
+				dbConfig = utils.TryWeaviateDatabasesForCollection(context.Background(), selection.Configs, collectionName)
+				if dbConfig == nil {
+					utils.PrintError(fmt.Sprintf("Collection '%s' not found in any Weaviate database", collectionName))
+					os.Exit(1)
+				}
+			} else {
+				// Multiple different database types - need user to specify
+				utils.PrintError(fmt.Sprintf("Document list requires a single database, but found %d databases:", len(selection.Configs)))
+				for _, cfg := range selection.Configs {
+					utils.PrintInfo(fmt.Sprintf("  • %s (%s)", cfg.Name, cfg.Type))
+				}
+				fmt.Println()
+				utils.PrintInfo("Please use --vector-db-type (or --vdb) to specify which database:")
+				for _, cfg := range selection.Configs {
+					utils.PrintInfo(fmt.Sprintf("  weave docs ls %s --vector-db-type %s", collectionName, cfg.Type))
+				}
+				os.Exit(1)
+			}
+		}
+	} else {
+		dbConfig = &selection.Configs[0]
 	}
 
-	dbConfig := &selection.Configs[0]
 	ctx := context.Background()
 
 	// Use generic ListDocuments that works with all database types via vectordb abstraction

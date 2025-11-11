@@ -362,11 +362,11 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		var typeIndicator string
 		switch info.SchemaType {
 		case "image":
-			typeIndicator = GetStyledEmoji("???")
+			typeIndicator = GetStyledEmoji("🖼️")
 		case "text":
-			typeIndicator = GetStyledEmoji("??")
+			typeIndicator = GetStyledEmoji("📄")
 		default:
-			typeIndicator = GetStyledEmoji("?")
+			typeIndicator = GetStyledEmoji("❓")
 		}
 
 		// Collection type indicator
@@ -627,11 +627,11 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 		var typeIndicator string
 		switch info.SchemaType {
 		case "image":
-			typeIndicator = GetStyledEmoji("???")
+			typeIndicator = GetStyledEmoji("🖼️")
 		case "text":
-			typeIndicator = GetStyledEmoji("??")
+			typeIndicator = GetStyledEmoji("📄")
 		default:
-			typeIndicator = GetStyledEmoji("?")
+			typeIndicator = GetStyledEmoji("❓")
 		}
 
 		// Collection type indicator
@@ -748,7 +748,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 	}
 
 	// Display collection information with styling
-	PrintStyledEmoji("??")
+	PrintStyledEmoji("📁")
 	fmt.Printf(" ")
 	PrintStyledKeyProminent("Collection")
 	fmt.Printf(": ")
@@ -767,7 +767,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 	fmt.Println()
 
 	// Show collection properties if available
-	PrintStyledEmoji("??")
+	PrintStyledEmoji("⚙️")
 	fmt.Printf(" ")
 	PrintStyledKeyProminent("Collection Properties")
 	fmt.Println()
@@ -805,7 +805,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 				// Fall back to the basic document from ListDocuments
 				sampleDoc = &sampleDocuments[0]
 			}
-			PrintStyledEmoji("??")
+			PrintStyledEmoji("📋")
 			fmt.Printf(" ")
 			PrintStyledKeyProminent("Sample Document Metadata")
 			fmt.Println()
@@ -845,7 +845,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 
 			// Show sample content
 			if len(sampleDoc.Content) > 0 {
-				PrintStyledEmoji("??")
+				PrintStyledEmoji("📝")
 				fmt.Printf(" ")
 				PrintStyledKeyProminent("Sample Document Content")
 				fmt.Println()
@@ -879,7 +879,7 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 			} else {
 				// No content, but show if it's an image document based on metadata
 				if IsImageDocument(sampleDoc.Metadata) {
-					PrintStyledEmoji("??")
+					PrintStyledEmoji("🖼️")
 					fmt.Printf(" ")
 					PrintStyledKeyProminent("Sample Document Content")
 					fmt.Println()
@@ -1275,7 +1275,7 @@ func showCollectionVirtualSummary(ctx context.Context, client *weaviate.Client, 
 // ShowCollectionSchema displays the collection schema with styling
 func ShowCollectionSchema(ctx context.Context, client *weaviate.Client, collectionName string) {
 	fmt.Println()
-	PrintStyledEmoji("???")
+	PrintStyledEmoji("📐")
 	fmt.Printf(" ")
 	PrintStyledKeyProminent("Collection Schema")
 	fmt.Println()
@@ -1351,7 +1351,7 @@ func ShowCollectionSchema(ctx context.Context, client *weaviate.Client, collecti
 // ShowCollectionMetadata displays collection metadata with styling
 func ShowCollectionMetadata(ctx context.Context, client *weaviate.Client, collectionName string, expandMetadata bool) {
 	fmt.Println()
-	PrintStyledEmoji("??")
+	PrintStyledEmoji("🏷️")
 	fmt.Printf(" ")
 	PrintStyledKeyProminent("Collection Metadata")
 	fmt.Println()

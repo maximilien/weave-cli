@@ -4,6 +4,7 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -276,6 +277,65 @@ func tryCreateSupabaseConfigFromLoadedConfig(cfg *config.Config) *config.VectorD
 		Enabled:     true,
 		Timeout:     30, // Default timeout
 	}
+}
+
+// SelectDefaultDatabase selects the default database from a list based on VECTOR_DB_TYPE
+func SelectDefaultDatabase(configs []config.VectorDBConfig, cfg *config.Config) *config.VectorDBConfig {
+	// Get the default database type from environment or config
+	defaultType := os.Getenv("VECTOR_DB_TYPE")
+	if defaultType == "" && cfg != nil {
+		defaultType = string(cfg.Databases.Default)
+	}
+
+	if defaultType == "" {
+		return nil
+	}
+
+	// Find a config that matches the default type
+	for i := range configs {
+		if string(configs[i].Type) == defaultType {
+			return &configs[i]
+		}
+	}
+
+	return nil
+}
+
+// AreAllWeaviateDatabases checks if all configs are Weaviate databases
+func AreAllWeaviateDatabases(configs []config.VectorDBConfig) bool {
+	for _, cfg := range configs {
+		if cfg.Type != config.VectorDBTypeCloud && cfg.Type != config.VectorDBTypeLocal {
+			return false
+		}
+	}
+	return true
+}
+
+// TryWeaviateDatabasesForCollection tries to find a collection in Weaviate databases
+func TryWeaviateDatabasesForCollection(ctx context.Context, configs []config.VectorDBConfig, collectionName string) *config.VectorDBConfig {
+	for i := range configs {
+		// Try to check if collection exists in this database
+		client, err := CreateWeaviateClient(&configs[i])
+		if err != nil {
+			continue
+		}
+
+		collections, err := client.ListCollections(ctx)
+		if err != nil {
+			continue
+		}
+
+		// Check if collection exists
+		for _, col := range collections {
+			if col == collectionName {
+				PrintSuccess(fmt.Sprintf("Found collection '%s' in %s (%s)", collectionName, configs[i].Name, configs[i].Type))
+				fmt.Println()
+				return &configs[i]
+			}
+		}
+	}
+
+	return nil
 }
 
 // tryCreateSupabaseConfigFromEnv attempts to create a Supabase config from environment variables
