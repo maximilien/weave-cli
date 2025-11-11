@@ -29,6 +29,16 @@ func isImageCollection(collectionName string) bool {
 	return false
 }
 
+// isConnectionRefusedError checks if an error is a connection refused error
+func isConnectionRefusedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := strings.ToLower(err.Error())
+	return strings.Contains(errMsg, "connection refused") ||
+		strings.Contains(errMsg, "connect: connection refused")
+}
+
 // ParseFieldDefinitions parses field definitions from a string
 func ParseFieldDefinitions(fieldsStr string) ([]weaviate.FieldDefinition, error) {
 	PrintInfo("Field parsing not yet implemented in new structure")
@@ -175,6 +185,23 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			PrintInfo("  1. The Weaviate server is running and accessible")
 			PrintInfo("  2. The URL in your config is correct")
 			PrintInfo("  3. There are no network/firewall issues")
+		} else if isConnectionRefusedError(err) {
+			// Connection refused - Weaviate server is not running
+			PrintWarning(fmt.Sprintf("Weaviate local instance not available at %s", cfg.URL))
+			if !jsonOutput {
+				fmt.Println()
+				PrintInfo("This usually means:")
+				PrintInfo("  • Weaviate local server is not running")
+				PrintInfo("  • Wrong port or URL configured")
+				fmt.Println()
+				PrintInfo("💡 To start Weaviate locally:")
+				PrintInfo("   docker run -d -p 8080:8080 \\")
+				PrintInfo("     -e AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true \\")
+				PrintInfo("     -e PERSISTENCE_DATA_PATH=/var/lib/weaviate \\")
+				PrintInfo("     cr.weaviate.io/semitechnologies/weaviate:latest")
+				fmt.Println()
+				PrintInfo("Or use a different database with: --weaviate (cloud) or --mock")
+			}
 		} else {
 			// Check if this might be a configuration error
 			formattedErr := config.FormatConfigError(err)
