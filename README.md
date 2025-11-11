@@ -160,28 +160,49 @@ Control which vector database(s) to operate on with these flags:
 
 **Important**: Database selection behavior depends on your configuration:
 
-- **Single Database**: If only one DB is configured, it's used
-  automatically (no flags needed!)
+- **Single Database**: If only one DB is configured, it's used automatically
+  (no flags needed!)
 - **Multiple Databases**:
   - Read operations (ls, show, count) use all databases by default
-  - Write/delete operations **require** specifying which database with a flag
+  - Write/delete operations use smart selection:
+    1. **Default Database**: Uses `VECTOR_DB_TYPE` from `.env` or config
+    2. **Weaviate Collection Search**: For `--weaviate`, searches all
+       Weaviate databases for the collection
+    3. **Manual Selection**: Use `--vector-db-type` (or `--vdb`) to
+       specify explicitly
 
 ```bash
 # Single database setup - no flags needed!
 weave docs create MyCollection doc.txt       # Uses your only configured DB
 
-# Multiple databases - specify database for write operations
-weave docs create MyCollection doc.txt --weaviate
-weave docs create MyCollection doc.txt --supabase
+# Multiple databases with VECTOR_DB_TYPE set
+export VECTOR_DB_TYPE=weaviate-cloud
+weave docs create MyCollection doc.txt       # Uses weaviate-cloud (default)
+weave docs delete MyCollection doc123        # Uses weaviate-cloud (default)
+
+# Override default with --vdb (short) or --vector-db-type (long)
+weave docs create MyCollection doc.txt --vdb weaviate-local
+weave docs create MyCollection doc.txt --vector-db-type supabase
+
+# --weaviate tries both weaviate-cloud and weaviate-local
+weave docs ls MyCollection --weaviate        # Searches both for collection
+weave cols delete MyCollection --weaviate    # Searches both for collection
 
 # Read operations work with specific or all databases
-weave cols ls --weaviate                    # Weaviate only
-weave cols ls --supabase                    # Supabase only
-weave cols ls --all                         # All configured databases (default)
+weave cols ls --weaviate                     # All Weaviate databases
+weave cols ls --supabase                     # Supabase only
+weave cols ls --all                          # All configured databases (default)
 
 # Query multiple databases at once
 weave cols query MyCollection "search" --weaviate --supabase
 ```
+
+**Database Selection Priority for Single-DB Operations**:
+
+1. If only one database configured → use it
+2. If `VECTOR_DB_TYPE` set → use as default
+3. If `--weaviate` flag used → try all Weaviate databases for the collection
+4. Otherwise → show error with available options
 
 ### More Examples
 

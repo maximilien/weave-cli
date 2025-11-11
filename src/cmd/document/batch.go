@@ -140,21 +140,15 @@ func runBatchCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Validate that exactly one database is selected for write operations
-	if err := utils.ValidateDatabaseSelection(selection, utils.OperationTypeWrite, "Batch document create"); err != nil {
-		utils.PrintError(err.Error())
-		os.Exit(1)
-	}
+	ctx := context.Background()
 
-	// Use the selected database
-	dbConfig := &selection.Configs[0]
+	// Smart database selection for single-database operations
+	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs batch --directory %s --collection %s", directory, collectionName))
 
 	// Default report path
 	if createReport == "" && cmd.Flags().Lookup("create-report").Changed {
 		createReport = "batch-report.csv"
 	}
-
-	ctx := context.Background()
 
 	// Print batch configuration
 	printBatchConfiguration(directory, collectionName, parallel, retryCount, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, createReport)

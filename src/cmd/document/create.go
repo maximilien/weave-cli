@@ -126,16 +126,10 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Validate that exactly one database is selected for write operations
-	if err := utils.ValidateDatabaseSelection(selection, utils.OperationTypeWrite, "Document create"); err != nil {
-		utils.PrintError(err.Error())
-		os.Exit(1)
-	}
-
-	// Use the selected database
-	dbConfig := &selection.Configs[0]
-
 	ctx := context.Background()
+
+	// Smart database selection for single-database operations
+	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs create %s %s", collectionName, filePath))
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:

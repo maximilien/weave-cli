@@ -50,6 +50,62 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 	return nil
 }
 
+// SelectSingleDatabase intelligently selects a single database from multiple options
+// Returns the selected database config, or nil if selection cannot be made
+// This function:
+// 1. Returns the only config if there's just one
+// 2. Uses VECTOR_DB_TYPE from env/config as default
+// 3. For Weaviate databases, tries to find the collection in available DBs
+// 4. Returns nil if multiple different database types and no default
+func SelectSingleDatabase(ctx context.Context, configs []config.VectorDBConfig, cfg *config.Config, collectionName string) *config.VectorDBConfig {
+	// If only one config, use it
+	if len(configs) == 1 {
+		return &configs[0]
+	}
+
+	// Try to use the default database type from config/env
+	defaultDB := SelectDefaultDatabase(configs, cfg)
+	if defaultDB != nil {
+		PrintInfo(fmt.Sprintf("Using default database: %s (%s)", defaultDB.Name, defaultDB.Type))
+		fmt.Println()
+		return defaultDB
+	}
+
+	// If all are Weaviate databases and we have a collection name, try each
+	if collectionName != "" && AreAllWeaviateDatabases(configs) {
+		PrintInfo(fmt.Sprintf("Trying %d Weaviate databases...", len(configs)))
+		fmt.Println()
+		dbConfig := TryWeaviateDatabasesForCollection(ctx, configs, collectionName)
+		if dbConfig != nil {
+			return dbConfig
+		}
+	}
+
+	// Cannot automatically select
+	return nil
+}
+
+// HandleSingleDatabaseSelection is a helper that combines smart database selection with error handling
+// Use this in commands that need exactly one database
+// Returns the selected database config or exits the program with an error message
+func HandleSingleDatabaseSelection(ctx context.Context, selection *VectorDBSelection, cfg *config.Config, collectionName, commandExample string) *config.VectorDBConfig {
+	dbConfig := SelectSingleDatabase(ctx, selection.Configs, cfg, collectionName)
+	if dbConfig == nil {
+		// Could not automatically select - show helpful error
+		PrintError(fmt.Sprintf("This operation requires a single database, but found %d databases:", len(selection.Configs)))
+		for _, cfg := range selection.Configs {
+			PrintInfo(fmt.Sprintf("  • %s (%s)", cfg.Name, cfg.Type))
+		}
+		fmt.Println()
+		PrintInfo("Please use --vector-db-type (or --vdb) to specify which database:")
+		for _, cfg := range selection.Configs {
+			PrintInfo(fmt.Sprintf("  %s --vector-db-type %s", commandExample, cfg.Type))
+		}
+		os.Exit(1)
+	}
+	return dbConfig
+}
+
 // GetSelectedVectorDBs determines which vector databases to use based on command flags
 func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSelection, error) {
 	// Get flags

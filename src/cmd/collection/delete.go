@@ -72,16 +72,11 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Validate that exactly one database is selected for delete operations
-	if err := utils.ValidateDatabaseSelection(selection, utils.OperationTypeDelete, "Delete collection"); err != nil {
-		utils.PrintError(err.Error())
-		os.Exit(1)
-	}
-
-	// Use the selected database
-	dbConfig := &selection.Configs[0]
-
 	ctx := context.Background()
+
+	// Smart database selection for single-database operations
+	// Note: Using empty collection name since delete can operate on multiple collections
+	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, "", "weave cols delete")
 
 	// Confirmation prompt
 	if !force {

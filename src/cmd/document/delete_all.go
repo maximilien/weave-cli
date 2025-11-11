@@ -59,16 +59,10 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Validate that exactly one database is selected for delete operations
-	if err := utils.ValidateDatabaseSelection(selection, utils.OperationTypeDelete, "Delete all documents"); err != nil {
-		utils.PrintError(err.Error())
-		os.Exit(1)
-	}
-
-	// Use the selected database
-	dbConfig := &selection.Configs[0]
-
 	ctx := context.Background()
+
+	// Smart database selection for single-database operations
+	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs delete-all %s", collectionName))
 
 	// Confirmation prompt
 	if !force {

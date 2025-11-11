@@ -1781,18 +1781,26 @@ Control which vector database(s) to operate on:
 - **Single Database**: If only one database is configured (e.g., only Weaviate OR only Supabase), all commands automatically use that database. No flags needed!
 - **Multiple Databases**: If multiple databases are configured (e.g., both Weaviate AND Supabase):
   - **Read operations** (ls, show, count, query) - Use all databases by default
-  - **Write operations** (create, update, batch) - **Must** specify which database with a flag
-  - **Delete operations** (delete, delete-all) - **Must** specify which database with a flag
+  - **Write/Delete operations** (create, delete, batch) - Use **smart selection**:
+    1. **Default Database**: Uses `VECTOR_DB_TYPE` from `.env` or config as default
+    2. **Weaviate Collection Search**: For `--weaviate`, searches all Weaviate databases for the collection
+    3. **Manual Override**: Use `--vector-db-type` (or `--vdb`) to specify explicitly
 
 #### --weaviate
 Use Weaviate vector database (weaviate-cloud or weaviate-local).
+
+With multiple Weaviate databases configured, `--weaviate` will try all of them:
 
 ```bash
 # List collections from Weaviate only (with multiple DBs configured)
 weave collection list --weaviate
 
-# Create document in Weaviate (required when multiple DBs configured)
+# Create/delete in Weaviate - tries both weaviate-cloud and weaviate-local
 weave document create MyCollection document.txt --weaviate
+weave document delete MyCollection doc123 --weaviate
+
+# List documents - searches all Weaviate DBs for the collection
+weave document list MyCollection --weaviate
 
 # With single DB configured, --weaviate is optional:
 weave document create MyCollection document.txt  # Works if Weaviate is the only DB
@@ -1833,6 +1841,35 @@ weave collection list --all
 # Show results from multiple databases with clear headers
 weave collection count --all
 ```
+
+#### --vector-db-type and --vdb
+Override the default database type for single-database operations.
+
+Use this when you need to explicitly specify which database to use, overriding the `VECTOR_DB_TYPE` environment variable or smart selection.
+
+```bash
+# Long form
+weave docs create MyCollection document.txt --vector-db-type weaviate-cloud
+weave docs delete MyCollection doc123 --vector-db-type weaviate-local
+weave cols create MyCollection --vector-db-type supabase
+
+# Short form (alias)
+weave docs create MyCollection document.txt --vdb weaviate-cloud
+weave docs delete MyCollection doc123 --vdb weaviate-local
+weave cols create MyCollection --vdb supabase
+```
+
+**Valid Database Types:**
+- `weaviate-cloud` - Weaviate Cloud instance
+- `weaviate-local` - Local Weaviate instance
+- `supabase` - Supabase PGVector database
+- `mock` - Mock database for testing
+
+**Priority Order (Highest to Lowest):**
+1. Command-line `--vdb` or `--vector-db-type` flag
+2. `VECTOR_DB_TYPE` environment variable from `.env`
+3. `default` setting in config.yaml
+4. Smart selection (for `--weaviate`, tries all Weaviate databases)
 
 #### Combining Database Flags
 You can combine multiple database flags to operate on specific databases:
