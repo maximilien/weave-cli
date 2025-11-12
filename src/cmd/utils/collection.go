@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
@@ -1753,6 +1754,51 @@ func QueryWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, co
 
 	// Display results
 	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate)
+}
+
+// QueryCollection performs semantic search on a collection using the vectordb abstraction (works for all DB types)
+func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Convert weaviate.QueryOptions to vectordb.QueryOptions
+	vdbOptions := &vectordb.QueryOptions{
+		TopK:           options.TopK,
+		Distance:       options.Distance,
+		SearchMetadata: options.SearchMetadata,
+		NoTruncate:     options.NoTruncate,
+		UseBM25:        options.UseBM25,
+	}
+
+	// Perform semantic or BM25 search based on options
+	var results []*vectordb.QueryResult
+	if vdbOptions.UseBM25 {
+		results, err = client.SearchBM25(ctx, collectionName, queryText, vdbOptions)
+	} else {
+		results, err = client.SearchSemantic(ctx, collectionName, queryText, vdbOptions)
+	}
+
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, err))
+		return
+	}
+
+	// Convert vectordb.QueryResult to weaviate.QueryResult for display
+	weaviateResults := make([]weaviate.QueryResult, len(results))
+	for i, r := range results {
+		weaviateResults[i] = weaviate.QueryResult{
+			ID:       r.Document.ID,
+			Content:  r.Document.Content,
+			Score:    r.Score,
+			Metadata: r.Document.Metadata,
+		}
+	}
+
+	// Display results
+	DisplayQueryResults(weaviateResults, collectionName, queryText, options.NoTruncate)
 }
 
 // QueryMockCollection performs semantic search on a mock collection

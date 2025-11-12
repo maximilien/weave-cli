@@ -64,13 +64,6 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get default database config
-	dbConfig, err := cfg.GetDefaultDatabase()
-	if err != nil {
-		utils.HandleConfigError(err, true)
-		os.Exit(1)
-	}
-
 	ctx := context.Background()
 
 	// Create query options
@@ -82,9 +75,39 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		UseBM25:        useBM25,
 	}
 
+	// Use vector database selector based on flags to get the appropriate database
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
+	if err != nil {
+		utils.PrintError(fmt.Sprintf("Failed to determine vector database: %v", err))
+		os.Exit(1)
+	}
+
+	// Query operations should use the single selected database
+	// If multiple databases selected, use the first one with the collection
+	var dbConfig *config.VectorDBConfig
+	if len(selection.Configs) == 1 {
+		dbConfig = &selection.Configs[0]
+	} else {
+		// Try to find the collection in one of the selected databases
+		for i := range selection.Configs {
+			cfg := &selection.Configs[i]
+			// For now, use the first database
+			// In the future, we could check which database contains the collection
+			dbConfig = cfg
+			break
+		}
+	}
+
+	if dbConfig == nil {
+		utils.PrintError("No database configuration available")
+		os.Exit(1)
+	}
+
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.QueryWeaviateCollection(ctx, dbConfig, collectionName, queryText, options)
+	case config.VectorDBTypeSupabase:
+		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeMock:
 		utils.QueryMockCollection(ctx, dbConfig, collectionName, queryText, options)
 	default:
