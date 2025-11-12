@@ -252,6 +252,69 @@ func TestSupabaseIntegration(t *testing.T) {
 		t.Logf("Hybrid search returned %d results", len(results))
 	})
 
+	// Test semantic search with embeddings
+	t.Run("SemanticSearchWithEmbeddings", func(t *testing.T) {
+		// Skip if no OpenAI API key for embeddings
+		if os.Getenv("OPENAI_API_KEY") == "" {
+			t.Skip("Skipping semantic search test: OPENAI_API_KEY not set")
+		}
+
+		// Create a document with specific content for semantic search
+		semanticDoc := &vectordb.Document{
+			ID:      "semantic-test-doc",
+			Content: "Artificial intelligence and machine learning are transforming modern technology",
+			Text:    "AI ML technology",
+			Metadata: map[string]interface{}{
+				"topic":    "technology",
+				"category": "ai",
+			},
+		}
+
+		err := client.CreateDocument(ctx, collectionName, semanticDoc)
+		if err != nil {
+			t.Errorf("Failed to create semantic test document: %v", err)
+		}
+
+		// Test semantic search with natural language query
+		options := &vectordb.QueryOptions{
+			TopK: 5,
+		}
+
+		// Query with semantically similar but different words
+		results, err := client.SearchSemantic(ctx, collectionName, "tell me about AI and ML", options)
+		if err != nil {
+			t.Errorf("Failed to perform semantic search: %v", err)
+		}
+
+		if len(results) == 0 {
+			t.Error("Expected at least one semantic search result")
+		}
+
+		// Verify that the semantic document appears in results
+		found := false
+		for _, result := range results {
+			if result.Document.ID == semanticDoc.ID {
+				found = true
+				// Verify the score is reasonable (should be > 0.3 for semantic similarity)
+				if result.Score < 0.3 {
+					t.Errorf("Expected semantic search score > 0.3, got %.3f", result.Score)
+				}
+				t.Logf("Semantic search found document with score: %.3f", result.Score)
+				break
+			}
+		}
+
+		if !found {
+			t.Error("Semantic search should find the AI/ML document")
+		}
+
+		// Clean up semantic test document
+		err = client.DeleteDocument(ctx, collectionName, semanticDoc.ID)
+		if err != nil {
+			t.Errorf("Failed to delete semantic test document: %v", err)
+		}
+	})
+
 	// Test schema operations
 	t.Run("GetSchema", func(t *testing.T) {
 		schema, err := client.GetSchema(ctx, collectionName)

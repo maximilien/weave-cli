@@ -6,6 +6,7 @@ package supabase
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -21,10 +22,21 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
 
-	// For now, return a placeholder implementation
-	// In a real implementation, you would:
-	// 1. Generate embeddings for the query using OpenAI or another service
-	// 2. Use pgvector's similarity search functions
+	// If LLM client is available, use vector similarity search
+	if a.llmClient != nil {
+		// Generate embedding for the query
+		queryEmbedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
+		if err != nil {
+			// Fall back to content search if embedding generation fails
+			fmt.Fprintf(os.Stderr, "Warning: Failed to generate query embedding: %v. Falling back to content search.\n", err)
+			return a.searchByContent(ctx, collectionName, query, options)
+		}
+
+		// Use pgvector similarity search
+		return a.searchByVectorSimilarity(ctx, collectionName, queryEmbedding, options)
+	}
+
+	// Fall back to simple content search if no LLM client
 	return a.searchByContent(ctx, collectionName, query, options)
 }
 
@@ -320,3 +332,76 @@ func (a *Adapter) mergeSearchResults(semanticResults, bm25Results []*vectordb.Qu
 
 	return mergedResults
 }
+
+// searchByVectorSimilarity performs vector similarity search using pgvector
+func (a *Adapter) searchByVectorSimilarity(ctx context.Context, collectionName string, queryEmbedding []float64, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	tableName := a.getTableName(collectionName)
+
+	limit := 10
+	if options != nil && options.TopK > 0 {
+		limit = options.TopK
+	}
+
+	// Convert query embedding to pgvector format
+	queryVector := floatsToVector(queryEmbedding)
+
+	// Disable index scans for vector similarity search
+	// The ivfflat index can cause issues with small datasets or when not properly trained
+	// Using sequential scan ensures accurate results
+	_, _ = a.db.ExecContext(ctx, "SET enable_indexscan = OFF")
+	_, _ = a.db.ExecContext(ctx, "SET enable_bitmapscan = OFF")
+
+	// Note: We embed the vector directly in the SQL query instead of using a parameter
+	// because lib/pq driver doesn't properly support vector type parameters
+	sqlQuery := fmt.Sprintf(`
+		SELECT id, content, text, image, image_data, url, metadata,
+		       COALESCE(1 - (embedding <=> '%s'::vector), 0) as score
+		FROM %s
+		WHERE embedding IS NOT NULL
+		ORDER BY embedding <=> '%s'::vector
+		LIMIT $1
+	`, queryVector, tableName, queryVector)
+
+	rows, err := a.db.QueryContext(ctx, sqlQuery, limit)
+	if err != nil {
+		return nil, a.wrapError(err, "search by vector similarity")
+	}
+	defer rows.Close()
+
+	var results []*vectordb.QueryResult
+	for rows.Next() {
+		var id, content, text, image, imageData, url, metadataJSON string
+		var score float64
+
+		if err := rows.Scan(&id, &content, &text, &image, &imageData, &url, &metadataJSON, &score); err != nil {
+			continue
+		}
+
+		docMetadata, err := a.convertJSONToMetadata(metadataJSON)
+		if err != nil {
+			continue
+		}
+
+		doc := &vectordb.Document{
+			ID:        id,
+			Content:   content,
+			Text:      text,
+			Image:     image,
+			ImageData: imageData,
+			URL:       url,
+			Metadata:  docMetadata,
+		}
+
+		results = append(results, &vectordb.QueryResult{
+			Document: *doc,
+			Score:    score,
+		})
+	}
+
+	// Re-enable indexes after query
+	_, _ = a.db.ExecContext(ctx, "SET enable_indexscan = ON")
+	_, _ = a.db.ExecContext(ctx, "SET enable_bitmapscan = ON")
+
+	return results, nil
+}
+

@@ -10,18 +10,21 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
 	"strings"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/supabase-community/supabase-go"
 )
 
 // Adapter wraps the Supabase client to implement the VectorDBClient interface
 type Adapter struct {
-	client *supabase.Client
-	db     *sql.DB
-	config *vectordb.Config
+	client    *supabase.Client
+	db        *sql.DB
+	config    *vectordb.Config
+	llmClient *llm.OpenAIClient
 }
 
 // NewAdapter creates a new Supabase adapter
@@ -65,10 +68,22 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		}
 	}
 
+	// Create LLM client for embeddings (optional, only if OpenAI API key is available)
+	var llmClient *llm.OpenAIClient
+	if openaiKey := os.Getenv("OPENAI_API_KEY"); openaiKey != "" {
+		var err error
+		llmClient, err = llm.NewOpenAIClient(openaiKey)
+		if err != nil {
+			// Just log warning, don't fail - embeddings won't work but other operations will
+			fmt.Fprintf(os.Stderr, "Warning: Failed to create OpenAI client for embeddings: %v\n", err)
+		}
+	}
+
 	return &Adapter{
-		client: client,
-		db:     db,
-		config: config,
+		client:    client,
+		db:        db,
+		config:    config,
+		llmClient: llmClient,
 	}, nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -30,28 +31,74 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		return a.wrapError(err, "convert metadata to JSON")
 	}
 
-	query := fmt.Sprintf(`
-		INSERT INTO %s (id, content, text, image, image_data, url, metadata)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (id) DO UPDATE SET
-			content = EXCLUDED.content,
-			text = EXCLUDED.text,
-			image = EXCLUDED.image,
-			image_data = EXCLUDED.image_data,
-			url = EXCLUDED.url,
-			metadata = EXCLUDED.metadata
-	`, tableName)
+	// Generate embedding if LLM client is available and document has content
+	var embeddingStr string
+	if a.llmClient != nil && (document.Content != "" || document.Text != "") {
+		textToEmbed := document.Content
+		if textToEmbed == "" {
+			textToEmbed = document.Text
+		}
 
-	_, err = a.db.ExecContext(ctx, query,
-		document.ID,
-		document.Content,
-		document.Text,
-		document.Image,
-		document.ImageData,
-		document.URL,
-		metadataJSON,
-	)
+		embedding, err := a.llmClient.GenerateEmbedding(ctx, textToEmbed, "")
+		if err != nil {
+			// Log warning but don't fail - allow document creation without embedding
+			fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", document.ID, err)
+		} else {
+			// Convert []float64 to pgvector format: [0.1, 0.2, 0.3, ...]
+			embeddingStr = floatsToVector(embedding)
+		}
+	}
 
+	var query string
+	var args []interface{}
+
+	if embeddingStr != "" {
+		query = fmt.Sprintf(`
+			INSERT INTO %s (id, content, text, image, image_data, url, metadata, embedding)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8::vector)
+			ON CONFLICT (id) DO UPDATE SET
+				content = EXCLUDED.content,
+				text = EXCLUDED.text,
+				image = EXCLUDED.image,
+				image_data = EXCLUDED.image_data,
+				url = EXCLUDED.url,
+				metadata = EXCLUDED.metadata,
+				embedding = EXCLUDED.embedding
+		`, tableName)
+		args = []interface{}{
+			document.ID,
+			document.Content,
+			document.Text,
+			document.Image,
+			document.ImageData,
+			document.URL,
+			metadataJSON,
+			embeddingStr,
+		}
+	} else {
+		query = fmt.Sprintf(`
+			INSERT INTO %s (id, content, text, image, image_data, url, metadata)
+			VALUES ($1, $2, $3, $4, $5, $6, $7)
+			ON CONFLICT (id) DO UPDATE SET
+				content = EXCLUDED.content,
+				text = EXCLUDED.text,
+				image = EXCLUDED.image,
+				image_data = EXCLUDED.image_data,
+				url = EXCLUDED.url,
+				metadata = EXCLUDED.metadata
+		`, tableName)
+		args = []interface{}{
+			document.ID,
+			document.Content,
+			document.Text,
+			document.Image,
+			document.ImageData,
+			document.URL,
+			metadataJSON,
+		}
+	}
+
+	_, err = a.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return a.wrapError(err, "create document")
 	}
@@ -375,4 +422,21 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 	}
 
 	return documents, nil
+}
+
+// floatsToVector converts a float64 slice to pgvector format string
+func floatsToVector(floats []float64) string {
+	if len(floats) == 0 {
+		return "[]"
+	}
+
+	result := "["
+	for i, f := range floats {
+		if i > 0 {
+			result += ","
+		}
+		result += fmt.Sprintf("%f", f)
+	}
+	result += "]"
+	return result
 }

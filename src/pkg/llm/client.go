@@ -11,6 +11,7 @@ import (
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	"github.com/openai/openai-go/packages/param"
 )
 
 // Client is the interface for LLM clients
@@ -228,6 +229,39 @@ func cleanJSONResponse(response string) string {
 // GetMetrics returns accumulated metrics
 func (c *OpenAIClient) GetMetrics() *Metrics {
 	return c.metrics
+}
+
+// GenerateEmbedding generates an embedding vector for the given text
+func (c *OpenAIClient) GenerateEmbedding(ctx context.Context, text string, model string) ([]float64, error) {
+	if model == "" {
+		model = "text-embedding-3-small" // Default embedding model
+	}
+
+	// Create params - Input is a string using param.NewOpt
+	params := openai.EmbeddingNewParams{
+		Model: openai.EmbeddingModel(model),
+		Input: openai.EmbeddingNewParamsInputUnion{
+			OfString: param.NewOpt(text),
+		},
+	}
+
+	response, err := c.client.Embeddings.New(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create embedding: %w", err)
+	}
+
+	if len(response.Data) == 0 {
+		return nil, fmt.Errorf("no embedding data returned")
+	}
+
+	// Convert float32 slice to float64 slice
+	embedding32 := response.Data[0].Embedding
+	embedding64 := make([]float64, len(embedding32))
+	for i, v := range embedding32 {
+		embedding64[i] = float64(v)
+	}
+
+	return embedding64, nil
 }
 
 // calculateCost calculates the cost of an API call based on model and tokens
