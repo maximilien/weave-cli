@@ -56,6 +56,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	searchMetadata, _ := cmd.Flags().GetBool("search-metadata")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	useBM25, _ := cmd.Flags().GetBool("bm25")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithInteractiveHelp()
@@ -73,6 +74,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		SearchMetadata: searchMetadata,
 		NoTruncate:     noTruncate,
 		UseBM25:        useBM25,
+		JSONOutput:     jsonOutput,
 	}
 
 	// Use vector database selector based on flags to get the appropriate database

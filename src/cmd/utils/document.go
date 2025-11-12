@@ -512,7 +512,7 @@ func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 // ShowWeaviateDocument shows Weaviate document details
 // ShowDocument shows document(s) using the vectordb abstraction (works for all DB types)
-func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool) {
+func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool, jsonOutput bool) {
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -521,40 +521,65 @@ func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionNam
 
 	// If document IDs are provided, show them directly
 	if len(documentIDs) > 0 {
-		for i, docID := range documentIDs {
+		var documents []interface{}
+
+		for _, docID := range documentIDs {
 			doc, err := client.GetDocument(ctx, collectionName, docID)
 			if err != nil {
 				PrintError(fmt.Sprintf("Failed to get document '%s': %v", docID, err))
 				continue
 			}
 
-			if i > 0 {
-				fmt.Println(strings.Repeat("=", 80))
-				fmt.Println()
-			}
-
-			// Display document details
-			color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
-			fmt.Printf("Collection: %s\n", collectionName)
-			fmt.Println()
-
-			fmt.Printf("Content:\n")
-			if showLong {
-				fmt.Printf("%s\n", doc.Content)
+			if jsonOutput {
+				documents = append(documents, map[string]interface{}{
+					"id":         doc.ID,
+					"collection": collectionName,
+					"content":    doc.Content,
+					"text":       doc.Text,
+					"metadata":   doc.Metadata,
+				})
 			} else {
-				preview := TruncateStringByLines(doc.Content, shortLines)
-				fmt.Printf("%s\n", preview)
-			}
-			fmt.Println()
+				if len(documents) > 0 {
+					fmt.Println(strings.Repeat("=", 80))
+					fmt.Println()
+				}
 
-			if len(doc.Metadata) > 0 {
-				fmt.Printf("Metadata:\n")
-				for key, value := range doc.Metadata {
-					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := SmartTruncate(valueStr, key, shortLines)
-					fmt.Printf("  %s: %s\n", key, truncatedValue)
+				// Display document details
+				color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
+				fmt.Printf("Collection: %s\n", collectionName)
+				fmt.Println()
+
+				fmt.Printf("Content:\n")
+				if showLong {
+					fmt.Printf("%s\n", doc.Content)
+				} else {
+					preview := TruncateStringByLines(doc.Content, shortLines)
+					fmt.Printf("%s\n", preview)
+				}
+				fmt.Println()
+
+				if len(doc.Metadata) > 0 {
+					fmt.Printf("Metadata:\n")
+					for key, value := range doc.Metadata {
+						valueStr := fmt.Sprintf("%v", value)
+						truncatedValue := SmartTruncate(valueStr, key, shortLines)
+						fmt.Printf("  %s: %s\n", key, truncatedValue)
+					}
 				}
 			}
+		}
+
+		if jsonOutput && len(documents) > 0 {
+			output := map[string]interface{}{
+				"documents": documents,
+				"count":     len(documents),
+			}
+			jsonBytes, err := json.MarshalIndent(output, "", "  ")
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+				return
+			}
+			fmt.Println(string(jsonBytes))
 		}
 		return
 	}
@@ -562,7 +587,7 @@ func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionNam
 	PrintWarning("Metadata and name-based document lookup not yet implemented for generic document show")
 }
 
-func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool) {
+func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool, jsonOutput bool) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		// Check if this might be a configuration error
@@ -725,7 +750,7 @@ func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, colle
 }
 
 // ShowMockDocument shows mock document details
-func ShowMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool) {
+func ShowMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool, jsonOutput bool) {
 	PrintInfo("Mock document show not yet implemented in new structure")
 }
 

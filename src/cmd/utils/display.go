@@ -738,7 +738,24 @@ func ShowDocumentMetadata(doc weaviate.Document, collectionName string) {
 }
 
 // DisplayQueryResults displays semantic search results with styling
-func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryText string, noTruncate bool) {
+func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryText string, noTruncate bool, jsonOutput bool) {
+	// Handle JSON output
+	if jsonOutput {
+		output := map[string]interface{}{
+			"collection": collectionName,
+			"query":      queryText,
+			"results":    results,
+			"count":      len(results),
+		}
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
+		return
+	}
+
 	PrintSuccess(fmt.Sprintf("Semantic search results for '%s' in collection '%s':", queryText, collectionName))
 	fmt.Println()
 

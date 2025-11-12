@@ -404,4 +404,3 @@ func (a *Adapter) searchByVectorSimilarity(ctx context.Context, collectionName s
 
 	return results, nil
 }
-

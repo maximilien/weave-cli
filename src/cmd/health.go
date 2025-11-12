@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
@@ -16,6 +17,17 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/spf13/cobra"
 )
+
+// HealthCheckResult represents the result of a health check
+type HealthCheckResult struct {
+	DatabaseName     string   `json:"database_name"`
+	DatabaseType     string   `json:"database_type"`
+	Healthy          bool     `json:"healthy"`
+	Message          string   `json:"message"`
+	URL              string   `json:"url,omitempty"`
+	Collections      []string `json:"collections,omitempty"`
+	CollectionsCount int      `json:"collections_count"`
+}
 
 // healthCmd represents the health command
 var healthCmd = &cobra.Command{
@@ -51,6 +63,8 @@ func init() {
 }
 
 func runHealthCheck(cmd *cobra.Command, args []string) {
+	jsonOutput, _ := cmd.Flags().GetBool("json")
+
 	// Load configuration
 	cfg, err := LoadConfigWithOverrides()
 	if err != nil {
@@ -70,9 +84,14 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 			os.Exit(1)
 		}
 
-		printHeader(fmt.Sprintf("Database Health Check: %s", dbName))
-		fmt.Println()
-		checkSingleDatabase(ctx, dbName, dbConfig)
+		result := checkSingleDatabase(ctx, dbName, dbConfig)
+		if jsonOutput {
+			outputHealthCheckJSON([]HealthCheckResult{result})
+		} else {
+			printHeader(fmt.Sprintf("Database Health Check: %s", dbName))
+			fmt.Println()
+			displayHealthCheckResult(result)
+		}
 		return
 	}
 
@@ -83,34 +102,42 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Check selected databases
-	if len(selection.Configs) == 1 {
-		dbConfig := &selection.Configs[0]
-		printHeader(fmt.Sprintf("%s Database Health Check", dbConfig.Name))
-		fmt.Println()
-		checkSingleDatabase(ctx, dbConfig.Name, dbConfig)
-	} else {
-		// Multiple databases
-		printHeader("Multiple Database Health Check")
-		fmt.Println()
+	// Collect results from all databases
+	var results []HealthCheckResult
+	for _, dbConfig := range selection.Configs {
+		result := checkSingleDatabase(ctx, dbConfig.Name, &dbConfig)
+		results = append(results, result)
+	}
 
-		for i, dbConfig := range selection.Configs {
-			if i > 0 {
-				fmt.Println()
-				fmt.Println("─────────────────────────────────────────")
-				fmt.Println()
+	// Output results
+	if jsonOutput {
+		outputHealthCheckJSON(results)
+	} else {
+		if len(results) == 1 {
+			printHeader(fmt.Sprintf("%s Database Health Check", results[0].DatabaseName))
+			fmt.Println()
+			displayHealthCheckResult(results[0])
+		} else {
+			printHeader("Multiple Database Health Check")
+			fmt.Println()
+			for i, result := range results {
+				if i > 0 {
+					fmt.Println()
+					fmt.Println("─────────────────────────────────────────")
+					fmt.Println()
+				}
+				displayHealthCheckResult(result)
 			}
-			checkSingleDatabase(ctx, dbConfig.Name, &dbConfig)
 		}
 	}
 }
 
-func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.VectorDBConfig) {
-	color.New(color.FgCyan, color.Bold).Printf("Checking %s database (%s)...\n", dbName, dbConfig.Type)
-	fmt.Println()
-
-	var healthStatus bool
-	var healthMessage string
+func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.VectorDBConfig) HealthCheckResult {
+	result := HealthCheckResult{
+		DatabaseName: dbName,
+		DatabaseType: string(dbConfig.Type),
+		URL:          getDisplayURL(dbConfig),
+	}
 
 	// Use vectordb abstraction for all database types
 	vdbConfig := &vectordb.Config{
@@ -125,34 +152,32 @@ func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.Ve
 
 	client, err := vectordb.CreateClient(vdbConfig)
 	if err != nil {
-		healthStatus = false
-		healthMessage = fmt.Sprintf("Failed to create database client: %v", err)
-	} else {
-		// Test connection
-		if err := client.Health(ctx); err != nil {
-			healthStatus = false
-			healthMessage = fmt.Sprintf("Health check failed: %v", err)
-		} else {
-			healthStatus = true
-			healthMessage = fmt.Sprintf("Successfully connected to %s at %s", dbConfig.Type, getDisplayURL(dbConfig))
-		}
+		result.Healthy = false
+		result.Message = fmt.Sprintf("Failed to create database client: %v", err)
+		return result
 	}
 
-	// Display health status
-	fmt.Println()
-	if healthStatus {
-		printSuccess("Database connection is healthy!")
-		color.New(color.FgGreen).Printf("✅ %s\n", healthMessage)
-	} else {
-		printError("Database connection failed!")
-		color.New(color.FgRed).Printf("❌ %s\n", healthMessage)
-		return // Don't try collection access if health check failed
+	// Test connection
+	if err := client.Health(ctx); err != nil {
+		result.Healthy = false
+		result.Message = fmt.Sprintf("Health check failed: %v", err)
+		return result
 	}
+
+	result.Healthy = true
+	result.Message = fmt.Sprintf("Successfully connected to %s at %s", dbConfig.Type, getDisplayURL(dbConfig))
 
 	// Test collection access
-	fmt.Println()
-	printHeader("Collection Access Test")
-	testCollectionAccessForDatabase(ctx, client)
+	collectionsInfo, err := client.ListCollections(ctx)
+	if err == nil {
+		for _, info := range collectionsInfo {
+			result.Collections = append(result.Collections, info.Name)
+		}
+		sort.Strings(result.Collections)
+		result.CollectionsCount = len(result.Collections)
+	}
+
+	return result
 }
 
 func getDisplayURL(dbConfig *config.VectorDBConfig) string {
@@ -165,26 +190,45 @@ func getDisplayURL(dbConfig *config.VectorDBConfig) string {
 	return "configured location"
 }
 
-func testCollectionAccessForDatabase(ctx context.Context, client vectordb.VectorDBClient) {
-	// List collections using vectordb interface
-	collectionsInfo, err := client.ListCollections(ctx)
-	if err != nil {
-		printError(fmt.Sprintf("Failed to list collections: %v", err))
-		return
+func displayHealthCheckResult(result HealthCheckResult) {
+	color.New(color.FgCyan, color.Bold).Printf("Checking %s database (%s)...\n", result.DatabaseName, result.DatabaseType)
+	fmt.Println()
+	fmt.Println()
+
+	if result.Healthy {
+		printSuccess("Database connection is healthy!")
+		color.New(color.FgGreen).Printf("✅ %s\n", result.Message)
+	} else {
+		printError("Database connection failed!")
+		color.New(color.FgRed).Printf("❌ %s\n", result.Message)
+		return // Don't show collection info if unhealthy
 	}
 
-	if len(collectionsInfo) == 0 {
+	// Show collection access test results
+	fmt.Println()
+	printHeader("Collection Access Test")
+
+	if result.CollectionsCount == 0 {
 		printWarning("No collections found in the database")
 	} else {
-		printSuccess(fmt.Sprintf("Found %d collections:", len(collectionsInfo)))
-		// Extract and sort collection names
-		var collectionNames []string
-		for _, info := range collectionsInfo {
-			collectionNames = append(collectionNames, info.Name)
-		}
-		sort.Strings(collectionNames)
-		for _, name := range collectionNames {
+		printSuccess(fmt.Sprintf("Found %d collections:", result.CollectionsCount))
+		for _, name := range result.Collections {
 			fmt.Printf("  - %s\n", name)
 		}
 	}
+}
+
+func outputHealthCheckJSON(results []HealthCheckResult) {
+	output := map[string]interface{}{
+		"results": results,
+		"total":   len(results),
+	}
+
+	jsonBytes, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		printError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+		return
+	}
+
+	fmt.Println(string(jsonBytes))
 }

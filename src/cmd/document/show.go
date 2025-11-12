@@ -58,6 +58,7 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	filename, _ := cmd.Flags().GetString("filename")
 	showSchema, _ := cmd.Flags().GetBool("schema")
 	expandMetadata, _ := cmd.Flags().GetBool("expand-metadata")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Use filename if name is not provided
 	if name == "" {
@@ -89,11 +90,11 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		utils.ShowWeaviateDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata)
+		utils.ShowWeaviateDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	case config.VectorDBTypeSupabase:
-		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata)
+		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	case config.VectorDBTypeMock:
-		utils.ShowMockDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata)
+		utils.ShowMockDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 		os.Exit(1)

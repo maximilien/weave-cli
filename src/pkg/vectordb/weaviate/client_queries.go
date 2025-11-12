@@ -27,6 +27,7 @@ type QueryOptions struct {
 	SearchMetadata bool    `json:"search_metadata"`
 	NoTruncate     bool    `json:"no_truncate"`
 	UseBM25        bool    `json:"use_bm25"`
+	JSONOutput     bool    `json:"json_output"`
 }
 
 // normalizeScore applies a non-linear transformation to spread scores across a wider range.
