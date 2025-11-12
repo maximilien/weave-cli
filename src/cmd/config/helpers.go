@@ -123,16 +123,22 @@ func loadEnvFile(filename string) map[string]string {
 }
 
 func saveEnvFile(filename string, values map[string]string) error {
-	// Read the example file to preserve comments and structure
-	exampleFile := ".env.example"
-	exampleContent, err := os.ReadFile(exampleFile)
-	if err != nil {
-		return fmt.Errorf("failed to read .env.example: %w", err)
+	// Read the existing .env file to preserve existing values and structure
+	// If it doesn't exist, fall back to .env.example
+	sourceFile := filename
+	if !fileExists(filename) {
+		sourceFile = ".env.example"
 	}
 
-	// Process the example file line by line
-	lines := strings.Split(string(exampleContent), "\n")
+	sourceContent, err := os.ReadFile(sourceFile)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", sourceFile, err)
+	}
+
+	// Process the source file line by line
+	lines := strings.Split(string(sourceContent), "\n")
 	var output []string
+	processedKeys := make(map[string]bool)
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
@@ -153,6 +159,7 @@ func saveEnvFile(filename string, values map[string]string) error {
 				// If we have a value for this key, uncomment and set it
 				if value, ok := values[key]; ok && value != "" {
 					output = append(output, fmt.Sprintf("%s=\"%s\"", key, value))
+					processedKeys[key] = true
 					continue
 				}
 			}
@@ -165,6 +172,7 @@ func saveEnvFile(filename string, values map[string]string) error {
 		parts := strings.SplitN(trimmed, "=", 2)
 		if len(parts) == 2 {
 			key := strings.TrimSpace(parts[0])
+			processedKeys[key] = true
 
 			// Use updated value if available
 			if value, ok := values[key]; ok && value != "" {
@@ -175,6 +183,13 @@ func saveEnvFile(filename string, values map[string]string) error {
 			}
 		} else {
 			output = append(output, line)
+		}
+	}
+
+	// Append any new keys that weren't in the source file
+	for key, value := range values {
+		if !processedKeys[key] && value != "" {
+			output = append(output, fmt.Sprintf("%s=\"%s\"", key, value))
 		}
 	}
 
