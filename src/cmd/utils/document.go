@@ -354,6 +354,31 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 		return err
 	}
 
+	// Determine file type and process accordingly
+	ext := strings.ToLower(filepath.Ext(filePath))
+
+	switch ext {
+	case ".pdf":
+		// PDF processing not yet implemented for generic vectordb client
+		return fmt.Errorf("PDF processing not yet implemented for this database type")
+	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
+		// Image processing not yet implemented for generic vectordb client
+		return fmt.Errorf("image processing not yet implemented for this database type")
+	default:
+		// Process as text file with chunking
+		return processTextFileGeneric(ctx, client, collectionName, filePath, chunkSize)
+	}
+}
+
+// processTextFileGeneric processes a text file with chunking for generic vectordb clients
+func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int) error {
+	// Convert to absolute path for consistent storage_path
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		// Fallback to original path if absolute path cannot be determined
+		absPath = filePath
+	}
+
 	// Read file content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -361,29 +386,44 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 		return err
 	}
 
-	// Create document with basic metadata
-	doc := &vectordb.Document{
-		ID:      uuid.New().String(),
-		Text:    string(content),
-		Content: string(content),
-		Metadata: map[string]interface{}{
-			"filename":          filepath.Base(filePath),
-			"original_filename": filepath.Base(filePath),
-			"file_size":         len(content),
-			"date_added":        time.Now().Format(time.RFC3339),
-			"storage_path":      filePath,
-			"type":              "text",
-		},
+	// Chunk the text content first to get total count
+	chunks := chunkText(string(content), chunkSize)
+
+	// Create documents for each chunk
+	successCount := 0
+	for i, chunk := range chunks {
+		docID := uuid.New().String()
+		now := time.Now().Format(time.RFC3339)
+
+		doc := &vectordb.Document{
+			ID:      docID,
+			Text:    chunk,
+			Content: chunk,
+			URL:     fmt.Sprintf("file://%s#chunk-%d", absPath, i),
+			Metadata: map[string]interface{}{
+				"id":                docID,
+				"filename":          filepath.Base(filePath),
+				"original_filename": filepath.Base(filePath),
+				"file_size":         len(content),
+				"date_added":        now,
+				"storage_path":      absPath,
+				"type":              "text",
+				"is_chunked":        len(chunks) > 1,
+				"total_chunks":      len(chunks),
+				"chunk_index":       i,
+				"chunk_sizes":       getChunkSizes(chunks),
+			},
+		}
+
+		err := client.CreateDocument(ctx, collectionName, doc)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to create document chunk %d: %v", i, err))
+			continue
+		}
+		successCount++
 	}
 
-	// Add document to collection
-	err = client.CreateDocument(ctx, collectionName, doc)
-	if err != nil {
-		PrintError(fmt.Sprintf("Failed to create document: %v", err))
-		return err
-	}
-
-	PrintSuccess(fmt.Sprintf("Document created successfully with ID: %s", doc.ID))
+	PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
 	return nil
 }
 
