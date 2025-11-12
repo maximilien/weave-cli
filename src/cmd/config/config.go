@@ -16,6 +16,7 @@ var Cmd = &cobra.Command{
 This command provides subcommands to view and manage configuration settings:
   • create/update - Interactively create or update .env and config.yaml files
   • update --weave-mcp - Download and install weave-mcp binary for REPL mode
+  • sync - Sync local configuration files to global ~/.weave-cli directory
   • show - Display current configuration
   • list - List configured databases and schemas`,
 }
@@ -28,6 +29,7 @@ func init() {
 	Cmd.AddCommand(showSchemaCmd)
 	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(updateCmd)
+	Cmd.AddCommand(syncCmd)
 
 	// Add flags for show-schema command
 	showSchemaCmd.Flags().Bool("yaml", false, "Output schema as YAML")

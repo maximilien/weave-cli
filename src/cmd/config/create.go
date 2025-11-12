@@ -6,9 +6,11 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
+	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -47,11 +49,13 @@ Examples:
 var (
 	createEnv        bool
 	createConfigYAML bool
+	createGlobal     bool
 )
 
 func init() {
 	createCmd.Flags().BoolVar(&createEnv, "env", false, "Create .env file")
 	createCmd.Flags().BoolVar(&createConfigYAML, "config-yaml", false, "Create config.yaml file")
+	createCmd.Flags().BoolVar(&createGlobal, "global", false, "Create config files in ~/.weave-cli directory (default: current directory)")
 }
 
 func runConfigCreate(cmd *cobra.Command, args []string) {
@@ -63,13 +67,44 @@ func runConfigCreate(cmd *cobra.Command, args []string) {
 		fmt.Println("  weave config create --env")
 		fmt.Println("  weave config create --config-yaml")
 		fmt.Println("  weave config create --env --config-yaml")
+		fmt.Println("  weave config create --env --global  # Create in ~/.weave-cli")
 		os.Exit(1)
+	}
+
+	// Determine target directory
+	var targetDir string
+	var locationDesc string
+	if createGlobal {
+		globalDir, err := configpkg.GetGlobalConfigDir()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get global config directory: %v", err))
+			os.Exit(1)
+		}
+
+		// Ensure global directory exists
+		created, err := configpkg.EnsureGlobalConfigDir()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to create global config directory: %v", err))
+			os.Exit(1)
+		}
+
+		if created {
+			color.New(color.FgGreen).Printf("✓ Created global config directory: %s\n", globalDir)
+			fmt.Println()
+		}
+
+		targetDir = globalDir
+		locationDesc = fmt.Sprintf("global directory (%s)", globalDir)
+	} else {
+		targetDir = "."
+		locationDesc = "current directory"
 	}
 
 	// Display welcome message
 	printHeader("Weave CLI Configuration Creator")
 	fmt.Println()
 	color.New(color.FgCyan).Println("This tool will help you create new configuration files from templates.")
+	color.New(color.FgCyan).Printf("Target location: %s\n", locationDesc)
 	fmt.Println()
 	color.New(color.FgYellow).Println("💡 Tips:")
 	fmt.Println("  • Press Enter to use default/example values")
@@ -79,7 +114,7 @@ func runConfigCreate(cmd *cobra.Command, args []string) {
 
 	// Create .env file
 	if createEnv {
-		if err := createEnvFile(); err != nil {
+		if err := createEnvFileInDir(targetDir); err != nil {
 			printError(fmt.Sprintf("Failed to create .env file: %v", err))
 			os.Exit(1)
 		}
@@ -87,7 +122,7 @@ func runConfigCreate(cmd *cobra.Command, args []string) {
 
 	// Create config.yaml file
 	if createConfigYAML {
-		if err := createConfigYAMLFile(); err != nil {
+		if err := createConfigYAMLFileInDir(targetDir); err != nil {
 			printError(fmt.Sprintf("Failed to create config.yaml file: %v", err))
 			os.Exit(1)
 		}
@@ -102,12 +137,12 @@ func runConfigCreate(cmd *cobra.Command, args []string) {
 	fmt.Println("  • Run 'weave health check' to test your connection")
 }
 
-// createEnvFile creates a new .env file from template
-func createEnvFile() error {
+// createEnvFileInDir creates a new .env file from template in the specified directory
+func createEnvFileInDir(targetDir string) error {
 	printHeader("📝 Creating .env File")
 	fmt.Println()
 
-	envFile := ".env"
+	envFile := filepath.Join(targetDir, ".env")
 	exampleFile := ".env.example"
 
 	// Check if .env already exists
@@ -218,12 +253,12 @@ func createEnvFile() error {
 	return nil
 }
 
-// createConfigYAMLFile creates a new config.yaml file from template
-func createConfigYAMLFile() error {
+// createConfigYAMLFileInDir creates a new config.yaml file from template in the specified directory
+func createConfigYAMLFileInDir(targetDir string) error {
 	printHeader("📝 Creating config.yaml File")
 	fmt.Println()
 
-	configFile := "config.yaml"
+	configFile := filepath.Join(targetDir, "config.yaml")
 	exampleFile := "config.yaml.example"
 
 	// Check if config.yaml already exists

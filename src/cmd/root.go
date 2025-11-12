@@ -23,6 +23,7 @@ var (
 	noTruncate     bool
 	noTips         bool
 	jsonOutput     bool
+	quietConfig    bool
 	vectorDBType   string
 	weaviateAPIKey string
 	weaviateURL    string
@@ -68,6 +69,7 @@ Supports Weaviate (cloud/local), Supabase PGVector, and Mock databases.
 ⚙️ CONFIGURATION & HEALTH:
   weave config create --env            # Create new .env file interactively
   weave config update --env            # Update existing .env file
+  weave config sync                    # Sync local config to ~/.weave-cli
   weave config update --weave-mcp      # Install weave-mcp binary for REPL
   weave config show                    # Show current configuration
   weave config list                    # List all configured databases
@@ -120,6 +122,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noTruncate, "no-truncate", false, "show all data without truncation")
 	rootCmd.PersistentFlags().BoolVar(&noTips, "no-tips", false, "suppress helpful tips and suggestions")
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "output results in JSON format")
+	rootCmd.PersistentFlags().BoolVar(&quietConfig, "quiet-config", false, "suppress config location information")
 	rootCmd.PersistentFlags().BoolVar(&noConfirm, "no-confirm", false, "skip confirmation prompts for destructive operations")
 
 	// REPL-specific flags
@@ -148,6 +151,7 @@ func init() {
 	_ = viper.BindPFlag("env", rootCmd.PersistentFlags().Lookup("env"))
 	_ = viper.BindPFlag("no-tips", rootCmd.PersistentFlags().Lookup("no-tips"))
 	_ = viper.BindPFlag("json", rootCmd.PersistentFlags().Lookup("json"))
+	_ = viper.BindPFlag("quiet-config", rootCmd.PersistentFlags().Lookup("quiet-config"))
 	_ = viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 	_ = viper.BindPFlag("quiet", rootCmd.PersistentFlags().Lookup("quiet"))
 	_ = viper.BindPFlag("no-color", rootCmd.PersistentFlags().Lookup("no-color"))

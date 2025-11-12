@@ -151,6 +151,22 @@ weave config update --weave-mcp
 3. config.yaml (optional) - For advanced customization
 4. Built-in defaults
 
+**Configuration Location** (precedence order):
+
+1. Local directory (`.env`, `config.yaml`) - Project-specific configuration
+2. Global directory (`~/.weave-cli/.env`, `~/.weave-cli/config.yaml`) - User-wide configuration
+
+```bash
+# Create configuration in global directory
+weave config create --env --global
+
+# Sync local configuration to global directory
+weave config sync
+
+# View which configuration location is being used
+weave config show
+```
+
 See the [User Guide](docs/USER_GUIDE.md#configuration) for detailed
 configuration options.
 

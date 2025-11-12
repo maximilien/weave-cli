@@ -6,9 +6,11 @@ package config
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/fatih/color"
+	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -60,12 +62,14 @@ var (
 	updateEnv        bool
 	updateConfigYAML bool
 	weaveMCP         bool
+	updateGlobal     bool
 )
 
 func init() {
 	updateCmd.Flags().BoolVar(&updateEnv, "env", false, "Update .env file")
 	updateCmd.Flags().BoolVar(&updateConfigYAML, "config-yaml", false, "Update config.yaml file")
 	updateCmd.Flags().BoolVar(&weaveMCP, "weave-mcp", false, "Download and install weave-mcp binary")
+	updateCmd.Flags().BoolVar(&updateGlobal, "global", false, "Update config files in ~/.weave-cli directory (default: current directory)")
 }
 
 func runConfigUpdate(cmd *cobra.Command, args []string) {
@@ -87,13 +91,44 @@ func runConfigUpdate(cmd *cobra.Command, args []string) {
 		fmt.Println("  weave config update --config-yaml")
 		fmt.Println("  weave config update --weave-mcp")
 		fmt.Println("  weave config update --env --config-yaml")
+		fmt.Println("  weave config update --env --global  # Update in ~/.weave-cli")
 		os.Exit(1)
+	}
+
+	// Determine target directory
+	var targetDir string
+	var locationDesc string
+	if updateGlobal {
+		globalDir, err := configpkg.GetGlobalConfigDir()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to get global config directory: %v", err))
+			os.Exit(1)
+		}
+
+		// Ensure global directory exists
+		created, err := configpkg.EnsureGlobalConfigDir()
+		if err != nil {
+			printError(fmt.Sprintf("Failed to create global config directory: %v", err))
+			os.Exit(1)
+		}
+
+		if created {
+			color.New(color.FgGreen).Printf("✓ Created global config directory: %s\n", globalDir)
+			fmt.Println()
+		}
+
+		targetDir = globalDir
+		locationDesc = fmt.Sprintf("global directory (%s)", globalDir)
+	} else {
+		targetDir = "."
+		locationDesc = "current directory"
 	}
 
 	// Display welcome message
 	printHeader("Weave CLI Configuration Updater")
 	fmt.Println()
 	color.New(color.FgCyan).Println("This tool will help you create or update your configuration files.")
+	color.New(color.FgCyan).Printf("Target location: %s\n", locationDesc)
 	fmt.Println()
 	color.New(color.FgYellow).Println("💡 Tips:")
 	fmt.Println("  • Press Enter to keep current/default value")
@@ -103,7 +138,7 @@ func runConfigUpdate(cmd *cobra.Command, args []string) {
 
 	// Update .env file
 	if updateEnv {
-		if err := updateEnvFile(); err != nil {
+		if err := updateEnvFileInDir(targetDir); err != nil {
 			printError(fmt.Sprintf("Failed to update .env file: %v", err))
 			os.Exit(1)
 		}
@@ -111,7 +146,7 @@ func runConfigUpdate(cmd *cobra.Command, args []string) {
 
 	// Update config.yaml file
 	if updateConfigYAML {
-		if err := updateConfigYAMLFile(); err != nil {
+		if err := updateConfigYAMLFileInDir(targetDir); err != nil {
 			printError(fmt.Sprintf("Failed to update config.yaml file: %v", err))
 			os.Exit(1)
 		}
@@ -126,13 +161,13 @@ func runConfigUpdate(cmd *cobra.Command, args []string) {
 	fmt.Println("  • Run 'weave health check' to test your connection")
 }
 
-// updateEnvFile interactively updates the .env file
-func updateEnvFile() error {
+// updateEnvFileInDir interactively updates the .env file in the specified directory
+func updateEnvFileInDir(targetDir string) error {
 	printHeader("📝 Updating .env File")
 	fmt.Println()
 
 	// Check if .env exists
-	envFile := ".env"
+	envFile := filepath.Join(targetDir, ".env")
 	envExists := fileExists(envFile)
 
 	if envExists {
@@ -249,13 +284,13 @@ func updateEnvFile() error {
 	return nil
 }
 
-// updateConfigYAMLFile interactively updates the config.yaml file
-func updateConfigYAMLFile() error {
+// updateConfigYAMLFileInDir interactively updates the config.yaml file in the specified directory
+func updateConfigYAMLFileInDir(targetDir string) error {
 	printHeader("📝 Updating config.yaml File")
 	fmt.Println()
 
 	// Check if config.yaml exists
-	configFile := "config.yaml"
+	configFile := filepath.Join(targetDir, "config.yaml")
 	configExists := fileExists(configFile)
 
 	if configExists {

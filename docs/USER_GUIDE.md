@@ -96,6 +96,45 @@ Weave CLI uses this priority order (highest to lowest):
 3. **config.yaml** (optional) - For persistent customization
 4. **Built-in defaults** (lowest) - Sensible defaults work out of box
 
+### Configuration Location
+
+Weave CLI supports both local (project-specific) and global (user-wide) configuration:
+
+**Location Precedence** (highest to lowest):
+
+1. **Local directory** (`.env`, `config.yaml`) - Project-specific configuration
+2. **Global directory** (`~/.weave-cli/.env`, `~/.weave-cli/config.yaml`) - User-wide configuration
+
+This allows you to:
+- Have a global configuration that works across all projects
+- Override with project-specific settings when needed
+- Easily share configuration across multiple directories
+
+**Working with Global Configuration:**
+
+```bash
+# Create configuration in global directory
+weave config create --env --global
+weave config update --env --global
+
+# Sync local configuration to global directory
+weave config sync                      # Sync both .env and config.yaml
+weave config sync --env                # Sync only .env
+weave config sync --config-yaml        # Sync only config.yaml
+
+# View which configuration location is being used
+weave config show                      # Shows: 📍 Location: Local/Global
+
+# Use --quiet-config flag to suppress config location info
+weave cols ls --quiet-config
+```
+
+**Use Cases:**
+
+- **Global Config**: Perfect for personal API keys and default settings used across all projects
+- **Local Config**: Ideal for project-specific collections, schemas, or database connections
+- **Hybrid**: Keep secrets in global `~/.weave-cli/.env`, project settings in local `config.yaml`
+
 ### Quick Start Configuration
 
 **Option 1: Interactive Configuration (Recommended)**
@@ -673,11 +712,18 @@ weave config update --env              # Update .env file interactively
 weave config update --config-yaml      # Update config.yaml file interactively
 weave config update --env --config-yaml  # Update both files
 
+# Global configuration (NEW in v0.3.11)
+weave config create --env --global     # Create .env in ~/.weave-cli
+weave config update --env --global     # Update .env in ~/.weave-cli
+weave config sync                      # Sync local config to ~/.weave-cli
+weave config sync --env                # Sync only .env to global
+weave config sync --config-yaml        # Sync only config.yaml to global
+
 # Install weave-mcp binary for REPL mode (NEW in v0.3.1)
 weave config update --weave-mcp        # Download and install weave-mcp
 
 # Show current configuration
-weave config show
+weave config show                      # Shows location (local/global)
 
 # Show configuration with custom files
 weave config show --config /path/to/config.yaml --env /path/to/.env

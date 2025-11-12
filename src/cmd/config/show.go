@@ -9,7 +9,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/cmd/utils"
-	"github.com/maximilien/weave-cli/src/pkg/config"
+	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 )
 
@@ -67,8 +67,22 @@ func runShow(cobraCmd *cobra.Command, args []string) {
 	// Display configuration sources
 	fmt.Println()
 	printHeader("Configuration Sources")
-	fmt.Printf("Config file: %s\n", config.GetConfigFile())
-	fmt.Printf("Env file: %s\n", config.GetEnvFile())
+
+	// Find config paths to show location
+	configPaths, err := configpkg.FindConfigPaths()
+	if err == nil {
+		// Show location information
+		if configPaths.Location == "global" {
+			globalDir, _ := configpkg.GetGlobalConfigDir()
+			color.New(color.FgCyan).Printf("📍 Location: Global (%s)\n", globalDir)
+		} else {
+			color.New(color.FgCyan).Printf("📍 Location: Local (current directory)\n")
+		}
+		fmt.Println()
+	}
+
+	fmt.Printf("Config file: %s\n", configpkg.GetConfigFile())
+	fmt.Printf("Env file: %s\n", configpkg.GetEnvFile())
 
 	// Display schema configuration
 	fmt.Println()

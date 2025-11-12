@@ -122,8 +122,9 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	// Load environment variables with priority order:
 	// 1. Command flags (highest priority)
 	// 2. --env file
-	// 3. .env file
-	// 4. Shell environment (lowest priority)
+	// 3. Local .env file (current directory)
+	// 4. Global .env file (~/.weave-cli/.env)
+	// 5. Shell environment (lowest priority)
 
 	// Load from --env file if specified
 	if opts.EnvFile != "" {
@@ -131,8 +132,12 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 			return nil, fmt.Errorf("failed to load env file %s: %w", opts.EnvFile, err)
 		}
 	} else {
-		// Try to load .env from current directory
-		_ = godotenv.Load() // .env file is optional, so we continue without it
+		// Find config paths with proper precedence
+		configPaths, err := FindConfigPaths()
+		if err == nil && configPaths.EnvPath != "" {
+			// Try to load .env from the discovered path
+			_ = godotenv.Load(configPaths.EnvPath) // .env file is optional
+		}
 	}
 
 	// Override with command-line flags (highest priority)
@@ -155,9 +160,16 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 	if opts.ConfigFile != "" {
 		viper.SetConfigFile(opts.ConfigFile)
 	} else {
-		viper.AddConfigPath(".")
-		viper.SetConfigType("yaml")
-		viper.SetConfigName("config")
+		// Find config paths with proper precedence
+		configPaths, err := FindConfigPaths()
+		if err == nil && fileExists(configPaths.ConfigPath) {
+			viper.SetConfigFile(configPaths.ConfigPath)
+		} else {
+			// Fallback to default behavior (search in current directory)
+			viper.AddConfigPath(".")
+			viper.SetConfigType("yaml")
+			viper.SetConfigName("config")
+		}
 	}
 
 	viper.AutomaticEnv()
