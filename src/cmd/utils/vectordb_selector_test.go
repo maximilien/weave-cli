@@ -378,9 +378,33 @@ func TestValidateDatabaseSelection(t *testing.T) {
 
 // TestGetAllConfiguredDatabases tests the getAllConfiguredDatabases function
 func TestGetAllConfiguredDatabases(t *testing.T) {
+	// Save original environment variables
+	origEnvVars := map[string]string{
+		"SUPABASE_DATABASE_URL":      os.Getenv("SUPABASE_DATABASE_URL"),
+		"SUPABASE_DATABASE_KEY":      os.Getenv("SUPABASE_DATABASE_KEY"),
+		"DATABASE_URL":               os.Getenv("DATABASE_URL"),
+		"SUPABASE_ANON_KEY":          os.Getenv("SUPABASE_ANON_KEY"),
+		"SUPABASE_KEY":               os.Getenv("SUPABASE_KEY"),
+		"SUPABASE_PROJECT_API_KEY":   os.Getenv("SUPABASE_PROJECT_API_KEY"),
+		"SUPABASE_PROJECT_URL":       os.Getenv("SUPABASE_PROJECT_URL"),
+		"SUPABASE_DATABASE_PASSWORD": os.Getenv("SUPABASE_DATABASE_PASSWORD"),
+	}
+
+	// Restore all environment variables after all tests
+	defer func() {
+		for key, value := range origEnvVars {
+			if value != "" {
+				os.Setenv(key, value)
+			} else {
+				os.Unsetenv(key)
+			}
+		}
+	}()
+
 	tests := []struct {
 		name          string
 		config        *config.Config
+		setEnvVars    bool
 		expectedCount int
 		expectError   bool
 	}{
@@ -394,15 +418,17 @@ func TestGetAllConfiguredDatabases(t *testing.T) {
 					},
 				},
 			},
+			setEnvVars:    false,
 			expectedCount: 2,
 		},
 		{
-			name: "returns error when no databases configured",
+			name: "returns error when no databases configured and no env vars",
 			config: &config.Config{
 				Databases: config.DatabasesConfig{
 					VectorDatabases: []config.VectorDBConfig{},
 				},
 			},
+			setEnvVars:  false,
 			expectError: true,
 		},
 		{
@@ -414,12 +440,24 @@ func TestGetAllConfiguredDatabases(t *testing.T) {
 					},
 				},
 			},
+			setEnvVars:    false,
 			expectedCount: 1,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			// Clear all Supabase environment variables for each test
+			for key := range origEnvVars {
+				os.Unsetenv(key)
+			}
+
+			// Set env vars if test requires them
+			if tt.setEnvVars {
+				os.Setenv("SUPABASE_DATABASE_URL", "postgresql://test")
+				os.Setenv("SUPABASE_DATABASE_KEY", "test-key")
+			}
+
 			result, err := getAllConfiguredDatabases(tt.config)
 
 			if tt.expectError {

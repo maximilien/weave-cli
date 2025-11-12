@@ -452,16 +452,40 @@ func ListSupabaseCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		}
 		fmt.Println()
 
-		// Display collections in a table format
-		for _, info := range collectionInfos {
-			fmt.Printf("?? %s", info.Name)
+		// Display collections in compact format matching Weaviate/Mock listings
+		for i, info := range collectionInfos {
+			// Color coding: green for collections with documents, yellow for empty collections
+			var nameColor string
 			if info.Count > 0 {
-				fmt.Printf(" (%d documents)", info.Count)
+				nameColor = GetStyledKeyProminent(info.Name)
+			} else {
+				nameColor = GetStyledKeyDimmed(info.Name)
 			}
+
+			// Document count with color
+			var countStr string
+			if info.Count > 0 {
+				countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.Count))
+			} else {
+				countStr = GetStyledValueDimmed("empty")
+			}
+
+			// Schema type indicator - use generic doc icon for Supabase
+			typeIndicator := GetStyledEmoji("📄")
+
+			// Description if available
+			var descriptionStr string
 			if info.Description != "" {
-				fmt.Printf(" - %s", info.Description)
+				descriptionStr = GetStyledValueDimmed(fmt.Sprintf("(%s)", info.Description))
 			}
-			fmt.Println()
+
+			// Compact single-line format
+			fmt.Printf("%2d. %s %s %s %s\n",
+				i+1,
+				nameColor,
+				countStr,
+				typeIndicator,
+				descriptionStr)
 		}
 	} else {
 		// JSON output

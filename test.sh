@@ -140,21 +140,13 @@ run_unit_tests() {
         exit 1
     fi
     
-    # Run basic unit tests
-    print_status "Running basic unit tests..."
+    # Run unit tests
+    print_status "Running unit tests..."
     if go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"; then
-        print_success "Basic unit tests passed!"
+        print_success "Unit tests passed!"
     else
-        print_error "Basic unit tests failed!"
+        print_error "Unit tests failed!"
         exit 1
-    fi
-    
-    # Run extended unit tests if available
-    print_status "Running extended unit tests..."
-    if go test -v -timeout=30s ./tests/... -run="TestConfigExtended|TestMockExtended"; then
-        print_success "Extended unit tests passed!"
-    else
-        print_warning "Extended unit tests failed or not found"
     fi
 }
 
