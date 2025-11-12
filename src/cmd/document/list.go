@@ -37,6 +37,7 @@ func init() {
 	ListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	ListCmd.Flags().BoolP("virtual", "w", false, "Show documents in virtual structure (aggregate chunks by original document)")
 	ListCmd.Flags().BoolP("summary", "S", false, "Show a clean summary of documents (works with --virtual)")
+	ListCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runDocumentList(cmd *cobra.Command, args []string) {
@@ -46,6 +47,7 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	shortLines, _ := cmd.Flags().GetInt("short")
 	virtual, _ := cmd.Flags().GetBool("virtual")
 	summary, _ := cmd.Flags().GetBool("summary")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Load configuration with interactive help
 	cfg, err := utils.LoadConfigWithInteractiveHelp()
@@ -101,5 +103,5 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 
 	// Use generic ListDocuments that works with all database types via vectordb abstraction
-	utils.ListDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary)
+	utils.ListDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary, jsonOutput)
 }

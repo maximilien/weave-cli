@@ -241,7 +241,23 @@ func extractPageNumbers(images []VirtualDocument) (int, int) {
 }
 
 // DisplayRegularDocuments displays regular documents with styling
-func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int) {
+func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, jsonOutput bool) {
+	// If JSON output is requested, marshal and print JSON
+	if jsonOutput {
+		output := map[string]interface{}{
+			"collection":      collectionName,
+			"total_documents": len(documents),
+			"documents":       documents,
+		}
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal documents to JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
+		return
+	}
+
 	PrintSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
 	fmt.Println()
 
@@ -289,12 +305,39 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 }
 
 // DisplayVirtualDocuments displays virtual documents with aggregation and styling
-func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, summary bool) {
+func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, summary bool, jsonOutput bool) {
 	// Aggregate documents by original filename/source
 	virtualDocs := AggregateDocumentsByOriginal(documents)
 
 	if len(virtualDocs) == 0 {
-		PrintWarning(fmt.Sprintf("No virtual documents found in collection '%s'", collectionName))
+		if jsonOutput {
+			output := map[string]interface{}{
+				"collection":        collectionName,
+				"total_documents":   0,
+				"virtual_documents": []VirtualDocument{},
+			}
+			jsonBytes, _ := json.MarshalIndent(output, "", "  ")
+			fmt.Println(string(jsonBytes))
+		} else {
+			PrintWarning(fmt.Sprintf("No virtual documents found in collection '%s'", collectionName))
+		}
+		return
+	}
+
+	// If JSON output is requested, marshal and print JSON
+	if jsonOutput {
+		output := map[string]interface{}{
+			"collection":              collectionName,
+			"total_documents":         len(documents),
+			"total_virtual_documents": len(virtualDocs),
+			"virtual_documents":       virtualDocs,
+		}
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal virtual documents to JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
 		return
 	}
 
