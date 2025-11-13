@@ -153,8 +153,10 @@ weave config update --weave-mcp
 
 **Configuration Location** (precedence order):
 
-1. Local directory (`.env`, `config.yaml`) - Project-specific configuration
-2. Global directory (`~/.weave-cli/.env`, `~/.weave-cli/config.yaml`) - User-wide configuration
+1. Local directory (`.env`, `config.yaml`) - Project-specific
+   configuration
+2. Global directory (`~/.weave-cli/.env`, `~/.weave-cli/config.yaml`) -
+   User-wide configuration
 
 ```bash
 # Create configuration in global directory

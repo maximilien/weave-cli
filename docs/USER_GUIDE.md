@@ -848,23 +848,63 @@ weave embeds ls         # Alternative alias
 weave embeddings list --verbose
 weave emb ls -v
 
+# Filter by database type (shows only supported embeddings)
+weave embeddings list --database supabase
+weave emb ls --database weaviate-cloud
+weave emb ls -d mock
+
+# Show database compatibility for each embedding
+weave embeddings list --show-compatibility
+weave emb ls -c
+
+# Combine flags
+weave emb ls --database supabase --show-compatibility
+weave emb ls -d weaviate-local -v
+
 # Show embeddings for a specific collection
 weave embeddings list MyCollection
 ```
 
+**Database-Specific Filtering:**
+
+Different vector databases support different embedding providers. Use the `--database` flag to see only compatible embeddings:
+
+```bash
+# Supabase only supports OpenAI embeddings
+weave emb ls --database supabase
+# Shows: OpenAI models only (text-embedding-3-small, text-embedding-ada-002, etc.)
+
+# Weaviate supports all providers
+weave emb ls --database weaviate-cloud
+# Shows: OpenAI, Cohere, Hugging Face, Google PaLM, AWS, Jina AI, and more
+
+# See docs/VDB_SUPPORT.md for complete compatibility matrix
+```
+
 **Embedding Models by Provider:**
 
-- **OpenAI**: text-embedding-3-small, text-embedding-3-large, ada,
-babbage, curie, davinci
-- **Cohere**: embed-english-v3.0, embed-multilingual-v3.0,
-embed-english-light-v3.0
-- **Hugging Face**: all-MiniLM-L6-v2, all-mpnet-base-v2,
-paraphrase-MiniLM-L6-v2
-- **Weaviate**: weaviate-default (built-in, free)
-- **Google PaLM**: textembedding-gecko@001
-- **AWS Bedrock**: amazon.titan-embed-text-v1
-- **Jina AI**: jina-embeddings-v2-base-en
-- **Image**: clip-vit-base-patch32 (multimodal), resnet50
+- **OpenAI** (All databases): text-embedding-3-small, text-embedding-3-large, text-embedding-ada-002
+- **Cohere** (Weaviate only): embed-english-v3.0, embed-multilingual-v3.0
+- **Hugging Face** (Weaviate only): all-MiniLM-L6-v2, all-mpnet-base-v2
+- **Weaviate** (Weaviate only): weaviate-default (built-in, free)
+- **Google PaLM** (Weaviate only): textembedding-gecko@001
+- **AWS Bedrock** (Weaviate only): amazon.titan-embed-text-v1
+- **Jina AI** (Weaviate only): jina-embeddings-v2-base-en
+- **Image** (Weaviate only): clip-vit-base-patch32 (multimodal), resnet50
+
+**Understanding Database Compatibility:**
+
+The `--show-compatibility` flag displays which databases support each embedding:
+
+```bash
+weave emb ls --show-compatibility
+# Output shows:
+#   📝 text-embedding-3-small
+#      Supported: ☁️ Weaviate Cloud, 🏠 Weaviate Local, 🐘 Supabase, 🧪 Mock
+#
+#   📝 embed-english-v3.0
+#      Supported: ☁️ Weaviate Cloud, 🏠 Weaviate Local, 🧪 Mock
+```
 
 **API Key Requirements:**
 
