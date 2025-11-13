@@ -231,10 +231,16 @@ func (a *Adapter) searchByFullText(ctx context.Context, collectionName, query st
 		limit = options.TopK
 	}
 
-	// Use PostgreSQL's full-text search
+	// Use PostgreSQL's full-text search with improved ranking
+	// ts_rank_cd (cover density) provides better ranking than basic ts_rank
+	// Normalization flags: 1 (divides by document length) approximates BM25's length normalization
 	sqlQuery := fmt.Sprintf(`
 		SELECT id, content, text, image, image_data, url, metadata,
-		       ts_rank(to_tsvector('english', COALESCE(content, '') || ' ' || COALESCE(text, '')), plainto_tsquery('english', $1)) as score
+		       ts_rank_cd(
+		           to_tsvector('english', COALESCE(content, '') || ' ' || COALESCE(text, '')),
+		           plainto_tsquery('english', $1),
+		           1  -- Normalize by document length (BM25-like)
+		       ) as score
 		FROM %s
 		WHERE to_tsvector('english', COALESCE(content, '') || ' ' || COALESCE(text, '')) @@ plainto_tsquery('english', $1)
 		ORDER BY score DESC, id

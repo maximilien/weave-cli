@@ -43,8 +43,8 @@ This document tracks feature support and compatibility across different vector d
 | Feature | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
 |---------|----------------|----------------|----------|------|-------|
 | Semantic Search | ✅ | ✅ | ✅ | ✅ | Requires embeddings |
-| BM25 Search | ✅ | ✅ | ⚠️ | ✅ | Supabase: Limited full-text search |
-| Hybrid Search | ✅ | ✅ | ⚠️ | ✅ | Supabase: Limited support |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | Supabase: Uses ts_rank_cd with length normalization |
+| Hybrid Search | ✅ | ✅ | ✅ | ✅ | Combines semantic + BM25 |
 | Metadata Search | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Embedding Support
@@ -72,8 +72,8 @@ This document tracks feature support and compatibility across different vector d
 | `weave docs delete` | ✅ | ✅ | ✅ | ✅ | - |
 | `weave docs ls` | ✅ | ✅ | ✅ | ✅ | - |
 | `weave search semantic` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search bm25` | ✅ | ✅ | ⚠️ | ✅ | Supabase: Limited |
-| `weave search hybrid` | ✅ | ✅ | ⚠️ | ✅ | Supabase: Limited |
+| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | - |
 | `weave search metadata` | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Configuration
@@ -134,14 +134,14 @@ databases:
 ```
 
 **Known Limitations:**
-- **BM25 Search**: Limited full-text search capabilities compared to Weaviate
-- **Hybrid Search**: Not as sophisticated as Weaviate's hybrid implementation
 - **Vectorizers**: Currently only supports OpenAI embeddings and manual embeddings
 - **Collection Names**: Automatically normalizes names (underscores → hyphens)
+- **Performance**: BM25 search works well but could be faster with pre-computed tsvector columns and GIN indexes (see docs/SUPABASE_BM25_IMPROVEMENT.md for optimization options)
 
-**Workarounds:**
-- For text search, use metadata filtering combined with semantic search
-- For hybrid functionality, application-level combination of results may be needed
+**BM25 Implementation:**
+- Uses PostgreSQL's `ts_rank_cd()` with document length normalization
+- Provides good ranking quality comparable to other systems
+- For better performance on large datasets, consider adding GIN indexes (optional)
 
 ### Mock Database
 
