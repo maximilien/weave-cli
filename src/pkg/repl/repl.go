@@ -15,6 +15,7 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/fatih/color"
 	"github.com/joho/godotenv"
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/executor"
 	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/viper"
@@ -44,8 +45,14 @@ func New() (*REPL, error) {
 
 // NewWithOptions creates a new REPL instance with options
 func NewWithOptions(opts Options) (*REPL, error) {
-	// Load .env file
-	_ = godotenv.Load()
+	// Load .env file with proper precedence (local → global)
+	configPaths, err := config.FindConfigPaths()
+	if err == nil && configPaths.EnvPath != "" {
+		_ = godotenv.Load(configPaths.EnvPath)
+	} else {
+		// Fallback to current directory
+		_ = godotenv.Load()
+	}
 
 	// Create executor
 	config := &executor.Config{

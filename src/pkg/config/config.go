@@ -42,6 +42,9 @@ const (
 	DefaultTimeout         = 10 // Default timeout in seconds for vector DB operations
 )
 
+// Package-level variable to track which env file was loaded
+var loadedEnvFile string
+
 // Collection represents a collection configuration
 type Collection struct {
 	Name        string `yaml:"name"`
@@ -131,12 +134,18 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 		if err := godotenv.Load(opts.EnvFile); err != nil {
 			return nil, fmt.Errorf("failed to load env file %s: %w", opts.EnvFile, err)
 		}
+		loadedEnvFile = opts.EnvFile
 	} else {
 		// Find config paths with proper precedence
 		configPaths, err := FindConfigPaths()
 		if err == nil && configPaths.EnvPath != "" {
 			// Try to load .env from the discovered path
-			_ = godotenv.Load(configPaths.EnvPath) // .env file is optional
+			if err := godotenv.Load(configPaths.EnvPath); err == nil {
+				// Only set loadedEnvFile if the file was successfully loaded
+				if fileExists(configPaths.EnvPath) {
+					loadedEnvFile = configPaths.EnvPath
+				}
+			}
 		}
 	}
 
@@ -466,17 +475,22 @@ func GetConfigFile() string {
 
 // GetEnvFile returns the path to the env file being used
 func GetEnvFile() string {
+	// Return the loaded env file if available
+	if loadedEnvFile != "" {
+		absPath, _ := filepath.Abs(loadedEnvFile)
+		return absPath
+	}
+
+	// Fallback: check ENV_FILE environment variable
 	if envFile := os.Getenv("ENV_FILE"); envFile != "" {
 		return envFile
 	}
 
-	// Check common locations
-	locations := []string{".env", "./.env"}
-	for _, loc := range locations {
-		if _, err := os.Stat(loc); err == nil {
-			absPath, _ := filepath.Abs(loc)
-			return absPath
-		}
+	// Fallback: use FindConfigPaths to locate the env file
+	configPaths, err := FindConfigPaths()
+	if err == nil && configPaths.EnvPath != "" && fileExists(configPaths.EnvPath) {
+		absPath, _ := filepath.Abs(configPaths.EnvPath)
+		return absPath
 	}
 
 	return ""
