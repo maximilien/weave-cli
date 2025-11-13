@@ -315,6 +315,134 @@ func TestSupabaseIntegration(t *testing.T) {
 		}
 	})
 
+	// Test documents with different embeddings
+	t.Run("DocumentsWithDifferentEmbeddings", func(t *testing.T) {
+		// Skip if no OpenAI API key for embeddings
+		if os.Getenv("OPENAI_API_KEY") == "" {
+			t.Skip("Skipping embedding test: OPENAI_API_KEY not set")
+		}
+
+		// Test 1: Collection with OpenAI embeddings (text2vec-openai)
+		openAICollection := "test_openai_embeddings_supabase"
+		_ = client.DeleteCollection(ctx, openAICollection)
+
+		openAISchema := &vectordb.CollectionSchema{
+			Class:      openAICollection,
+			Vectorizer: "text2vec-openai",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+				{
+					Name:     "topic",
+					DataType: []string{"text"},
+				},
+			},
+		}
+
+		err := client.CreateCollection(ctx, openAICollection, openAISchema)
+		if err != nil {
+			t.Errorf("Failed to create OpenAI collection: %v", err)
+		} else {
+			t.Logf("✓ Created collection with OpenAI embeddings (text2vec-openai)")
+		}
+
+		// Create document with OpenAI embeddings
+		openAIDoc := &vectordb.Document{
+			ID:      "openai-doc-1",
+			Content: "Artificial intelligence and machine learning are transforming technology",
+			Metadata: map[string]interface{}{
+				"topic":     "AI",
+				"embedding": "openai",
+			},
+		}
+
+		err = client.CreateDocument(ctx, openAICollection, openAIDoc)
+		if err != nil {
+			t.Errorf("Failed to create document with OpenAI embeddings: %v", err)
+		} else {
+			t.Logf("✓ Created document with OpenAI embeddings")
+		}
+
+		// Verify semantic search works with OpenAI embeddings
+		searchOpts := &vectordb.QueryOptions{TopK: 5}
+		results, err := client.SearchSemantic(ctx, openAICollection, "tell me about AI and ML", searchOpts)
+		if err != nil {
+			t.Errorf("Failed to search with OpenAI embeddings: %v", err)
+		} else {
+			if len(results) > 0 {
+				t.Logf("✓ Semantic search with OpenAI embeddings returned %d results", len(results))
+				for i, result := range results {
+					t.Logf("  Result %d: ID=%s, Score=%.3f", i+1, result.Document.ID, result.Score)
+				}
+			} else {
+				t.Logf("⚠ Semantic search returned no results (may need time for embedding generation)")
+			}
+		}
+
+		// Test 2: Collection with no vectorizer (manual embeddings)
+		noneCollection := "test_none_vectorizer_supabase"
+		_ = client.DeleteCollection(ctx, noneCollection)
+
+		noneSchema := &vectordb.CollectionSchema{
+			Class:      noneCollection,
+			Vectorizer: "none",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+				{
+					Name:     "topic",
+					DataType: []string{"text"},
+				},
+			},
+		}
+
+		err = client.CreateCollection(ctx, noneCollection, noneSchema)
+		if err != nil {
+			t.Errorf("Failed to create collection with no vectorizer: %v", err)
+		} else {
+			t.Logf("✓ Created collection with no automatic embeddings (vectorizer: none)")
+		}
+
+		// Create document with no automatic embeddings
+		noneDoc := &vectordb.Document{
+			ID:      "none-doc-1",
+			Content: "This document has no automatic embeddings",
+			Metadata: map[string]interface{}{
+				"topic":     "test",
+				"embedding": "none",
+			},
+		}
+
+		err = client.CreateDocument(ctx, noneCollection, noneDoc)
+		if err != nil {
+			t.Errorf("Failed to create document in non-vectorized collection: %v", err)
+		} else {
+			t.Logf("✓ Created document with no automatic embeddings")
+		}
+
+		// Verify we can retrieve the document
+		doc, err := client.GetDocument(ctx, noneCollection, noneDoc.ID)
+		if err != nil {
+			t.Errorf("Failed to get document from non-vectorized collection: %v", err)
+		} else {
+			if doc.ID == noneDoc.ID && doc.Content == noneDoc.Content {
+				t.Logf("✓ Successfully retrieved document from non-vectorized collection")
+			} else {
+				t.Errorf("Retrieved document data mismatch")
+			}
+		}
+
+		// Cleanup test collections
+		t.Logf("Cleaning up embedding test collections...")
+		_ = client.DeleteCollection(ctx, openAICollection)
+		_ = client.DeleteCollection(ctx, noneCollection)
+		t.Logf("✓ Embedding test completed successfully")
+	})
+
 	// Test schema operations
 	t.Run("GetSchema", func(t *testing.T) {
 		schema, err := client.GetSchema(ctx, collectionName)

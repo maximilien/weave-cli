@@ -327,6 +327,110 @@ func TestWeaviateComprehensiveIntegration(t *testing.T) {
 		}
 	})
 
+	// Test with different embeddings/vectorizers
+	t.Run("DocumentsWithDifferentEmbeddings", func(t *testing.T) {
+		// Test 1: Collection with OpenAI embeddings (text2vec-openai)
+		openAICollection := "TestOpenAIEmbeddings"
+		_ = client.DeleteCollection(ctx, openAICollection) // Clean up if exists
+
+		openAISchema := &vectordb.CollectionSchema{
+			Class:      openAICollection,
+			Vectorizer: "text2vec-openai",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+			},
+		}
+
+		err := client.CreateCollection(ctx, openAICollection, openAISchema)
+		if err != nil {
+			t.Errorf("Failed to create OpenAI collection: %v", err)
+		}
+
+		// Add document with OpenAI embeddings
+		openAIDoc := &vectordb.Document{
+			ID:      "openai-doc-1",
+			Content: "Artificial intelligence and machine learning are transforming technology",
+			Metadata: map[string]interface{}{
+				"topic":     "AI",
+				"embedding": "openai",
+			},
+		}
+
+		err = client.CreateDocument(ctx, openAICollection, openAIDoc)
+		if err != nil {
+			t.Errorf("Failed to create document with OpenAI embeddings: %v", err)
+		}
+
+		// Verify semantic search works with OpenAI embeddings
+		searchOpts := &vectordb.QueryOptions{TopK: 5}
+		results, err := client.SearchSemantic(ctx, openAICollection, "tell me about AI and ML", searchOpts)
+		if err != nil {
+			t.Errorf("Failed to search with OpenAI embeddings: %v", err)
+		}
+
+		if len(results) == 0 {
+			t.Error("Expected results from OpenAI embedding search")
+		} else {
+			t.Logf("OpenAI embedding search returned %d results with top score: %.3f",
+				len(results), results[0].Score)
+		}
+
+		// Test 2: Collection with no vectorizer (manual embeddings)
+		noneCollection := "TestNoVectorizer"
+		_ = client.DeleteCollection(ctx, noneCollection) // Clean up if exists
+
+		noneSchema := &vectordb.CollectionSchema{
+			Class:      noneCollection,
+			Vectorizer: "none",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+			},
+		}
+
+		err = client.CreateCollection(ctx, noneCollection, noneSchema)
+		if err != nil {
+			t.Errorf("Failed to create collection with no vectorizer: %v", err)
+		}
+
+		// Add document to non-vectorized collection
+		noneDoc := &vectordb.Document{
+			ID:      "none-doc-1",
+			Content: "This document has no automatic embeddings",
+			Metadata: map[string]interface{}{
+				"topic":     "test",
+				"embedding": "none",
+			},
+		}
+
+		err = client.CreateDocument(ctx, noneCollection, noneDoc)
+		if err != nil {
+			t.Errorf("Failed to create document in non-vectorized collection: %v", err)
+		}
+
+		// Verify document was created
+		retrievedDoc, err := client.GetDocument(ctx, noneCollection, noneDoc.ID)
+		if err != nil {
+			t.Errorf("Failed to retrieve document from non-vectorized collection: %v", err)
+		}
+		if retrievedDoc.Content != noneDoc.Content {
+			t.Errorf("Expected content %s, got %s", noneDoc.Content, retrievedDoc.Content)
+		}
+
+		t.Logf("Successfully created documents with different embedding strategies:")
+		t.Logf("  - OpenAI embeddings (text2vec-openai): %s", openAIDoc.ID)
+		t.Logf("  - No vectorizer (manual): %s", noneDoc.ID)
+
+		// Cleanup test collections
+		_ = client.DeleteCollection(ctx, openAICollection)
+		_ = client.DeleteCollection(ctx, noneCollection)
+	})
+
 	// Cleanup
 	t.Run("DeleteDocument", func(t *testing.T) {
 		err := client.DeleteDocument(ctx, collectionName, testDoc.ID)
