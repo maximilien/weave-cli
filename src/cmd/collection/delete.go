@@ -101,6 +101,12 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		} else {
 			err = utils.DeleteWeaviateCollections(ctx, dbConfig, args)
 		}
+	case config.VectorDBTypeSupabase:
+		if pattern != "" {
+			err = utils.DeleteSupabaseCollectionsByPattern(ctx, dbConfig, pattern)
+		} else {
+			err = utils.DeleteSupabaseCollections(ctx, dbConfig, args)
+		}
 	case config.VectorDBTypeMock:
 		if pattern != "" {
 			err = utils.DeleteMockCollectionsByPattern(ctx, dbConfig, pattern)

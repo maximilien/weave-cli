@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.13] - 2025-11-14
+
+### Added
+
+- **🎬 Comprehensive Demo Suite**: Complete demo infrastructure for Weave CLI
+  - **5 Interactive Demo Scripts**:
+    - `config-demo.sh`: Configuration management walkthrough (~5 min)
+    - `supabase-demo.sh`: Supabase integration demonstration (~8 min)
+    - `full-demo.sh`: Complete feature walkthrough (~5 min)
+    - `quick-demo.sh`: Fast overview (~2 min)
+    - `repl-demo.sh`: AI-powered REPL interface demo
+  - **Automated Recording Tools**: Scripts for recording and uploading demos to asciinema
+    - `auto-demo-recorder.exp`: Expect script for automated recording
+    - `record-all-demos.sh`: Batch recording script for all demos
+    - `RECORD_ALL_DEMOS.sh`: Video orchestration script
+  - **Video Recordings**: All demos recorded and uploaded to asciinema
+    - Config demo: `weave-cli-config-demo.cast`
+    - Supabase demo: `weave-cli-supabase-demo.cast`
+    - Updated full, quick, and REPL demo recordings
+  - **Comprehensive Documentation**:
+    - `demos/README.md`: Central documentation for all demo scripts
+    - Updated `docs/guides/DEMO.md`: Complete demo guide with links and instructions
+    - `tools/README-DEMO-RECORDING.md`: Recording guide and best practices
+    - `docs/planning/DEMO_UPDATE_PLAN.md`: Demo infrastructure planning document
+
+### Changed
+
+- **Demo Documentation**: Updated main README and demo guides with all new demos
+- **Collection Utilities**: Enhanced collection deletion and utility functions for demo support
+- **Gitignore**: Updated to exclude demo artifacts and recording files
+
+### Technical Details
+
+- **Files Changed**: 23 files changed, 3,148 insertions(+), 1,236 deletions(-)
+- **Demo Scripts**: All scripts follow consistent structure with colored output, interactive pauses, and cleanup options
+- **Recording Infrastructure**: Automated tools for consistent demo recording and upload workflow
+
 ## [0.3.10] - 2025-11-10
 
 ### Fixed

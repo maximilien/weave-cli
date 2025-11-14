@@ -1155,6 +1155,55 @@ func DeleteMockCollectionsByPattern(ctx context.Context, cfg *config.VectorDBCon
 	return fmt.Errorf("collection pattern deletion not yet implemented")
 }
 
+// DeleteSupabaseCollections deletes Supabase collections
+func DeleteSupabaseCollections(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string) error {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Supabase client: %v", err)
+	}
+
+	for _, collectionName := range collectionNames {
+		err = client.DeleteCollection(ctx, collectionName)
+		if err != nil {
+			return fmt.Errorf("failed to delete collection %s: %v", collectionName, err)
+		}
+	}
+
+	return nil
+}
+
+// DeleteSupabaseCollectionsByPattern deletes Supabase collections by pattern
+func DeleteSupabaseCollectionsByPattern(ctx context.Context, cfg *config.VectorDBConfig, pattern string) error {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create Supabase client: %v", err)
+	}
+
+	// Get all collections
+	collections, err := client.ListCollections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list collections: %v", err)
+	}
+
+	// Filter collections by pattern
+	var matchingCollections []string
+	for _, collection := range collections {
+		if matchPattern(collection.Name, pattern) {
+			matchingCollections = append(matchingCollections, collection.Name)
+		}
+	}
+
+	// Delete matching collections
+	for _, collectionName := range matchingCollections {
+		err = client.DeleteCollection(ctx, collectionName)
+		if err != nil {
+			return fmt.Errorf("failed to delete collection %s: %v", collectionName, err)
+		}
+	}
+
+	return nil
+}
+
 // DeleteAllWeaviateCollections deletes all documents from all Weaviate collections
 func DeleteAllWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig) {
 	client, err := CreateWeaviateClient(cfg)
