@@ -284,7 +284,8 @@ func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, documentID
 	}
 
 	tableName := a.getTableName(collectionName)
-	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", tableName)
+	quotedTable := quoteIdentifier(tableName)
+	query := fmt.Sprintf("DELETE FROM %s WHERE id = $1", quotedTable)
 
 	result, err := a.db.ExecContext(ctx, query, documentID)
 	if err != nil {
@@ -318,6 +319,7 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 	}
 
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	// Build placeholders for IN clause
 	placeholders := make([]string, len(documentIDs))
@@ -327,7 +329,7 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 		args[i] = id
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE id IN (%s)", tableName, strings.Join(placeholders, ", "))
+	query := fmt.Sprintf("DELETE FROM %s WHERE id IN (%s)", quotedTable, strings.Join(placeholders, ", "))
 
 	_, err = a.db.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -364,7 +366,8 @@ func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName 
 		return vectordb.ErrInvalidConfig("no metadata criteria provided")
 	}
 
-	query := fmt.Sprintf("DELETE FROM %s WHERE %s", tableName, strings.Join(conditions, " AND "))
+	quotedTable := quoteIdentifier(tableName)
+	query := fmt.Sprintf("DELETE FROM %s WHERE %s", quotedTable, strings.Join(conditions, " AND "))
 
 	_, err = a.db.ExecContext(ctx, query, args...)
 	if err != nil {

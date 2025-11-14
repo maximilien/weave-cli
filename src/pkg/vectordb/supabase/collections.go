@@ -50,7 +50,8 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 		}
 	}
 
-	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", tableName, strings.Join(columns, ", "))
+	quotedTable := quoteIdentifier(tableName)
+	query := fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (%s)", quotedTable, strings.Join(columns, ", "))
 
 	_, err := a.db.ExecContext(ctx, query)
 	if err != nil {
@@ -59,8 +60,8 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 	// Create indexes for better performance
 	indexQueries := []string{
-		fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_embedding_idx ON %s USING ivfflat (embedding vector_cosine_ops)", tableName, tableName),
-		fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_metadata_idx ON %s USING gin (metadata)", tableName, tableName),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_embedding_idx ON %s USING ivfflat (embedding vector_cosine_ops)", tableName, quotedTable),
+		fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_metadata_idx ON %s USING gin (metadata)", tableName, quotedTable),
 	}
 
 	for _, indexQuery := range indexQueries {
@@ -77,7 +78,8 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 	tableName := a.getTableName(name)
-	query := fmt.Sprintf("DROP TABLE IF EXISTS %s", tableName)
+	quotedTable := quoteIdentifier(tableName)
+	query := fmt.Sprintf("DROP TABLE IF EXISTS %s", quotedTable)
 
 	_, err := a.db.ExecContext(ctx, query)
 	if err != nil {
@@ -165,7 +167,8 @@ func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, e
 	}
 
 	tableName := a.getTableName(name)
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", tableName)
+	quotedTable := quoteIdentifier(tableName)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", quotedTable)
 
 	var count int64
 	err = a.db.QueryRowContext(ctx, query).Scan(&count)

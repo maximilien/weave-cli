@@ -193,6 +193,7 @@ databases:
 - [ ] Document performance characteristics of each database
 
 ### Medium Term
+- [ ] Add support for Milvus
 - [ ] Add support for Pinecone
 - [ ] Add support for Qdrant
 - [ ] Implement database-specific optimization flags

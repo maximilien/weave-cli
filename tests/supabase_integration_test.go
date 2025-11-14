@@ -47,6 +47,75 @@ func TestSupabaseIntegration(t *testing.T) {
 		}
 	})
 
+	// Test collection name preservation
+	t.Run("CollectionNamePreservation", func(t *testing.T) {
+		// Test with mixed case and underscores
+		testNames := []string{
+			"TestCollection_MixedCase",
+			"My_Test_Collection",
+			"Collection123_Test",
+		}
+
+		for _, name := range testNames {
+			// Clean up if exists
+			_ = client.DeleteCollection(ctx, name)
+
+			// Create collection
+			schema := &vectordb.CollectionSchema{
+				Class:      name,
+				Vectorizer: "none",
+				Properties: []vectordb.SchemaProperty{
+					{
+						Name:     "content",
+						DataType: []string{"text"},
+					},
+				},
+			}
+
+			err := client.CreateCollection(ctx, name, schema)
+			if err != nil {
+				t.Errorf("Failed to create collection %s: %v", name, err)
+				continue
+			}
+
+			// Verify collection exists with exact name
+			exists, err := client.CollectionExists(ctx, name)
+			if err != nil {
+				t.Errorf("Failed to check existence of %s: %v", name, err)
+			}
+			if !exists {
+				t.Errorf("Collection %s should exist after creation", name)
+			}
+
+			// Add a document and retrieve it
+			doc := &vectordb.Document{
+				ID:      "test-doc-1",
+				Content: "Test content",
+			}
+
+			err = client.CreateDocument(ctx, name, doc)
+			if err != nil {
+				t.Errorf("Failed to create document in %s: %v", name, err)
+			}
+
+			retrieved, err := client.GetDocument(ctx, name, doc.ID)
+			if err != nil {
+				t.Errorf("Failed to retrieve document from %s: %v", name, err)
+			}
+			if retrieved.Content != doc.Content {
+				t.Errorf("Document content mismatch in %s", name)
+			}
+
+			// Clean up
+			err = client.DeleteCollection(ctx, name)
+			if err != nil {
+				t.Errorf("Failed to delete collection %s: %v", name, err)
+			}
+
+			t.Logf("✓ Collection name preserved: %s", name)
+		}
+	})
+
 	// Test collection operations
 	collectionName := "test_collection_supabase"
 

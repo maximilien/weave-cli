@@ -210,12 +210,18 @@ func (a *Adapter) wrapError(err error, operation string) error {
 }
 
 // getTableName returns the table name for a collection
+// Preserves original casing and characters (except spaces)
 func (a *Adapter) getTableName(collectionName string) string {
-	// Sanitize collection name to be a valid PostgreSQL table name
-	tableName := strings.ToLower(collectionName)
-	tableName = strings.ReplaceAll(tableName, "-", "_")
-	tableName = strings.ReplaceAll(tableName, " ", "_")
+	// Only replace spaces with underscores for valid PostgreSQL identifiers
+	tableName := strings.ReplaceAll(collectionName, " ", "_")
 	return fmt.Sprintf("collection_%s", tableName)
+}
+
+// quoteIdentifier quotes a PostgreSQL identifier to preserve case and special characters
+func quoteIdentifier(identifier string) string {
+	// Escape any double quotes in the identifier
+	escaped := strings.ReplaceAll(identifier, `"`, `""`)
+	return fmt.Sprintf(`"%s"`, escaped)
 }
 
 // ensureVectorExtension ensures that the pgvector extension is enabled

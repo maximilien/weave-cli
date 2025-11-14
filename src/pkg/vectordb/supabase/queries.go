@@ -112,13 +112,14 @@ func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, m
 		limit = options.TopK
 	}
 
+	quotedTable := quoteIdentifier(tableName)
 	query := fmt.Sprintf(`
 		SELECT id, content, text, image, image_data, url, metadata
 		FROM %s
 		WHERE %s
 		ORDER BY id
 		LIMIT $%d
-	`, tableName, strings.Join(conditions, " AND "), argIndex)
+	`, quotedTable, strings.Join(conditions, " AND "), argIndex)
 
 	args = append(args, limit)
 
@@ -162,6 +163,7 @@ func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, m
 // searchByContent performs a simple content-based search
 func (a *Adapter) searchByContent(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	limit := 10
 	if options != nil && options.TopK > 0 {
@@ -171,7 +173,7 @@ func (a *Adapter) searchByContent(ctx context.Context, collectionName, query str
 	// Use ILIKE for case-insensitive pattern matching
 	sqlQuery := fmt.Sprintf(`
 		SELECT id, content, text, image, image_data, url, metadata,
-		       CASE 
+		       CASE
 		           WHEN content ILIKE $1 THEN 1.0
 		           WHEN text ILIKE $1 THEN 0.8
 		           ELSE 0.5
@@ -180,7 +182,7 @@ func (a *Adapter) searchByContent(ctx context.Context, collectionName, query str
 		WHERE content ILIKE $1 OR text ILIKE $1
 		ORDER BY score DESC, id
 		LIMIT $2
-	`, tableName)
+	`, quotedTable)
 
 	searchPattern := "%" + query + "%"
 	rows, err := a.db.QueryContext(ctx, sqlQuery, searchPattern, limit)
@@ -225,6 +227,7 @@ func (a *Adapter) searchByContent(ctx context.Context, collectionName, query str
 // searchByFullText performs full-text search using PostgreSQL's built-in capabilities
 func (a *Adapter) searchByFullText(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	limit := 10
 	if options != nil && options.TopK > 0 {
@@ -245,7 +248,7 @@ func (a *Adapter) searchByFullText(ctx context.Context, collectionName, query st
 		WHERE to_tsvector('english', COALESCE(content, '') || ' ' || COALESCE(text, '')) @@ plainto_tsquery('english', $1)
 		ORDER BY score DESC, id
 		LIMIT $2
-	`, tableName)
+	`, quotedTable)
 
 	rows, err := a.db.QueryContext(ctx, sqlQuery, query, limit)
 	if err != nil {
@@ -342,6 +345,7 @@ func (a *Adapter) mergeSearchResults(semanticResults, bm25Results []*vectordb.Qu
 // searchByVectorSimilarity performs vector similarity search using pgvector
 func (a *Adapter) searchByVectorSimilarity(ctx context.Context, collectionName string, queryEmbedding []float64, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	limit := 10
 	if options != nil && options.TopK > 0 {
@@ -366,7 +370,7 @@ func (a *Adapter) searchByVectorSimilarity(ctx context.Context, collectionName s
 		WHERE embedding IS NOT NULL
 		ORDER BY embedding <=> '%s'::vector
 		LIMIT $1
-	`, queryVector, tableName, queryVector)
+	`, queryVector, quotedTable, queryVector)
 
 	rows, err := a.db.QueryContext(ctx, sqlQuery, limit)
 	if err != nil {

@@ -98,11 +98,12 @@ func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schem
 	}
 
 	// Add new columns
+	quotedTable := quoteIdentifier(tableName)
 	for _, prop := range schema.Properties {
 		if !currentProps[prop.Name] {
 			columnType := a.convertDataTypeToPostgreSQL(prop.DataType)
 			if columnType != "" {
-				alterQuery := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", tableName, prop.Name, columnType)
+				alterQuery := fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s %s", quotedTable, prop.Name, columnType)
 				_, err := a.db.ExecContext(ctx, alterQuery)
 				if err != nil {
 					return a.wrapError(err, "add column")
