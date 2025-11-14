@@ -35,6 +35,12 @@ Complete documentation for Supabase integration:
 
 - **[Integration Status](weaviate/INTEGRATION_STATUS.md)** - Weaviate support details
 
+### 🧪 Testing Documentation
+
+Test coverage and testing guides:
+
+- **[Embedding Test Coverage](tests/EMBEDDING_COVERAGE.md)** - Multi-provider embedding test analysis
+
 ### 📋 Release Notes
 
 Version-specific release information:
@@ -121,6 +127,9 @@ docs/
 │
 ├── weaviate/                    # Weaviate-specific docs
 │   └── INTEGRATION_STATUS.md
+│
+├── tests/                       # Testing documentation
+│   └── EMBEDDING_COVERAGE.md
 │
 ├── releases/                    # Release notes
 │   ├── RELEASE_CHECKLIST.md

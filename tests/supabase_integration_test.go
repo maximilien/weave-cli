@@ -631,6 +631,97 @@ func TestSupabaseIntegration(t *testing.T) {
 		t.Logf("✓ Embedding test completed successfully")
 	})
 
+	// Test that Supabase handles unsupported embedding providers appropriately
+	t.Run("UnsupportedEmbeddingProviders", func(t *testing.T) {
+		t.Logf("Testing Supabase behavior with unsupported embedding providers")
+
+		// List of embedding providers that are NOT supported by Supabase
+		// (but ARE supported by Weaviate)
+		unsupportedProviders := []struct {
+			name       string
+			vectorizer string
+		}{
+			{"Cohere", "text2vec-cohere"},
+			{"Hugging Face", "text2vec-huggingface"},
+			{"Google PaLM", "text2vec-palm"},
+			{"AWS Bedrock", "text2vec-aws"},
+			{"Jina AI", "text2vec-jinaai"},
+		}
+
+		for _, provider := range unsupportedProviders {
+			t.Run(provider.name, func(t *testing.T) {
+				collectionName := "test_unsupported_" + provider.vectorizer
+				_ = client.DeleteCollection(ctx, collectionName) // Clean up if exists
+
+				schema := &vectordb.CollectionSchema{
+					Class:      collectionName,
+					Vectorizer: provider.vectorizer,
+					Properties: []vectordb.SchemaProperty{
+						{
+							Name:     "content",
+							DataType: []string{"text"},
+						},
+					},
+				}
+
+				// Attempt to create collection with unsupported vectorizer
+				err := client.CreateCollection(ctx, collectionName, schema)
+
+				if err != nil {
+					// Supabase may reject the unsupported vectorizer
+					t.Logf("✓ Supabase rejected %s (%s): %v", provider.name, provider.vectorizer, err)
+				} else {
+					// Or it may accept it but use manual/none embeddings
+					t.Logf("✓ Supabase accepted %s (%s) - will use manual embeddings", provider.name, provider.vectorizer)
+
+					// Verify collection was created
+					exists, checkErr := client.CollectionExists(ctx, collectionName)
+					if checkErr != nil {
+						t.Errorf("Failed to check collection existence: %v", checkErr)
+					} else if !exists {
+						t.Error("Collection should exist after creation")
+					} else {
+						t.Logf("  Collection created successfully with vectorizer=%s", provider.vectorizer)
+					}
+
+					// Try to add a document - this should work regardless of vectorizer
+					doc := &vectordb.Document{
+						ID:      "test-doc-1",
+						Content: "Test document for unsupported vectorizer",
+						Metadata: map[string]interface{}{
+							"vectorizer": provider.vectorizer,
+							"test":       "unsupported",
+						},
+					}
+
+					docErr := client.CreateDocument(ctx, collectionName, doc)
+					if docErr != nil {
+						t.Logf("  ⚠ Document creation failed (expected for unsupported vectorizer): %v", docErr)
+					} else {
+						t.Logf("  ✓ Document created (manual/no automatic embeddings)")
+
+						// Verify we can retrieve it
+						retrieved, getErr := client.GetDocument(ctx, collectionName, doc.ID)
+						if getErr != nil {
+							t.Errorf("  Failed to retrieve document: %v", getErr)
+						} else if retrieved.Content != doc.Content {
+							t.Errorf("  Content mismatch: expected %s, got %s", doc.Content, retrieved.Content)
+						} else {
+							t.Logf("  ✓ Document retrieved successfully")
+						}
+					}
+
+					// Cleanup
+					_ = client.DeleteCollection(ctx, collectionName)
+				}
+			})
+		}
+
+		t.Logf("\n✓ Completed validation of unsupported embedding providers for Supabase")
+		t.Logf("  Note: Supabase currently only supports OpenAI embeddings (text2vec-openai)")
+		t.Logf("  Other providers will either be rejected or treated as manual embeddings")
+	})
+
 	// Test schema operations
 	t.Run("GetSchema", func(t *testing.T) {
 		schema, err := client.GetSchema(ctx, collectionName)

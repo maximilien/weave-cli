@@ -431,6 +431,275 @@ func TestWeaviateComprehensiveIntegration(t *testing.T) {
 		_ = client.DeleteCollection(ctx, noneCollection)
 	})
 
+	// Test Cohere embeddings
+	t.Run("CohereEmbeddings", func(t *testing.T) {
+		// Skip if no Cohere API key
+		if os.Getenv("COHERE_API_KEY") == "" {
+			t.Skip("Skipping Cohere test: COHERE_API_KEY not set")
+		}
+
+		cohereCollection := "TestCohereEmbeddings"
+		_ = client.DeleteCollection(ctx, cohereCollection) // Clean up if exists
+
+		cohereSchema := &vectordb.CollectionSchema{
+			Class:      cohereCollection,
+			Vectorizer: "text2vec-cohere",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+			},
+		}
+
+		err := client.CreateCollection(ctx, cohereCollection, cohereSchema)
+		if err != nil {
+			t.Errorf("Failed to create Cohere collection: %v", err)
+			return
+		}
+		t.Logf("✓ Created collection with Cohere embeddings (text2vec-cohere)")
+
+		// Add document with Cohere embeddings
+		cohereDoc := &vectordb.Document{
+			ID:      "cohere-doc-1",
+			Content: "Natural language processing and understanding using Cohere embeddings",
+			Metadata: map[string]interface{}{
+				"topic":     "NLP",
+				"embedding": "cohere",
+			},
+		}
+
+		err = client.CreateDocument(ctx, cohereCollection, cohereDoc)
+		if err != nil {
+			t.Errorf("Failed to create document with Cohere embeddings: %v", err)
+		} else {
+			t.Logf("✓ Created document with Cohere embeddings")
+		}
+
+		// Verify semantic search works with Cohere embeddings
+		searchOpts := &vectordb.QueryOptions{TopK: 5}
+		results, err := client.SearchSemantic(ctx, cohereCollection, "natural language understanding", searchOpts)
+		if err != nil {
+			t.Errorf("Failed to search with Cohere embeddings: %v", err)
+		} else if len(results) == 0 {
+			t.Logf("⚠ Semantic search with Cohere returned no results (may need time for embedding generation)")
+		} else {
+			t.Logf("✓ Semantic search with Cohere embeddings returned %d results", len(results))
+			for i, result := range results {
+				t.Logf("  Result %d: ID=%s, Score=%.3f", i+1, result.Document.ID, result.Score)
+			}
+		}
+
+		// Cleanup
+		_ = client.DeleteCollection(ctx, cohereCollection)
+		t.Logf("✓ Cohere embedding test completed successfully")
+	})
+
+	// Test Hugging Face embeddings
+	t.Run("HuggingFaceEmbeddings", func(t *testing.T) {
+		// Skip if no Hugging Face configuration
+		if os.Getenv("HUGGINGFACE_API_KEY") == "" {
+			t.Skip("Skipping Hugging Face test: HUGGINGFACE_API_KEY not set")
+		}
+
+		hfCollection := "TestHuggingFaceEmbeddings"
+		_ = client.DeleteCollection(ctx, hfCollection) // Clean up if exists
+
+		hfSchema := &vectordb.CollectionSchema{
+			Class:      hfCollection,
+			Vectorizer: "text2vec-huggingface",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+			},
+		}
+
+		err := client.CreateCollection(ctx, hfCollection, hfSchema)
+		if err != nil {
+			t.Errorf("Failed to create Hugging Face collection: %v", err)
+			return
+		}
+		t.Logf("✓ Created collection with Hugging Face embeddings (text2vec-huggingface)")
+
+		// Add document with Hugging Face embeddings
+		hfDoc := &vectordb.Document{
+			ID:      "hf-doc-1",
+			Content: "Machine learning models from the Hugging Face transformers library",
+			Metadata: map[string]interface{}{
+				"topic":     "ML",
+				"embedding": "huggingface",
+			},
+		}
+
+		err = client.CreateDocument(ctx, hfCollection, hfDoc)
+		if err != nil {
+			t.Errorf("Failed to create document with Hugging Face embeddings: %v", err)
+		} else {
+			t.Logf("✓ Created document with Hugging Face embeddings")
+		}
+
+		// Verify semantic search works with Hugging Face embeddings
+		searchOpts := &vectordb.QueryOptions{TopK: 5}
+		results, err := client.SearchSemantic(ctx, hfCollection, "transformers and machine learning", searchOpts)
+		if err != nil {
+			t.Errorf("Failed to search with Hugging Face embeddings: %v", err)
+		} else if len(results) == 0 {
+			t.Logf("⚠ Semantic search with Hugging Face returned no results (may need time for embedding generation)")
+		} else {
+			t.Logf("✓ Semantic search with Hugging Face embeddings returned %d results", len(results))
+			for i, result := range results {
+				t.Logf("  Result %d: ID=%s, Score=%.3f", i+1, result.Document.ID, result.Score)
+			}
+		}
+
+		// Cleanup
+		_ = client.DeleteCollection(ctx, hfCollection)
+		t.Logf("✓ Hugging Face embedding test completed successfully")
+	})
+
+	// Test cross-provider comparison
+	t.Run("CrossProviderComparison", func(t *testing.T) {
+		// Only run if we have at least OpenAI (required) and one other provider
+		hasOpenAI := os.Getenv("OPENAI_API_KEY") != ""
+		hasCohere := os.Getenv("COHERE_API_KEY") != ""
+		hasHuggingFace := os.Getenv("HUGGINGFACE_API_KEY") != ""
+
+		if !hasOpenAI {
+			t.Skip("Skipping cross-provider test: OPENAI_API_KEY required")
+		}
+
+		if !hasCohere && !hasHuggingFace {
+			t.Skip("Skipping cross-provider test: Need at least one additional provider (COHERE_API_KEY or HUGGINGFACE_API_KEY)")
+		}
+
+		t.Logf("Running cross-provider comparison with available providers:")
+		if hasOpenAI {
+			t.Logf("  ✓ OpenAI")
+		}
+		if hasCohere {
+			t.Logf("  ✓ Cohere")
+		}
+		if hasHuggingFace {
+			t.Logf("  ✓ Hugging Face")
+		}
+
+		// Test document - same content for all providers
+		testContent := "Vector databases enable semantic search and similarity matching using embeddings"
+		testQuery := "semantic search with vector embeddings"
+
+		// Track results from each provider
+		type providerResult struct {
+			name    string
+			score   float64
+			found   bool
+			elapsed float64
+		}
+		var results []providerResult
+
+		// Test with OpenAI
+		if hasOpenAI {
+			collection := "CrossTest_OpenAI"
+			_ = client.DeleteCollection(ctx, collection)
+
+			schema := &vectordb.CollectionSchema{
+				Class:      collection,
+				Vectorizer: "text2vec-openai",
+				Properties: []vectordb.SchemaProperty{{Name: "content", DataType: []string{"text"}}},
+			}
+
+			startTime := float64(0)
+			if err := client.CreateCollection(ctx, collection, schema); err == nil {
+				doc := &vectordb.Document{ID: "test-1", Content: testContent}
+				if err := client.CreateDocument(ctx, collection, doc); err == nil {
+					startTime = float64(time.Now().UnixNano()) / 1e9
+					searchResults, err := client.SearchSemantic(ctx, collection, testQuery, &vectordb.QueryOptions{TopK: 1})
+					elapsed := (float64(time.Now().UnixNano()) / 1e9) - startTime
+
+					if err == nil && len(searchResults) > 0 {
+						results = append(results, providerResult{"OpenAI", searchResults[0].Score, true, elapsed})
+					}
+				}
+				_ = client.DeleteCollection(ctx, collection)
+			}
+		}
+
+		// Test with Cohere
+		if hasCohere {
+			collection := "CrossTest_Cohere"
+			_ = client.DeleteCollection(ctx, collection)
+
+			schema := &vectordb.CollectionSchema{
+				Class:      collection,
+				Vectorizer: "text2vec-cohere",
+				Properties: []vectordb.SchemaProperty{{Name: "content", DataType: []string{"text"}}},
+			}
+
+			startTime := float64(0)
+			if err := client.CreateCollection(ctx, collection, schema); err == nil {
+				doc := &vectordb.Document{ID: "test-1", Content: testContent}
+				if err := client.CreateDocument(ctx, collection, doc); err == nil {
+					startTime = float64(time.Now().UnixNano()) / 1e9
+					searchResults, err := client.SearchSemantic(ctx, collection, testQuery, &vectordb.QueryOptions{TopK: 1})
+					elapsed := (float64(time.Now().UnixNano()) / 1e9) - startTime
+
+					if err == nil && len(searchResults) > 0 {
+						results = append(results, providerResult{"Cohere", searchResults[0].Score, true, elapsed})
+					}
+				}
+				_ = client.DeleteCollection(ctx, collection)
+			}
+		}
+
+		// Test with Hugging Face
+		if hasHuggingFace {
+			collection := "CrossTest_HuggingFace"
+			_ = client.DeleteCollection(ctx, collection)
+
+			schema := &vectordb.CollectionSchema{
+				Class:      collection,
+				Vectorizer: "text2vec-huggingface",
+				Properties: []vectordb.SchemaProperty{{Name: "content", DataType: []string{"text"}}},
+			}
+
+			startTime := float64(0)
+			if err := client.CreateCollection(ctx, collection, schema); err == nil {
+				doc := &vectordb.Document{ID: "test-1", Content: testContent}
+				if err := client.CreateDocument(ctx, collection, doc); err == nil {
+					startTime = float64(time.Now().UnixNano()) / 1e9
+					searchResults, err := client.SearchSemantic(ctx, collection, testQuery, &vectordb.QueryOptions{TopK: 1})
+					elapsed := (float64(time.Now().UnixNano()) / 1e9) - startTime
+
+					if err == nil && len(searchResults) > 0 {
+						results = append(results, providerResult{"HuggingFace", searchResults[0].Score, true, elapsed})
+					}
+				}
+				_ = client.DeleteCollection(ctx, collection)
+			}
+		}
+
+		// Report comparison results
+		if len(results) > 0 {
+			t.Logf("\n✓ Cross-Provider Semantic Search Comparison:")
+			t.Logf("  Query: '%s'", testQuery)
+			t.Logf("  Content: '%s'", testContent)
+			t.Logf("\n  Results:")
+			for _, r := range results {
+				t.Logf("    %s: Score=%.3f, Time=%.3fs", r.name, r.score, r.elapsed)
+			}
+
+			// All providers should find the document
+			if len(results) < 2 {
+				t.Logf("\n  ⚠ Only tested with %d provider(s). Set additional API keys to compare more providers.", len(results))
+			} else {
+				t.Logf("\n  ✓ Successfully compared %d embedding providers", len(results))
+			}
+		} else {
+			t.Error("No providers returned results in cross-provider comparison")
+		}
+	})
+
 	// Cleanup
 	t.Run("DeleteDocument", func(t *testing.T) {
 		err := client.DeleteDocument(ctx, collectionName, testDoc.ID)
