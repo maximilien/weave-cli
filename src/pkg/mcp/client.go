@@ -47,10 +47,11 @@ type MCPRequest struct {
 
 // MCPResponse represents a response from the MCP server
 type MCPResponse struct {
-	JSONRPC string                 `json:"jsonrpc"`
-	ID      int                    `json:"id"`
-	Result  map[string]interface{} `json:"result,omitempty"`
-	Error   *MCPError              `json:"error,omitempty"`
+	JSONRPC  string                 `json:"jsonrpc"`
+	ID       int                    `json:"id"`
+	Result   map[string]interface{} `json:"result,omitempty"`
+	Error    *MCPError              `json:"-"` // Handled via UnmarshalJSON
+	RawError json.RawMessage        `json:"error,omitempty"`
 }
 
 // MCPError represents an error from the MCP server
@@ -58,6 +59,41 @@ type MCPError struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+}
+
+// UnmarshalJSON implements custom unmarshaling for MCPResponse to handle both error formats
+func (r *MCPResponse) UnmarshalJSON(data []byte) error {
+	// Define a temporary struct to unmarshal the basic fields
+	type Alias MCPResponse
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(r),
+	}
+
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Handle error field - can be either a string or an MCPError object
+	if len(r.RawError) > 0 {
+		// Try to unmarshal as MCPError struct first
+		var mcpErr MCPError
+		if err := json.Unmarshal(r.RawError, &mcpErr); err == nil {
+			r.Error = &mcpErr
+		} else {
+			// Fall back to string error
+			var errStr string
+			if err := json.Unmarshal(r.RawError, &errStr); err == nil {
+				r.Error = &MCPError{
+					Code:    -1,
+					Message: errStr,
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // NewClient creates a new MCP client
@@ -313,6 +349,11 @@ func (c *Client) sendRequest(req MCPRequest) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	// Debug: log raw request
+	if os.Getenv("WEAVE_MCP_DEBUG") != "" {
+		fmt.Fprintf(os.Stderr, "[MCP DEBUG] Sending request: %s\n", string(data))
+	}
+
 	// Write JSON-RPC request with newline delimiter
 	if _, err := c.stdin.Write(append(data, '\n')); err != nil {
 		return fmt.Errorf("failed to write request: %w", err)
@@ -332,6 +373,11 @@ func (c *Client) readResponse(ctx context.Context) (*MCPResponse, error) {
 		if err != nil {
 			errChan <- fmt.Errorf("failed to read response: %w", err)
 			return
+		}
+
+		// Debug: log raw response
+		if os.Getenv("WEAVE_MCP_DEBUG") != "" {
+			fmt.Fprintf(os.Stderr, "[MCP DEBUG] Raw response: %s\n", string(line))
 		}
 
 		var response MCPResponse

@@ -105,7 +105,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 ## Key Features
 
 - 🤖 **AI-Powered** - Natural language interface with GPT-4o multi-agent system
-- ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
+- ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL with
+  real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
   backends (Supabase PGVector implemented, Milvus planned)

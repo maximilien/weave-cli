@@ -7,14 +7,88 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
 )
+
+// progressWriter streams output line-by-line with formatting
+// Inspired by Claude Code's excellent progress feedback
+type progressWriter struct {
+	prefix    string
+	buffer    []byte
+	mu        sync.Mutex
+	dim       func(a ...interface{}) string
+	lineCount int // Track number of output lines
+}
+
+// newProgressWriter creates a new progress writer with the given prefix
+func newProgressWriter(prefix string) *progressWriter {
+	return &progressWriter{
+		prefix:    prefix,
+		buffer:    make([]byte, 0, 1024),
+		dim:       color.New(color.Faint).SprintFunc(),
+		lineCount: 0,
+	}
+}
+
+// Write implements io.Writer interface
+// Buffers input and writes complete lines with prefix and dimmed formatting
+func (pw *progressWriter) Write(p []byte) (n int, err error) {
+	pw.mu.Lock()
+	defer pw.mu.Unlock()
+
+	// Append to buffer
+	pw.buffer = append(pw.buffer, p...)
+
+	// Process complete lines
+	for {
+		idx := bytes.IndexByte(pw.buffer, '\n')
+		if idx == -1 {
+			break // No complete line yet
+		}
+
+		// Extract line (without newline)
+		line := pw.buffer[:idx]
+		pw.buffer = pw.buffer[idx+1:]
+
+		// Print line with prefix and dimmed formatting
+		if len(line) > 0 {
+			pw.lineCount++
+			fmt.Printf("%s%s\n", pw.prefix, pw.dim(string(line)))
+		} else {
+			// Empty line - just print newline
+			fmt.Println()
+		}
+	}
+
+	return len(p), nil
+}
+
+// Flush writes any remaining buffered content
+func (pw *progressWriter) Flush() {
+	pw.mu.Lock()
+	defer pw.mu.Unlock()
+
+	if len(pw.buffer) > 0 {
+		// Print remaining content (may be partial line)
+		fmt.Printf("%s%s\n", pw.prefix, pw.dim(string(pw.buffer)))
+		pw.buffer = pw.buffer[:0] // Clear buffer
+	}
+}
+
+// GetLineCount returns the number of lines written
+func (pw *progressWriter) GetLineCount() int {
+	pw.mu.Lock()
+	defer pw.mu.Unlock()
+	return pw.lineCount
+}
 
 // BashAgent executes bash commands safely
 type BashAgent struct {
@@ -100,13 +174,103 @@ func (a *BashAgent) Execute(ctx context.Context, input interface{}) (interface{}
 
 	execCmd.Env = env
 
+	// Set up output streaming with real-time progress feedback
 	var stdout, stderr bytes.Buffer
-	execCmd.Stdout = &stdout
-	execCmd.Stderr = &stderr
+
+	// Create progress writers for real-time output (Claude Code style)
+	stdoutProgress := newProgressWriter("  ")
+	stderrProgress := newProgressWriter("  ⚠️  ")
+
+	// Use MultiWriter to both capture AND stream output
+	execCmd.Stdout = io.MultiWriter(&stdout, stdoutProgress)
+	execCmd.Stderr = io.MultiWriter(&stderr, stderrProgress)
+
+	// Start a spinner for long-running operations (inspired by Claude Code)
+	spinnerDone := make(chan bool)
+	go func() {
+		spinner := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		idx := 0
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		// Wait 2 seconds before showing spinner (only for slow operations)
+		initialDelay := time.NewTimer(2 * time.Second)
+		defer initialDelay.Stop()
+
+		select {
+		case <-initialDelay.C:
+			// Operation is slow, show spinner
+		case <-spinnerDone:
+			// Completed quickly, no spinner needed
+			return
+		}
+
+		// Track when spinner started (after 2s delay)
+		spinnerStart := time.Now()
+		dim := color.New(color.Faint).SprintFunc()
+
+		// Show spinner for slow operations with elapsed time
+		for {
+			select {
+			case <-spinnerDone:
+				fmt.Print("\r  \r") // Clear spinner line
+				return
+			case <-ticker.C:
+				elapsed := time.Since(spinnerStart)
+
+				// Format elapsed time nicely
+				var timeStr string
+				if elapsed < time.Minute {
+					timeStr = fmt.Sprintf("%.0fs", elapsed.Seconds())
+				} else {
+					timeStr = fmt.Sprintf("%.0fm%.0fs", elapsed.Minutes(), float64(int(elapsed.Seconds())%60))
+				}
+
+				// Get intermediate result count from stdout
+				itemCount := stdoutProgress.GetLineCount()
+				itemsStr := ""
+				if itemCount > 0 {
+					itemsStr = fmt.Sprintf(" %s%d items%s", dim(""), itemCount, dim(" •"))
+				}
+
+				// Show estimation after 5 seconds
+				estimation := ""
+				if elapsed > 5*time.Second {
+					// Simple estimation: assume it might take 2-3x current time
+					estimatedTotal := elapsed * 2
+					remaining := estimatedTotal - elapsed
+					if remaining > 0 {
+						if remaining < time.Minute {
+							estimation = fmt.Sprintf(" %s(~%.0fs remaining)", dim(""), remaining.Seconds())
+						} else {
+							estimation = fmt.Sprintf(" %s(~%.0fm remaining)", dim(""), remaining.Minutes())
+						}
+					}
+				}
+
+				fmt.Printf("\r  %s Processing...%s %s%s%s%s",
+					spinner[idx%len(spinner)],
+					itemsStr,
+					dim("["),
+					timeStr,
+					dim("]"),
+					estimation)
+				idx++
+			}
+		}
+	}()
 
 	// Execute the command
 	err := execCmd.Run()
 	duration := time.Since(startTime)
+
+	// Stop spinner
+	close(spinnerDone)
+	time.Sleep(50 * time.Millisecond) // Give spinner goroutine time to clean up
+
+	// Flush any remaining buffered output
+	stdoutProgress.Flush()
+	stderrProgress.Flush()
 
 	exitCode := 0
 	if err != nil {
