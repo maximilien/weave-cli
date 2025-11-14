@@ -41,6 +41,12 @@ Test coverage and testing guides:
 
 - **[Embedding Test Coverage](tests/EMBEDDING_COVERAGE.md)** - Multi-provider embedding test analysis
 
+### 📝 Planning & Future Work
+
+Analysis and plans for upcoming features:
+
+- **[REPL Progress Improvement](planning/REPL_PROGRESS.md)** - Real-time output streaming for script execution
+
 ### 📋 Release Notes
 
 Version-specific release information:
@@ -130,6 +136,9 @@ docs/
 │
 ├── tests/                       # Testing documentation
 │   └── EMBEDDING_COVERAGE.md
+│
+├── planning/                    # Future work & analysis
+│   └── REPL_PROGRESS.md
 │
 ├── releases/                    # Release notes
 │   ├── RELEASE_CHECKLIST.md
