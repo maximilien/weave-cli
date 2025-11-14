@@ -49,6 +49,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		}
 	}
 
+	quotedTable := quoteIdentifier(tableName)
 	var query string
 	var args []interface{}
 
@@ -64,7 +65,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 				url = EXCLUDED.url,
 				metadata = EXCLUDED.metadata,
 				embedding = EXCLUDED.embedding
-		`, tableName)
+		`, quotedTable)
 		args = []interface{}{
 			document.ID,
 			document.Content,
@@ -86,7 +87,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 				image_data = EXCLUDED.image_data,
 				url = EXCLUDED.url,
 				metadata = EXCLUDED.metadata
-		`, tableName)
+		`, quotedTable)
 		args = []interface{}{
 			document.ID,
 			document.Content,
@@ -121,6 +122,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	}
 
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	// Use a transaction for batch insert
 	tx, err := a.db.BeginTx(ctx, nil)
@@ -141,7 +143,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 			image_data = EXCLUDED.image_data,
 			url = EXCLUDED.url,
 			metadata = EXCLUDED.metadata
-	`, tableName)
+	`, quotedTable)
 
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
@@ -187,10 +189,11 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 	}
 
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 	query := fmt.Sprintf(`
 		SELECT id, content, text, image, image_data, url, metadata
 		FROM %s WHERE id = $1
-	`, tableName)
+	`, quotedTable)
 
 	row := a.db.QueryRowContext(ctx, query, documentID)
 
@@ -230,6 +233,7 @@ func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, doc
 	}
 
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	metadataJSON, err := a.convertMetadataToJSON(document.Metadata)
 	if err != nil {
@@ -245,7 +249,7 @@ func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, doc
 			url = $6,
 			metadata = $7
 		WHERE id = $1
-	`, tableName)
+	`, quotedTable)
 
 	result, err := a.db.ExecContext(ctx, query,
 		document.ID,
@@ -350,6 +354,7 @@ func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName 
 	}
 
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 
 	// Build WHERE clause for metadata matching
 	var conditions []string
@@ -366,7 +371,6 @@ func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName 
 		return vectordb.ErrInvalidConfig("no metadata criteria provided")
 	}
 
-	quotedTable := quoteIdentifier(tableName)
 	query := fmt.Sprintf("DELETE FROM %s WHERE %s", quotedTable, strings.Join(conditions, " AND "))
 
 	_, err = a.db.ExecContext(ctx, query, args...)
@@ -388,12 +392,13 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 	}
 
 	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
 	query := fmt.Sprintf(`
 		SELECT id, content, text, image, image_data, url, metadata
 		FROM %s
 		ORDER BY id
 		LIMIT $1 OFFSET $2
-	`, tableName)
+	`, quotedTable)
 
 	rows, err := a.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {

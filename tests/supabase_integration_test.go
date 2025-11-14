@@ -36,7 +36,7 @@ func TestSupabaseIntegration(t *testing.T) {
 		t.Fatalf("Failed to create Supabase client: %v", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	// Test health check
@@ -49,70 +49,184 @@ func TestSupabaseIntegration(t *testing.T) {
 
 	// Test collection name preservation
 	t.Run("CollectionNamePreservation", func(t *testing.T) {
-		// Test with mixed case and underscores
-		testNames := []string{
-			"TestCollection_MixedCase",
-			"My_Test_Collection",
-			"Collection123_Test",
+		// Test cases covering various naming patterns
+		testCases := []struct {
+			name        string
+			description string
+		}{
+			{"TestCollection_MixedCase", "Mixed case with underscores"},
+			{"My_Test_Collection", "Multiple underscores"},
+			{"Collection123_Test", "Numbers with underscores"},
+			{"ALLCAPS_COLLECTION", "All uppercase"},
+			{"lowercase_collection", "All lowercase"},
+			{"CamelCaseCollection", "Camel case (no underscores)"},
+			{"snake_case_collection", "Snake case"},
+			{"Collection-With-Hyphens", "Hyphens preserved"},
+			{"Mix_Case-And-Chars123", "Mixed: underscores, hyphens, numbers"},
 		}
 
-		for _, name := range testNames {
-			// Clean up if exists
-			_ = client.DeleteCollection(ctx, name)
+		for _, tc := range testCases {
+			t.Run(tc.description, func(t *testing.T) {
+				name := tc.name
 
-			// Create collection
-			schema := &vectordb.CollectionSchema{
-				Class:      name,
-				Vectorizer: "none",
-				Properties: []vectordb.SchemaProperty{
-					{
-						Name:     "content",
-						DataType: []string{"text"},
+				// Clean up if exists
+				_ = client.DeleteCollection(ctx, name)
+
+				// Create collection
+				schema := &vectordb.CollectionSchema{
+					Class:      name,
+					Vectorizer: "none",
+					Properties: []vectordb.SchemaProperty{
+						{
+							Name:     "content",
+							DataType: []string{"text"},
+						},
+						{
+							Name:     "category",
+							DataType: []string{"text"},
+						},
 					},
-				},
-			}
+				}
 
-			err := client.CreateCollection(ctx, name, schema)
-			if err != nil {
-				t.Errorf("Failed to create collection %s: %v", name, err)
-				continue
-			}
+				err := client.CreateCollection(ctx, name, schema)
+				if err != nil {
+					t.Fatalf("Failed to create collection %s: %v", name, err)
+				}
+				t.Logf("✓ Created collection: %s", name)
 
-			// Verify collection exists with exact name
-			exists, err := client.CollectionExists(ctx, name)
-			if err != nil {
-				t.Errorf("Failed to check existence of %s: %v", name, err)
-			}
-			if !exists {
-				t.Errorf("Collection %s should exist after creation", name)
-			}
+				// Verify collection exists with exact name
+				exists, err := client.CollectionExists(ctx, name)
+				if err != nil {
+					t.Fatalf("Failed to check existence of %s: %v", name, err)
+				}
+				if !exists {
+					t.Fatalf("Collection %s should exist after creation", name)
+				}
+				t.Logf("✓ Collection exists check passed: %s", name)
 
-			// Add a document and retrieve it
-			doc := &vectordb.Document{
-				ID:      "test-doc-1",
-				Content: "Test content",
-			}
+				// Add multiple documents
+				docs := []*vectordb.Document{
+					{
+						ID:      "doc-1",
+						Content: "First test document",
+						Metadata: map[string]interface{}{
+							"category": "test",
+							"index":    "1",
+						},
+					},
+					{
+						ID:      "doc-2",
+						Content: "Second test document",
+						Metadata: map[string]interface{}{
+							"category": "test",
+							"index":    "2",
+						},
+					},
+				}
 
-			err = client.CreateDocument(ctx, name, doc)
-			if err != nil {
-				t.Errorf("Failed to create document in %s: %v", name, err)
-			}
+				err = client.CreateDocuments(ctx, name, docs)
+				if err != nil {
+					t.Fatalf("Failed to create documents in %s: %v", name, err)
+				}
+				t.Logf("✓ Created %d documents in: %s", len(docs), name)
 
-			retrieved, err := client.GetDocument(ctx, name, doc.ID)
-			if err != nil {
-				t.Errorf("Failed to retrieve document from %s: %v", name, err)
-			}
-			if retrieved.Content != doc.Content {
-				t.Errorf("Document content mismatch in %s", name)
-			}
+				// Retrieve and verify each document
+				for _, expectedDoc := range docs {
+					retrieved, err := client.GetDocument(ctx, name, expectedDoc.ID)
+					if err != nil {
+						t.Fatalf("Failed to retrieve document %s from %s: %v", expectedDoc.ID, name, err)
+					}
+					if retrieved.Content != expectedDoc.Content {
+						t.Errorf("Document content mismatch for %s in %s: expected %q, got %q",
+							expectedDoc.ID, name, expectedDoc.Content, retrieved.Content)
+					}
+				}
+				t.Logf("✓ Document retrieval verified: %s", name)
 
-			// Clean up
-			err = client.DeleteCollection(ctx, name)
-			if err != nil {
-				t.Errorf("Failed to delete collection %s: %v", name, err)
-			}
+				// Test document listing
+				listedDocs, err := client.ListDocuments(ctx, name, 10, 0)
+				if err != nil {
+					t.Fatalf("Failed to list documents in %s: %v", name, err)
+				}
+				if len(listedDocs) != len(docs) {
+					t.Errorf("Expected %d documents in %s, got %d", len(docs), name, len(listedDocs))
+				}
+				t.Logf("✓ Document listing verified: %s (%d docs)", name, len(listedDocs))
 
-			t.Logf("✓ Collection name preserved: %s", name)
+				// Test collection count
+				count, err := client.GetCollectionCount(ctx, name)
+				if err != nil {
+					t.Fatalf("Failed to get count for %s: %v", name, err)
+				}
+				if count != int64(len(docs)) {
+					t.Errorf("Expected count %d for %s, got %d", len(docs), name, count)
+				}
+				t.Logf("✓ Collection count verified: %s (count=%d)", name, count)
+
+				// Test search by metadata
+				metadata := map[string]interface{}{"category": "test"}
+				searchResults, err := client.SearchByMetadata(ctx, name, metadata, &vectordb.QueryOptions{TopK: 10})
+				if err != nil {
+					t.Fatalf("Failed to search by metadata in %s: %v", name, err)
+				}
+				if len(searchResults) != len(docs) {
+					t.Errorf("Expected %d search results in %s, got %d", len(docs), name, len(searchResults))
+				}
+				t.Logf("✓ Metadata search verified: %s (%d results)", name, len(searchResults))
+
+				// Test document update
+				updateDoc := &vectordb.Document{
+					ID:      "doc-1",
+					Content: "Updated content for doc-1",
+					Metadata: map[string]interface{}{
+						"category": "updated",
+					},
+				}
+				err = client.UpdateDocument(ctx, name, updateDoc)
+				if err != nil {
+					t.Fatalf("Failed to update document in %s: %v", name, err)
+				}
+
+				// Verify update
+				updated, err := client.GetDocument(ctx, name, "doc-1")
+				if err != nil {
+					t.Fatalf("Failed to retrieve updated document from %s: %v", name, err)
+				}
+				if updated.Content != updateDoc.Content {
+					t.Errorf("Document update failed in %s: expected %q, got %q",
+						name, updateDoc.Content, updated.Content)
+				}
+				t.Logf("✓ Document update verified: %s", name)
+
+				// Test document deletion
+				err = client.DeleteDocument(ctx, name, "doc-2")
+				if err != nil {
+					t.Fatalf("Failed to delete document from %s: %v", name, err)
+				}
+
+				// Verify deletion
+				_, err = client.GetDocument(ctx, name, "doc-2")
+				if err == nil {
+					t.Errorf("Document doc-2 should not exist after deletion in %s", name)
+				}
+				t.Logf("✓ Document deletion verified: %s", name)
+
+				// Clean up collection
+				err = client.DeleteCollection(ctx, name)
+				if err != nil {
+					t.Fatalf("Failed to delete collection %s: %v", name, err)
+				}
+
+				// Verify collection deletion
+				exists, err = client.CollectionExists(ctx, name)
+				if err != nil {
+					t.Fatalf("Failed to check existence after deletion of %s: %v", name, err)
+				}
+				if exists {
+					t.Errorf("Collection %s should not exist after deletion", name)
+				}
+				t.Logf("✅ All operations verified for collection: %s", name)
+			})
 		}
 	})
 
@@ -197,6 +311,11 @@ func TestSupabaseIntegration(t *testing.T) {
 		doc, err := client.GetDocument(ctx, collectionName, testDoc.ID)
 		if err != nil {
 			t.Errorf("Failed to get document: %v", err)
+			return
+		}
+		if doc == nil {
+			t.Error("GetDocument returned nil document")
+			return
 		}
 		if doc.ID != testDoc.ID {
 			t.Errorf("Expected document ID %s, got %s", testDoc.ID, doc.ID)
