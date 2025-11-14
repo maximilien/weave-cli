@@ -259,7 +259,7 @@ After tests pass:
 
 ## Related Documentation
 
-- [Supabase TODO](SUPABASE_TODO.md) - Remaining improvements
-- [Supabase Name Fix](SUPABASE_NAME_FIX.md) - Implementation details
-- [VDB Support Matrix](VDB_SUPPORT.md) - Feature compatibility
-- [User Guide](USER_GUIDE.md) - General usage
+- [Supabase TODO](TODO.md) - Remaining improvements
+- [Supabase Name Fix](NAME_FIX.md) - Implementation details
+- [VDB Support Matrix](../VDB_SUPPORT.md) - Feature compatibility
+- [User Guide](../USER_GUIDE.md) - General usage

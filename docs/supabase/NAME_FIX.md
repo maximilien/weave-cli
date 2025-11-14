@@ -182,5 +182,5 @@ Our `quoteIdentifier()` function handles this automatically.
 
 ## Related
 
-- See `docs/SUPABASE_TODO.md` for remaining Supabase improvements
-- See `docs/VDB_SUPPORT.md` for complete feature matrix
+- See [TODO.md](TODO.md) for remaining Supabase improvements
+- See [VDB Support Matrix](../VDB_SUPPORT.md) for complete feature matrix

@@ -135,8 +135,7 @@ databases:
 
 **Known Limitations:**
 - **Vectorizers**: Currently only supports OpenAI embeddings and manual embeddings
-- **Collection Names**: Automatically normalizes names (underscores → hyphens)
-- **Performance**: BM25 search works well but could be faster with pre-computed tsvector columns and GIN indexes (see docs/SUPABASE_BM25_IMPROVEMENT.md for optimization options)
+- **Performance**: BM25 search works well but could be faster with pre-computed tsvector columns and GIN indexes (see [Supabase BM25 Improvement](supabase/BM25_IMPROVEMENT.md) for optimization options)
 
 **BM25 Implementation:**
 - Uses PostgreSQL's `ts_rank_cd()` with document length normalization
@@ -219,8 +218,10 @@ When adding support for a new vector database or feature:
 |---------|------|---------|
 | 0.3.11 | 2025-11-13 | Initial support matrix document |
 
-## See Also
+## Related Documentation
 
-- [User Guide](USER_GUIDE.md) - General usage documentation
-- [Configuration Guide](CONFIG.md) - Detailed configuration options
-- [API Documentation](API.md) - Developer API reference
+- [User Guide](USER_GUIDE.md) - Complete usage documentation
+- [Vector DB Abstraction](guides/VECTOR_DB_ABSTRACTION.md) - Architecture details
+- [Supabase Documentation](supabase/) - Supabase integration guide
+- [Weaviate Documentation](weaviate/) - Weaviate integration status
+- [Changelog](CHANGELOG.md) - Version history

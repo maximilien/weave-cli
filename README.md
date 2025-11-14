@@ -119,14 +119,27 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ## Documentation
 
+### Core Documentation
+
 - **[📖 User Guide](docs/USER_GUIDE.md)** - Complete feature documentation
-- **[🤖 AI Agents](docs/WEAVE_CLI_AI.md)** - Natural language query system
-- **[📦 Batch Processing](docs/BATCH_DOCS_CREATION.md)** - Directory
-  processing guide
-- **[📚 Vector DB Abstraction](docs/VECTOR_DB_ABSTRACTION.md)** -
-  Multi-database support architecture
-- **[🎬 Demos](docs/DEMO.md)** - Video demos and tutorials
 - **[📋 Changelog](docs/CHANGELOG.md)** - Version history and updates
+- **[🗂️ VDB Support Matrix](docs/VDB_SUPPORT.md)** - Database feature
+  comparison
+
+### Guides
+
+- **[🤖 AI Agents](docs/guides/WEAVE_CLI_AI.md)** - Natural language query
+  system
+- **[📦 Batch Processing](docs/guides/BATCH_DOCS_CREATION.md)** - Directory
+  processing guide
+- **[📚 Vector DB Abstraction](docs/guides/VECTOR_DB_ABSTRACTION.md)** -
+  Multi-database support architecture
+- **[🎬 Demos](docs/guides/DEMO.md)** - Video demos and tutorials
+
+### Database-Specific
+
+- **[Supabase Documentation](docs/supabase/)** - Supabase integration guide
+- **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status
 
 ## Advanced Usage
 
