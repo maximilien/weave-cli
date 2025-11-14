@@ -46,6 +46,7 @@ Test coverage and testing guides:
 Analysis and plans for upcoming features:
 
 - **[REPL Progress Improvement](planning/REPL_PROGRESS.md)** - Real-time output streaming for script execution
+- **[Demo Update Plan](planning/DEMO_UPDATE_PLAN.md)** - Strategy for updating and recording all demos
 
 ### 📋 Release Notes
 

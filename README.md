@@ -320,10 +320,31 @@ Contributions welcome! Please:
 
 ## Links
 
+### Video Demos
+
+- **[Full Demo (5 min)](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)** -
+  Complete feature walkthrough
+- **[Quick Demo (2 min)](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)** -
+  Quick overview
+- **[REPL Demo](https://asciinema.org/a/U504HN4FSeMsOA0qS0os0NWUE)** -
+  AI-powered natural language interface
+
+### Interactive Demos
+
+Run these scripts locally for hands-on demonstrations:
+
+- **[Configuration Demo](demos/config-demo.sh)** - Interactive setup and
+  configuration management
+- **[Supabase Demo](demos/supabase-demo.sh)** - Supabase (PostgreSQL +
+  pgvector) integration
+
+See [demos/README.md](demos/README.md) for details.
+
+### Resources
+
 - **[GitHub Repository](https://github.com/maximilien/weave-cli)**
-- **[Full Demo (5 min)](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
-- **[Quick Demo (2 min)](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)**
-- **[REPL Demo](https://asciinema.org/a/U504HN4FSeMsOA0qS0os0NWUE)**
+- **[Documentation](docs/)**
+- **[User Guide](docs/USER_GUIDE.md)**
 
 ## License
 

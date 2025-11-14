@@ -1,0 +1,51 @@
+#!/usr/bin/expect -f
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 dr.max
+
+# Automated Demo Script Runner
+# Uses expect to automate pressing Enter through demo scripts
+
+set timeout 300
+set demo_script [lindex $argv 0]
+
+if {$demo_script == ""} {
+    puts "Usage: auto-demo-recorder.exp <demo-script>"
+    exit 1
+}
+
+# Start the demo script
+spawn bash $demo_script
+
+# Automate pressing Enter for each "Press Enter..." prompt
+expect {
+    -re "Press Enter.*\\.\\.\\..*" {
+        send "\r"
+        exp_continue
+    }
+    "Do you want to overwrite it?" {
+        send "n\r"
+        exp_continue
+    }
+    "Do you want to reinstall?" {
+        send "n\r"
+        exp_continue
+    }
+    "Clean up demo collection?" {
+        send "n\r"
+        exp_continue
+    }
+    "Allow execution of this script?" {
+        send "y\r"
+        exp_continue
+    }
+    eof {
+        # Demo completed
+    }
+    timeout {
+        puts "Timeout waiting for demo to complete"
+        exit 1
+    }
+}
+
+# Wait for demo to finish
+wait
