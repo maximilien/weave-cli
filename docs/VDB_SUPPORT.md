@@ -4,12 +4,17 @@ This document tracks feature support and compatibility across different vector d
 
 ## Supported Vector Databases
 
-| Database | Type | Status | Config Type |
-|----------|------|--------|-------------|
-| Weaviate Cloud | Cloud | ✅ Production | `weaviate-cloud` |
-| Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` |
-| Supabase | Cloud | ✅ Production | `supabase` |
-| Mock | Testing | ✅ Production | `mock` |
+| Database | Type | Status | Config Type | Target Version |
+|----------|------|--------|-------------|----------------|
+| Weaviate Cloud | Cloud | ✅ Production | `weaviate-cloud` | v0.3.x |
+| Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` | v0.3.x |
+| Supabase | Cloud/Self-hosted | ✅ Production | `supabase` | v0.3.x |
+| Mock | Testing | ✅ Production | `mock` | v0.3.x |
+| **Milvus** | **Cloud/Self-hosted** | **📋 Planned** | **`milvus`** | **v0.4.0** |
+| **Qdrant** | **Cloud/Self-hosted** | **📋 Planned** | **`qdrant`** | **v0.5.0** |
+| **Redis** | **Cloud/Self-hosted** | **📋 Planned** | **`redis`** | **v0.6.0** |
+| **MongoDB** | **Cloud (Atlas)** | **📋 Planned** | **`mongodb`** | **v0.7.0** |
+| **Pinecone** | **Cloud** | **📋 Planned** | **`pinecone`** | **v0.8.0** |
 
 ## Feature Support Matrix
 
@@ -186,21 +191,138 @@ databases:
 
 ## Roadmap
 
-### Short Term
-- [ ] Improve Supabase BM25 search implementation
-- [ ] Add more embedding provider support for Supabase
-- [ ] Document performance characteristics of each database
+### v0.4.0 - Milvus Integration (Planned)
 
-### Medium Term
-- [ ] Add support for Milvus
-- [ ] Add support for Pinecone
-- [ ] Add support for Qdrant
-- [ ] Implement database-specific optimization flags
+**Timeline**: ~2-3 weeks
 
-### Long Term
+- [ ] Implement MilvusClient with VectorDB interface
+- [ ] Schema mapping (Weave → Milvus explicit schemas)
+- [ ] Native BM25 + hybrid search support
+- [ ] Geospatial data type support
+- [ ] Multi-vector per document
+- [ ] Docker-based integration tests
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ Open source (Apache 2.0)
+- ✅ Native BM25 full-text search
+- ✅ Hybrid search (sparse + dense vectors)
+- ✅ Geospatial support with GIS functions
+- ✅ Distributed architecture for scale
+
+See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
+details.
+
+### v0.5.0 - Qdrant Integration (Planned)
+
+**Timeline**: ~1-2 weeks
+
+- [ ] Implement QdrantClient with VectorDB interface
+- [ ] gRPC client integration
+- [ ] Point-based data model mapping
+- [ ] JSON payload filtering
+- [ ] HNSW + quantization support
+- [ ] Docker-based integration tests
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ Open source (Apache 2.0)
+- ✅ High-performance gRPC API
+- ✅ HNSW indexing + quantization
+- ✅ Multiple vectors per point
+- ✅ Flexible payload filtering
+
+See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
+details.
+
+### v0.6.0 - Redis Integration (Planned)
+
+**Timeline**: ~1-2 weeks
+
+- [ ] Implement RedisClient with VectorDB interface
+- [ ] RediSearch FT.CREATE/FT.SEARCH integration
+- [ ] Hash-based document storage
+- [ ] Hybrid search (vector + full-text)
+- [ ] Geospatial search support
+- [ ] Docker-based integration tests
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ In-memory performance (extreme speed)
+- ✅ Native BM25 full-text search via RediSearch
+- ✅ Best-in-class hybrid search
+- ✅ Geospatial support
+- ✅ Familiar to many developers
+
+**License Considerations**:
+- RSALv2 (permissive, Redis 7.4+)
+- SSPL v1 or AGPL v3 (older versions)
+- Valkey fork available (BSD-3) if license is concern
+
+See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
+details.
+
+### v0.7.0 - MongoDB Atlas Vector Search Integration (Planned)
+
+**Timeline**: ~1-2 weeks
+
+- [ ] Implement MongoDBClient with VectorDB interface
+- [ ] Atlas Vector Search index creation
+- [ ] Aggregation pipeline for vector search
+- [ ] Pre-filtering support
+- [ ] Scalar/binary quantization
+- [ ] Atlas M0 free tier integration tests
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ Popular document database (familiar to many)
+- ✅ Managed Atlas service with free tier (512MB)
+- ✅ Pre-filtering for efficient queries
+- ✅ Scalar and binary quantization
+- ✅ Up to 8192 dimensions
+
+**Limitations**:
+- ⚠️ Atlas only (vector search not in community MongoDB)
+- ⚠️ 8192 dimension limit (lower than other DBs)
+- ❌ No native BM25 (must use separate Atlas Search)
+
+See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
+details.
+
+### v0.8.0 - Pinecone Integration (Planned)
+
+**Timeline**: ~1-2 weeks
+
+- [ ] Implement PineconeClient with VectorDB interface
+- [ ] API key authentication
+- [ ] Namespace support for multi-tenancy
+- [ ] Metadata filtering
+- [ ] Hybrid search with keyword boosting
+- [ ] Free tier CI/CD testing
+- [ ] Pricing documentation
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ Fully managed (zero infrastructure)
+- ✅ Generous free tier (2GB storage, 2M writes/month)
+- ✅ Serverless architecture
+- ✅ Multi-cloud support (AWS, Azure, GCP)
+- ✅ Hybrid search with keyword boosting
+
+**Cost Considerations**:
+- Free tier: 2GB storage, 2M writes/month
+- Standard: $50/month minimum + pay-as-you-go
+
+See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
+details.
+
+### Long Term (v0.9.0+)
+
 - [ ] Multi-database queries
 - [ ] Cross-database migration tools
 - [ ] Unified embedding caching layer
+- [ ] Additional vector DB support (Chroma, LanceDB, etc.)
+- [ ] Path to v1.0.0 release
 
 ## Contributing
 
