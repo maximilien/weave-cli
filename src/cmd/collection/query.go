@@ -110,6 +110,8 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		utils.QueryWeaviateCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeSupabase:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
+	case config.VectorDBTypeMongoDB:
+		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeMock:
 		utils.QueryMockCollection(ctx, dbConfig, collectionName, queryText, options)
 	default:

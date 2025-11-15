@@ -83,6 +83,12 @@ func runCollectionDeleteAll(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.DeleteAllWeaviateCollections(ctx, dbConfig)
+	case config.VectorDBTypeSupabase:
+		utils.PrintError("Delete all collections not yet implemented for Supabase")
+		os.Exit(1)
+	case config.VectorDBTypeMongoDB:
+		utils.PrintError("Delete all collections not yet implemented for MongoDB")
+		os.Exit(1)
 	case config.VectorDBTypeMock:
 		utils.DeleteAllMockCollections(ctx, dbConfig)
 	default:

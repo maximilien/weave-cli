@@ -145,6 +145,22 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	return nil
 }
 
+// DeleteAllDocuments deletes all documents in a collection
+func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
+	collection := c.getCollection(collectionName)
+
+	// Delete all documents using empty filter
+	_, err := collection.DeleteMany(ctx, bson.D{})
+	if err != nil {
+		return fmt.Errorf("failed to delete all documents: %w", err)
+	}
+
+	return nil
+}
+
 // ListDocuments returns a list of documents in a collection
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int, offset int) ([]*vectordb.Document, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())

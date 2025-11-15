@@ -81,7 +81,7 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 
 	// Validate that only one database is selected for read operations
 	if len(selection.Configs) > 1 {
-		utils.PrintError("Document show requires a single database. Please specify --weaviate, --supabase, or --mock")
+		utils.PrintError("Document show requires a single database. Please specify --weaviate, --supabase, --mongodb, or --mock")
 		os.Exit(1)
 	}
 
@@ -92,6 +92,8 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.ShowWeaviateDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	case config.VectorDBTypeSupabase:
+		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
+	case config.VectorDBTypeMongoDB:
 		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	case config.VectorDBTypeMock:
 		utils.ShowMockDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)

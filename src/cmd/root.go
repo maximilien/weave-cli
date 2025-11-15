@@ -34,6 +34,7 @@ var (
 	// Vector database type flags
 	useWeaviate bool
 	useSupabase bool
+	useMongoDB  bool
 	useMock     bool
 	useAll      bool
 )
@@ -45,7 +46,7 @@ var rootCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Run:                        runREPL,
 	Long: `Weave is a command-line tool for managing vector databases.
-Supports Weaviate (cloud/local), Supabase PGVector, and Mock databases.
+Supports Weaviate (cloud/local), MongoDB Atlas, Supabase PGVector, and Mock databases.
 
 📁 COLLECTION MANAGEMENT:
   weave cols ls                        # List all collections
@@ -88,6 +89,7 @@ Supports Weaviate (cloud/local), Supabase PGVector, and Mock databases.
 🗄️ DATABASE SELECTION:
   --weaviate                           # Use Weaviate databases only
   --supabase                           # Use Supabase database only
+  --mongodb                            # Use MongoDB database only
   --mock                               # Use mock database only
   --all                                # Use all configured databases (default)
 
@@ -138,6 +140,7 @@ func init() {
 	// Vector database type selection flags
 	rootCmd.PersistentFlags().BoolVar(&useWeaviate, "weaviate", false, "use Weaviate vector database (weaviate-cloud or weaviate-local)")
 	rootCmd.PersistentFlags().BoolVar(&useSupabase, "supabase", false, "use Supabase PGVector database")
+	rootCmd.PersistentFlags().BoolVar(&useMongoDB, "mongodb", false, "use MongoDB Atlas Vector Search database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
 

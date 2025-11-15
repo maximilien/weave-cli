@@ -754,6 +754,21 @@ func ShowMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectio
 	PrintInfo("Mock document show not yet implemented in new structure")
 }
 
+// CountDocuments counts documents using vectordb abstraction (works for all DB types)
+func CountDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create client: %w", err)
+	}
+
+	count, err := client.GetCollectionCount(ctx, collectionName)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count documents: %w", err)
+	}
+
+	return int(count), nil
+}
+
 // CountWeaviateDocuments counts Weaviate documents
 func CountWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
 	client, err := CreateWeaviateClient(cfg)
@@ -773,6 +788,59 @@ func CountWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, col
 func CountMockDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) (int, error) {
 	PrintInfo("Mock document count not yet implemented in new structure")
 	return 0, fmt.Errorf("document count not yet implemented")
+}
+
+// DeleteAllDocuments deletes all documents using database-specific implementations
+func DeleteAllDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string) {
+	switch cfg.Type {
+	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+		DeleteAllWeaviateDocuments(ctx, cfg, collectionName)
+	case config.VectorDBTypeSupabase:
+		client, err := CreateVectorDBClient(cfg)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to create Supabase client: %v", err))
+			os.Exit(1)
+		}
+		// Type assert to access DeleteAllDocuments method
+		type deleteAllSupported interface {
+			DeleteAllDocuments(ctx context.Context, collectionName string) error
+		}
+		if deleter, ok := client.(deleteAllSupported); ok {
+			if err := deleter.DeleteAllDocuments(ctx, collectionName); err != nil {
+				PrintError(fmt.Sprintf("Failed to delete all documents: %v", err))
+				os.Exit(1)
+			}
+		} else {
+			PrintError("Supabase client does not support DeleteAllDocuments")
+			os.Exit(1)
+		}
+		PrintSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
+	case config.VectorDBTypeMongoDB:
+		client, err := CreateVectorDBClient(cfg)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to create MongoDB client: %v", err))
+			os.Exit(1)
+		}
+		// Type assert to access DeleteAllDocuments method
+		type deleteAllSupported interface {
+			DeleteAllDocuments(ctx context.Context, collectionName string) error
+		}
+		if deleter, ok := client.(deleteAllSupported); ok {
+			if err := deleter.DeleteAllDocuments(ctx, collectionName); err != nil {
+				PrintError(fmt.Sprintf("Failed to delete all documents: %v", err))
+				os.Exit(1)
+			}
+		} else {
+			PrintError("MongoDB client does not support DeleteAllDocuments")
+			os.Exit(1)
+		}
+		PrintSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
+	case config.VectorDBTypeMock:
+		DeleteAllMockDocuments(ctx, cfg, collectionName)
+	default:
+		PrintError(fmt.Sprintf("Unknown vector database type: %s", cfg.Type))
+		os.Exit(1)
+	}
 }
 
 // DeleteDocuments deletes documents using the vectordb abstraction (works for all DB types)

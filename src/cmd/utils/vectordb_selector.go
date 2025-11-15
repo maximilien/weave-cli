@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --supabase, or --mock (found %d databases). "+
+					"Please specify --weaviate, --supabase, --mongodb, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -111,6 +111,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	// Get flags
 	useWeaviate, _ := cmd.Flags().GetBool("weaviate")
 	useSupabase, _ := cmd.Flags().GetBool("supabase")
+	useMongoDB, _ := cmd.Flags().GetBool("mongodb")
 	useMock, _ := cmd.Flags().GetBool("mock")
 	useAll, _ := cmd.Flags().GetBool("all")
 
@@ -118,7 +119,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useSupabase || useMock
+	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -144,6 +145,15 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *supabaseConfig)
 		types = append(types, string(supabaseConfig.Type))
+	}
+
+	if useMongoDB {
+		mongoDBConfig, err := getMongoDBConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get MongoDB configuration: %w", err)
+		}
+		configs = append(configs, *mongoDBConfig)
+		types = append(types, string(mongoDBConfig.Type))
 	}
 
 	if useMock {
@@ -244,6 +254,18 @@ func getSupabaseConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	}
 
 	return nil, fmt.Errorf("no Supabase configuration found")
+}
+
+// getMongoDBConfig returns MongoDB configuration
+func getMongoDBConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for MongoDB type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeMongoDB {
+			return &dbConfig, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no MongoDB configuration found")
 }
 
 // getMockConfig returns mock configuration

@@ -111,6 +111,9 @@ func runDocumentUpdate(cmd *cobra.Command, args []string) {
 			utils.PrintError(fmt.Sprintf("Failed to update document: %v", err))
 			os.Exit(1)
 		}
+	case config.VectorDBTypeSupabase, config.VectorDBTypeMongoDB:
+		utils.PrintError(fmt.Sprintf("Document update not yet implemented for %s", dbConfig.Type))
+		os.Exit(1)
 	case config.VectorDBTypeMock:
 		utils.UpdateMockDocument(ctx, dbConfig, collectionName, documentID, docName, metadataFilter, content, filePath, metadata)
 	default:

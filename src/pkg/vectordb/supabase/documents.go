@@ -381,6 +381,28 @@ func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName 
 	return nil
 }
 
+// DeleteAllDocuments deletes all documents in a collection
+func (a *Adapter) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	exists, err := a.CollectionExists(ctx, collectionName)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return vectordb.ErrNotFound("collection", collectionName)
+	}
+
+	tableName := a.getTableName(collectionName)
+	quotedTable := quoteIdentifier(tableName)
+	query := fmt.Sprintf("DELETE FROM %s", quotedTable)
+
+	_, err = a.db.ExecContext(ctx, query)
+	if err != nil {
+		return a.wrapError(err, "delete all documents")
+	}
+
+	return nil
+}
+
 // ListDocuments returns a list of documents in a collection
 func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limit int, offset int) ([]*vectordb.Document, error) {
 	exists, err := a.CollectionExists(ctx, collectionName)

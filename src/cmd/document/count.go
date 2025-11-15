@@ -68,6 +68,8 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			count, err = utils.CountWeaviateDocuments(ctx, dbConfig, collectionName)
+		case config.VectorDBTypeSupabase, config.VectorDBTypeMongoDB:
+			count, err = utils.CountDocuments(ctx, dbConfig, collectionName)
 		case config.VectorDBTypeMock:
 			count, err = utils.CountMockDocuments(ctx, dbConfig, collectionName)
 		default:

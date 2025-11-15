@@ -83,6 +83,8 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.DeleteAllWeaviateDocuments(ctx, dbConfig, collectionName)
+	case config.VectorDBTypeSupabase, config.VectorDBTypeMongoDB:
+		utils.DeleteAllDocuments(ctx, dbConfig, collectionName)
 	case config.VectorDBTypeMock:
 		utils.DeleteAllMockDocuments(ctx, dbConfig, collectionName)
 	default:

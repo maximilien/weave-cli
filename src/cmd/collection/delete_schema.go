@@ -117,6 +117,14 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 		} else {
 			err = utils.DeleteWeaviateCollectionSchema(ctx, dbConfig, collectionName)
 		}
+	case config.VectorDBTypeSupabase:
+		// Supabase collections don't have separate schemas to delete
+		utils.PrintWarning("Supabase collections don't have separate schemas to delete")
+		return
+	case config.VectorDBTypeMongoDB:
+		// MongoDB collections don't have separate schemas
+		utils.PrintWarning("MongoDB collections don't have separate schemas to delete")
+		return
 	case config.VectorDBTypeMock:
 		// Mock collections don't have separate schemas
 		utils.PrintWarning("Mock collections don't have separate schemas to delete")

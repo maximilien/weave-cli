@@ -107,6 +107,9 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		} else {
 			err = utils.DeleteSupabaseCollections(ctx, dbConfig, args)
 		}
+	case config.VectorDBTypeMongoDB:
+		utils.PrintError("Collection deletion not yet implemented for MongoDB")
+		os.Exit(1)
 	case config.VectorDBTypeMock:
 		if pattern != "" {
 			err = utils.DeleteMockCollectionsByPattern(ctx, dbConfig, pattern)
