@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.14] - 2025-11-14
+
+### Fixed
+
+- **🎬 Demo Recording Improvements**: Fixed demo recording speed and timing issues
+  - **Recording Speed**: Added configurable page delays (default 3 seconds) to demo recorder for better viewer readability
+  - **Demo Script Fixes**: Updated cleanup commands in demo scripts to use `delete-schema` instead of `delete`
+  - **UTF-8 Encoding**: Added proper locale settings for emoji display in asciinema recordings
+  - **Re-recorded Videos**: All demo videos re-recorded with improved pacing and correct timing
+  - **Updated Links**: All demo links updated to point to new asciinema recordings with accurate duration estimates
+
+### Changed
+
+- **Demo Timing**: Corrected duration estimates in documentation:
+  - Config Demo: ~1 min (was 5 min)
+  - Supabase Demo: ~1 min (was 8 min)
+  - Full Demo: ~2 min (was 5 min)
+  - Quick Demo: ~1 min (was 2 min)
+  - REPL Demo: ~1 min (was 4 min)
+
+### Technical Details
+
+- **Files Changed**: Demo scripts, recording tools, and all video recordings updated
+- **Recording Infrastructure**: Enhanced `auto-demo-recorder.exp` with page delay support
+- **Documentation**: Updated `docs/guides/DEMO.md` with correct links and timing
+
 ## [0.3.13] - 2025-11-14
 
 ### Added
