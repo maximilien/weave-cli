@@ -7,20 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-11-15
+
 ### Added
 
-- **🗄️ MongoDB Atlas Vector Search Integration (🚧 Experimental)**: MongoDB Atlas support for vector database operations
-  - **Status**: Experimental - Basic infrastructure complete, embedding integration pending
+- **🗄️ MongoDB Atlas Vector Search Integration (✅ Fully Functional)**: Complete MongoDB Atlas support for vector database operations
+  - **Status**: ✅ Fully Functional - Complete with automatic embedding generation and vector search
   - **What Works**:
     - ✅ Connection and health checks
     - ✅ Collection management (create, list, delete)
-    - ✅ Document CRUD operations with embedding storage
+    - ✅ Document CRUD operations with automatic embedding generation
+    - ✅ Atlas Vector Search ($vectorSearch aggregation) - fully functional
     - ✅ BM25 keyword search using MongoDB text indexes
+    - ✅ Hybrid search (vector + BM25 combination with RRF)
     - ✅ Metadata search and filtering
-  - **What's Pending**:
-    - 🚧 Vector search (embedding generation integration needed)
-    - 🚧 True hybrid search (depends on vector search)
-    - 🚧 Integration tests with Atlas
+    - ✅ Document deletion by ID or filename
+    - ✅ Embedding model display in collection and document listings
+  - **New Features**:
+    - Automatic OpenAI embedding generation on document creation
+    - Vector search with configurable similarity metrics (cosine, euclidean, dotProduct)
+    - Hybrid search combining vector similarity and BM25 keyword search
+    - `--mongodb` flag support across all commands
   - **New Adapter**: `src/pkg/vectordb/mongodb/` package with VectorDB interface implementation
   - **BM25 Search**: Keyword search using MongoDB text indexes (fully functional)
   - **Document Operations**: Full CRUD support with embedding storage fields
@@ -47,8 +54,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vector Database Support Maturity Levels**: Updated VDB_SUPPORT.md with maturity indicators
   - Weaviate: ✅ Production (fully tested and stable)
   - Supabase: 🧪 Alpha (core functionality working, production readiness being evaluated)
-  - MongoDB: 🚧 Experimental (basic infrastructure complete, vector search pending)
+  - MongoDB: ✅ Fully Functional (complete with automatic embeddings and vector search)
   - Mock: ✅ Production (for testing purposes)
+- **Collection Display**: Changed "docs" to "items" in collection list display for consistency
+- **Document Deletion**: Improved deletion with fallback to filename/metadata matching
+- **Embedding Display**: Added embedding model information to collection and document listings
 - **Vector Database Types**: Added `mongodb` to supported vector database types
 - **Factory Pattern**: Updated vectordb factory to support MongoDB adapter registration
 - **Configuration Schema**: Extended `VectorDBConfig` with MongoDB-specific fields (Database, VectorDimensions, SimilarityMetric)

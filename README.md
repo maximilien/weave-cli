@@ -29,11 +29,9 @@ weave config create --env
 weave health check
 ```
 
-### Supabase Setup (EXPERIMENTAL)
+### Supabase Setup (Alpha)
 
-> **⚠️ EXPERIMENTAL**: Supabase support is currently experimental and under active
-> development. Some features may not work as expected. Please report issues at
-> <https://github.com/maximilien/weave-cli/issues>
+> **ℹ️ Alpha**: Supabase support is feature complete and functional. Recommended for development and testing. See the [Supabase Documentation](docs/supabase/) for comprehensive setup and usage guide.
 
 To use Supabase as your vector database:
 
@@ -65,6 +63,27 @@ weave health check
    CREATE EXTENSION IF NOT EXISTS vector;
    ```
 
+### MongoDB Atlas Setup (Experimental)
+
+> **🧪 Experimental**: MongoDB Atlas support is functional but requires manual vector search index setup. See the [MongoDB Documentation](docs/mongodb/) for complete setup guide.
+
+To use MongoDB Atlas as your vector database:
+
+```bash
+# Set MongoDB configuration
+export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/?appName=weave-cli"
+export MONGODB_DATABASE="weave-cli"
+export OPENAI_API_KEY="sk-..."  # Required for automatic embeddings
+
+# Configure weave to use MongoDB
+weave config create --database-type mongodb
+
+# Verify MongoDB connection
+weave health check
+```
+
+**Important**: You must create a vector search index in the Atlas UI before semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md) for detailed instructions.
+
 ### Basic Usage
 
 ```bash
@@ -74,6 +93,7 @@ weave cols ls
 # List collections from specific database types
 weave cols ls --weaviate    # Weaviate only
 weave cols ls --supabase    # Supabase only
+weave cols ls --mongodb     # MongoDB Atlas only
 weave cols ls --mock        # Mock database only
 weave cols ls --all         # All configured databases
 
@@ -264,30 +284,28 @@ weave docs create MyCollection report.pdf --embedding text-embedding-ada-002
 
 ## Database Support
 
-Weave CLI features a **pluggable vector database abstraction layer** that
-allows seamless switching between different vector database backends:
+Weave CLI features a **pluggable vector database abstraction layer** that allows seamless switching between different vector database backends.
 
-### Currently Supported
+### Support Matrix
 
-- **Weaviate Cloud** (`weaviate-cloud`) - Production-ready cloud instances ✅
-- **Weaviate Local** (`weaviate-local`) - Self-hosted Weaviate instances ✅
-- **Supabase PGVector** (`supabase`) - PostgreSQL with pgvector extension ⚠️
-  EXPERIMENTAL
-- **Mock Database** (`mock`) - Built-in testing database (no external
-  dependencies) ✅
+| Database | Type | Status | Maturity | Docs |
+|----------|------|--------|----------|------|
+| **Weaviate Cloud** | `weaviate-cloud` | ✅ Production Ready | **Stable** | [Guide](docs/) |
+| **Weaviate Local** | `weaviate-local` | ✅ Production Ready | **Stable** | [Guide](docs/) |
+| **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/supabase/) |
+| **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
+| **Mock** | `mock` | ✅ Testing Only | **Stable** | - |
 
-### Planned Support (Path to v1.0.0)
+### Maturity Levels
 
-- **MongoDB** (`mongodb`) - ✅ v0.3.15 - Atlas Vector Search, automatic embeddings, hybrid search ([docs](docs/mongodb/))
-- **Milvus** (`milvus`) - v0.4.0 - Open source, BM25 + hybrid search, geospatial
-- **Qdrant** (`qdrant`) - v0.5.0 - High-performance gRPC, HNSW + quantization
-- **Redis** (`redis`) - v0.6.0 - In-memory speed, RediSearch, best hybrid search
-- **Pinecone** (`pinecone`) - v0.8.0 - Fully managed, serverless, generous free tier
+- **Stable**: Production-ready, well-tested, recommended for all use cases
+- **Alpha**: Feature complete, functional, recommended for development/testing
+- **Experimental**: Basic functionality working, may require manual setup, use with caution
 
-See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) for
-detailed implementation plans and
-[Vector DB Abstraction Documentation](docs/VECTOR_DB_ABSTRACTION.md) for
-architecture details.
+### Additional Resources
+
+- **[Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md)** - Roadmap for upcoming database support
+- **[Vector DB Abstraction Guide](docs/VECTOR_DB_ABSTRACTION.md)** - Architecture details and how to add new databases
 
 ### Abstraction Benefits
 
