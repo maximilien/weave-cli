@@ -880,18 +880,65 @@ func DeleteDocuments(ctx context.Context, cfg *config.VectorDBConfig, collection
 
 	// If document IDs are provided, delete them directly
 	if len(documentIDs) > 0 {
+		// For MongoDB/Supabase, document IDs might actually be filenames
+		// Try to delete by document ID first, if that fails, treat as filename
+		successCount := 0
 		for _, docID := range documentIDs {
 			err := client.DeleteDocument(ctx, collectionName, docID)
 			if err != nil {
-				PrintError(fmt.Sprintf("Failed to delete document '%s': %v", docID, err))
-				continue
+				// If deletion by ID failed, try deleting by filename in metadata
+				metadata := map[string]interface{}{
+					"original_filename": docID,
+				}
+				err = client.DeleteDocumentsByMetadata(ctx, collectionName, metadata)
+				if err != nil {
+					PrintError(fmt.Sprintf("Failed to delete document '%s': %v", docID, err))
+					continue
+				}
 			}
+			successCount++
 			PrintSuccess(fmt.Sprintf("Document '%s' deleted successfully", docID))
+		}
+		if successCount == 0 {
+			PrintError("Failed to delete any documents")
 		}
 		return
 	}
 
-	PrintWarning("Metadata, virtual, pattern, and name-based document deletion not yet implemented for generic delete")
+	// Handle deletion by name (filename)
+	if name != "" {
+		metadata := map[string]interface{}{
+			"original_filename": name,
+		}
+		err = client.DeleteDocumentsByMetadata(ctx, collectionName, metadata)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to delete document '%s': %v", name, err))
+			return
+		}
+		PrintSuccess(fmt.Sprintf("Document '%s' deleted successfully", name))
+		return
+	}
+
+	// Handle deletion by metadata filters
+	if len(metadataFilters) > 0 {
+		// Parse metadata filters into map
+		metadata := make(map[string]interface{})
+		for _, filter := range metadataFilters {
+			parts := strings.SplitN(filter, "=", 2)
+			if len(parts) == 2 {
+				metadata[parts[0]] = parts[1]
+			}
+		}
+		err = client.DeleteDocumentsByMetadata(ctx, collectionName, metadata)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to delete documents by metadata: %v", err))
+			return
+		}
+		PrintSuccess("Documents deleted successfully by metadata filter")
+		return
+	}
+
+	PrintWarning("Virtual and pattern-based document deletion not yet implemented for generic delete")
 }
 
 // DeleteWeaviateDocuments deletes Weaviate documents

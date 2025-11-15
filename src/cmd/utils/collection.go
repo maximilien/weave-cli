@@ -354,7 +354,7 @@ func ListWeaviateCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 		// Document count with color
 		var countStr string
 		if info.HasDocuments {
-			countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.DocumentCount))
+			countStr = GetStyledNumber(fmt.Sprintf("%d items", info.DocumentCount))
 		} else {
 			countStr = GetStyledValueDimmed("empty")
 		}
@@ -466,7 +466,7 @@ func ListSupabaseCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 			// Document count with color
 			var countStr string
 			if info.Count > 0 {
-				countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.Count))
+				countStr = GetStyledNumber(fmt.Sprintf("%d items", info.Count))
 			} else {
 				countStr = GetStyledValueDimmed("empty")
 			}
@@ -585,7 +585,7 @@ func ListMongoDBCollections(ctx context.Context, cfg *config.VectorDBConfig, lim
 			// Document count with color
 			var countStr string
 			if info.Count > 0 {
-				countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.Count))
+				countStr = GetStyledNumber(fmt.Sprintf("%d items", info.Count))
 			} else {
 				countStr = GetStyledValueDimmed("empty")
 			}
@@ -775,7 +775,7 @@ func ListMockCollections(ctx context.Context, cfg *config.VectorDBConfig, limit 
 		// Document count with color
 		var countStr string
 		if info.HasDocuments {
-			countStr = GetStyledNumber(fmt.Sprintf("%d docs", info.DocumentCount))
+			countStr = GetStyledNumber(fmt.Sprintf("%d items", info.DocumentCount))
 		} else {
 			countStr = GetStyledValueDimmed("empty")
 		}
