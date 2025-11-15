@@ -480,12 +480,19 @@ func ListSupabaseCollections(ctx context.Context, cfg *config.VectorDBConfig, li
 				descriptionStr = GetStyledValueDimmed(fmt.Sprintf("(%s)", info.Description))
 			}
 
+			// Vectorizer/embedding model info
+			var vectorizerStr string
+			if info.Vectorizer != "" {
+				vectorizerStr = fmt.Sprintf("[%s] ", GetStyledValueDimmed(info.Vectorizer))
+			}
+
 			// Compact single-line format
-			fmt.Printf("%2d. %s %s %s %s\n",
+			fmt.Printf("%2d. %s %s %s %s%s\n",
 				i+1,
 				nameColor,
 				countStr,
 				typeIndicator,
+				vectorizerStr,
 				descriptionStr)
 		}
 	} else {
@@ -583,14 +590,21 @@ func ListMongoDBCollections(ctx context.Context, cfg *config.VectorDBConfig, lim
 				countStr = GetStyledValueDimmed("empty")
 			}
 
+			// Vectorizer/embedding model info
+			var vectorizerStr string
+			if info.Vectorizer != "" {
+				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
+			}
+
 			// Display collection info
-			fmt.Printf("%2d. %s %s 📄\n", i+1, nameColor, countStr)
+			fmt.Printf("%2d. %s %s%s 📄\n", i+1, nameColor, countStr, vectorizerStr)
 		}
 	} else {
 		// JSON output
 		type CollectionJSON struct {
-			Name  string `json:"name"`
-			Count int64  `json:"count"`
+			Name       string `json:"name"`
+			Count      int64  `json:"count"`
+			Vectorizer string `json:"vectorizer,omitempty"`
 		}
 
 		type OutputJSON struct {
@@ -601,8 +615,9 @@ func ListMongoDBCollections(ctx context.Context, cfg *config.VectorDBConfig, lim
 		collections := make([]CollectionJSON, len(collectionInfos))
 		for i, info := range collectionInfos {
 			collections[i] = CollectionJSON{
-				Name:  info.Name,
-				Count: info.Count,
+				Name:       info.Name,
+				Count:      info.Count,
+				Vectorizer: info.Vectorizer,
 			}
 		}
 

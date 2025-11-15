@@ -241,13 +241,16 @@ func extractPageNumbers(images []VirtualDocument) (int, int) {
 }
 
 // DisplayRegularDocuments displays regular documents with styling
-func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, jsonOutput bool) {
+func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, jsonOutput bool, vectorizer string) {
 	// If JSON output is requested, marshal and print JSON
 	if jsonOutput {
 		output := map[string]interface{}{
 			"collection":      collectionName,
 			"total_documents": len(documents),
 			"documents":       documents,
+		}
+		if vectorizer != "" {
+			output["vectorizer"] = vectorizer
 		}
 		jsonBytes, err := json.MarshalIndent(output, "", "  ")
 		if err != nil {
@@ -259,6 +262,9 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 	}
 
 	PrintSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
+	if vectorizer != "" {
+		PrintInfo(fmt.Sprintf("  Embedding model: %s", GetStyledValueDimmed(vectorizer)))
+	}
 	fmt.Println()
 
 	for i, doc := range documents {
@@ -305,7 +311,7 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 }
 
 // DisplayVirtualDocuments displays virtual documents with aggregation and styling
-func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, summary bool, jsonOutput bool) {
+func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, summary bool, jsonOutput bool, vectorizer string) {
 	// Aggregate documents by original filename/source
 	virtualDocs := AggregateDocumentsByOriginal(documents)
 
@@ -315,6 +321,9 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 				"collection":        collectionName,
 				"total_documents":   0,
 				"virtual_documents": []VirtualDocument{},
+			}
+			if vectorizer != "" {
+				output["vectorizer"] = vectorizer
 			}
 			jsonBytes, _ := json.MarshalIndent(output, "", "  ")
 			fmt.Println(string(jsonBytes))
@@ -332,6 +341,9 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			"total_virtual_documents": len(virtualDocs),
 			"virtual_documents":       virtualDocs,
 		}
+		if vectorizer != "" {
+			output["vectorizer"] = vectorizer
+		}
 		jsonBytes, err := json.MarshalIndent(output, "", "  ")
 		if err != nil {
 			PrintError(fmt.Sprintf("Failed to marshal virtual documents to JSON: %v", err))
@@ -342,6 +354,9 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 	}
 
 	PrintSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
+	if vectorizer != "" {
+		PrintInfo(fmt.Sprintf("  Embedding model: %s", GetStyledValueDimmed(vectorizer)))
+	}
 	fmt.Println()
 
 	for i, vdoc := range virtualDocs {

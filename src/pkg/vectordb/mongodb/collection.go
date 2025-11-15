@@ -90,9 +90,16 @@ func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo
 			count = 0
 		}
 
+		// Get vectorizer from schema
+		vectorizer := ""
+		if schema, err := c.GetSchema(ctx, name); err == nil && schema != nil {
+			vectorizer = schema.Vectorizer
+		}
+
 		collections = append(collections, vectordb.CollectionInfo{
-			Name:  name,
-			Count: count,
+			Name:       name,
+			Count:      count,
+			Vectorizer: vectorizer,
 		})
 	}
 

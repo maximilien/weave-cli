@@ -52,10 +52,17 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 		// Get collection count - we'll implement a simple count method
 		count := int64(0) // Default to 0 since GetCollectionCount doesn't exist
 
+		// Get vectorizer from schema
+		vectorizer := ""
+		if schema, err := a.GetSchema(ctx, collectionName); err == nil && schema != nil {
+			vectorizer = schema.Vectorizer
+		}
+
 		result[i] = vectordb.CollectionInfo{
 			Name:        collectionName,
 			Description: "Weaviate collection",
 			Count:       count,
+			Vectorizer:  vectorizer,
 		}
 	}
 

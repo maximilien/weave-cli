@@ -68,6 +68,7 @@ type CollectionInfo struct {
 	Name        string `json:"name"`
 	Description string `json:"description,omitempty"`
 	Count       int64  `json:"count"`
+	Vectorizer  string `json:"vectorizer,omitempty"`
 }
 
 // VectorDBClient defines the interface that all vector database implementations must satisfy

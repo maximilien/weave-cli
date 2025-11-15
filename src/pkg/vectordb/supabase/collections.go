@@ -126,10 +126,17 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 		collectionName := strings.TrimPrefix(tableName, "collection_")
 		collectionName = strings.ReplaceAll(collectionName, "_", "-")
 
+		// Get vectorizer from schema
+		vectorizer := ""
+		if schema, err := a.GetSchema(ctx, collectionName); err == nil && schema != nil {
+			vectorizer = schema.Vectorizer
+		}
+
 		collections = append(collections, vectordb.CollectionInfo{
 			Name:        collectionName,
 			Description: description,
 			Count:       count,
+			Vectorizer:  vectorizer,
 		})
 	}
 

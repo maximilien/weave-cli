@@ -204,6 +204,12 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 		return
 	}
 
+	// Get collection schema to display vectorizer/embedding model
+	var vectorizer string
+	if schema, err := client.GetSchema(ctx, collectionName); err == nil && schema != nil {
+		vectorizer = schema.Vectorizer
+	}
+
 	// Convert vectordb.Document to weaviate.Document for display functions
 	documents := make([]weaviate.Document, len(vdbDocuments))
 	for i, doc := range vdbDocuments {
@@ -219,9 +225,9 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	}
 
 	if virtual {
-		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary, jsonOutput)
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary, jsonOutput, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, jsonOutput)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, jsonOutput, vectorizer)
 	}
 }
 
@@ -274,11 +280,20 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 		return
 	}
 
+	// Get collection schema to display vectorizer/embedding model
+	var vectorizer string
+	vdbClient, err := CreateVectorDBClient(cfg)
+	if err == nil {
+		if schema, err := vdbClient.GetSchema(ctx, collectionName); err == nil && schema != nil {
+			vectorizer = schema.Vectorizer
+		}
+	}
+
 	// ListWeaviateDocuments doesn't support JSON output, use default formatted output
 	if virtual {
-		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary, false)
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary, false, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, vectorizer)
 	}
 }
 
@@ -519,6 +534,12 @@ func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionNam
 		return
 	}
 
+	// Get collection schema to display vectorizer/embedding model
+	var vectorizer string
+	if schema, err := client.GetSchema(ctx, collectionName); err == nil && schema != nil {
+		vectorizer = schema.Vectorizer
+	}
+
 	// If document IDs are provided, show them directly
 	if len(documentIDs) > 0 {
 		var documents []interface{}
@@ -547,6 +568,9 @@ func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionNam
 				// Display document details
 				color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
 				fmt.Printf("Collection: %s\n", collectionName)
+				if vectorizer != "" {
+					fmt.Printf("Embedding model: %s\n", GetStyledValueDimmed(vectorizer))
+				}
 				fmt.Println()
 
 				fmt.Printf("Content:\n")
@@ -573,6 +597,9 @@ func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionNam
 			output := map[string]interface{}{
 				"documents": documents,
 				"count":     len(documents),
+			}
+			if vectorizer != "" {
+				output["vectorizer"] = vectorizer
 			}
 			jsonBytes, err := json.MarshalIndent(output, "", "  ")
 			if err != nil {
