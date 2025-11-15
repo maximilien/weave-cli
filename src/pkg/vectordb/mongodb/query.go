@@ -14,69 +14,81 @@ import (
 )
 
 // SearchSemantic performs semantic search using MongoDB Atlas Vector Search
-func (c *Client) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	// Note: This requires embeddings to be generated from the query
-	// In production, you would call an embedding service here
-	// For now, we return an error indicating embeddings are needed
-	return nil, fmt.Errorf("SearchSemantic requires embedding generation - not yet implemented")
+func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	// Check if LLM client is available for embedding generation
+	if a.llmClient == nil {
+		return nil, fmt.Errorf("SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
+	}
 
-	// Example implementation when embeddings are available:
-	/*
-		collection := c.getCollection(collectionName)
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
 
-		// Generate embedding for query (placeholder)
-		queryEmbedding := []float64{} // TODO: Generate from embedding service
+	collection := a.getCollection(collectionName)
 
-		// Build vector search aggregation pipeline
-		pipeline := bson.A{
-			bson.D{{Key: "$vectorSearch", Value: bson.D{
-				{Key: "index", Value: "vector_index"},
-				{Key: "path", Value: "embedding"},
-				{Key: "queryVector", Value: queryEmbedding},
-				{Key: "numCandidates", Value: opts.TopK * 10},
-				{Key: "limit", Value: opts.TopK},
-			}}},
-			bson.D{{Key: "$project", Value: bson.D{
-				{Key: "document_id", Value: 1},
-				{Key: "text", Value: 1},
-				{Key: "content", Value: 1},
-				{Key: "metadata", Value: 1},
-				{Key: "score", Value: bson.D{{Key: "$meta", Value: "vectorSearchScore"}}},
-			}}},
+	// Generate embedding for query using LLM client
+	queryEmbedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	}
+
+	// Build vector search aggregation pipeline
+	pipeline := bson.A{
+		bson.D{{Key: "$vectorSearch", Value: bson.D{
+			{Key: "index", Value: "vector_index"},
+			{Key: "path", Value: "embedding"},
+			{Key: "queryVector", Value: queryEmbedding},
+			{Key: "numCandidates", Value: opts.TopK * 10},
+			{Key: "limit", Value: opts.TopK},
+		}}},
+		bson.D{{Key: "$project", Value: bson.D{
+			{Key: "document_id", Value: 1},
+			{Key: "text", Value: 1},
+			{Key: "content", Value: 1},
+			{Key: "image", Value: 1},
+			{Key: "image_data", Value: 1},
+			{Key: "url", Value: 1},
+			{Key: "metadata", Value: 1},
+			{Key: "score", Value: bson.D{{Key: "$meta", Value: "vectorSearchScore"}}},
+		}}},
+	}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	if err != nil {
+		return nil, fmt.Errorf("vector search failed: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var results []*vectordb.QueryResult
+	for cursor.Next(ctx) {
+		var result struct {
+			DocumentID string                 `bson:"document_id"`
+			Text       string                 `bson:"text"`
+			Content    string                 `bson:"content"`
+			Image      string                 `bson:"image"`
+			ImageData  string                 `bson:"image_data"`
+			URL        string                 `bson:"url"`
+			Metadata   map[string]interface{} `bson:"metadata"`
+			Score      float64                `bson:"score"`
+		}
+		if err := cursor.Decode(&result); err != nil {
+			return nil, fmt.Errorf("failed to decode result: %w", err)
 		}
 
-		cursor, err := collection.Aggregate(ctx, pipeline)
-		if err != nil {
-			return nil, fmt.Errorf("vector search failed: %w", err)
-		}
-		defer cursor.Close(ctx)
+		results = append(results, &vectordb.QueryResult{
+			Document: vectordb.Document{
+				ID:        result.DocumentID,
+				Text:      result.Text,
+				Content:   result.Content,
+				Image:     result.Image,
+				ImageData: result.ImageData,
+				URL:       result.URL,
+				Metadata:  result.Metadata,
+			},
+			Score: result.Score,
+		})
+	}
 
-		var results []*vectordb.QueryResult
-		for cursor.Next(ctx) {
-			var result struct {
-				DocumentID string                 `bson:"document_id"`
-				Text       string                 `bson:"text"`
-				Content    string                 `bson:"content"`
-				Metadata   map[string]interface{} `bson:"metadata"`
-				Score      float64                `bson:"score"`
-			}
-			if err := cursor.Decode(&result); err != nil {
-				return nil, fmt.Errorf("failed to decode result: %w", err)
-			}
-
-			results = append(results, &vectordb.QueryResult{
-				Document: vectordb.Document{
-					ID:       result.DocumentID,
-					Text:     result.Text,
-					Content:  result.Content,
-					Metadata: result.Metadata,
-				},
-				Score: result.Score,
-			})
-		}
-
-		return results, cursor.Err()
-	*/
+	return results, cursor.Err()
 }
 
 // SearchBM25 performs keyword-based search using MongoDB text search

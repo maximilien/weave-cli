@@ -96,9 +96,14 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	collection := c.getCollection(collectionName)
 	filter := bson.D{{Key: "document_id", Value: documentID}}
 
-	_, err := collection.DeleteOne(ctx, filter)
+	result, err := collection.DeleteOne(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete document: %w", err)
+	}
+
+	// Return error if no documents were deleted
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("document not found: %s", documentID)
 	}
 
 	return nil
@@ -116,9 +121,14 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, doc
 	collection := c.getCollection(collectionName)
 	filter := bson.D{{Key: "document_id", Value: bson.D{{Key: "$in", Value: documentIDs}}}}
 
-	_, err := collection.DeleteMany(ctx, filter)
+	result, err := collection.DeleteMany(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete documents: %w", err)
+	}
+
+	// Return error if no documents were deleted
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("no documents found matching the provided IDs")
 	}
 
 	return nil
@@ -137,9 +147,14 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 		filter = append(filter, bson.E{Key: "metadata." + key, Value: value})
 	}
 
-	_, err := collection.DeleteMany(ctx, filter)
+	result, err := collection.DeleteMany(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("failed to delete documents by metadata: %w", err)
+	}
+
+	// Return error if no documents were deleted
+	if result.DeletedCount == 0 {
+		return fmt.Errorf("no documents found matching the provided metadata")
 	}
 
 	return nil
