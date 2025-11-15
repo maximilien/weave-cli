@@ -23,7 +23,7 @@ echo "================================================"
 echo ""
 
 # Cleanup: Delete demo collection if it exists (silent)
-"$WEAVE_BIN" cols delete FullDemoCol --force >/dev/null 2>&1 || true
+"$WEAVE_BIN" cols delete-schema FullDemoCol --force --weaviate >/dev/null 2>&1 || true
 sleep 1  # Wait for deletion to complete
 
 # Page 1: Configuration
