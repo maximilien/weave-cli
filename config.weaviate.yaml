@@ -69,6 +69,7 @@ databases:
 # - Supports multiple embedding providers: OpenAI, Cohere, Hugging Face, etc.
 # - Automatic vectorization based on collection schema configuration
 # - Supports semantic search, hybrid search (vector + BM25), and filtering
-# - For local development, use Docker: docker run -p 8080:8080 semitechnologies/weaviate
+# - For local development, use Docker:
+#   docker run -p 8080:8080 semitechnologies/weaviate
 # - Local Weaviate doesn't require API key, only OpenAI key for embeddings
 # - Production clusters available on AWS, GCP, and Azure
