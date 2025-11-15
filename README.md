@@ -278,10 +278,10 @@ allows seamless switching between different vector database backends:
 
 ### Planned Support (Path to v1.0.0)
 
+- **MongoDB** (`mongodb`) - ✅ v0.3.15 - Atlas Vector Search, automatic embeddings, hybrid search ([docs](docs/mongodb/))
 - **Milvus** (`milvus`) - v0.4.0 - Open source, BM25 + hybrid search, geospatial
 - **Qdrant** (`qdrant`) - v0.5.0 - High-performance gRPC, HNSW + quantization
 - **Redis** (`redis`) - v0.6.0 - In-memory speed, RediSearch, best hybrid search
-- **MongoDB** (`mongodb`) - v0.7.0 - Atlas Vector Search, pre-filtering, quantization
 - **Pinecone** (`pinecone`) - v0.8.0 - Fully managed, serverless, generous free tier
 
 See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) for

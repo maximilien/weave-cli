@@ -316,38 +316,46 @@ details.
 See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
 details.
 
-### v0.3.15 - MongoDB Atlas Vector Search (Experimental - In Progress)
+### v0.3.15 - MongoDB Atlas Vector Search (✅ Fully Functional)
 
-**Status**: 🚧 Experimental - Basic implementation complete, embedding integration pending
+**Status**: ✅ Fully Functional - Complete with automatic embedding generation and vector search
 
 **Completed**:
 - ✅ Implement MongoDBClient with VectorDB interface
+- ✅ Automatic OpenAI embedding generation on document creation
+- ✅ Atlas Vector Search ($vectorSearch aggregation) - fully functional
 - ✅ BM25 text search using MongoDB text indexes
-- ✅ Document CRUD operations
+- ✅ Hybrid search (vector + BM25 combination with RRF)
+- ✅ Document CRUD operations with embedding support
+- ✅ Document deletion by ID or filename
 - ✅ Collection management
 - ✅ Configuration and factory integration
 - ✅ Documentation and setup guides
 
-**Pending**:
-- [ ] OpenAI embedding generation integration
-- [ ] Atlas Vector Search ($vectorSearch aggregation)
-- [ ] Hybrid search (vector + BM25 combination)
+**Remaining Tasks**:
 - [ ] Atlas M0 free tier integration tests
 - [ ] Demo script
 
 **Key Features**:
 - ✅ Popular document database (familiar to many)
 - ✅ Managed Atlas service with free M0 tier (512MB)
-- ✅ BM25 keyword search (functional)
+- ✅ Automatic embedding generation (requires `OPENAI_API_KEY`)
+- ✅ Semantic vector search (requires Atlas vector index)
+- ✅ BM25 keyword search (works without vector index)
+- ✅ Hybrid search combining both approaches
 - ✅ Pre-filtering for efficient queries
-- ✅ Up to 8192 dimensions
+- ✅ Up to 8192 dimensions supported
 
-**Current Limitations**:
-- 🚧 Vector search pending embedding integration
+**Requirements**:
+- ✅ `OPENAI_API_KEY` environment variable for embeddings
+- ✅ MongoDB Atlas cluster (free M0 tier available)
+- ✅ Vector search index created via Atlas UI
+
+**Limitations**:
 - ⚠️ Atlas only (vector search not in community MongoDB)
-- ⚠️ Manual index creation via Atlas UI required
+- ⚠️ Manual index creation via Atlas UI required (not automated via API)
 
-See [MongoDB Documentation](mongodb/) for details.
+See [MongoDB Documentation](mongodb/) for complete setup and usage details.
 
 ### v0.7.0 - Pinecone Integration (Planned)
 

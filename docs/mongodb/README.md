@@ -1,6 +1,6 @@
 # MongoDB Atlas Vector Search Integration
 
-> **🚧 Experimental**: MongoDB integration is currently experimental. BM25 search, document operations, and collection management are fully functional. Vector search embedding integration is pending.
+> **✅ Fully Functional**: MongoDB integration is now fully functional with automatic embedding generation, vector search, BM25 search, and hybrid search capabilities.
 
 This guide covers using MongoDB Atlas Vector Search with weave-cli for semantic search and RAG applications.
 
@@ -9,14 +9,16 @@ This guide covers using MongoDB Atlas Vector Search with weave-cli for semantic 
 **What Works:**
 - ✅ Connection and health checks
 - ✅ Collection management (create, list, delete)
-- ✅ Document CRUD operations
+- ✅ Document CRUD operations with automatic embedding generation
+- ✅ Semantic vector search (fully functional)
 - ✅ BM25 keyword search (fully functional)
+- ✅ Hybrid search (combining vector + BM25)
 - ✅ Metadata search and filtering
+- ✅ Document deletion by ID or filename
 
-**What's Pending:**
-- 🚧 Vector search (embedding generation integration needed)
-- 🚧 True hybrid search (depends on vector search)
-- 🚧 Integration tests with Atlas
+**Requirements:**
+- ✅ `OPENAI_API_KEY` environment variable (for automatic embedding generation)
+- ✅ MongoDB Atlas vector search index configured (see [ATLAS_SETUP.md](ATLAS_SETUP.md))
 
 ## Overview
 
@@ -83,39 +85,56 @@ weave collection list
 
 ### Document Operations
 
-```bash
-# Create a document
-weave document create WeaveDocs \
-  --text "MongoDB is a document database with vector search capabilities" \
-  --metadata '{"category": "database", "source": "docs"}'
+**✅ Automatic Embedding Generation**: When creating documents, embeddings are automatically generated using OpenAI if `OPENAI_API_KEY` is set.
 
-# Create from file
-weave document create WeaveDocs --file README.md
+```bash
+# Create a document (embeddings generated automatically)
+weave docs create WeaveDocs README.md --mongodb
+
+# Creates document with chunking (default 5000 chars per chunk)
+# Each chunk gets its own embedding automatically
+weave docs create WeaveDocs docs/USER_GUIDE.md --mongodb
+
+# Custom chunk size
+weave docs create WeaveDocs large_doc.txt --mongodb --chunk-size 1000
 
 # List documents
-weave document list WeaveDocs
+weave docs list WeaveDocs --mongodb
 
-# Get a specific document
-weave document get WeaveDocs <document-id>
+# List with virtual view (shows chunks grouped by original file)
+weave docs list WeaveDocs --mongodb -w -S
 
-# Delete a document
-weave document delete WeaveDocs <document-id>
+# Delete a document by filename (deletes all chunks)
+weave docs del WeaveDocs README.md --mongodb
+
+# Delete by document ID
+weave docs del WeaveDocs <document-id> --mongodb
 ```
+
+**Note**: Documents created without `OPENAI_API_KEY` will not have embeddings and cannot be found via semantic search (but BM25 search will still work).
 
 ### Search Operations
 
 #### Semantic Search (Vector Search)
 
-**Note**: Vector search requires the vector search index to be created in Atlas UI.
+**✅ Fully Working**: Semantic search now automatically generates embeddings using OpenAI and performs vector search.
 
 ```bash
-# Semantic search using embeddings
-weave query semantic WeaveDocs "What is MongoDB vector search?" --top-k 5
+# Semantic search using embeddings (embeddings generated automatically)
+weave cols q WeaveDocs "What is MongoDB vector search?" --mongodb -k 5
+
+# Alternative syntax
+weave query semantic WeaveDocs "database features" --mongodb --top-k 5
 
 # With metadata filtering (if filter indexes are configured)
 weave query semantic WeaveDocs "database features" \
-  --metadata '{"category": "database"}'
+  --mongodb --metadata '{"category": "database"}'
 ```
+
+**Requirements:**
+- `OPENAI_API_KEY` environment variable must be set
+- Vector search index must be created in Atlas UI (see [ATLAS_SETUP.md](ATLAS_SETUP.md))
+- Documents must have embeddings (automatically generated when creating documents)
 
 #### BM25 Keyword Search
 
@@ -183,9 +202,34 @@ Documents in MongoDB are stored with this structure:
 
 ### Vector Search Pipeline
 
+#### Document Creation with Embeddings
+
+When you create a document, weave-cli automatically:
+
+1. **Reads the document content**
+2. **Chunks text** (if needed, default 5000 chars)
+3. **Generates embeddings** using OpenAI API for each chunk
+4. **Stores documents** with embeddings in MongoDB:
+   ```javascript
+   {
+     document_id: "uuid",
+     text: "chunk content",
+     content: "chunk content",
+     embedding: [0.123, -0.456, ...],  // 1536 dimensions
+     metadata: {
+       filename: "README.md",
+       chunk_index: 0,
+       total_chunks: 3,
+       ...
+     }
+   }
+   ```
+
+#### Semantic Search Execution
+
 When you perform semantic search, weave-cli:
 
-1. **Generates embedding** using OpenAI API
+1. **Generates query embedding** using OpenAI API
 2. **Executes $vectorSearch** aggregation:
    ```javascript
    db.collection.aggregate([
@@ -209,7 +253,7 @@ When you perform semantic search, weave-cli:
      }
    ])
    ```
-3. **Returns results** with similarity scores
+3. **Returns results** with similarity scores (0.0-1.0)
 
 ### BM25 Search
 
