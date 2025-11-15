@@ -191,6 +191,7 @@ func printEmbeddingModel(model EmbeddingModel, verbose bool, showCompat bool) {
 				"weaviate-cloud": "☁️",
 				"weaviate-local": "🏠",
 				"supabase":       "🐘",
+				"mongodb":        "🍃",
 				"mock":           "🧪",
 			}
 
@@ -198,6 +199,7 @@ func printEmbeddingModel(model EmbeddingModel, verbose bool, showCompat bool) {
 				"weaviate-cloud": "Weaviate Cloud",
 				"weaviate-local": "Weaviate Local",
 				"supabase":       "Supabase",
+				"mongodb":        "MongoDB",
 				"mock":           "Mock",
 			}
 
@@ -257,6 +259,7 @@ func showCollectionEmbeddings(ctx context.Context, dbConfig *config.VectorDBConf
 		"weaviate-cloud": "☁️",
 		"weaviate-local": "🏠",
 		"supabase":       "🐘",
+		"mongodb":        "🍃",
 		"mock":           "🧪",
 	}
 	icon := dbIcons[dbType]
@@ -344,10 +347,11 @@ func getAllEmbeddingModels() []EmbeddingModel {
 	weaviateCloud := "weaviate-cloud"
 	weaviateLocal := "weaviate-local"
 	supabase := "supabase"
+	mongodb := "mongodb"
 	mock := "mock"
 
 	// All databases for wide support
-	allDatabases := []string{weaviateCloud, weaviateLocal, supabase, mock}
+	allDatabases := []string{weaviateCloud, weaviateLocal, supabase, mongodb, mock}
 	// Weaviate only (cloud and local)
 	weaviateOnly := []string{weaviateCloud, weaviateLocal, mock}
 
