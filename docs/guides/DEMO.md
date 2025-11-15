@@ -6,15 +6,15 @@ Demonstrations of Weave CLI capabilities for managing vector databases.
 
 ### Available Recordings
 
-- **[Config Demo (5 min)](https://asciinema.org/a/nXlgnDPN9CI2nyjFRKkHtVitN)**
+- **[Config Demo (~1 min)](https://asciinema.org/a/gVEJkCRO1o3awkMsPH5qCTYTr)**
   \- Interactive configuration setup and management
-- **[Supabase Demo (8 min)](https://asciinema.org/a/eZ37jP2tP31lzmKvkjBc2is3p)**
+- **[Supabase Demo (~1 min)](https://asciinema.org/a/hfCdk4fXdVhAnG1v6964i8mif)**
   \- PostgreSQL + pgvector integration
-- **[Full Demo (5 min)](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)**
+- **[Full Demo (~2 min)](https://asciinema.org/a/glXc2mNW4ni73OLDuKP0h3rnt)**
   \- Complete walkthrough of all features
-- **[Quick Demo (2 min)](https://asciinema.org/a/XtkL4r3qzYUPlhevvAcPZEZpq)**
+- **[Quick Demo (~1 min)](https://asciinema.org/a/Cmx3c3WAa9n6Vc6xuzqhCgiUE)**
   \- Fast overview of core functionality
-- **[REPL Demo (4 min)](https://asciinema.org/a/k1R9WfDOjdOr369k348pXKhFx)**
+- **[REPL Demo (~1 min)](https://asciinema.org/a/uYwMnjyq7jg0N3Nc1Ai8ADhE0)**
   \- AI-powered natural language interface
 
 ## 📜 Interactive Demo Scripts
