@@ -6,6 +6,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -14,12 +15,29 @@ import (
 )
 
 // CreateDocument creates a new document in the specified collection
-func (c *Client) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
-	collection := c.getCollection(collectionName)
-	mdoc := c.toMongoDocument(document)
+	collection := a.getCollection(collectionName)
+	mdoc := a.toMongoDocument(document)
+
+	// Generate embedding if LLM client is available and document has content
+	if a.llmClient != nil && (document.Content != "" || document.Text != "") {
+		textToEmbed := document.Content
+		if textToEmbed == "" {
+			textToEmbed = document.Text
+		}
+
+		embedding, err := a.llmClient.GenerateEmbedding(ctx, textToEmbed, "")
+		if err != nil {
+			// Log warning but don't fail - allow document creation without embedding
+			fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", document.ID, err)
+		} else {
+			// Add embedding to the document
+			mdoc.Embedding = embedding
+		}
+	}
 
 	_, err := collection.InsertOne(ctx, mdoc)
 	if err != nil {
@@ -30,18 +48,37 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 }
 
 // CreateDocuments creates multiple documents in batch
-func (c *Client) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
 	if len(documents) == 0 {
 		return nil
 	}
 
-	collection := c.getCollection(collectionName)
+	collection := a.getCollection(collectionName)
 	mdocs := make([]interface{}, len(documents))
 	for i, doc := range documents {
-		mdocs[i] = c.toMongoDocument(doc)
+		mdoc := a.toMongoDocument(doc)
+
+		// Generate embedding if LLM client is available and document has content
+		if a.llmClient != nil && (doc.Content != "" || doc.Text != "") {
+			textToEmbed := doc.Content
+			if textToEmbed == "" {
+				textToEmbed = doc.Text
+			}
+
+			embedding, err := a.llmClient.GenerateEmbedding(ctx, textToEmbed, "")
+			if err != nil {
+				// Log warning but don't fail - allow document creation without embedding
+				fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", doc.ID, err)
+			} else {
+				// Add embedding to the document
+				mdoc.Embedding = embedding
+			}
+		}
+
+		mdocs[i] = mdoc
 	}
 
 	_, err := collection.InsertMany(ctx, mdocs)
