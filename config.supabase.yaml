@@ -1,0 +1,75 @@
+---
+# Supabase PGVector Configuration Example
+# This is a complete configuration file for using Supabase with weave-cli
+#
+# Prerequisites:
+# 1. Supabase account (free tier available)
+# 2. Database with pgvector extension enabled
+# 3. Connection credentials in .env file
+#
+# Environment variables needed:
+# - SUPABASE_DATABASE_URL: PostgreSQL connection string
+# - SUPABASE_DATABASE_KEY: Supabase anon/service key (optional)
+# - OPENAI_API_KEY: OpenAI API key for embeddings
+
+databases:
+  # Set Supabase as the default database
+  default: supabase
+
+  vector_databases:
+    # Supabase PGVector configuration
+    - name: supabase
+      type: supabase
+
+      # Supabase PostgreSQL connection string (from .env)
+      # Format (direct):
+      # postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres
+      #
+      # Format (connection pooler - IPv4 compatible):
+      # postgresql://postgres.[project-ref]:[password]@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+      #
+      # Note: Direct connections require IPv6. Use connection pooler for IPv4.
+      url: ${SUPABASE_DATABASE_URL}
+
+      # Supabase API key (optional - for additional features)
+      # Get from: Project Settings > API > anon/public or service_role
+      api_key: ${SUPABASE_DATABASE_KEY:-}
+
+      # Vector dimensions for embeddings
+      # - 1536: OpenAI text-embedding-ada-002 (default)
+      # - 3072: OpenAI text-embedding-3-large
+      # - 768: OpenAI text-embedding-3-small
+      vector_dimensions: 1536
+
+      # Similarity metric for vector search
+      # Options: cosine, euclidean, dotProduct (inner product)
+      # Recommendation: Use "cosine" for normalized embeddings
+      similarity_metric: cosine
+
+      # Timeout in seconds for database operations
+      timeout: 10
+
+      # Collections to create/use
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection for semantic search
+
+        - name: WeaveImages
+          type: image
+          description: Image documents collection with CLIP embeddings
+
+# Optional: Schemas directory for custom collection schemas
+# schemas_dir: ./schemas
+
+# Notes:
+# - Supabase uses PostgreSQL with pgvector extension
+# - pgvector extension must be enabled in your Supabase project
+#   Enable via: Project Settings > Database > Extensions
+# - Supports semantic search (vector similarity), BM25 (full-text),
+#   and hybrid search (combines both)
+# - Collection names are preserved (mixed case, underscores, hyphens, numbers)
+# - Currently only OpenAI embeddings are supported
+# - For IPv4 connections, use the connection pooler URL instead of
+#   direct connection
+# - Free tier includes 500MB database storage and 2GB bandwidth
