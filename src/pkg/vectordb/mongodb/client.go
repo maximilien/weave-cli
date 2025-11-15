@@ -1,0 +1,166 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 dr.max
+
+package mongodb
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
+)
+
+// Client wraps the MongoDB client with vector database functionality
+type Client struct {
+	client   *mongo.Client
+	database *mongo.Database
+	config   *Config
+}
+
+// Config holds MongoDB client configuration
+type Config struct {
+	// Connection settings
+	URI      string // MongoDB connection URI (mongodb+srv://...)
+	Database string // Database name
+	Timeout  int    // Timeout in seconds for operations (default: 10)
+
+	// Vector search settings
+	VectorDimensions int    // Embedding vector dimensions (e.g., 1536 for OpenAI)
+	SimilarityMetric string // Similarity metric: "cosine", "euclidean", or "dotProduct"
+}
+
+// NewClient creates a new MongoDB Atlas Vector Search client
+func NewClient(config *Config) (*Client, error) {
+	if config.URI == "" {
+		return nil, fmt.Errorf("MongoDB URI is required")
+	}
+	if config.Database == "" {
+		return nil, fmt.Errorf("MongoDB database name is required")
+	}
+
+	// Set defaults
+	if config.VectorDimensions == 0 {
+		config.VectorDimensions = 1536 // OpenAI ada-002 default
+	}
+	if config.SimilarityMetric == "" {
+		config.SimilarityMetric = "cosine"
+	}
+
+	// Create MongoDB client options
+	clientOptions := options.Client().ApplyURI(config.URI)
+
+	// Set timeout for connection
+	timeout := time.Duration(config.Timeout) * time.Second
+	if timeout == 0 {
+		timeout = 10 * time.Second
+	}
+	clientOptions.SetConnectTimeout(timeout)
+	clientOptions.SetServerSelectionTimeout(timeout)
+
+	// Create context with timeout for connection
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Connect to MongoDB
+	client, err := mongo.Connect(ctx, clientOptions)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to MongoDB: %w", err)
+	}
+
+	// Ping to verify connection
+	if err := client.Ping(ctx, nil); err != nil {
+		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
+	}
+
+	database := client.Database(config.Database)
+
+	return &Client{
+		client:   client,
+		database: database,
+		config:   config,
+	}, nil
+}
+
+// getTimeout returns the timeout duration for operations
+func (c *Client) getTimeout() time.Duration {
+	timeout := c.config.Timeout
+	if timeout == 0 {
+		timeout = 10 // default 10 seconds
+	}
+	return time.Duration(timeout) * time.Second
+}
+
+// Health checks the health of the MongoDB instance
+func (c *Client) Health(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
+	// Ping the database
+	if err := c.client.Ping(ctx, nil); err != nil {
+		return fmt.Errorf("MongoDB health check failed: %w", err)
+	}
+
+	return nil
+}
+
+// Close closes the MongoDB client connection
+func (c *Client) Close(ctx context.Context) error {
+	if c.client != nil {
+		return c.client.Disconnect(ctx)
+	}
+	return nil
+}
+
+// getCollection returns a MongoDB collection handle
+func (c *Client) getCollection(name string) *mongo.Collection {
+	return c.database.Collection(name)
+}
+
+// mongoDocument represents the MongoDB document structure with vector embeddings
+type mongoDocument struct {
+	ID         primitive.ObjectID     `bson:"_id,omitempty"`
+	DocumentID string                 `bson:"document_id"`
+	Text       string                 `bson:"text"`
+	Content    string                 `bson:"content"`
+	Image      string                 `bson:"image,omitempty"`
+	ImageData  string                 `bson:"image_data,omitempty"`
+	URL        string                 `bson:"url,omitempty"`
+	Embedding  []float64              `bson:"embedding"`
+	Metadata   map[string]interface{} `bson:"metadata,omitempty"`
+	CreatedAt  time.Time              `bson:"created_at"`
+	UpdatedAt  time.Time              `bson:"updated_at"`
+}
+
+// toMongoDocument converts a vectordb.Document to a mongoDocument
+func (c *Client) toMongoDocument(doc *vectordb.Document) *mongoDocument {
+	now := time.Now()
+	return &mongoDocument{
+		DocumentID: doc.ID,
+		Text:       doc.Text,
+		Content:    doc.Content,
+		Image:      doc.Image,
+		ImageData:  doc.ImageData,
+		URL:        doc.URL,
+		Metadata:   doc.Metadata,
+		CreatedAt:  now,
+		UpdatedAt:  now,
+	}
+}
+
+// fromMongoDocument converts a mongoDocument to a vectordb.Document
+func (c *Client) fromMongoDocument(mdoc *mongoDocument) *vectordb.Document {
+	return &vectordb.Document{
+		ID:        mdoc.DocumentID,
+		Text:      mdoc.Text,
+		Content:   mdoc.Content,
+		Image:     mdoc.Image,
+		ImageData: mdoc.ImageData,
+		URL:       mdoc.URL,
+		Metadata:  mdoc.Metadata,
+	}
+}

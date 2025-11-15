@@ -18,6 +18,7 @@ const (
 	VectorDBTypeMock          VectorDBType = "mock"
 	VectorDBTypeSupabase      VectorDBType = "supabase"
 	VectorDBTypeMilvus        VectorDBType = "milvus"
+	VectorDBTypeMongoDB       VectorDBType = "mongodb"
 )
 
 // Config represents the configuration for a vector database client
@@ -41,6 +42,10 @@ type Config struct {
 	Username string `yaml:"username,omitempty"`
 	Password string `yaml:"password,omitempty"`
 	Database string `yaml:"database,omitempty"`
+
+	// MongoDB-specific configuration
+	VectorDimensions int    `yaml:"vector_dimensions,omitempty"`
+	SimilarityMetric string `yaml:"similarity_metric,omitempty"`
 }
 
 // ClientFactory defines the interface for creating vector database clients
@@ -121,8 +126,11 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 		Type:               VectorDBType(cfg.Type),
 		URL:                cfg.URL,
 		APIKey:             cfg.APIKey,
-		DatabaseURL:        cfg.DatabaseURL, // For Supabase
-		DatabaseKey:        cfg.DatabaseKey, // For Supabase
+		DatabaseURL:        cfg.DatabaseURL,      // For Supabase
+		DatabaseKey:        cfg.DatabaseKey,      // For Supabase
+		Database:           cfg.Database,         // For MongoDB
+		VectorDimensions:   cfg.VectorDimensions, // For MongoDB
+		SimilarityMetric:   cfg.SimilarityMetric, // For MongoDB
 		OpenAIAPIKey:       cfg.OpenAIAPIKey,
 		Timeout:            cfg.Timeout,
 		Enabled:            cfg.Enabled,

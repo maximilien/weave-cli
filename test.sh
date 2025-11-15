@@ -59,6 +59,7 @@ print_help() {
     echo "Flags for 'integration' command:"
     echo "  --weaviate  Run only Weaviate integration tests"
     echo "  --supabase  Run only Supabase integration tests"
+    echo "  --mongodb   Run only MongoDB integration tests"
     echo "  --mcp       Run only MCP integration tests"
     echo ""
     echo "Examples:"
@@ -66,6 +67,7 @@ print_help() {
     echo "  ./test.sh integration             # Run all integration tests"
     echo "  ./test.sh integration --weaviate  # Run only Weaviate integration tests"
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
+    echo "  ./test.sh integration --mongodb   # Run only MongoDB integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all                     # Run all tests"
@@ -81,6 +83,7 @@ print_help() {
     echo "  Integration Tests:"
     echo "    - Weaviate client testing (requires WEAVIATE_URL, WEAVIATE_API_KEY, OPENAI_API_KEY)"
     echo "    - Supabase client testing (requires SUPABASE_DATABASE_URL, SUPABASE_DATABASE_KEY)"
+    echo "    - MongoDB client testing (requires MONGODB_URI, MONGODB_DATABASE)"
     echo "    - MCP server testing (requires OPENAI_API_KEY, WEAVE_MCP_STDIO_PATH)"
     echo "    - CLI command testing"
     echo "    - End-to-end workflow testing"
@@ -133,16 +136,16 @@ esac
 # Function to run unit tests
 run_unit_tests() {
     print_header "Running Unit Tests..."
-    
+
     # Check if Go is installed
     if ! command -v go >/dev/null 2>&1; then
         print_error "Go is not installed. Please install Go 1.21 or later."
         exit 1
     fi
-    
+
     # Run unit tests
     print_status "Running unit tests..."
-    if go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"; then
+    if go test -v -timeout=30s ./tests/... ./src/pkg/vectordb/mongodb/... -run="TestConfig|TestMock|TestWeaviateClient|TestFactory|TestDocumentConversion|TestGetTimeout|TestGetDefaultSchema|TestValidateSchema|TestMongoDBFactory|TestMongoDBClient"; then
         print_success "Unit tests passed!"
     else
         print_error "Unit tests failed!"
@@ -168,6 +171,7 @@ run_integration_tests() {
     # Parse integration test flags
     local run_weaviate=false
     local run_supabase=false
+    local run_mongodb=false
     local run_mcp=false
     local run_all=true
 
@@ -182,6 +186,10 @@ run_integration_tests() {
                 run_supabase=true
                 run_all=false
                 ;;
+            --mongodb)
+                run_mongodb=true
+                run_all=false
+                ;;
             --mcp)
                 run_mcp=true
                 run_all=false
@@ -193,6 +201,7 @@ run_integration_tests() {
     if [ "$run_all" = true ]; then
         run_weaviate=true
         run_supabase=true
+        run_mongodb=true
         run_mcp=true
 
         # Run fast integration tests (mock only)
@@ -244,6 +253,24 @@ run_integration_tests() {
         fi
     fi
 
+    # Run MongoDB integration tests if requested
+    if [ "$run_mongodb" = true ]; then
+        if [ -n "$MONGODB_URI" ]; then
+            print_status "Running MongoDB integration tests..."
+            total_suites=$((total_suites + 1))
+            if go test -v -timeout=2m ./tests/... -run="TestMongoDB"; then
+                print_success "MongoDB integration tests passed!"
+                passed_suites=$((passed_suites + 1))
+            else
+                print_warning "MongoDB integration tests failed"
+                failed_suites=$((failed_suites + 1))
+            fi
+        else
+            print_warning "Skipping MongoDB integration tests - credentials not configured"
+            print_status "Set MONGODB_URI and MONGODB_DATABASE to run MongoDB tests"
+        fi
+    fi
+
     # Run MCP integration tests if requested
     if [ "$run_mcp" = true ]; then
         if [ -n "$OPENAI_API_KEY" ] && [ -n "$WEAVE_MCP_STDIO_PATH" ]; then
@@ -278,22 +305,22 @@ run_integration_tests() {
 # Function to run fast tests
 run_fast_tests() {
     print_header "Running Fast Tests..."
-    
+
     # Check if Go is installed
     if ! command -v go >/dev/null 2>&1; then
         print_error "Go is not installed. Please install Go 1.21 or later."
         exit 1
     fi
-    
+
     # Run unit tests
     print_status "Running unit tests..."
-    if go test -v -timeout=30s ./tests/... -run="TestConfig|TestMock|TestWeaviateClient"; then
+    if go test -v -timeout=30s ./tests/... ./src/pkg/vectordb/mongodb/... -run="TestConfig|TestMock|TestWeaviateClient|TestFactory|TestDocumentConversion|TestGetTimeout|TestGetDefaultSchema|TestValidateSchema|TestMongoDBFactory|TestMongoDBClient"; then
         print_success "Unit tests passed!"
     else
         print_error "Unit tests failed!"
         exit 1
     fi
-    
+
     # Run fast integration tests (mock only)
     print_status "Running fast integration tests (mock)..."
     if go test -v -timeout=10s ./tests/... -run="TestMock"; then
@@ -301,7 +328,7 @@ run_fast_tests() {
     else
         print_warning "Fast integration tests failed"
     fi
-    
+
     print_success "Fast tests completed!"
 }
 

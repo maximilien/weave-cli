@@ -1,0 +1,64 @@
+---
+# MongoDB Atlas Vector Search Configuration Example
+# This is a complete configuration file for using MongoDB Atlas with weave-cli
+#
+# Prerequisites:
+# 1. MongoDB Atlas account (free M0 tier available)
+# 2. Vector search index created (see docs/mongodb/ATLAS_SETUP.md)
+# 3. Connection string and credentials in .env file
+#
+# Environment variables needed:
+# - MONGODB_URI: MongoDB Atlas connection string
+# - MONGODB_DATABASE: Database name (default: weave)
+# - OPENAI_API_KEY: OpenAI API key for embeddings
+
+databases:
+  # Set MongoDB as the default database
+  default: mongodb
+
+  vector_databases:
+    # MongoDB Atlas Vector Search configuration
+    - name: mongodb
+      type: mongodb
+
+      # MongoDB Atlas connection string (from .env)
+      # Format:
+      # mongodb+srv://username:password@cluster.mongodb.net/?appName=weave-cli
+      url: ${MONGODB_URI}
+
+      # Database name (defaults to "weave" if not set)
+      database: ${MONGODB_DATABASE:-weave}
+
+      # Vector dimensions for embeddings
+      # - 1536: OpenAI text-embedding-ada-002 (default)
+      # - 3072: OpenAI text-embedding-3-large
+      # - 768: OpenAI text-embedding-3-small
+      vector_dimensions: 1536
+
+      # Similarity metric for vector search
+      # Options: cosine, euclidean, dotProduct
+      # Recommendation: Use "cosine" for normalized embeddings
+      similarity_metric: cosine
+
+      # Timeout in seconds for database operations
+      timeout: 10
+
+      # Collections to create/use
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection for semantic search
+
+        - name: WeaveImages
+          type: image
+          description: Image documents collection with CLIP embeddings
+
+# Optional: Schemas directory for custom collection schemas
+# schemas_dir: ./schemas
+
+# Notes:
+# - MongoDB Atlas Vector Search requires M10+ tier or free M0 tier (limited)
+# - Vector search indexes must be created manually in Atlas UI (see docs)
+# - Index name should be "vector_index" on the "embedding" field
+# - BM25 text search uses MongoDB text indexes (automatically created)
+# - For production, consider using M10+ tier for better performance

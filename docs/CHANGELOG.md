@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **🗄️ MongoDB Atlas Vector Search Integration (🚧 Experimental)**: MongoDB Atlas support for vector database operations
+  - **Status**: Experimental - Basic infrastructure complete, embedding integration pending
+  - **What Works**:
+    - ✅ Connection and health checks
+    - ✅ Collection management (create, list, delete)
+    - ✅ Document CRUD operations with embedding storage
+    - ✅ BM25 keyword search using MongoDB text indexes
+    - ✅ Metadata search and filtering
+  - **What's Pending**:
+    - 🚧 Vector search (embedding generation integration needed)
+    - 🚧 True hybrid search (depends on vector search)
+    - 🚧 Integration tests with Atlas
+  - **New Adapter**: `src/pkg/vectordb/mongodb/` package with VectorDB interface implementation
+  - **BM25 Search**: Keyword search using MongoDB text indexes (fully functional)
+  - **Document Operations**: Full CRUD support with embedding storage fields
+  - **Collection Management**: Create, list, delete collections with automatic text indexing
+  - **Configuration**: New config fields for MongoDB (URI, database, vector_dimensions, similarity_metric)
+  - **Free Tier Support**: Compatible with MongoDB Atlas M0 free tier
+  - **Documentation**:
+    - `docs/mongodb/README.md`: Comprehensive integration guide with examples
+    - `docs/mongodb/ATLAS_SETUP.md`: Step-by-step setup instructions for MongoDB Atlas
+    - `config.mongodb.yaml`: Example configuration file for MongoDB
+  - **Configuration Examples**:
+    - Updated `.env.example` with MongoDB credentials template
+    - Updated `config.yaml` with MongoDB configuration example
+  - **Tests**:
+    - `tests/mongodb_integration_test.go`: Comprehensive integration test suite (9 test suites)
+    - `src/pkg/vectordb/mongodb/client_test.go`: Unit tests for client, schema, and document operations
+    - `src/pkg/vectordb/mongodb/factory_test.go`: Unit tests for factory and config validation
+    - Updated `test.sh` with `--mongodb` flag for selective integration testing
+    - MongoDB unit tests now run with `./test.sh unit`
+    - Test coverage: health, collections, documents, batch ops, BM25 search, metadata operations, config validation
+
+### Changed
+
+- **Vector Database Support Maturity Levels**: Updated VDB_SUPPORT.md with maturity indicators
+  - Weaviate: ✅ Production (fully tested and stable)
+  - Supabase: 🧪 Alpha (core functionality working, production readiness being evaluated)
+  - MongoDB: 🚧 Experimental (basic infrastructure complete, vector search pending)
+  - Mock: ✅ Production (for testing purposes)
+- **Vector Database Types**: Added `mongodb` to supported vector database types
+- **Factory Pattern**: Updated vectordb factory to support MongoDB adapter registration
+- **Configuration Schema**: Extended `VectorDBConfig` with MongoDB-specific fields (Database, VectorDimensions, SimilarityMetric)
+
+### Technical Details
+
+- **Dependencies**: Added `go.mongodb.org/mongo-driver v1.17.6`
+- **Files Added**: 7 new MongoDB adapter files (client.go, adapter.go, factory.go, collection.go, document.go, query.go, schema.go)
+- **Build Status**: ✅ Compiles successfully, all existing tests pass
+- **Vector Search**: Supports cosine, euclidean, and dotProduct similarity metrics
+- **Embedding Dimensions**: Configurable (default: 1536 for OpenAI ada-002)
+
 ## [0.3.14] - 2025-11-14
 
 ### Fixed

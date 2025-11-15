@@ -11,6 +11,7 @@ import (
 
 	// Import adapters to register their factories
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/mock"
+	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/mongodb"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/supabase"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )

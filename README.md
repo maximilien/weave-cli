@@ -285,7 +285,8 @@ allows seamless switching between different vector database backends:
 - **Pinecone** (`pinecone`) - v0.8.0 - Fully managed, serverless, generous free tier
 
 See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) for
-detailed implementation plans and [Vector DB Abstraction Documentation](docs/VECTOR_DB_ABSTRACTION.md) for
+detailed implementation plans and
+[Vector DB Abstraction Documentation](docs/VECTOR_DB_ABSTRACTION.md) for
 architecture details.
 
 ### Abstraction Benefits

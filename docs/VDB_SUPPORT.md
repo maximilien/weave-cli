@@ -8,88 +8,88 @@ This document tracks feature support and compatibility across different vector d
 |----------|------|--------|-------------|----------------|
 | Weaviate Cloud | Cloud | ✅ Production | `weaviate-cloud` | v0.3.x |
 | Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` | v0.3.x |
-| Supabase | Cloud/Self-hosted | ✅ Production | `supabase` | v0.3.x |
+| Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
+| MongoDB Atlas | Cloud | 🚧 Experimental | `mongodb` | v0.3.15+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |
 | **Milvus** | **Cloud/Self-hosted** | **📋 Planned** | **`milvus`** | **v0.4.0** |
 | **Qdrant** | **Cloud/Self-hosted** | **📋 Planned** | **`qdrant`** | **v0.5.0** |
 | **Redis** | **Cloud/Self-hosted** | **📋 Planned** | **`redis`** | **v0.6.0** |
-| **MongoDB** | **Cloud (Atlas)** | **📋 Planned** | **`mongodb`** | **v0.7.0** |
 | **Pinecone** | **Cloud** | **📋 Planned** | **`pinecone`** | **v0.8.0** |
 
 ## Feature Support Matrix
 
 ### Core Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
-|---------|----------------|----------------|----------|------|-------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | - |
-| List Collections | ✅ | ✅ | ✅ | ✅ | - |
-| Create Collection | ✅ | ✅ | ✅ | ✅ | - |
-| Delete Collection | ✅ | ✅ | ✅ | ✅ | - |
-| Collection Exists | ✅ | ✅ | ✅ | ✅ | - |
-| Get Collection Count | ✅ | ✅ | ✅ | ✅ | - |
-| Get Schema | ✅ | ✅ | ✅ | ✅ | - |
-| Validate Schema | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|----------|---------|------|-------|
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI |
+| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | MongoDB: Schema-less (returns default) |
+| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Document Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
-|---------|----------------|----------------|----------|------|-------|
-| Create Document | ✅ | ✅ | ✅ | ✅ | - |
-| Get Document | ✅ | ✅ | ✅ | ✅ | - |
-| Update Document | ✅ | ✅ | ✅ | ✅ | - |
-| Delete Document | ✅ | ✅ | ✅ | ✅ | - |
-| List Documents | ✅ | ✅ | ✅ | ✅ | - |
-| Batch Create | ✅ | ✅ | ✅ | ✅ | - |
-| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|----------|---------|------|-------|
+| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Search Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
-|---------|----------------|----------------|----------|------|-------|
-| Semantic Search | ✅ | ✅ | ✅ | ✅ | Requires embeddings |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | Supabase: Uses ts_rank_cd with length normalization |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | Combines semantic + BM25 |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|----------|---------|------|-------|
+| Semantic Search | ✅ | ✅ | ✅ | 🚧 | ✅ | MongoDB: Requires vector index + embeddings (not yet implemented) |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | ✅ | MongoDB: Uses text indexes |
+| Hybrid Search | ✅ | ✅ | ✅ | ⚠️ | ✅ | MongoDB: Falls back to BM25 only (vector search pending) |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Embedding Support
 
-| Feature | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
-|---------|----------------|----------------|----------|------|-------|
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | `text2vec-openai` |
-| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | `text2vec-cohere` |
-| Hugging Face | ✅ | ✅ | ❌ | ❌ | `text2vec-huggingface` |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | Manual embeddings |
-| Custom Embeddings | ✅ | ✅ | ⚠️ | ✅ | Supabase: Limited |
+| Feature | Weaviate Cloud | Weaviate Local | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|----------|---------|------|-------|
+| OpenAI Embeddings | ✅ | ✅ | ✅ | 🚧 | ✅ | MongoDB: Planned |
+| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | `text2vec-cohere` |
+| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | `text2vec-huggingface` |
+| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | Manual embeddings |
+| Custom Embeddings | ✅ | ✅ | ⚠️ | ✅ | ✅ | Supabase: Limited |
 
 ### CLI Commands
 
-| Command | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
-|---------|----------------|----------------|----------|------|-------|
-| `weave health check` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols create` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs create` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs get` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs update` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | - |
+| Command | Weaviate Cloud | Weaviate Local | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|----------|---------|------|-------|
+| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search semantic` | ✅ | ✅ | ✅ | 🚧 | ✅ | MongoDB: Pending |
+| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search hybrid` | ✅ | ✅ | ✅ | ⚠️ | ✅ | MongoDB: BM25 only |
+| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Configuration
 
-| Feature | Weaviate Cloud | Weaviate Local | Supabase | Mock | Notes |
-|---------|----------------|----------------|----------|------|-------|
-| YAML Config | ✅ | ✅ | ✅ | ✅ | - |
-| Env Variables | ✅ | ✅ | ✅ | ✅ | - |
-| Global Config | ✅ | ✅ | ✅ | ✅ | `~/.weave-cli` |
-| Multiple Databases | ✅ | ✅ | ✅ | ✅ | - |
-| Schema Directory | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|----------|---------|------|-------|
+| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | `~/.weave-cli` |
+| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ## Database-Specific Notes
 
@@ -117,7 +117,9 @@ databases:
 **Known Limitations:**
 - None identified
 
-### Supabase
+### Supabase (🧪 Alpha)
+
+**Status:** Alpha - Core functionality working, production readiness being evaluated
 
 **Strengths:**
 - PostgreSQL-based (familiar for many developers)
@@ -141,11 +143,61 @@ databases:
 **Known Limitations:**
 - **Vectorizers**: Currently only supports OpenAI embeddings and manual embeddings
 - **Performance**: BM25 search works well but could be faster with pre-computed tsvector columns and GIN indexes (see [Supabase BM25 Improvement](supabase/BM25_IMPROVEMENT.md) for optimization options)
+- **Maturity**: Alpha status - may have edge cases not yet covered
 
 **BM25 Implementation:**
 - Uses PostgreSQL's `ts_rank_cd()` with document length normalization
 - Provides good ranking quality comparable to other systems
 - For better performance on large datasets, consider adding GIN indexes (optional)
+
+### MongoDB Atlas (🚧 Experimental)
+
+**Status:** Experimental - Basic infrastructure complete, vector search embedding integration pending
+
+**Strengths:**
+- Popular document database (familiar to many developers)
+- Managed Atlas service with free M0 tier (512MB)
+- Native BM25 via text indexes (works immediately)
+- Flexible document model
+- Pre-filtering support for efficient queries
+
+**Configuration:**
+```yaml
+databases:
+  default: mongodb
+  vector_databases:
+    - name: mongodb
+      type: mongodb
+      url: ${MONGODB_URI}
+      database: ${MONGODB_DATABASE}
+      vector_dimensions: 1536
+      similarity_metric: cosine
+      timeout: 10
+```
+
+**Current Limitations:**
+- **Vector Search**: Infrastructure ready, but embedding generation not yet integrated (returns error)
+- **Hybrid Search**: Currently falls back to BM25-only (vector component pending)
+- **Atlas Only**: Vector search requires MongoDB Atlas (not available in community edition)
+- **Manual Index Setup**: Vector search indexes must be created via Atlas UI
+- **Dimension Limit**: Max 8192 dimensions (lower than some other DBs)
+
+**What Works:**
+- ✅ Connection and health checks
+- ✅ Collection management (create, list, delete)
+- ✅ Document CRUD operations
+- ✅ BM25 keyword search (fully functional)
+- ✅ Metadata search and filtering
+- ✅ Document storage with embedding fields
+
+**What's Pending:**
+- 🚧 Vector search (embedding generation integration needed)
+- 🚧 True hybrid search (depends on vector search)
+- 🚧 Integration tests with Atlas
+
+**Documentation:**
+- [MongoDB Integration Guide](mongodb/README.md)
+- [Atlas Setup Instructions](mongodb/ATLAS_SETUP.md)
 
 ### Mock Database
 
@@ -175,19 +227,21 @@ databases:
 
 ## Integration Test Coverage
 
-| Test Type | Weaviate | Supabase | Mock |
-|-----------|----------|----------|------|
-| Health Check | ✅ | ✅ | ✅ |
-| Collection CRUD | ✅ | ✅ | ✅ |
-| Document CRUD | ✅ | ✅ | ✅ |
-| Batch Operations | ✅ | ✅ | ✅ |
-| Semantic Search | ✅ | ✅ | ✅ |
-| BM25 Search | ✅ | ✅ | ✅ |
-| Hybrid Search | ✅ | ✅ | ✅ |
-| Metadata Search | ✅ | ✅ | ✅ |
-| Schema Operations | ✅ | ✅ | ✅ |
-| OpenAI Embeddings | ✅ | ✅ | ✅ |
-| No Vectorizer | ✅ | ✅ | ✅ |
+| Test Type | Weaviate | Supabase | MongoDB | Mock |
+|-----------|----------|----------|---------|------|
+| Health Check | ✅ | ✅ | 🚧 | ✅ |
+| Collection CRUD | ✅ | ✅ | 🚧 | ✅ |
+| Document CRUD | ✅ | ✅ | 🚧 | ✅ |
+| Batch Operations | ✅ | ✅ | 🚧 | ✅ |
+| Semantic Search | ✅ | ✅ | ❌ | ✅ |
+| BM25 Search | ✅ | ✅ | 🚧 | ✅ |
+| Hybrid Search | ✅ | ✅ | ❌ | ✅ |
+| Metadata Search | ✅ | ✅ | 🚧 | ✅ |
+| Schema Operations | ✅ | ✅ | 🚧 | ✅ |
+| OpenAI Embeddings | ✅ | ✅ | ❌ | ✅ |
+| No Vectorizer | ✅ | ✅ | 🚧 | ✅ |
+
+**Legend:** ✅ Tested | 🚧 Planned | ❌ Not applicable/pending
 
 ## Roadmap
 
@@ -262,34 +316,40 @@ details.
 See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
 details.
 
-### v0.7.0 - MongoDB Atlas Vector Search Integration (Planned)
+### v0.3.15 - MongoDB Atlas Vector Search (Experimental - In Progress)
 
-**Timeline**: ~1-2 weeks
+**Status**: 🚧 Experimental - Basic implementation complete, embedding integration pending
 
-- [ ] Implement MongoDBClient with VectorDB interface
-- [ ] Atlas Vector Search index creation
-- [ ] Aggregation pipeline for vector search
-- [ ] Pre-filtering support
-- [ ] Scalar/binary quantization
+**Completed**:
+- ✅ Implement MongoDBClient with VectorDB interface
+- ✅ BM25 text search using MongoDB text indexes
+- ✅ Document CRUD operations
+- ✅ Collection management
+- ✅ Configuration and factory integration
+- ✅ Documentation and setup guides
+
+**Pending**:
+- [ ] OpenAI embedding generation integration
+- [ ] Atlas Vector Search ($vectorSearch aggregation)
+- [ ] Hybrid search (vector + BM25 combination)
 - [ ] Atlas M0 free tier integration tests
-- [ ] Documentation and demo script
+- [ ] Demo script
 
 **Key Features**:
 - ✅ Popular document database (familiar to many)
-- ✅ Managed Atlas service with free tier (512MB)
+- ✅ Managed Atlas service with free M0 tier (512MB)
+- ✅ BM25 keyword search (functional)
 - ✅ Pre-filtering for efficient queries
-- ✅ Scalar and binary quantization
 - ✅ Up to 8192 dimensions
 
-**Limitations**:
+**Current Limitations**:
+- 🚧 Vector search pending embedding integration
 - ⚠️ Atlas only (vector search not in community MongoDB)
-- ⚠️ 8192 dimension limit (lower than other DBs)
-- ❌ No native BM25 (must use separate Atlas Search)
+- ⚠️ Manual index creation via Atlas UI required
 
-See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
-details.
+See [MongoDB Documentation](mongodb/) for details.
 
-### v0.8.0 - Pinecone Integration (Planned)
+### v0.7.0 - Pinecone Integration (Planned)
 
 **Timeline**: ~1-2 weeks
 

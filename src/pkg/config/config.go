@@ -23,6 +23,7 @@ const (
 	VectorDBTypeLocal    VectorDBType = "weaviate-local"
 	VectorDBTypeMock     VectorDBType = "mock"
 	VectorDBTypeSupabase VectorDBType = "supabase"
+	VectorDBTypeMongoDB  VectorDBType = "mongodb"
 )
 
 // Default configuration values
@@ -73,8 +74,11 @@ type VectorDBConfig struct {
 	Type               VectorDBType `yaml:"type"`
 	URL                string       `yaml:"url,omitempty"`
 	APIKey             string       `yaml:"api_key,omitempty"`
-	DatabaseURL        string       `yaml:"database_url,omitempty"` // For Supabase
-	DatabaseKey        string       `yaml:"database_key,omitempty"` // For Supabase
+	DatabaseURL        string       `yaml:"database_url,omitempty"`      // For Supabase
+	DatabaseKey        string       `yaml:"database_key,omitempty"`      // For Supabase
+	Database           string       `yaml:"database,omitempty"`          // For MongoDB
+	VectorDimensions   int          `yaml:"vector_dimensions,omitempty"` // For MongoDB
+	SimilarityMetric   string       `yaml:"similarity_metric,omitempty"` // For MongoDB
 	OpenAIAPIKey       string       `yaml:"openai_api_key,omitempty"`
 	Timeout            int          `yaml:"timeout,omitempty"` // Timeout in seconds for DB operations
 	Enabled            bool         `yaml:"enabled,omitempty"`
