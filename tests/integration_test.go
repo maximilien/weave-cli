@@ -53,8 +53,6 @@ func TestWeaviateIntegration(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	testCollection := cfg.Collections[0].Name
-
 	t.Run("FastHealthCheck", func(t *testing.T) {
 		// Quick health check with minimal timeout
 		healthCtx, healthCancel := context.WithTimeout(ctx, 2*time.Second)
@@ -78,31 +76,38 @@ func TestWeaviateIntegration(t *testing.T) {
 			return
 		}
 
-		// Check if test collection exists
-		collectionExists := false
+		if len(collections) == 0 {
+			t.Skip("No collections available in Weaviate instance to test")
+		}
+
+		// Look for WeaveDocs or WeaveImages (preferred test collections)
+		testCollectionName := ""
 		for _, col := range collections {
-			if col == testCollection {
-				collectionExists = true
+			if col == "WeaveDocs" || col == "WeaveImages" {
+				testCollectionName = col
 				break
 			}
 		}
 
-		if !collectionExists {
-			t.Logf("Test collection %s does not exist, skipping collection tests", testCollection)
-			return
+		// If neither test collection exists, use the first available collection
+		if testCollectionName == "" {
+			testCollectionName = collections[0]
+			t.Logf("Test collections (WeaveDocs/WeaveImages) not found, using: %s", testCollectionName)
+		} else {
+			t.Logf("Testing with collection: %s", testCollectionName)
 		}
 
 		// Test document listing with very small limit for speed
 		docCtx, docCancel := context.WithTimeout(ctx, 2*time.Second)
 		defer docCancel()
 
-		documents, err := client.ListDocuments(docCtx, testCollection, 1) // Only 1 document for speed
+		documents, err := client.ListDocuments(docCtx, testCollectionName, 1) // Only 1 document for speed
 		if err != nil {
-			t.Errorf("Failed to list documents: %v", err)
+			t.Errorf("Failed to list documents from %s: %v", testCollectionName, err)
 			return
 		}
 
-		t.Logf("Found %d documents in test collection", len(documents))
+		t.Logf("Found %d documents in collection %s", len(documents), testCollectionName)
 
 		// Test getting a specific document if any exist
 		if len(documents) > 0 {
@@ -110,12 +115,14 @@ func TestWeaviateIntegration(t *testing.T) {
 			defer getCancel()
 
 			docID := documents[0].ID
-			doc, err := client.GetDocument(getCtx, testCollection, docID)
+			doc, err := client.GetDocument(getCtx, testCollectionName, docID)
 			if err != nil {
 				t.Errorf("Failed to get document %s: %v", docID, err)
 			} else {
-				t.Logf("Successfully retrieved document: %s", doc.ID)
+				t.Logf("Successfully retrieved document with ID: %s", doc.ID)
 			}
+		} else {
+			t.Logf("No documents in collection %s to test retrieval", testCollectionName)
 		}
 	})
 }
@@ -218,8 +225,8 @@ func TestWeaviateErrorHandling(t *testing.T) {
 		t.Logf("Correctly handled non-existent collection: %v", err)
 	}
 
-	// Test non-existent document
-	_, err = client.GetDocument(ctx, cfg.Collections[0].Name, "non-existent-doc-id")
+	// Test non-existent document in WeaveDocs collection
+	_, err = client.GetDocument(ctx, "WeaveDocs", "non-existent-doc-id")
 	if err == nil {
 		t.Error("Expected error for non-existent document, got nil")
 	} else {
@@ -273,7 +280,7 @@ func BenchmarkWeaviateOperations(b *testing.B) {
 
 	b.Run("ListDocuments", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			_, err := client.ListDocuments(ctx, cfg.Collections[0].Name, 5)
+			_, err := client.ListDocuments(ctx, "WeaveDocs", 5)
 			if err != nil {
 				b.Errorf("ListDocuments failed: %v", err)
 			}

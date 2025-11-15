@@ -15,9 +15,6 @@ import (
 
 // SearchSemantic performs semantic search using MongoDB Atlas Vector Search
 func (c *Client) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
-	defer cancel()
-
 	// Note: This requires embeddings to be generated from the query
 	// In production, you would call an embedding service here
 	// For now, we return an error indicating embeddings are needed
@@ -221,48 +218,4 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, me
 	}
 
 	return results, cursor.Err()
-}
-
-// combineResultsRRF combines search results using Reciprocal Rank Fusion
-func combineResultsRRF(results1, results2 []*vectordb.QueryResult, topK int) []*vectordb.QueryResult {
-	const k = 60.0 // RRF constant
-
-	// Build score map
-	scores := make(map[string]float64)
-	docs := make(map[string]*vectordb.Document)
-
-	// Add scores from first result set
-	for rank, result := range results1 {
-		docID := result.Document.ID
-		scores[docID] += 1.0 / (float64(rank+1) + k)
-		docs[docID] = &result.Document
-	}
-
-	// Add scores from second result set
-	for rank, result := range results2 {
-		docID := result.Document.ID
-		scores[docID] += 1.0 / (float64(rank+1) + k)
-		if _, exists := docs[docID]; !exists {
-			docs[docID] = &result.Document
-		}
-	}
-
-	// Convert to results and sort by score
-	combined := make([]*vectordb.QueryResult, 0, len(scores))
-	for docID, score := range scores {
-		combined = append(combined, &vectordb.QueryResult{
-			Document: *docs[docID],
-			Score:    score,
-		})
-	}
-
-	// Sort by score descending
-	// (Would use sort.Slice in real implementation)
-
-	// Limit to topK
-	if len(combined) > topK {
-		combined = combined[:topK]
-	}
-
-	return combined
 }

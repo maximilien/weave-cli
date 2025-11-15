@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -124,29 +123,4 @@ func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, er
 	}
 
 	return count, nil
-}
-
-// waitForVectorIndex waits for a vector search index to become ready
-// Note: This requires MongoDB Atlas Admin API access
-func (c *Client) waitForVectorIndex(ctx context.Context, collectionName, indexName string) error {
-	// Poll for index status with exponential backoff
-	maxAttempts := 30
-	backoff := 2 * time.Second
-
-	for attempt := 0; attempt < maxAttempts; attempt++ {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(backoff):
-			// Check if index exists and is ready
-			// This would require Atlas Admin API access
-			// For now, we'll just wait a reasonable amount of time
-			if attempt >= 10 {
-				return nil // Assume ready after ~20 seconds
-			}
-			backoff = time.Duration(float64(backoff) * 1.5)
-		}
-	}
-
-	return fmt.Errorf("timeout waiting for vector index to become ready")
 }
