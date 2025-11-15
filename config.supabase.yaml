@@ -29,11 +29,11 @@ databases:
       # postgresql://postgres.[project-ref]:[password]@aws-0-us-west-1.pooler.supabase.com:6543/postgres
       #
       # Note: Direct connections require IPv6. Use connection pooler for IPv4.
-      url: ${SUPABASE_DATABASE_URL}
+      database_url: ${SUPABASE_DATABASE_URL}
 
-      # Supabase API key (optional - for additional features)
+      # Supabase API key (required - anon/public or service_role)
       # Get from: Project Settings > API > anon/public or service_role
-      api_key: ${SUPABASE_DATABASE_KEY:-}
+      database_key: ${SUPABASE_DATABASE_KEY}
 
       # Vector dimensions for embeddings
       # - 1536: OpenAI text-embedding-ada-002 (default)
