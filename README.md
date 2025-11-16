@@ -1,7 +1,8 @@
 # Weave CLI
 
-A fast, AI-powered command-line tool for managing Weaviate vector databases.
-Built in Go for performance and ease of use.
+A fast, AI-powered command-line (CLI) tool for managing your vector database (VDBs).
+
+Built in Go for performance and ease of use (single binary).
 
 ## Quick Start
 
@@ -18,6 +19,7 @@ cd weave-cli
 
 ```bash
 # Interactive configuration - fastest way to get started
+# defaults to Weaviate vector database
 weave config create --env
 
 # Follow prompts to enter:
@@ -31,7 +33,10 @@ weave health check
 
 ### Supabase Setup (Alpha)
 
-> **ℹ️ Alpha**: Supabase support is feature complete and functional. Recommended for development and testing. See the [Supabase Documentation](docs/supabase/) for comprehensive setup and usage guide.
+> **ℹ️ Alpha**: Supabase support is feature complete and functional.
+> Recommended for development and testing. See the
+> [Supabase Documentation](docs/supabase/) for comprehensive setup and usage
+> guide.
 
 To use Supabase as your vector database:
 
@@ -65,7 +70,9 @@ weave health check
 
 ### MongoDB Atlas Setup (Experimental)
 
-> **🧪 Experimental**: MongoDB Atlas support is functional but requires manual vector search index setup. See the [MongoDB Documentation](docs/mongodb/) for complete setup guide.
+> **🧪 Experimental**: MongoDB Atlas support is functional but requires manual
+> vector search index setup. See the [MongoDB Documentation](docs/mongodb/)
+> for complete setup guide.
 
 To use MongoDB Atlas as your vector database:
 
@@ -82,12 +89,14 @@ weave config create --database-type mongodb
 weave health check
 ```
 
-**Important**: You must create a vector search index in the Atlas UI before semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md) for detailed instructions.
+**Important**: You must create a vector search index in the Atlas UI before
+semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md)
+for detailed instructions.
 
 ### Basic Usage
 
 ```bash
-# List collections
+# List collections (all configured VDBs)
 weave cols ls
 
 # List collections from specific database types
@@ -107,11 +116,14 @@ weave docs create MyCollection document.pdf
 # Search with natural language
 weave cols q MyCollection "search query"
 
-# AI-powered REPL mode
+# AI-powered Read, Evaluate, Print, Loop (REPL) mode or agent mode
 weave
 > show me all my collections
 > create TestDocs collection
 > add README.md to TestDocs
+
+# Or doing one query at a time
+weave query "show me all my collections"
 
 # List available embeddings
 weave embeddings list
@@ -124,12 +136,13 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ## Key Features
 
-- 🤖 **AI-Powered** - Natural language interface with GPT-4o multi-agent system
-- ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL with
-  real-time progress feedback
+- 🤖 **AI-Powered** - AI Agent mode, natural language interface with GPT-4o
+  multi-agent system
+- ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
+  (AI Agent mode) with real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
-  backends (Supabase PGVector implemented, Milvus planned)
+  backends (Supabase PGVector implemented, MongoDB Atlas experimental)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -149,8 +162,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ### Guides
 
-- **[🤖 AI Agents](docs/guides/WEAVE_CLI_AI.md)** - Natural language query
-  system
+- **[🤖 AI Agents](docs/guides/WEAVE_CLI_AI.md)** - REPL mode with natural
+  language query system
 - **[📦 Batch Processing](docs/guides/BATCH_DOCS_CREATION.md)** - Directory
   processing guide
 - **[📚 Vector DB Abstraction](docs/guides/VECTOR_DB_ABSTRACTION.md)** -
@@ -159,8 +172,11 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ### Database-Specific
 
+- **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide
+  (Alpha)
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status
+  (Stable)
 
 ## Advanced Usage
 
@@ -174,7 +190,7 @@ Weave CLI automatically detects missing configuration:
 # Try any command - you'll get prompted to configure interactively
 weave cols ls
 
-# Or install weave-mcp for REPL mode
+# Or install latest release of weave-mcp for REPL mode
 weave config update --weave-mcp
 ```
 
@@ -284,7 +300,8 @@ weave docs create MyCollection report.pdf --embedding text-embedding-ada-002
 
 ## Database Support
 
-Weave CLI features a **pluggable vector database abstraction layer** that allows seamless switching between different vector database backends.
+Weave CLI features a **pluggable vector database abstraction layer** that
+allows seamless switching between different vector database backends.
 
 ### Support Matrix
 
@@ -300,12 +317,15 @@ Weave CLI features a **pluggable vector database abstraction layer** that allows
 
 - **Stable**: Production-ready, well-tested, recommended for all use cases
 - **Alpha**: Feature complete, functional, recommended for development/testing
-- **Experimental**: Basic functionality working, may require manual setup, use with caution
+- **Experimental**: Basic functionality working, may require manual setup, use
+  with caution
 
 ### Additional Resources
 
-- **[Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md)** - Roadmap for upcoming database support
-- **[Vector DB Abstraction Guide](docs/VECTOR_DB_ABSTRACTION.md)** - Architecture details and how to add new databases
+- **[Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md)**
+  \- Roadmap for upcoming database support
+- **[Vector DB Abstraction Guide](docs/VECTOR_DB_ABSTRACTION.md)** -
+  Architecture details and how to add new databases
 
 ### Abstraction Benefits
 
