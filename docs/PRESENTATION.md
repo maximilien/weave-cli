@@ -1,4 +1,3 @@
-<!-- markdownlint-disable MD025 MD022 MD036 MD032 MD041 MD034 MD003 MD031 MD040 MD013 MD026 -->
 ---
 marp: true
 theme: default
@@ -6,21 +5,28 @@ class: lead
 paginate: true
 backgroundColor: #fff
 backgroundImage: url('https://marp.app/assets/hero-background.svg')
+footer: 'Weave CLI v0.5.0 | github.com/maximilien/weave-cli'
 ---
 
+<!-- markdownlint-disable MD025 MD022 MD036 MD032 MD041 MD034 MD003 MD031 MD040 MD013 MD026 -->
+
+<!-- _paginate: false -->
+<!-- _footer: '' -->
+
 # Weave CLI
+
 ## Multi-VDB Management Made Simple
 
 **A powerful command-line tool for managing vector databases**
 
-**Maximilien.ai** • v0.4.0
+**Maximilien.ai** • v0.5.0
 
 ---
 
 # What is Weave CLI?
 
 - 🤖 **AI-Powered** - Natural language queries with GPT-4o multi-agent system
-- 🗄️ **Multi-Database** - Weaviate, Supabase, MongoDB Atlas support
+- 🗄️ **Multi-Database** - Weaviate, Milvus, Supabase, MongoDB Atlas support
 - 🔄 **Interactive REPL** - Beautiful interactive mode with command history
 - 🌐 **Fast & Lightweight** - Single binary deployment (53MB)
 - 🎨 **Beautiful CLI** - Colored output with emojis and clear formatting
@@ -32,7 +38,7 @@ backgroundImage: url('https://marp.app/assets/hero-background.svg')
 
 ---
 
-# Key Features
+# Key Features - AI Agents
 
 ## AI Agents (v0.3.0+)
 - **Natural Language Queries** - `weave query "show me all collections"`
@@ -41,8 +47,13 @@ backgroundImage: url('https://marp.app/assets/hero-background.svg')
 - **Cost Tracking** - OpenTelemetry integration with Opik observability
 - **Interactive REPL** - Type `weave` for AI-powered interactive mode
 
-## Multi-Database Support (v0.4.0)
+---
+
+# Key Features - Multi-Database
+
+## Multi-Database Support (v0.5.0)
 - **Weaviate Cloud/Local** - Production-ready (Stable)
+- **Milvus Local/Cloud** - Feature complete (Beta)
 - **Supabase PGVector** - Feature complete (Alpha)
 - **MongoDB Atlas** - Vector search with automatic embeddings (Experimental)
 - **Mock Database** - Built-in mock for testing (Stable)
@@ -54,18 +65,47 @@ backgroundImage: url('https://marp.app/assets/hero-background.svg')
 | Database | Status | Maturity | Features |
 |----------|--------|----------|----------|
 | **Weaviate Cloud/Local** | ✅ | **Stable** | GraphQL API, native vectorizers |
+| **Milvus Local/Cloud** | ✅ | **Beta** | IVF_FLAT indexing, BM25, hybrid search |
 | **Supabase PGVector** | ✅ | **Alpha** | PostgreSQL + pgvector, auto embeddings |
 | **MongoDB Atlas** | ✅ | **Experimental** | Vector search, BM25, hybrid search |
 | **Mock** | ✅ | **Stable** | Testing only, no dependencies |
 
+---
+
+# Database Maturity Levels
+
 **Maturity Levels:**
 - **Stable**: Production-ready, well-tested
+- **Beta**: Feature complete, functional, ready for testing
 - **Alpha**: Feature complete, recommended for dev/test
 - **Experimental**: Working, requires manual setup
 
 ---
 
-# MongoDB Atlas Integration (NEW in v0.4.0)
+# Milvus Integration (NEW in v0.5.0)
+
+## Key Features
+- ✅ **Local & Cloud** - Supports both local Milvus and Zilliz Cloud
+- ✅ **IVF_FLAT Indexing** - Fast vector similarity search
+- ✅ **BM25 Search** - Native keyword search support
+- ✅ **Hybrid Search** - RRF combination of vector + BM25
+- ✅ **Explicit Schemas** - Type-safe field definitions
+- ✅ **Free Local** - Run Milvus locally with podman/docker
+
+---
+
+# Milvus Requirements
+
+## Requirements
+- Local: Milvus running at localhost:19530
+- Cloud: Zilliz Cloud account and credentials
+- OPENAI_API_KEY for automatic embeddings
+
+See [Milvus Documentation](docs/milvus/) for setup
+
+---
+
+# MongoDB Atlas Integration (v0.4.0)
 
 ## Key Features
 - ✅ **Automatic Embeddings** - Documents get embeddings on creation
@@ -83,7 +123,7 @@ See [MongoDB Documentation](docs/mongodb/) for setup
 
 ---
 
-# Document Processing
+# Document Processing - Batch & PDF
 
 ## Batch Operations
 - **Parallel Processing** - Configurable workers for speed
@@ -96,6 +136,10 @@ See [MongoDB Documentation](docs/mongodb/) for setup
 - **CMYK Conversion** - Automatic CMYK to RGB conversion
 - **Embedding Generation** - Automatic for all text chunks
 
+---
+
+# Document Processing - Views
+
 ## Smart Document Views
 - **Regular View** - Individual document listing
 - **Virtual View** (`-w`) - Aggregate chunked documents by original file
@@ -103,7 +147,7 @@ See [MongoDB Documentation](docs/mongodb/) for setup
 
 ---
 
-# Installation & Setup
+# Installation & Setup - Build
 
 ```bash
 # Clone and build
@@ -118,7 +162,13 @@ cd weave-cli
 # - WEAVIATE_URL (or MONGODB_URI, SUPABASE_DATABASE_URL)
 # - WEAVIATE_API_KEY (or database credentials)
 # - OPENAI_API_KEY (for AI features and embeddings)
+```
 
+---
+
+# Installation & Setup - Run
+
+```bash
 # Test your setup
 ./bin/weave health check
 
@@ -128,18 +178,26 @@ cd weave-cli
 
 ---
 
-# Quick Start Examples
+# Quick Start - Collections
 
 ```bash
 # List collections (all configured VDBs)
 weave cols ls
 
 # List from specific database
-weave cols ls --weaviate    # Weaviate only
-weave cols ls --supabase    # Supabase only
-weave cols ls --mongodb     # MongoDB Atlas only
-weave cols ls --all         # All databases
+weave cols ls --weaviate      # Weaviate only
+weave cols ls --milvus-local  # Milvus local only
+weave cols ls --milvus-cloud  # Milvus cloud only
+weave cols ls --supabase      # Supabase only
+weave cols ls --mongodb       # MongoDB Atlas only
+weave cols ls --all           # All databases
+```
 
+---
+
+# Quick Start - Documents
+
+```bash
 # Create collection and add documents
 weave cols create MyCollection --text
 weave docs create MyCollection README.md
@@ -151,7 +209,7 @@ weave cols q MyCollection "what is weave?"
 
 ---
 
-# AI-Powered Natural Language Queries
+# AI-Powered Queries - Basic
 
 ```bash
 # Start interactive REPL mode
@@ -163,7 +221,13 @@ weave q "check health"
 weave query "create TestDocs collection"
 weave q "add README.md to TestDocs"
 weave query "find all empty collections"
+```
 
+---
+
+# AI-Powered Queries - Advanced
+
+```bash
 # Database-specific queries
 weave q "list collections in mongodb"
 weave query "create WeaveDocs in supabase"
@@ -193,6 +257,10 @@ weave config show                      # Show current configuration
 weave config list                      # List all configured databases
 ```
 
+---
+
+# Configuration Priority
+
 ## Configuration Priority (highest to lowest)
 
 1. **Command-line flags** - `weave query --model gpt-4`
@@ -202,7 +270,7 @@ weave config list                      # List all configured databases
 
 ---
 
-# Basic Commands
+# Basic Commands - Collections
 
 ```bash
 # Health check
@@ -215,7 +283,13 @@ weave cols show MyCollection           # Show details
 weave cols count                       # Count collections
 weave cols del MyCollection            # Delete collection
 weave cols q MyCollection "query"      # Search collection
+```
 
+---
+
+# Basic Commands - Documents
+
+```bash
 # Document management
 weave docs ls MyCollection             # List documents
 weave docs show MyCollection ID        # Show document
@@ -227,7 +301,7 @@ weave docs da MyCollection             # Delete all documents
 
 ---
 
-# Advanced Features
+# Advanced Features - Embeddings
 
 ## Embeddings Management (v0.3.12+)
 ```bash
@@ -242,6 +316,10 @@ weave cols create MyDocs -e text-embedding-ada-002
 # Create documents with custom embedding
 weave docs create MyDocs file.txt --embedding text-embedding-3-large
 ```
+
+---
+
+# Advanced Features - Batch Processing
 
 ## Batch Processing
 ```bash
@@ -271,6 +349,13 @@ $ weave docs list MyCollection --virtual -S
      original_filename: research_paper.pdf
      file_size: 524288
      embedding: text-embedding-3-small
+```
+
+---
+
+# Virtual Document View - Details
+
+```bash
    📝 Chunk Details:
      1. ID: chunk-1 - Introduction to ML...
      2. ID: chunk-2 - Deep learning...
@@ -295,6 +380,10 @@ Weave follows a consistent pattern:
 - **document** (docs) - Document management (ls, show, create, del, batch)
 - **embeddings** (emb) - List and explore embedding models
 
+---
+
+# Global Flags
+
 ## Global Flags
 - `--no-color` - Disable colored output
 - `--no-truncate` - Show all data
@@ -308,18 +397,23 @@ Weave follows a consistent pattern:
 
 # Database-Specific Flags
 
-All commands support database selection:
-
 ```bash
 # Target specific database
 weave cols ls --weaviate
+weave cols ls --milvus-local
 weave cols ls --supabase
 weave cols ls --mongodb
 
 # Multiple databases
 weave cols ls --weaviate --supabase
 weave cols ls --all
+```
 
+---
+
+# Database-Specific Creation
+
+```bash
 # Create in specific database
 weave docs create WeaveDocs README.md --mongodb
 weave docs create MyDocs file.txt --supabase
@@ -329,13 +423,28 @@ weave docs create MyDocs file.txt --supabase
 
 ---
 
-# Environment Variables
+# Environment Variables - Weaviate & Milvus
 
 ## Weaviate
 ```bash
 WEAVIATE_URL="https://your-cluster.weaviate.cloud"
 WEAVIATE_API_KEY="your-api-key"
 ```
+
+## Milvus (Beta)
+```bash
+# Local (default localhost:19530)
+# No additional env vars needed
+
+# Cloud (Zilliz)
+MILVUS_CLOUD_ADDRESS="cluster.aws-region.vectordb.zillizcloud.com:19530"
+MILVUS_CLOUD_USERNAME="your-username"
+MILVUS_CLOUD_PASSWORD="your-password"
+```
+
+---
+
+# Environment Variables - Others
 
 ## Supabase (Alpha)
 ```bash
@@ -356,7 +465,7 @@ OPENAI_API_KEY="sk-..."  # For AI features and embeddings
 
 ---
 
-# Development
+# Development - Project Structure
 
 ## Project Structure
 ```
@@ -367,9 +476,17 @@ weave-cli/
 │   │   ├── config/       # Configuration
 │   │   ├── vectordb/     # Vector DB abstraction
 │   │   │   ├── weaviate/ # Weaviate client
+│   │   │   ├── milvus/   # Milvus client
 │   │   │   ├── supabase/ # Supabase adapter
 │   │   │   ├── mongodb/  # MongoDB adapter
 │   │   │   └── mock/     # Mock database
+```
+
+---
+
+# Development - Structure Continued
+
+```
 │   │   ├── llm/          # LLM clients
 │   │   └── agents/       # AI agents
 │   └── main.go           # Entry point
@@ -380,7 +497,7 @@ weave-cli/
 
 ---
 
-# Development Workflow
+# Development Workflow - Build & Test
 
 ```bash
 # Setup development environment
@@ -393,10 +510,17 @@ weave-cli/
 ./test.sh
 
 # Run specific database tests
-./test.sh --mongodb
-./test.sh --supabase
-./test.sh --weaviate
+./test.sh integration --weaviate
+./test.sh integration --milvus
+./test.sh integration --mongodb
+./test.sh integration --supabase
+```
 
+---
+
+# Development Workflow - Quality Checks
+
+```bash
 # Run linter
 ./lint.sh
 
@@ -406,13 +530,17 @@ govulncheck ./src/...
 
 ---
 
-# Quality Assurance
+# Quality Assurance - Testing
 
 ## Testing
 - ✅ **Unit tests** - All components tested
 - ✅ **Integration tests** - Weaviate, MongoDB connectivity
 - ✅ **Mock database** - No external dependencies
 - ✅ **Edge cases** - Error handling and validation
+
+---
+
+# Quality Assurance - Code Quality
 
 ## Code Quality
 - ✅ **Go linting** - golangci-lint
@@ -423,16 +551,22 @@ govulncheck ./src/...
 
 ---
 
-# Recent Additions (v0.4.0)
+# Recent Additions (v0.5.0)
 
-## ✅ MongoDB Atlas Integration
-- 🗄️ **Vector Search** - Semantic search with automatic embeddings
-- 🔍 **BM25 Search** - Keyword search using text indexes
-- 🔀 **Hybrid Search** - Vector + BM25 combination
+## ✅ Milvus Integration (NEW)
+- 🗄️ **Local & Cloud** - Milvus standalone and Zilliz Cloud
+- 🔍 **BM25 Search** - Native keyword search
+- 🔀 **Hybrid Search** - RRF combination of vector + BM25
 - 📊 **Full CRUD** - Complete document and collection management
-- 🆓 **Free Tier** - Works with MongoDB Atlas M0
+- 🚀 **IVF_FLAT Indexing** - High-performance vector search
+- 🆓 **Free Local** - Run locally with podman/docker
 
-## ✅ Earlier Features (v0.3.x)
+---
+
+# Earlier Features
+
+## ✅ Earlier Features
+- 🗄️ **MongoDB Atlas** - Vector search integration (v0.4.0)
 - 🤖 **AI Agents** - Natural language queries (v0.3.0)
 - 📊 **Embeddings** - List and manage models (v0.3.12)
 - 🔧 **Config Commands** - Interactive create/update (v0.3.5)
@@ -440,7 +574,18 @@ govulncheck ./src/...
 
 ---
 
-# Version History Highlights
+# Version History - Recent
+
+## v0.5.0 (2025-11-17)
+- 🗄️ Milvus vector database integration (local & cloud)
+- 🔍 Native BM25 and hybrid search with RRF
+- 📚 Comprehensive Milvus documentation
+- 🧪 E2E test framework for all databases
+- 📊 Integration test support for all VDBs
+
+---
+
+# Version History - Previous
 
 ## v0.4.0 (2025-11-15)
 - 🗄️ MongoDB Atlas vector search integration
@@ -453,20 +598,19 @@ govulncheck ./src/...
 - 🔧 Demo recording improvements
 - 📝 Documentation updates
 
-## v0.3.12 (2025-11-13)
-- 📊 Embeddings list command
-- 🔍 Show embedding models for collections
-- 📝 Per-document embedding selection
-
 ---
 
-# Roadmap
+# Roadmap - Upcoming
 
-## Upcoming (v0.5.0+)
+## Upcoming (v0.6.0+)
 - 🧪 **Enhanced Testing** - More integration tests for all databases
 - 🤖 **More LLM Models** - Claude, Gemini support
 - 📊 **Advanced Search** - Multi-vector search capabilities
-- 🔗 **More Databases** - Milvus, Qdrant, Redis, Pinecone
+- 🔗 **More Databases** - Qdrant, Redis, Pinecone, Chroma
+
+---
+
+# Roadmap - Medium Priority
 
 ## Medium Priority
 - 💾 **Backup/Restore** - Export/import collections
@@ -478,7 +622,7 @@ See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) f
 
 ---
 
-# Documentation
+# Documentation - Core & Database
 
 ## Core Guides
 - 📖 **[User Guide](docs/USER_GUIDE.md)** - Complete feature documentation
@@ -486,9 +630,14 @@ See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) f
 - 📋 **[Changelog](docs/CHANGELOG.md)** - Version history
 
 ## Database-Specific
-- 🌐 **[Weaviate Documentation](docs/)** - Weaviate setup and usage
-- 🐘 **[Supabase Documentation](docs/supabase/)** - Supabase integration
-- 🗄️ **[MongoDB Documentation](docs/mongodb/)** - MongoDB Atlas setup
+- 🌐 **[Weaviate Documentation](docs/weaviate/)** - Weaviate setup and usage
+- 🔷 **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
+- 🐘 **[Supabase Documentation](docs/supabase/)** - Supabase integration (Alpha)
+- 🗄️ **[MongoDB Documentation](docs/mongodb/)** - MongoDB Atlas setup (Experimental)
+
+---
+
+# Documentation - Advanced
 
 ## Advanced Topics
 - 🤖 **[AI Agents Guide](docs/guides/WEAVE_CLI_AI.md)** - REPL and natural language
@@ -497,7 +646,7 @@ See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) f
 
 ---
 
-# Contributing
+# Contributing - Getting Started
 
 ## Getting Started
 1. Fork the repository
@@ -507,6 +656,10 @@ See [Vector DB Integrations Planning](docs/planning/VECTOR_DB_INTEGRATIONS.md) f
 5. Run test suite: `./test.sh`
 6. Run linter: `./lint.sh`
 7. Submit a pull request
+
+---
+
+# Contributing - Code Quality
 
 ## Code Quality
 - Follow Go best practices
@@ -519,10 +672,14 @@ See [Vector DB Abstraction Guide](docs/guides/VECTOR_DB_ABSTRACTION.md) for impl
 
 ---
 
-# License & Acknowledgments
+# License
 
 ## License
 This project is licensed under the **MIT License**
+
+---
+
+# Built With & Links
 
 ## Built With
 - [Cobra](https://github.com/spf13/cobra) - CLI framework
@@ -545,7 +702,12 @@ This project is licensed under the **MIT License**
 - 🐛 Report issues on [GitHub](https://github.com/maximilien/weave-cli/issues)
 - 💬 Join discussions in [GitHub Discussions](https://github.com/maximilien/weave-cli/discussions)
 
-## Thank You!
+---
+
+<!-- _class: lead -->
+
+# Thank You!
+
 **Weave CLI** - Making multi-database vector management simple and powerful! 🚀
 
-**Current Version**: v0.4.0 • **Supported Databases**: Weaviate, Supabase, MongoDB Atlas
+**Current Version**: v0.5.0 • **Supported Databases**: Weaviate, Milvus, Supabase, MongoDB Atlas
