@@ -32,11 +32,13 @@ var (
 	queryStrings   string
 
 	// Vector database type flags
-	useWeaviate bool
-	useSupabase bool
-	useMongoDB  bool
-	useMock     bool
-	useAll      bool
+	useWeaviate    bool
+	useSupabase    bool
+	useMongoDB     bool
+	useMilvusLocal bool
+	useMilvusCloud bool
+	useMock        bool
+	useAll         bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -46,7 +48,7 @@ var rootCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Run:                        runREPL,
 	Long: `Weave is a command-line tool for managing vector databases.
-Supports Weaviate (cloud/local), MongoDB Atlas, Supabase PGVector, and Mock databases.
+Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase PGVector, and Mock databases.
 
 📁 COLLECTION MANAGEMENT:
   weave cols ls                        # List all collections
@@ -90,6 +92,8 @@ Supports Weaviate (cloud/local), MongoDB Atlas, Supabase PGVector, and Mock data
   --weaviate                           # Use Weaviate databases only
   --supabase                           # Use Supabase database only
   --mongodb                            # Use MongoDB database only
+  --milvus-local                       # Use Milvus local database only
+  --milvus-cloud                       # Use Milvus cloud (Zilliz) database only
   --mock                               # Use mock database only
   --all                                # Use all configured databases (default)
 
@@ -131,7 +135,7 @@ func init() {
 	rootCmd.Flags().StringVar(&queryStrings, "query-strings", "", "file with queries to execute (one per line, batch mode)")
 
 	// Environment variable override flags (highest priority)
-	rootCmd.PersistentFlags().StringVarP(&vectorDBType, "vector-db-type", "", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|mock|supabase)")
+	rootCmd.PersistentFlags().StringVarP(&vectorDBType, "vector-db-type", "", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)")
 	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vdb", "", "alias for --vector-db-type")
 	rootCmd.PersistentFlags().StringVar(&weaviateAPIKey, "weaviate-api-key", "", "override WEAVIATE_API_KEY")
 	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
@@ -141,6 +145,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useWeaviate, "weaviate", false, "use Weaviate vector database (weaviate-cloud or weaviate-local)")
 	rootCmd.PersistentFlags().BoolVar(&useSupabase, "supabase", false, "use Supabase PGVector database")
 	rootCmd.PersistentFlags().BoolVar(&useMongoDB, "mongodb", false, "use MongoDB Atlas Vector Search database")
+	rootCmd.PersistentFlags().BoolVar(&useMilvusLocal, "milvus-local", false, "use Milvus local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useMilvusCloud, "milvus-cloud", false, "use Milvus cloud (Zilliz) vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
 
@@ -163,6 +169,9 @@ func init() {
 	// Bind vector database type flags
 	_ = viper.BindPFlag("weaviate", rootCmd.PersistentFlags().Lookup("weaviate"))
 	_ = viper.BindPFlag("supabase", rootCmd.PersistentFlags().Lookup("supabase"))
+	_ = viper.BindPFlag("mongodb", rootCmd.PersistentFlags().Lookup("mongodb"))
+	_ = viper.BindPFlag("milvus-local", rootCmd.PersistentFlags().Lookup("milvus-local"))
+	_ = viper.BindPFlag("milvus-cloud", rootCmd.PersistentFlags().Lookup("milvus-cloud"))
 	_ = viper.BindPFlag("mock", rootCmd.PersistentFlags().Lookup("mock"))
 	_ = viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 

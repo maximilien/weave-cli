@@ -1,0 +1,34 @@
+---
+# Milvus Local Configuration
+# For local development using Docker/Podman
+
+databases:
+  # Set Milvus Local as the default database
+  default: milvus
+
+  vector_databases:
+    - name: milvus
+      type: milvus-local
+
+      # Connection settings
+      address: localhost:19530
+      database: default
+      timeout: 10  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: L2    # Options: L2, IP (inner product), COSINE
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example usage:
+# 1. Start Milvus: ./tools/vdb/local/milvus.sh start
+# 2. Set API key: export OPENAI_API_KEY="sk-..."
+# 3. Run weave:
+#    weave --config config.milvus-local.yaml \
+#      --milvus-local collections list

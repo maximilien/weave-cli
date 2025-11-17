@@ -22,6 +22,14 @@ func displayDatabaseConfig(name string, dbConfig *config.VectorDBConfig) {
 		displayWeaviateCloudConfig(dbConfig)
 	case config.VectorDBTypeLocal:
 		displayWeaviateLocalConfig(dbConfig)
+	case config.VectorDBTypeSupabase:
+		displaySupabaseConfig(dbConfig)
+	case config.VectorDBTypeMongoDB:
+		displayMongoDBConfig(dbConfig)
+	case config.VectorDBTypeMilvusLocal:
+		displayMilvusLocalConfig(dbConfig)
+	case config.VectorDBTypeMilvusCloud:
+		displayMilvusCloudConfig(dbConfig)
 	case config.VectorDBTypeMock:
 		displayMockConfig(dbConfig)
 	default:
@@ -63,6 +71,72 @@ func displayWeaviateLocalConfig(cfg *config.VectorDBConfig) {
 	}
 }
 
+func displaySupabaseConfig(cfg *config.VectorDBConfig) {
+	color.New(color.FgMagenta).Printf("🐘 Supabase Configuration\n")
+	fmt.Printf("  Database URL: %s\n", maskConnectionString(cfg.DatabaseURL))
+
+	if len(cfg.Collections) > 0 {
+		fmt.Printf("  Collections:\n")
+		for _, collection := range cfg.Collections {
+			fmt.Printf("    - %s (%s)\n", collection.Name, collection.Type)
+		}
+	}
+}
+
+func displayMongoDBConfig(cfg *config.VectorDBConfig) {
+	color.New(color.FgGreen).Printf("🍃 MongoDB Atlas Configuration\n")
+	fmt.Printf("  URI: %s\n", maskConnectionString(cfg.URL))
+	fmt.Printf("  Database: %s\n", cfg.Database)
+
+	if len(cfg.Collections) > 0 {
+		fmt.Printf("  Collections:\n")
+		for _, collection := range cfg.Collections {
+			fmt.Printf("    - %s (%s)\n", collection.Name, collection.Type)
+		}
+	}
+}
+
+func displayMilvusLocalConfig(cfg *config.VectorDBConfig) {
+	color.New(color.FgBlue).Printf("🏠 Milvus Local Configuration\n")
+	fmt.Printf("  Address: %s\n", cfg.Address)
+	fmt.Printf("  Database: %s\n", cfg.Database)
+	fmt.Printf("  Vector Dimensions: %d\n", cfg.VectorDimensions)
+	fmt.Printf("  Similarity Metric: %s\n", cfg.SimilarityMetric)
+
+	if len(cfg.Collections) > 0 {
+		fmt.Printf("  Collections:\n")
+		for _, collection := range cfg.Collections {
+			fmt.Printf("    - %s (%s)\n", collection.Name, collection.Type)
+		}
+	}
+}
+
+func displayMilvusCloudConfig(cfg *config.VectorDBConfig) {
+	color.New(color.FgCyan).Printf("☁️  Milvus Cloud (Zilliz) Configuration\n")
+	fmt.Printf("  Address: %s\n", cfg.Address)
+	fmt.Printf("  Username: %s\n", cfg.Username)
+
+	// Mask password for security
+	passwordDisplay := "***hidden***"
+	if cfg.Password == "" {
+		passwordDisplay = "❌ not set"
+		color.New(color.FgRed).Printf("  Password: %s\n", passwordDisplay)
+	} else {
+		color.New(color.FgGreen).Printf("  Password: %s\n", passwordDisplay)
+	}
+
+	fmt.Printf("  Database: %s\n", cfg.Database)
+	fmt.Printf("  Vector Dimensions: %d\n", cfg.VectorDimensions)
+	fmt.Printf("  Similarity Metric: %s\n", cfg.SimilarityMetric)
+
+	if len(cfg.Collections) > 0 {
+		fmt.Printf("  Collections:\n")
+		for _, collection := range cfg.Collections {
+			fmt.Printf("    - %s (%s)\n", collection.Name, collection.Type)
+		}
+	}
+}
+
 func displayMockConfig(cfg *config.VectorDBConfig) {
 	color.New(color.FgYellow).Printf("🎭 Mock Database Configuration\n")
 	fmt.Printf("  Enabled: %t\n", cfg.Enabled)
@@ -75,6 +149,14 @@ func displayMockConfig(cfg *config.VectorDBConfig) {
 			fmt.Printf("    - %s (%s): %s\n", collection.Name, collection.Type, collection.Description)
 		}
 	}
+}
+
+func maskConnectionString(connStr string) string {
+	// Simple masking for connection strings
+	if len(connStr) > 20 {
+		return connStr[:10] + "..." + connStr[len(connStr)-10:]
+	}
+	return "***hidden***"
 }
 
 func displayJSONSchemaFields(jsonSchema map[string]interface{}, indent string) {

@@ -19,11 +19,13 @@ import (
 type VectorDBType string
 
 const (
-	VectorDBTypeCloud    VectorDBType = "weaviate-cloud"
-	VectorDBTypeLocal    VectorDBType = "weaviate-local"
-	VectorDBTypeMock     VectorDBType = "mock"
-	VectorDBTypeSupabase VectorDBType = "supabase"
-	VectorDBTypeMongoDB  VectorDBType = "mongodb"
+	VectorDBTypeCloud       VectorDBType = "weaviate-cloud"
+	VectorDBTypeLocal       VectorDBType = "weaviate-local"
+	VectorDBTypeMock        VectorDBType = "mock"
+	VectorDBTypeSupabase    VectorDBType = "supabase"
+	VectorDBTypeMongoDB     VectorDBType = "mongodb"
+	VectorDBTypeMilvusLocal VectorDBType = "milvus-local"
+	VectorDBTypeMilvusCloud VectorDBType = "milvus-cloud"
 )
 
 // Default configuration values
@@ -76,9 +78,12 @@ type VectorDBConfig struct {
 	APIKey             string       `yaml:"api_key,omitempty"`
 	DatabaseURL        string       `yaml:"database_url,omitempty"`      // For Supabase
 	DatabaseKey        string       `yaml:"database_key,omitempty"`      // For Supabase
-	Database           string       `yaml:"database,omitempty"`          // For MongoDB
-	VectorDimensions   int          `yaml:"vector_dimensions,omitempty"` // For MongoDB
-	SimilarityMetric   string       `yaml:"similarity_metric,omitempty"` // For MongoDB
+	Database           string       `yaml:"database,omitempty"`          // For MongoDB, Milvus
+	VectorDimensions   int          `yaml:"vector_dimensions,omitempty"` // For MongoDB, Milvus
+	SimilarityMetric   string       `yaml:"similarity_metric,omitempty"` // For MongoDB, Milvus
+	Address            string       `yaml:"address,omitempty"`           // For Milvus
+	Username           string       `yaml:"username,omitempty"`          // For Milvus Cloud
+	Password           string       `yaml:"password,omitempty"`          // For Milvus Cloud
 	OpenAIAPIKey       string       `yaml:"openai_api_key,omitempty"`
 	Timeout            int          `yaml:"timeout,omitempty"` // Timeout in seconds for DB operations
 	Enabled            bool         `yaml:"enabled,omitempty"`

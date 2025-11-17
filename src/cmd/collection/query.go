@@ -112,6 +112,8 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeMongoDB:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeMock:
 		utils.QueryMockCollection(ctx, dbConfig, collectionName, queryText, options)
 	default:

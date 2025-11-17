@@ -110,6 +110,12 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeMongoDB:
 		utils.PrintError("Collection deletion not yet implemented for MongoDB")
 		os.Exit(1)
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		if pattern != "" {
+			err = utils.DeleteGenericCollectionsByPattern(ctx, dbConfig, pattern)
+		} else {
+			err = utils.DeleteGenericCollections(ctx, dbConfig, args)
+		}
 	case config.VectorDBTypeMock:
 		if pattern != "" {
 			err = utils.DeleteMockCollectionsByPattern(ctx, dbConfig, pattern)

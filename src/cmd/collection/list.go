@@ -100,6 +100,8 @@ func listCollectionsForDatabase(ctx context.Context, dbConfig *config.VectorDBCo
 		utils.ListSupabaseCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	case config.VectorDBTypeMongoDB:
 		utils.ListMongoDBCollections(ctx, dbConfig, limit, virtual, jsonOutput)
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		utils.ListMilvusCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 	}

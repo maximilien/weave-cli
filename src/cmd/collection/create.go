@@ -60,7 +60,7 @@ Examples:
 func init() {
 	CollectionCmd.AddCommand(CreateCmd)
 
-	CreateCmd.Flags().StringP("embedding", "e", "text-embedding-ada-002", "Embedding model to use for this collection (e.g., text-embedding-3-small, text-embedding-ada-002)")
+	CreateCmd.Flags().StringP("embedding", "e", "text-embedding-3-small", "Embedding model to use for this collection (e.g., text-embedding-3-small, text-embedding-3-large)")
 	CreateCmd.Flags().StringP("embedding-model", "", "", "Alias for --embedding (deprecated, use --embedding instead)")
 	CreateCmd.Flags().StringP("fields", "f", "", "Custom fields (format: field1:type1,field2:type2)")
 	CreateCmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
@@ -76,7 +76,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	// Get embedding model - prefer --embedding, fallback to --embedding-model for backward compatibility
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
-	if embeddingModel == "text-embedding-ada-002" { // Default value, check if --embedding-model was used
+	if embeddingModel == "text-embedding-3-small" { // Default value, check if --embedding-model was used
 		if embeddingModelFlag, _ := cmd.Flags().GetString("embedding-model"); embeddingModelFlag != "" {
 			embeddingModel = embeddingModelFlag
 			utils.PrintWarning("⚠️  --embedding-model is deprecated, use --embedding or -e instead")
@@ -257,6 +257,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeMongoDB:
 		utils.PrintError("Collection creation not yet implemented for MongoDB")
 		os.Exit(1)
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeMock:
 		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	default:

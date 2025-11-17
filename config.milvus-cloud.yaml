@@ -1,0 +1,50 @@
+---
+# Milvus Cloud Configuration (Zilliz)
+# For managed Milvus service
+
+databases:
+  # Set Milvus Cloud as the default database
+  default: milvus-cloud
+
+  vector_databases:
+    - name: milvus-cloud
+      type: milvus-cloud
+
+      # Connection settings (use environment variables for security)
+      # e.g., your-cluster.aws-us-west-2.vectordb.zillizcloud.com:19530
+      address: ${MILVUS_CLOUD_ADDRESS}
+      username: ${MILVUS_CLOUD_USERNAME}
+      password: ${MILVUS_CLOUD_PASSWORD}
+      database: default
+      timeout: 30  # Longer timeout for network latency
+
+      # Vector configuration
+      vector_dimensions: 1536     # OpenAI text-embedding-3-small
+      # Recommended for normalized embeddings
+      # Options: L2, IP (inner product), COSINE
+      similarity_metric: COSINE
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example environment variables (set in .env or shell):
+# export MILVUS_CLOUD_ADDRESS=\
+#   "your-cluster.aws-us-west-2.vectordb.zillizcloud.com:19530"
+# export MILVUS_CLOUD_USERNAME="db_admin"
+# export MILVUS_CLOUD_PASSWORD="your-secure-password"
+# export OPENAI_API_KEY="sk-..."
+
+# Example usage:
+# weave --config config.milvus-cloud.yaml --milvus-cloud collections list
+
+# Security best practices:
+# 1. Never commit credentials to version control
+# 2. Use environment variables for sensitive data
+# 3. Use secret management systems in production
+#    (AWS Secrets Manager, Vault, etc.)
+# 4. Configure IP allowlist in Zilliz Cloud console
+# 5. Use strong passwords and rotate them regularly

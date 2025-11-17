@@ -93,6 +93,44 @@ weave health check
 semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md)
 for detailed instructions.
 
+### Milvus Setup (Beta)
+
+> **🧪 Beta**: Milvus support is feature complete and functional. Supports both
+> local development and cloud deployment (Zilliz). See the
+> [Milvus Documentation](docs/milvus/) for comprehensive setup guide.
+
+To use Milvus locally:
+
+```bash
+# Start Milvus using podman (preferred) or docker
+./tools/vdb/local/milvus.sh start
+
+# Set OpenAI API key for automatic embeddings
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use local Milvus
+weave config create --database-type milvus-local
+
+# Verify Milvus connection
+weave health check
+```
+
+To use Milvus Cloud (Zilliz):
+
+```bash
+# Set Zilliz credentials
+export MILVUS_CLOUD_ADDRESS="your-cluster.aws-us-west-2.vectordb.zillizcloud.com:19530"
+export MILVUS_CLOUD_USERNAME="your-username"
+export MILVUS_CLOUD_PASSWORD="your-password"
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use Milvus Cloud
+weave config create --database-type milvus-cloud
+
+# Verify connection
+weave health check
+```
+
 ### Basic Usage
 
 ```bash
@@ -100,11 +138,13 @@ for detailed instructions.
 weave cols ls
 
 # List collections from specific database types
-weave cols ls --weaviate    # Weaviate only
-weave cols ls --supabase    # Supabase only
-weave cols ls --mongodb     # MongoDB Atlas only
-weave cols ls --mock        # Mock database only
-weave cols ls --all         # All configured databases
+weave cols ls --weaviate      # Weaviate only
+weave cols ls --supabase      # Supabase only
+weave cols ls --mongodb       # MongoDB Atlas only
+weave cols ls --milvus-local  # Milvus local only
+weave cols ls --milvus-cloud  # Milvus cloud (Zilliz) only
+weave cols ls --mock          # Mock database only
+weave cols ls --all           # All configured databases
 
 # Create a collection
 weave cols create MyCollection --text
@@ -142,7 +182,7 @@ weave cols create MyCollection -e text-embedding-ada-002
   (AI Agent mode) with real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
-  backends (Supabase PGVector implemented, MongoDB Atlas experimental)
+  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -172,11 +212,10 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ### Database-Specific
 
+- **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
 - **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
-- **[Supabase Documentation](docs/supabase/)** - Supabase integration guide
-  (Alpha)
-- **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status
-  (Stable)
+- **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
+- **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
 
 ## Advanced Usage
 
@@ -309,6 +348,8 @@ allows seamless switching between different vector database backends.
 |----------|------|--------|----------|------|
 | **Weaviate Cloud** | `weaviate-cloud` | ✅ Production Ready | **Stable** | [Guide](docs/) |
 | **Weaviate Local** | `weaviate-local` | ✅ Production Ready | **Stable** | [Guide](docs/) |
+| **Milvus Local** | `milvus-local` | ✅ Functional | **Beta** - Feature complete, local testing ready | [Guide](docs/milvus/) |
+| **Milvus Cloud** | `milvus-cloud` | ✅ Functional | **Beta** - Zilliz cloud integration ready | [Guide](docs/milvus/) |
 | **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/supabase/) |
 | **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
 | **Mock** | `mock` | ✅ Testing Only | **Stable** | - |
@@ -316,9 +357,11 @@ allows seamless switching between different vector database backends.
 ### Maturity Levels
 
 - **Stable**: Production-ready, well-tested, recommended for all use cases
-- **Alpha**: Feature complete, functional, recommended for development/testing
-- **Experimental**: Basic functionality working, may require manual setup, use
-  with caution
+- **Beta**: Feature complete, functional, ready for testing and feedback
+- **Alpha**: Feature complete, functional, recommended for
+  development/testing
+- **Experimental**: Basic functionality working, may require manual setup,
+  use with caution
 
 ### Additional Resources
 

@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --supabase, --mongodb, or --mock (found %d databases). "+
+					"Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -112,6 +112,8 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	useWeaviate, _ := cmd.Flags().GetBool("weaviate")
 	useSupabase, _ := cmd.Flags().GetBool("supabase")
 	useMongoDB, _ := cmd.Flags().GetBool("mongodb")
+	useMilvusLocal, _ := cmd.Flags().GetBool("milvus-local")
+	useMilvusCloud, _ := cmd.Flags().GetBool("milvus-cloud")
 	useMock, _ := cmd.Flags().GetBool("mock")
 	useAll, _ := cmd.Flags().GetBool("all")
 
@@ -119,7 +121,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMock
+	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -154,6 +156,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *mongoDBConfig)
 		types = append(types, string(mongoDBConfig.Type))
+	}
+
+	if useMilvusLocal {
+		milvusLocalConfig, err := getMilvusLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Milvus Local configuration: %w", err)
+		}
+		configs = append(configs, *milvusLocalConfig)
+		types = append(types, string(milvusLocalConfig.Type))
+	}
+
+	if useMilvusCloud {
+		milvusCloudConfig, err := getMilvusCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Milvus Cloud configuration: %w", err)
+		}
+		configs = append(configs, *milvusCloudConfig)
+		types = append(types, string(milvusCloudConfig.Type))
 	}
 
 	if useMock {
@@ -266,6 +286,30 @@ func getMongoDBConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	}
 
 	return nil, fmt.Errorf("no MongoDB configuration found")
+}
+
+// getMilvusLocalConfig returns Milvus Local configuration
+func getMilvusLocalConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Milvus Local type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeMilvusLocal {
+			return &dbConfig, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no Milvus Local configuration found")
+}
+
+// getMilvusCloudConfig returns Milvus Cloud configuration
+func getMilvusCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Milvus Cloud type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeMilvusCloud {
+			return &dbConfig, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no Milvus Cloud configuration found")
 }
 
 // getMockConfig returns mock configuration

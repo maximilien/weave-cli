@@ -59,6 +59,8 @@ func runCollectionCount(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeMongoDB:
 		utils.PrintError("Collection count not yet implemented for MongoDB")
 		os.Exit(1)
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		count, err = utils.CountGenericCollections(ctx, dbConfig)
 	case config.VectorDBTypeMock:
 		count, err = utils.CountMockCollections(ctx, dbConfig)
 	default:

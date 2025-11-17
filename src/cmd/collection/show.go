@@ -87,6 +87,8 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeMongoDB:
 		utils.PrintError("Collection show not yet implemented for MongoDB")
 		os.Exit(1)
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		utils.ShowGenericCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	case config.VectorDBTypeMock:
 		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	default:

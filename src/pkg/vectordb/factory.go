@@ -17,7 +17,8 @@ const (
 	VectorDBTypeWeaviateLocal VectorDBType = "weaviate-local"
 	VectorDBTypeMock          VectorDBType = "mock"
 	VectorDBTypeSupabase      VectorDBType = "supabase"
-	VectorDBTypeMilvus        VectorDBType = "milvus"
+	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
+	VectorDBTypeMilvusCloud   VectorDBType = "milvus-cloud"
 	VectorDBTypeMongoDB       VectorDBType = "mongodb"
 )
 
@@ -39,6 +40,7 @@ type Config struct {
 	DatabaseKey string `yaml:"database_key,omitempty"`
 
 	// Milvus-specific configuration
+	Address  string `yaml:"address,omitempty"`
 	Username string `yaml:"username,omitempty"`
 	Password string `yaml:"password,omitempty"`
 	Database string `yaml:"database,omitempty"`
@@ -128,9 +130,12 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 		APIKey:             cfg.APIKey,
 		DatabaseURL:        cfg.DatabaseURL,      // For Supabase
 		DatabaseKey:        cfg.DatabaseKey,      // For Supabase
-		Database:           cfg.Database,         // For MongoDB
-		VectorDimensions:   cfg.VectorDimensions, // For MongoDB
-		SimilarityMetric:   cfg.SimilarityMetric, // For MongoDB
+		Database:           cfg.Database,         // For MongoDB, Milvus
+		VectorDimensions:   cfg.VectorDimensions, // For MongoDB, Milvus
+		SimilarityMetric:   cfg.SimilarityMetric, // For MongoDB, Milvus
+		Address:            cfg.Address,          // For Milvus
+		Username:           cfg.Username,         // For Milvus Cloud
+		Password:           cfg.Password,         // For Milvus Cloud
 		OpenAIAPIKey:       cfg.OpenAIAPIKey,
 		Timeout:            cfg.Timeout,
 		Enabled:            cfg.Enabled,

@@ -58,6 +58,7 @@ print_help() {
     echo ""
     echo "Flags for 'integration' command:"
     echo "  --weaviate  Run only Weaviate integration tests"
+    echo "  --milvus    Run only Milvus integration tests"
     echo "  --supabase  Run only Supabase integration tests"
     echo "  --mongodb   Run only MongoDB integration tests"
     echo "  --mcp       Run only MCP integration tests"
@@ -66,6 +67,7 @@ print_help() {
     echo "  ./test.sh unit                    # Run only unit tests"
     echo "  ./test.sh integration             # Run all integration tests"
     echo "  ./test.sh integration --weaviate  # Run only Weaviate integration tests"
+    echo "  ./test.sh integration --milvus    # Run only Milvus integration tests"
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
     echo "  ./test.sh integration --mongodb   # Run only MongoDB integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
@@ -82,6 +84,7 @@ print_help() {
     echo ""
     echo "  Integration Tests:"
     echo "    - Weaviate client testing (requires WEAVIATE_URL, WEAVIATE_API_KEY, OPENAI_API_KEY)"
+    echo "    - Milvus client testing (requires Milvus running locally at localhost:19530)"
     echo "    - Supabase client testing (requires SUPABASE_DATABASE_URL, SUPABASE_DATABASE_KEY)"
     echo "    - MongoDB client testing (requires MONGODB_URI, MONGODB_DATABASE)"
     echo "    - MCP server testing (requires OPENAI_API_KEY, WEAVE_MCP_STDIO_PATH)"
@@ -170,6 +173,7 @@ run_integration_tests() {
 
     # Parse integration test flags
     local run_weaviate=false
+    local run_milvus=false
     local run_supabase=false
     local run_mongodb=false
     local run_mcp=false
@@ -180,6 +184,10 @@ run_integration_tests() {
         case "$arg" in
             --weaviate)
                 run_weaviate=true
+                run_all=false
+                ;;
+            --milvus)
+                run_milvus=true
                 run_all=false
                 ;;
             --supabase)
@@ -200,6 +208,7 @@ run_integration_tests() {
     # If run_all is true, enable all tests
     if [ "$run_all" = true ]; then
         run_weaviate=true
+        run_milvus=true
         run_supabase=true
         run_mongodb=true
         run_mcp=true
@@ -232,6 +241,25 @@ run_integration_tests() {
         else
             print_warning "Skipping Weaviate integration tests - credentials not configured"
             print_status "Set WEAVIATE_URL, WEAVIATE_API_KEY, and OPENAI_API_KEY to run Weaviate tests"
+        fi
+    fi
+
+    # Run Milvus integration tests if requested
+    if [ "$run_milvus" = true ]; then
+        # Check if Milvus is running locally
+        if ./tools/vdb/local/milvus.sh status &>/dev/null; then
+            print_status "Running Milvus integration tests..."
+            total_suites=$((total_suites + 1))
+            if go test -v -timeout=2m ./tests/... -run="TestMilvus"; then
+                print_success "Milvus integration tests passed!"
+                passed_suites=$((passed_suites + 1))
+            else
+                print_warning "Milvus integration tests failed"
+                failed_suites=$((failed_suites + 1))
+            fi
+        else
+            print_warning "Skipping Milvus integration tests - Milvus not running"
+            print_status "Start Milvus with: ./tools/vdb/local/milvus.sh start"
         fi
     fi
 

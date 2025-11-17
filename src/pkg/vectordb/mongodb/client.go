@@ -5,7 +5,9 @@ package mongodb
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,6 +34,16 @@ type Config struct {
 	// Vector search settings
 	VectorDimensions int    // Embedding vector dimensions (e.g., 1536 for OpenAI)
 	SimilarityMetric string // Similarity metric: "cosine", "euclidean", or "dotProduct"
+}
+
+// containsAny checks if a string contains any of the given substrings
+func containsAny(s string, substrs ...string) bool {
+	for _, substr := range substrs {
+		if strings.Contains(s, substr) {
+			return true
+		}
+	}
+	return false
 }
 
 // NewClient creates a new MongoDB Atlas Vector Search client
@@ -62,6 +74,16 @@ func NewClient(config *Config) (*Client, error) {
 	clientOptions.SetConnectTimeout(timeout)
 	clientOptions.SetServerSelectionTimeout(timeout)
 
+	// Enable direct connection for better reliability with Atlas
+	clientOptions.SetDirect(false)
+
+	// Set TLS configuration - MongoDB Atlas requires TLS
+	// Create a TLS config that uses system certificates
+	tlsConfig := &tls.Config{
+		MinVersion: tls.VersionTLS12, // MongoDB Atlas requires TLS 1.2+
+	}
+	clientOptions.SetTLSConfig(tlsConfig)
+
 	// Create context with timeout for connection
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -74,6 +96,22 @@ func NewClient(config *Config) (*Client, error) {
 
 	// Ping to verify connection
 	if err := client.Ping(ctx, nil); err != nil {
+		// Provide helpful error message for common TLS issues
+		errMsg := err.Error()
+		if containsAny(errMsg, "tls:", "x509:", "certificate") {
+			return nil, fmt.Errorf("failed to ping MongoDB: %w\n\nTLS connection error. Common causes:\n"+
+				"  1. IP address not whitelisted in MongoDB Atlas Network Access\n"+
+				"  2. Invalid credentials in connection string\n"+
+				"  3. Using old MongoDB driver version\n"+
+				"  → Check MongoDB Atlas dashboard: Network Access and Database Access", err)
+		}
+		if containsAny(errMsg, "timeout", "deadline") {
+			return nil, fmt.Errorf("failed to ping MongoDB: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. IP address not whitelisted in MongoDB Atlas (most common)\n"+
+				"  2. Firewall blocking outbound connections\n"+
+				"  3. Incorrect connection string\n"+
+				"  → Add your IP to Network Access in MongoDB Atlas dashboard", err)
+		}
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 

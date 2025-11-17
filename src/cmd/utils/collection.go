@@ -141,6 +141,34 @@ func CreateWeaviateCollectionFromSchemaFile(ctx context.Context, cfg *config.Vec
 	return nil
 }
 
+// CreateGenericCollection creates a collection using the generic VectorDB interface
+// Works for any database that implements the VectorDBClient interface (Milvus, etc.)
+func CreateGenericCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string) error {
+	// Create client using the factory
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+
+	// Get default schema for the database type
+	schema := client.GetDefaultSchema(vectordb.SchemaTypeText, collectionName)
+	if embeddingModel != "" {
+		schema.Vectorizer = embeddingModel
+	}
+
+	// Validate schema
+	if err := client.ValidateSchema(schema); err != nil {
+		return fmt.Errorf("invalid schema: %w", err)
+	}
+
+	// Create collection
+	if err := client.CreateCollection(ctx, collectionName, schema); err != nil {
+		return fmt.Errorf("failed to create collection: %w", err)
+	}
+
+	return nil
+}
+
 // CreateMockCollection creates a mock collection
 func CreateMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
 	PrintInfo("Mock collection creation not yet implemented in new structure")
@@ -598,6 +626,131 @@ func ListMongoDBCollections(ctx context.Context, cfg *config.VectorDBConfig, lim
 
 			// Display collection info
 			fmt.Printf("%2d. %s %s%s 📄\n", i+1, nameColor, countStr, vectorizerStr)
+		}
+	} else {
+		// JSON output
+		type CollectionJSON struct {
+			Name       string `json:"name"`
+			Count      int64  `json:"count"`
+			Vectorizer string `json:"vectorizer,omitempty"`
+		}
+
+		type OutputJSON struct {
+			Collections []CollectionJSON `json:"collections"`
+			Total       int              `json:"total"`
+		}
+
+		collections := make([]CollectionJSON, len(collectionInfos))
+		for i, info := range collectionInfos {
+			collections[i] = CollectionJSON{
+				Name:       info.Name,
+				Count:      info.Count,
+				Vectorizer: info.Vectorizer,
+			}
+		}
+
+		output := OutputJSON{
+			Collections: collections,
+			Total:       len(collections),
+		}
+
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
+	}
+}
+
+// ListMilvusCollections lists Milvus collections
+func ListMilvusCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Milvus client: %v", err))
+		}
+		return
+	}
+
+	// Add timeout to context for API operations
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// List collections
+	collectionInfos, err := client.ListCollections(ctx)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			PrintError("Failed to connect to Milvus: connection timeout after 30 seconds")
+			fmt.Println()
+			PrintInfo("Please check that:")
+			PrintInfo("  1. Milvus is running (for local) or credentials are correct (for cloud)")
+			PrintInfo("  2. The address is correct")
+			PrintInfo("  3. There are no network/firewall issues")
+		} else {
+			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		}
+		return
+	}
+
+	if len(collectionInfos) == 0 {
+		if !jsonOutput {
+			PrintWarning("No collections found in the Milvus database")
+		} else {
+			// Output empty JSON
+			fmt.Println(`{"collections": [], "total": 0}`)
+		}
+		return
+	}
+
+	// Sort collections alphabetically by name
+	sort.Slice(collectionInfos, func(i, j int) bool {
+		return collectionInfos[i].Name < collectionInfos[j].Name
+	})
+
+	// Apply limit if specified
+	if limit > 0 && len(collectionInfos) > limit {
+		collectionInfos = collectionInfos[:limit]
+	}
+
+	if !jsonOutput {
+		PrintSuccess(fmt.Sprintf("Found %d collections:", len(collectionInfos)))
+		if limit > 0 && len(collectionInfos) == limit {
+			PrintInfo(fmt.Sprintf("(showing first %d collections)", limit))
+		}
+		fmt.Println()
+
+		// Display collections in compact format
+		for i, info := range collectionInfos {
+			// Color coding: green for collections with documents, yellow for empty
+			var nameColor string
+			if info.Count > 0 {
+				nameColor = GetStyledKeyProminent(info.Name)
+			} else {
+				nameColor = GetStyledKeyDimmed(info.Name)
+			}
+
+			// Document count with color
+			var countStr string
+			if info.Count > 0 {
+				countStr = GetStyledNumber(fmt.Sprintf("%d items", info.Count))
+			} else {
+				countStr = GetStyledValueDimmed("empty")
+			}
+
+			// Vectorizer/embedding model info
+			var vectorizerStr string
+			if info.Vectorizer != "" {
+				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
+			}
+
+			// Display collection info with vector icon
+			fmt.Printf("%2d. %s %s%s 🔍\n", i+1, nameColor, countStr, vectorizerStr)
 		}
 	} else {
 		// JSON output
@@ -1995,4 +2148,119 @@ func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collec
 
 	// Display results
 	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate, options.JSONOutput)
+}
+
+// Generic collection operations for VectorDB interface (Milvus, etc.)
+
+// CountGenericCollections counts collections using the VectorDB interface
+func CountGenericCollections(ctx context.Context, cfg *config.VectorDBConfig) (int, error) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return 0, fmt.Errorf("failed to create client: %w", err)
+	}
+
+	collectionInfos, err := client.ListCollections(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to list collections: %w", err)
+	}
+
+	return len(collectionInfos), nil
+}
+
+// DeleteGenericCollections deletes collections using the VectorDB interface
+func DeleteGenericCollections(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string) error {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+
+	for _, name := range collectionNames {
+		if err := client.DeleteCollection(ctx, name); err != nil {
+			return fmt.Errorf("failed to delete collection '%s': %w", name, err)
+		}
+		PrintSuccess(fmt.Sprintf("Deleted collection: %s", name))
+	}
+
+	return nil
+}
+
+// DeleteGenericCollectionsByPattern deletes collections matching a pattern using VectorDB interface
+func DeleteGenericCollectionsByPattern(ctx context.Context, cfg *config.VectorDBConfig, pattern string) error {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create client: %w", err)
+	}
+
+	// List all collections
+	collectionInfos, err := client.ListCollections(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to list collections: %w", err)
+	}
+
+	// Filter by pattern
+	var matchingCollections []string
+	for _, collection := range collectionInfos {
+		if matchPattern(collection.Name, pattern) {
+			matchingCollections = append(matchingCollections, collection.Name)
+		}
+	}
+
+	if len(matchingCollections) == 0 {
+		PrintWarning(fmt.Sprintf("No collections found matching pattern: %s", pattern))
+		return nil
+	}
+
+	// Delete matched collections
+	for _, name := range matchingCollections {
+		if err := client.DeleteCollection(ctx, name); err != nil {
+			return fmt.Errorf("failed to delete collection '%s': %w", name, err)
+		}
+		PrintSuccess(fmt.Sprintf("Deleted collection: %s", name))
+	}
+
+	return nil
+}
+
+// ShowGenericCollection shows collection details using VectorDB interface
+func ShowGenericCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, shortLines int, noTruncate bool, verbose bool, showSchema bool, showMetadata bool, expandMetadata bool, outputYAML bool, outputJSON bool, yamlFile string, jsonFile string, compact bool) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Get collection info
+	collectionInfos, err := client.ListCollections(ctx)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		return
+	}
+
+	var found *vectordb.CollectionInfo
+	for _, info := range collectionInfos {
+		if info.Name == collectionName {
+			found = &info
+			break
+		}
+	}
+
+	if found == nil {
+		PrintError(fmt.Sprintf("Collection '%s' not found", collectionName))
+		return
+	}
+
+	// Display collection info
+	PrintHeader(fmt.Sprintf("Collection: %s", collectionName))
+	fmt.Printf("  Documents: %d\n", found.Count)
+	if found.Vectorizer != "" {
+		fmt.Printf("  Embedding Model: %s\n", found.Vectorizer)
+	}
+	if found.Description != "" {
+		fmt.Printf("  Description: %s\n", found.Description)
+	}
+
+	// TODO: Implement schema display for generic collections
+	if showSchema {
+		PrintWarning("Schema display not yet implemented for this database type")
+	}
 }

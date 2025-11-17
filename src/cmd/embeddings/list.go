@@ -50,7 +50,7 @@ Embeddings are grouped by provider (OpenAI, Cohere, Hugging Face, etc.) and type
 
 func init() {
 	ListCmd.Flags().BoolP("verbose", "v", false, "Show detailed information including API requirements")
-	ListCmd.Flags().StringP("database", "d", "", "Filter embeddings by database type (weaviate-cloud, weaviate-local, supabase, mock)")
+	ListCmd.Flags().StringP("database", "d", "", "Filter embeddings by database type (weaviate-cloud, weaviate-local, milvus-local, milvus-cloud, supabase, mongodb, mock)")
 	ListCmd.Flags().BoolP("show-compatibility", "c", false, "Show database compatibility for each embedding")
 }
 
@@ -346,12 +346,14 @@ func getAllEmbeddingModels() []EmbeddingModel {
 	// Database type constants for clarity
 	weaviateCloud := "weaviate-cloud"
 	weaviateLocal := "weaviate-local"
+	milvusLocal := "milvus-local"
+	milvusCloud := "milvus-cloud"
 	supabase := "supabase"
 	mongodb := "mongodb"
 	mock := "mock"
 
 	// All databases for wide support
-	allDatabases := []string{weaviateCloud, weaviateLocal, supabase, mongodb, mock}
+	allDatabases := []string{weaviateCloud, weaviateLocal, milvusLocal, milvusCloud, supabase, mongodb, mock}
 	// Weaviate only (cloud and local)
 	weaviateOnly := []string{weaviateCloud, weaviateLocal, mock}
 

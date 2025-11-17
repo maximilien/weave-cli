@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2025-11-17
+
+### Added
+
+- **🗄️ Milvus Vector Database Integration (✅ Fully Functional)**: Complete Milvus support for vector database operations
+  - **Status**: ✅ Fully Functional - Complete with automatic embedding generation and vector search
+  - **What Works**:
+    - ✅ Connection and health checks for both Milvus Local and Milvus Cloud (Zilliz)
+    - ✅ Collection management (create, list, delete, show, count)
+    - ✅ Document CRUD operations with automatic embedding generation
+    - ✅ Vector search with configurable similarity metrics (L2, IP, COSINE)
+    - ✅ Hybrid search (vector + BM25 combination)
+    - ✅ Metadata search and filtering
+    - ✅ Batch document operations
+  - **New Features**:
+    - Automatic OpenAI embedding generation on document creation
+    - Support for both Milvus Local (Docker/Podman) and Milvus Cloud (Zilliz)
+    - `--milvus` flag support across all collection and document commands
+    - Local Milvus infrastructure with Docker Compose and Podman Compose
+    - Comprehensive health checks and container management utilities
+  - **New Adapter**: `src/pkg/vectordb/milvus/` package with complete VectorDB interface implementation
+    - `adapter.go`: Adapter wrapper with LLM client integration
+    - `client.go`: Milvus client implementation with connection management
+    - `collection.go`: Collection operations (create, list, delete, show, count)
+    - `document.go`: Document CRUD operations with embedding support
+    - `query.go`: Vector search, hybrid search, and metadata filtering
+    - `factory.go`: Factory pattern for Milvus adapter creation
+  - **Documentation**:
+    - `docs/milvus/README.md`: Comprehensive integration guide with examples
+    - `docs/milvus/LOCAL_SETUP.md`: Step-by-step setup for local Milvus development
+    - `docs/milvus/CLOUD_SETUP.md`: Complete guide for Zilliz Cloud setup
+    - `config.milvus-local.yaml`: Example configuration for local Milvus
+    - `config.milvus-cloud.yaml`: Example configuration for Milvus Cloud
+  - **Local Infrastructure**:
+    - `local/milvus/docker-compose.yml`: Docker Compose configuration
+    - `local/milvus/podman-compose.yml`: Podman Compose configuration
+    - `tools/vdb/local/milvus.sh`: Local Milvus management script
+    - `tools/vdb/health.sh`: VDB health check utilities
+    - `tools/vdb/container/`: Container detection and management utilities
+  - **Configuration Examples**:
+    - Updated `.env.example` with Milvus credentials template
+    - Updated `README.md` with Milvus setup instructions
+  - **E2E Testing**:
+    - `e2e-tests.sh`: Comprehensive end-to-end test suite for all VDBs
+    - Tests for Weaviate, Supabase, MongoDB, Milvus, and Mock VDBs
+    - Health checks, collection operations, and document operations
+
+### Changed
+
+- **Vector Database Support Maturity Levels**: Updated VDB_SUPPORT.md with Milvus support
+  - Weaviate: ✅ Production (fully tested and stable)
+  - Supabase: 🧪 Alpha (core functionality working, production readiness being evaluated)
+  - MongoDB: ✅ Fully Functional (complete with automatic embeddings and vector search)
+  - Milvus: ✅ Fully Functional (complete with automatic embeddings and vector search)
+  - Mock: ✅ Production (for testing purposes)
+- **Tools Directory Structure**: Reorganized tools directory for better organization
+  - `tools/demo/`: Demo recording and management tools
+  - `tools/dev/`: Development utilities (linting, formatting, license headers)
+  - `tools/vdb/`: Vector database management utilities
+- **Vector Database Types**: Added `milvus-local` and `milvus-cloud` to supported vector database types
+- **Factory Pattern**: Updated vectordb factory to support Milvus adapter registration
+- **Configuration Schema**: Extended `VectorDBConfig` with Milvus-specific fields
+
+### Technical Details
+
+- **Dependencies**: Added `github.com/milvus-io/milvus-sdk-go/v2` for Milvus client
+- **Files Added**: 6 new Milvus adapter files plus infrastructure and documentation
+- **Build Status**: ✅ Compiles successfully, all existing tests pass
+- **Vector Search**: Supports L2 (Euclidean), IP (Inner Product), and COSINE similarity metrics
+- **Embedding Dimensions**: Configurable (default: 1536 for OpenAI ada-002)
+- **Local Development**: Full Docker/Podman support for local Milvus instances
+
 ## [0.4.0] - 2025-11-15
 
 ### Added
