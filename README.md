@@ -433,6 +433,18 @@ See [demos/README.md](demos/README.md) for details.
 - **[Documentation](docs/)**
 - **[User Guide](docs/USER_GUIDE.md)**
 
+## Presentations
+
+Recent presentations about Weave CLI:
+
+- **[AI by the Bay (Nov 2025)](presentations/vdbs-ai-by-the-bay-11-25.pptx)** -
+  Vector database management with AI agents
+  - Event: [AI by the Bay Conference](https://ai.bythebay.io/)
+
+- **[SV AI Demo 2 (Nov 2025)](presentations/vdbs-svai-demo-11-25.pptx)** -
+  Multi-database vector management demo
+  - Event: [SV AI Demo Meetup](https://luma.com/bs4fkbjs?tk=bNbVMV)
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
