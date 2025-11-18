@@ -1,29 +1,30 @@
 # Vector Database Integration Planning
 
-Planning document for integrating Milvus, Qdrant, Redis, MongoDB, and Pinecone
+Planning document for integrating Milvus, Qdrant, Chroma, Redis, MongoDB, and Pinecone
 vector databases into Weave CLI.
 
 **Status**: Planning Phase
-**Target**: v0.4.0 - v0.8.0 (path to v1.0.0)
-**Last Updated**: 2025-11-14
+**Target**: v0.4.0 - v0.9.0 (path to v1.0.0)
+**Last Updated**: 2025-11-18
 
 ## Overview
 
-This document outlines the planned integration of five major vector databases to
+This document outlines the planned integration of six major vector databases to
 achieve v1.0.0 release:
 
 1. **Milvus** - Open-source, cloud-native vector database
 2. **Qdrant** - Open-source vector search engine with gRPC
-3. **Redis** - In-memory database with RediSearch vector capabilities
-4. **MongoDB** - Document database with Atlas Vector Search
-5. **Pinecone** - Managed vector database with serverless option
+3. **Chroma** - Open-source embedding database for AI applications
+4. **Redis** - In-memory database with RediSearch vector capabilities
+5. **MongoDB** - Document database with Atlas Vector Search
+6. **Pinecone** - Managed vector database with serverless option
 
 These were selected as they represent the top native vector databases outside of
 Weaviate, each with strong Go SDK support and active communities.
 
-**Priority Order**: Milvus → Qdrant → Redis → MongoDB → Pinecone
+**Priority Order**: Milvus → Qdrant → Chroma → Redis → MongoDB → Pinecone
 
-**v1.0.0 Release Goal**: Complete all five integrations with production-ready
+**v1.0.0 Release Goal**: Complete all six integrations with production-ready
 support, comprehensive documentation, and demos for each database.
 
 ---
@@ -244,7 +245,117 @@ type PineconeIndex struct {
 
 ---
 
-## 3. Qdrant Integration
+## 3. Chroma Integration
+
+### Overview
+
+- **License**: Apache 2.0 (Open Source)
+- **Company**: Chroma (backed by Astasia Myers, Quiet Capital)
+- **Go SDK**: `github.com/amikos-tech/chroma-go`
+- **Deployment**: Self-hosted, cloud-native (embedding database)
+- **Latest Version**: v0.5.0+ (actively maintained)
+- **Target Milestone**: v0.6.0
+
+### Key Features
+
+#### Core Capabilities
+
+- **Embedding-First Design**: Built specifically for AI applications with embeddings
+- **Simple API**: Pythonic design with minimal configuration
+- **Collections**: First-class collection management with metadata
+- **In-Memory + Persistent**: SQLite backend for persistence, optional DuckDB
+- **Multi-Modal**: Text, images, and custom embeddings
+- **Built-in Embeddings**: Support for OpenAI, Cohere, Sentence Transformers
+- **Filtering**: Metadata filtering with where clauses
+
+#### Advanced Features
+
+- **Multi-Tenancy**: Database-level isolation
+- **Embedding Functions**: Pluggable embedding generation
+- **Distance Metrics**: L2, cosine, inner product
+- **Query Results**: Returns documents + metadata + distances
+- **Update/Upsert**: Flexible document updates
+- **HNSW Index**: Fast approximate nearest neighbor search
+
+### API Design
+
+#### Configuration
+
+```go
+type ChromaConfig struct {
+    URL         string   // e.g., "http://localhost:8000"
+    Tenant      string   // Multi-tenancy support (default: "default_tenant")
+    Database    string   // Database name (default: "default_database")
+    APIKey      string   // Optional for cloud deployments
+    Timeout     int      // Request timeout (seconds)
+}
+```
+
+#### Collection Schema
+
+Chroma uses a simple collection model with automatic schema:
+
+```go
+type ChromaCollection struct {
+    Name            string
+    Metadata        map[string]interface{}  // Collection-level metadata
+    EmbeddingFunc   string                  // Optional embedding function
+    DistanceMetric  string                  // l2, cosine, ip
+}
+```
+
+#### Document Model
+
+```go
+type ChromaDocument struct {
+    ID          string                    // Document ID
+    Embedding   []float32                 // Vector embedding
+    Document    string                    // Text content
+    Metadata    map[string]interface{}    // Document metadata
+}
+```
+
+### Implementation Considerations
+
+#### Pros
+
+- ✅ **Open Source**: Apache 2.0, fully open and self-hostable
+- ✅ **Simple API**: Minimal configuration, easy to get started
+- ✅ **AI-First**: Designed for embedding-based AI applications
+- ✅ **Built-in Embeddings**: Supports multiple embedding providers
+- ✅ **Lightweight**: Easy to run locally (SQLite backend)
+- ✅ **Multi-Modal**: Text, images, custom embeddings
+- ✅ **Active Community**: Growing ecosystem, regular updates
+- ✅ **Go SDK Available**: Community-maintained Go client
+
+#### Challenges
+
+- ⚠️ **Community Go SDK**: Not official, maintained by community (amikos-tech)
+- ⚠️ **Limited Production Use**: Newer compared to Milvus/Qdrant
+- ⚠️ **No Native BM25**: Focus on vector search only
+- ⚠️ **Simpler Features**: Less advanced than Milvus (no geospatial, sparse vectors)
+- ⚠️ **SQLite Limitations**: Default backend may not scale to millions of vectors
+
+#### Migration Path
+
+1. Create `pkg/chroma/client.go` implementing `VectorDB` interface
+2. Add Chroma Go SDK: `github.com/amikos-tech/chroma-go`
+3. Map Weave collections → Chroma collections
+4. Handle metadata filtering (where clauses)
+5. Implement embedding generation (or use Chroma's built-in)
+6. Add Chroma to `VectorDBType` enum
+7. Support multi-tenancy (tenant/database isolation)
+
+### Testing Strategy
+
+- **Local**: Run Chroma server locally (Docker or binary)
+- **CI/CD**: Use Chroma Docker image in GitHub Actions
+- **Integration**: Test against latest Chroma release
+- **Embedding**: Test with OpenAI embeddings and custom embeddings
+
+---
+
+## 4. Qdrant Integration
 
 ### Overview
 
@@ -338,7 +449,7 @@ type QdrantCollection struct {
 
 ---
 
-## 4. Redis Integration
+## 5. Redis Integration
 
 ### Overview
 
@@ -443,7 +554,7 @@ type RedisIndex struct {
 
 ---
 
-## 5. MongoDB Atlas Vector Search Integration
+## 6. MongoDB Atlas Vector Search Integration
 
 ### Overview
 
@@ -634,21 +745,22 @@ weave search hybrid MyDocs "AI trends" --vdb mongodb --alpha 0.7
 
 ## Comparison Matrix
 
-| Feature | Milvus | Qdrant | Redis | MongoDB | Pinecone | Weaviate | Supabase |
-|---------|--------|--------|-------|---------|----------|----------|----------|
-| **License** | Apache 2.0 | Apache 2.0 | RSALv2/SSPL/AGPL | SSPL v1 | Proprietary | BSD-3 | PostgreSQL |
-| **Hosting** | Self/Cloud | Self/Cloud | Self/Cloud | Atlas (Managed) | Managed | Self/Cloud | Self/Cloud |
-| **Free Tier** | Self-hosted | Self-hosted | Self-hosted | 512MB (M0) | 2GB/2M writes | Self-hosted | 500MB |
-| **Go SDK** | Official | Official | go-redis | Official | Official | Official | via pgx |
-| **BM25 Search** | ✅ Native | ❌ | ✅ Native (FT) | ⚠️ Atlas Search | ⚠️ Keyword boost | ⚠️ Via plugin | ✅ Native |
-| **Hybrid Search** | ✅ | ❌ | ✅ Best-in-class | ✅ Pre-filter | ✅ | ✅ | ✅ |
-| **Geospatial** | ✅ | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ (PostGIS) |
-| **Multi-Vector** | ✅ | ✅ | ⚠️ Via metadata | ❌ | ⚠️ Metadata | ⚠️ Cross-ref | ❌ |
-| **RBAC** | ✅ | ⚠️ Limited | ⚠️ ACL only | ✅ | ✅ | ✅ | ✅ (RLS) |
-| **Max Dimensions** | 32768 | 65536 | No limit | **8192** | 20000 | 65535 | 2000 (pgvector) |
-| **Performance** | High | High | **Extreme** (in-mem) | High | High | High | Medium |
-| **Memory Cost** | Medium | Medium | **High** (all in-mem) | Low | N/A (managed) | Medium | Low |
-| **Complexity** | High | Medium | **Low** (familiar) | **Low** (familiar) | Low | Medium | Medium |
+| Feature | Milvus | Qdrant | Chroma | Redis | MongoDB | Pinecone | Weaviate | Supabase |
+|---------|--------|--------|--------|-------|---------|----------|----------|----------|
+| **License** | Apache 2.0 | Apache 2.0 | Apache 2.0 | RSALv2/SSPL/AGPL | SSPL v1 | Proprietary | BSD-3 | PostgreSQL |
+| **Hosting** | Self/Cloud | Self/Cloud | Self/Cloud | Self/Cloud | Atlas (Managed) | Managed | Self/Cloud | Self/Cloud |
+| **Free Tier** | Self-hosted | Self-hosted | Self-hosted | Self-hosted | 512MB (M0) | 2GB/2M writes | Self-hosted | 500MB |
+| **Go SDK** | Official | Official | Community | go-redis | Official | Official | Official | via pgx |
+| **BM25 Search** | ✅ Native | ❌ | ❌ | ✅ Native (FT) | ⚠️ Atlas Search | ⚠️ Keyword boost | ⚠️ Via plugin | ✅ Native |
+| **Hybrid Search** | ✅ | ❌ | ❌ | ✅ Best-in-class | ✅ Pre-filter | ✅ | ✅ | ✅ |
+| **Geospatial** | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ (PostGIS) |
+| **Multi-Vector** | ✅ | ✅ | ⚠️ Multi-modal | ⚠️ Via metadata | ❌ | ⚠️ Metadata | ⚠️ Cross-ref | ❌ |
+| **RBAC** | ✅ | ⚠️ Limited | ⚠️ API Key only | ⚠️ ACL only | ✅ | ✅ | ✅ | ✅ (RLS) |
+| **Max Dimensions** | 32768 | 65536 | No limit | No limit | **8192** | 20000 | 65535 | 2000 (pgvector) |
+| **Performance** | High | High | Medium | **Extreme** (in-mem) | High | High | High | Medium |
+| **Memory Cost** | Medium | Medium | **Low** (SQLite) | **High** (all in-mem) | Low | N/A (managed) | Medium | Low |
+| **Complexity** | High | Medium | **Low** (simple) | **Low** (familiar) | **Low** (familiar) | Low | Medium | Medium |
+| **AI-First** | ✅ | ✅ | **✅ Built-in** | ❌ | ❌ | ✅ | ✅ | ⚠️ Extension |
 
 ---
 
@@ -702,7 +814,30 @@ for users who want performance + self-hosting.
 - Point-based model working correctly
 - Integration tests passing with Qdrant Docker
 
-### Phase 3: Redis (v0.6.0) - ~1-2 weeks
+### Phase 3: Chroma (v0.6.0) - ~1 week
+
+**Rationale**: Simple, AI-first embedding database with growing community,
+perfect for developers building AI applications who want minimal setup.
+
+**Tasks**:
+- [ ] Add Chroma Go SDK dependency (`github.com/amikos-tech/chroma-go`)
+- [ ] Implement `ChromaClient` with `VectorDB` interface
+- [ ] Map Weave collections → Chroma collections
+- [ ] Handle metadata filtering (where clauses)
+- [ ] Implement embedding generation (OpenAI integration)
+- [ ] Support multi-tenancy (tenant/database)
+- [ ] Implement CRUD operations
+- [ ] Write unit tests
+- [ ] Write integration tests (Docker-based)
+- [ ] Update documentation
+- [ ] Create Chroma demo script
+
+**Success Criteria**:
+- All VectorDB interface methods implemented
+- Metadata filtering working correctly
+- Integration tests passing with Chroma Docker
+
+### Phase 4: Redis (v0.7.0) - ~1-2 weeks
 
 **Rationale**: In-memory speed for real-time applications, familiar to many
 developers, best-in-class hybrid search.
@@ -726,7 +861,7 @@ developers, best-in-class hybrid search.
 - Hybrid search (vector + FT) working
 - Integration tests passing with Redis Docker
 
-### Phase 4: MongoDB (v0.7.0) - ~1-2 weeks
+### Phase 5: MongoDB (v0.8.0) - ~1-2 weeks
 
 **Rationale**: Popular document database, familiar to many developers, good for
 combining vector search with rich document queries.
@@ -749,7 +884,7 @@ combining vector search with rich document queries.
 - Pre-filtering working correctly
 - Integration tests passing with MongoDB Atlas
 
-### Phase 5: Pinecone (v0.8.0) - ~1-2 weeks
+### Phase 6: Pinecone (v0.9.0) - ~1-2 weeks
 
 **Rationale**: Fully managed service, zero infrastructure, good for users who
 want simplicity and scale without ops overhead.
@@ -819,6 +954,8 @@ Each implementation must have:
 - [ ] `docs/milvus/SETUP.md` - Setup instructions
 - [ ] `docs/qdrant/README.md` - Qdrant integration guide
 - [ ] `docs/qdrant/SETUP.md` - Setup instructions
+- [ ] `docs/chroma/README.md` - Chroma integration guide
+- [ ] `docs/chroma/SETUP.md` - Setup instructions
 - [ ] `docs/redis/README.md` - Redis integration guide
 - [ ] `docs/redis/LICENSE.md` - License considerations (RSALv2/SSPL/AGPL)
 - [ ] `docs/mongodb/README.md` - MongoDB Atlas integration guide
@@ -830,6 +967,7 @@ Each implementation must have:
 
 - [ ] `demos/milvus-demo.sh` - Milvus feature demo
 - [ ] `demos/qdrant-demo.sh` - Qdrant feature demo
+- [ ] `demos/chroma-demo.sh` - Chroma feature demo
 - [ ] `demos/redis-demo.sh` - Redis feature demo
 - [ ] `demos/mongodb-demo.sh` - MongoDB Atlas feature demo
 - [ ] `demos/pinecone-demo.sh` - Pinecone feature demo
@@ -884,6 +1022,15 @@ Each implementation must have:
 - ✅ All VectorDB interface methods implemented
 - ✅ gRPC client working
 - ✅ Filtering support complete
+- ✅ Test coverage >80%
+- ✅ Demo script created
+
+### Chroma Integration
+
+- ✅ All VectorDB interface methods implemented
+- ✅ Metadata filtering working
+- ✅ Built-in embedding support
+- ✅ Multi-tenancy support
 - ✅ Test coverage >80%
 - ✅ Demo script created
 
@@ -951,6 +1098,13 @@ Each implementation must have:
 - Official Docs: https://qdrant.tech/documentation
 - Go Client: https://github.com/qdrant/go-client
 - GitHub: https://github.com/qdrant/qdrant
+
+### Chroma
+
+- Official Docs: https://docs.trychroma.com
+- Go SDK: https://github.com/amikos-tech/chroma-go
+- GitHub: https://github.com/chroma-core/chroma
+- Website: https://www.trychroma.com
 
 ### Redis
 
