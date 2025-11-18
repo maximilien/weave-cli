@@ -52,8 +52,9 @@ logs/
 tmp/
 temp/
 
-# TODOs.md should not be committed
+# Working documents (personal planning, not for public repo)
 TODOs.md
+NEXT_STEPS.md
 
 # Test artifacts
 test-results/
