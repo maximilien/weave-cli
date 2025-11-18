@@ -1,30 +1,31 @@
 # Vector Database Integration Planning
 
-Planning document for integrating Milvus, Qdrant, Chroma, Redis, MongoDB, and Pinecone
+Planning document for integrating Milvus, Qdrant, Chroma, Neo4j, Redis, MongoDB, and Pinecone
 vector databases into Weave CLI.
 
 **Status**: Planning Phase
-**Target**: v0.4.0 - v0.9.0 (path to v1.0.0)
+**Target**: v0.4.0 - v1.0.0 (path to v1.0.0)
 **Last Updated**: 2025-11-18
 
 ## Overview
 
-This document outlines the planned integration of six major vector databases to
+This document outlines the planned integration of seven major vector databases to
 achieve v1.0.0 release:
 
 1. **Milvus** - Open-source, cloud-native vector database
 2. **Qdrant** - Open-source vector search engine with gRPC
 3. **Chroma** - Open-source embedding database for AI applications
-4. **Redis** - In-memory database with RediSearch vector capabilities
-5. **MongoDB** - Document database with Atlas Vector Search
-6. **Pinecone** - Managed vector database with serverless option
+4. **Neo4j** - Graph database with native vector search (unique hybrid use case)
+5. **Redis** - In-memory database with RediSearch vector capabilities
+6. **MongoDB** - Document database with Atlas Vector Search
+7. **Pinecone** - Managed vector database with serverless option
 
 These were selected as they represent the top native vector databases outside of
 Weaviate, each with strong Go SDK support and active communities.
 
-**Priority Order**: Milvus → Qdrant → Chroma → Redis → MongoDB → Pinecone
+**Priority Order**: Milvus → Qdrant → Chroma → Neo4j → Redis → MongoDB → Pinecone
 
-**v1.0.0 Release Goal**: Complete all six integrations with production-ready
+**v1.0.0 Release Goal**: Complete all seven integrations with production-ready
 support, comprehensive documentation, and demos for each database.
 
 ---
@@ -355,7 +356,188 @@ type ChromaDocument struct {
 
 ---
 
-## 4. Qdrant Integration
+## 4. Neo4j Integration
+
+### Overview
+
+- **License**: GPL v3 (Community Edition) / Commercial (Enterprise Edition)
+- **Company**: Neo4j, Inc. (founded 2007)
+- **Go SDK**: `github.com/neo4j/neo4j-go-driver/v5`
+- **Deployment**: Self-hosted (Community/Enterprise) or Neo4j Aura (cloud)
+- **Latest Version**: v5.23+ (actively maintained)
+- **Target Milestone**: v0.7.0
+
+### Positioning & Use Case
+
+**Important**: Neo4j is **not a pure vector database**. It's a **graph database with vector search capabilities**.
+
+**Best for**:
+- Applications that need **both** graph relationships AND vector similarity search
+- Knowledge graphs for RAG applications
+- Recommendation systems combining social graphs with semantic similarity
+- Fraud detection with network analysis + pattern matching
+- Supply chain analysis with relationship traversal + similarity search
+
+**Not ideal for**:
+- Pure vector search workloads (use Milvus, Qdrant, or Chroma instead)
+- Applications without relationship/graph requirements
+- High-performance vector-only operations at scale
+
+### Key Features
+
+#### Core Graph Capabilities
+
+- **Native Graph Storage**: Optimized for storing and querying connected data
+- **Cypher Query Language**: Expressive pattern matching for graph traversal
+- **ACID Transactions**: Full transactional consistency
+- **Property Graph Model**: Nodes and relationships with properties
+- **Multi-hop Queries**: Efficient relationship traversal (shortest path, etc.)
+
+#### Vector Search Capabilities (Added 2023)
+
+- **HNSW Indexing**: Hierarchical Navigable Small World for ANN search
+- **Vector Dimensions**: Up to 4096 dimensions
+- **Distance Metrics**: Cosine similarity, Euclidean distance
+- **Quantization**: Performance optimization (added v5.23)
+- **Hybrid Queries**: Combine graph patterns with vector similarity in single query
+- **Vector on Nodes & Relationships**: Index vectors on both entities
+
+#### Advanced Features
+
+- **Built-in ML Integration**: OpenAI, Azure OpenAI, AWS Bedrock, Google Vertex AI
+- **Similarity Functions**: Compute cosine angle and Euclidean distance
+- **Graph Data Science**: 65+ algorithms for centrality, community detection, etc.
+- **Multi-Database**: Manage multiple isolated databases in single instance
+
+### API Design
+
+#### Configuration
+
+```go
+type Neo4jConfig struct {
+    URI         string   // e.g., "neo4j://localhost:7687" or "neo4j+s://xxx.databases.neo4j.io"
+    Username    string   // Default: "neo4j"
+    Password    string   // Required
+    Database    string   // Optional (default: "neo4j")
+    Realm       string   // Optional for enterprise auth
+    Encrypted   bool     // TLS encryption (required for Aura)
+    MaxConnPool int      // Connection pool size
+}
+```
+
+#### Collection Schema
+
+Neo4j uses labels for collections (node types):
+
+```go
+type Neo4jCollection struct {
+    Label           string                    // Node label (e.g., "Document")
+    VectorProperty  string                    // Property name for vector (e.g., "embedding")
+    VectorDimension int                       // Dimension of vectors
+    Similarity      string                    // "cosine" or "euclidean"
+    IndexName       string                    // Name of vector index
+    Metadata        map[string]interface{}    // Additional properties schema
+}
+```
+
+#### Document Model
+
+```go
+type Neo4jDocument struct {
+    ID          string                    // Node ID (UUID or custom)
+    Label       string                    // Node label
+    Embedding   []float32                 // Vector embedding
+    Content     string                    // Document content
+    Properties  map[string]interface{}    // Metadata properties
+    Relations   []Relationship            // Optional: relationships to other nodes
+}
+
+type Relationship struct {
+    Type       string                    // Relationship type (e.g., "SIMILAR_TO")
+    TargetID   string                    // Target node ID
+    Properties map[string]interface{}    // Relationship properties
+}
+```
+
+#### Hybrid Query Example
+
+```cypher
+// Find similar documents that are also authored by connected users
+MATCH (d:Document)
+WHERE d.author_id IN [connected_user_ids]
+CALL db.index.vector.queryNodes('document_embeddings', 5, $queryEmbedding)
+YIELD node, score
+WHERE node = d
+RETURN node, score
+ORDER BY score DESC
+LIMIT 5
+```
+
+### Implementation Considerations
+
+#### Pros
+
+- ✅ **Official Go Driver**: Well-maintained by Neo4j, supports v5.23+
+- ✅ **Unique Hybrid Capability**: Only DB that combines graph + vector natively
+- ✅ **Mature Ecosystem**: 15+ years of development, enterprise-ready
+- ✅ **Expressive Queries**: Cypher enables complex graph+vector queries
+- ✅ **Cloud Option**: Neo4j Aura (managed) with free tier
+- ✅ **Built-in ML**: Integrated embedding generation with major providers
+- ✅ **ACID Compliance**: Strong transactional guarantees
+- ✅ **Active Development**: Regular updates, vector features improving
+
+#### Challenges
+
+- ⚠️ **Not Specialized for Vector Search**: Slower than dedicated vector DBs at scale
+- ⚠️ **Dimension Limit**: 4096 max (lower than Milvus: 32768, Qdrant: 65536)
+- ⚠️ **License Complexity**: GPL v3 (Community) requires careful consideration for commercial use
+  - Enterprise Edition is commercial (paid)
+  - Aura cloud has different pricing model
+- ⚠️ **Learning Curve**: Cypher query language is powerful but requires learning
+- ⚠️ **Resource Requirements**: Higher memory/CPU than pure vector DBs
+- ⚠️ **Different Abstraction**: Graph model doesn't map 1:1 to simple collections
+- ⚠️ **Setup Complexity**: More involved than lightweight options (Chroma)
+
+#### Migration Path
+
+1. Create `pkg/neo4j/client.go` implementing `VectorDB` interface
+2. Add Neo4j Go driver: `github.com/neo4j/neo4j-go-driver/v5`
+3. Map Weave collections → Neo4j node labels
+4. Map documents → nodes with vector property
+5. Handle Cypher query generation for vector search
+6. Implement vector index creation/management
+7. Add Neo4j to `VectorDBType` enum
+8. Support both local Neo4j and Aura cloud
+9. **Document limitations**: Clearly explain when to use vs. pure vector DBs
+
+### Testing Strategy
+
+- **Local**: Docker with Neo4j Community Edition
+- **Cloud**: Neo4j Aura free tier for integration tests
+- **CI/CD**: Use Neo4j Docker image in GitHub Actions
+- **Integration**: Test vector search + graph queries
+- **Embedding**: Test with OpenAI embeddings and custom vectors
+- **Hybrid Queries**: Test combined graph traversal + vector similarity
+
+### Important Notes for Users
+
+**When to choose Neo4j**:
+- ✅ You need to model complex relationships between entities
+- ✅ You want to combine "similar to" with "connected to" queries
+- ✅ Building knowledge graphs for RAG applications
+- ✅ Recommendation systems with social/network components
+- ✅ Already using Neo4j and want to add vector capabilities
+
+**When NOT to choose Neo4j**:
+- ❌ Pure vector search without relationship requirements
+- ❌ Need for extreme vector search performance at billion-scale
+- ❌ Require >4096 dimensions
+- ❌ Want simplest possible setup (use Chroma instead)
+- ❌ Need specialized vector features (sparse vectors, geospatial)
+
+---
+
+## 5. Qdrant Integration
 
 ### Overview
 
@@ -449,7 +631,7 @@ type QdrantCollection struct {
 
 ---
 
-## 5. Redis Integration
+## 6. Redis Integration
 
 ### Overview
 
@@ -554,7 +736,7 @@ type RedisIndex struct {
 
 ---
 
-## 6. MongoDB Atlas Vector Search Integration
+## 7. MongoDB Atlas Vector Search Integration
 
 ### Overview
 
@@ -745,22 +927,25 @@ weave search hybrid MyDocs "AI trends" --vdb mongodb --alpha 0.7
 
 ## Comparison Matrix
 
-| Feature | Milvus | Qdrant | Chroma | Redis | MongoDB | Pinecone | Weaviate | Supabase |
-|---------|--------|--------|--------|-------|---------|----------|----------|----------|
-| **License** | Apache 2.0 | Apache 2.0 | Apache 2.0 | RSALv2/SSPL/AGPL | SSPL v1 | Proprietary | BSD-3 | PostgreSQL |
-| **Hosting** | Self/Cloud | Self/Cloud | Self/Cloud | Self/Cloud | Atlas (Managed) | Managed | Self/Cloud | Self/Cloud |
-| **Free Tier** | Self-hosted | Self-hosted | Self-hosted | Self-hosted | 512MB (M0) | 2GB/2M writes | Self-hosted | 500MB |
-| **Go SDK** | Official | Official | Community | go-redis | Official | Official | Official | via pgx |
-| **BM25 Search** | ✅ Native | ❌ | ❌ | ✅ Native (FT) | ⚠️ Atlas Search | ⚠️ Keyword boost | ⚠️ Via plugin | ✅ Native |
-| **Hybrid Search** | ✅ | ❌ | ❌ | ✅ Best-in-class | ✅ Pre-filter | ✅ | ✅ | ✅ |
-| **Geospatial** | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ (PostGIS) |
-| **Multi-Vector** | ✅ | ✅ | ⚠️ Multi-modal | ⚠️ Via metadata | ❌ | ⚠️ Metadata | ⚠️ Cross-ref | ❌ |
-| **RBAC** | ✅ | ⚠️ Limited | ⚠️ API Key only | ⚠️ ACL only | ✅ | ✅ | ✅ | ✅ (RLS) |
-| **Max Dimensions** | 32768 | 65536 | No limit | No limit | **8192** | 20000 | 65535 | 2000 (pgvector) |
-| **Performance** | High | High | Medium | **Extreme** (in-mem) | High | High | High | Medium |
-| **Memory Cost** | Medium | Medium | **Low** (SQLite) | **High** (all in-mem) | Low | N/A (managed) | Medium | Low |
-| **Complexity** | High | Medium | **Low** (simple) | **Low** (familiar) | **Low** (familiar) | Low | Medium | Medium |
-| **AI-First** | ✅ | ✅ | **✅ Built-in** | ❌ | ❌ | ✅ | ✅ | ⚠️ Extension |
+| Feature | Milvus | Qdrant | Chroma | Neo4j | Redis | MongoDB | Pinecone | Weaviate | Supabase |
+|---------|--------|--------|--------|-------|-------|---------|----------|----------|----------|
+| **License** | Apache 2.0 | Apache 2.0 | Apache 2.0 | GPL v3/Commercial | RSALv2/SSPL/AGPL | SSPL v1 | Proprietary | BSD-3 | PostgreSQL |
+| **Hosting** | Self/Cloud | Self/Cloud | Self/Cloud | Self/Cloud (Aura) | Self/Cloud | Atlas (Managed) | Managed | Self/Cloud | Self/Cloud |
+| **Free Tier** | Self-hosted | Self-hosted | Self-hosted | Aura Free | Self-hosted | 512MB (M0) | 2GB/2M writes | Self-hosted | 500MB |
+| **Go SDK** | Official | Official | Community | Official | go-redis | Official | Official | Official | via pgx |
+| **Primary Type** | Vector DB | Vector DB | Vector DB | **Graph DB** | Cache/DB | Document DB | Vector DB | Vector DB | PostgreSQL |
+| **Vector Search** | ✅ Native | ✅ Native | ✅ Native | ✅ HNSW (2023+) | ✅ Native | ✅ Atlas VS | ✅ Native | ✅ Native | ✅ pgvector |
+| **Graph Queries** | ❌ | ❌ | ❌ | **✅ Cypher** | ❌ | ❌ | ❌ | ⚠️ Limited | ❌ |
+| **BM25 Search** | ✅ Native | ❌ | ❌ | ❌ | ✅ Native (FT) | ⚠️ Atlas Search | ⚠️ Keyword boost | ⚠️ Via plugin | ✅ Native |
+| **Hybrid Search** | ✅ | ❌ | ❌ | **✅ Graph+Vector** | ✅ Best-in-class | ✅ Pre-filter | ✅ | ✅ | ✅ |
+| **Geospatial** | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ (PostGIS) |
+| **Multi-Vector** | ✅ | ✅ | ⚠️ Multi-modal | ⚠️ Via properties | ⚠️ Via metadata | ❌ | ⚠️ Metadata | ⚠️ Cross-ref | ❌ |
+| **RBAC** | ✅ | ⚠️ Limited | ⚠️ API Key only | ✅ Enterprise | ⚠️ ACL only | ✅ | ✅ | ✅ | ✅ (RLS) |
+| **Max Dimensions** | 32768 | 65536 | No limit | **4096** | No limit | **8192** | 20000 | 65535 | 2000 (pgvector) |
+| **Performance** | High | High | Medium | Medium (graph-optimized) | **Extreme** (in-mem) | High | High | High | Medium |
+| **Memory Cost** | Medium | Medium | **Low** (SQLite) | Medium-High | **High** (all in-mem) | Low | N/A (managed) | Medium | Low |
+| **Complexity** | High | Medium | **Low** (simple) | **High** (Cypher) | **Low** (familiar) | **Low** (familiar) | Low | Medium | Medium |
+| **Best For** | Scale+Features | Performance+Self-host | AI Apps+Simple | **Graph+Vector** | Real-time+Speed | Document+Vector | Managed+Simple | Production | PostgreSQL Users |
 
 ---
 
@@ -837,7 +1022,33 @@ perfect for developers building AI applications who want minimal setup.
 - Metadata filtering working correctly
 - Integration tests passing with Chroma Docker
 
-### Phase 4: Redis (v0.7.0) - ~1-2 weeks
+### Phase 4: Neo4j (v0.7.0) - ~1-2 weeks
+
+**Rationale**: Unique graph + vector hybrid capability, perfect for knowledge
+graphs and RAG applications requiring relationship modeling.
+
+**Tasks**:
+- [ ] Add Neo4j Go driver dependency (`github.com/neo4j/neo4j-go-driver/v5`)
+- [ ] Implement `Neo4jClient` with `VectorDB` interface
+- [ ] Map Weave collections → Neo4j node labels
+- [ ] Map documents → nodes with vector property
+- [ ] Handle Cypher query generation for vector search
+- [ ] Implement vector index creation/management
+- [ ] Support both Neo4j Community and Aura cloud
+- [ ] Add graph relationship support (optional feature)
+- [ ] Write unit tests
+- [ ] Write integration tests (Docker + Aura)
+- [ ] Update documentation (with clear positioning/caveats)
+- [ ] Create Neo4j demo script (graph + vector examples)
+
+**Success Criteria**:
+- All VectorDB interface methods implemented
+- Vector search working with HNSW indexing
+- Hybrid graph+vector queries demonstrated
+- Clear documentation on when to use vs. pure vector DBs
+- Integration tests passing with Neo4j Docker
+
+### Phase 5: Redis (v0.8.0) - ~1-2 weeks
 
 **Rationale**: In-memory speed for real-time applications, familiar to many
 developers, best-in-class hybrid search.
@@ -861,7 +1072,7 @@ developers, best-in-class hybrid search.
 - Hybrid search (vector + FT) working
 - Integration tests passing with Redis Docker
 
-### Phase 5: MongoDB (v0.8.0) - ~1-2 weeks
+### Phase 6: MongoDB (v0.9.0) - ~1-2 weeks
 
 **Rationale**: Popular document database, familiar to many developers, good for
 combining vector search with rich document queries.
@@ -884,7 +1095,7 @@ combining vector search with rich document queries.
 - Pre-filtering working correctly
 - Integration tests passing with MongoDB Atlas
 
-### Phase 6: Pinecone (v0.9.0) - ~1-2 weeks
+### Phase 7: Pinecone (v1.0.0) - ~1-2 weeks
 
 **Rationale**: Fully managed service, zero infrastructure, good for users who
 want simplicity and scale without ops overhead.
@@ -956,6 +1167,9 @@ Each implementation must have:
 - [ ] `docs/qdrant/SETUP.md` - Setup instructions
 - [ ] `docs/chroma/README.md` - Chroma integration guide
 - [ ] `docs/chroma/SETUP.md` - Setup instructions
+- [ ] `docs/neo4j/README.md` - Neo4j integration guide (with positioning)
+- [ ] `docs/neo4j/SETUP.md` - Setup instructions (Community + Aura)
+- [ ] `docs/neo4j/WHEN_TO_USE.md` - Guide on when to use Neo4j vs. pure vector DBs
 - [ ] `docs/redis/README.md` - Redis integration guide
 - [ ] `docs/redis/LICENSE.md` - License considerations (RSALv2/SSPL/AGPL)
 - [ ] `docs/mongodb/README.md` - MongoDB Atlas integration guide
@@ -968,6 +1182,7 @@ Each implementation must have:
 - [ ] `demos/milvus-demo.sh` - Milvus feature demo
 - [ ] `demos/qdrant-demo.sh` - Qdrant feature demo
 - [ ] `demos/chroma-demo.sh` - Chroma feature demo
+- [ ] `demos/neo4j-demo.sh` - Neo4j graph + vector demo
 - [ ] `demos/redis-demo.sh` - Redis feature demo
 - [ ] `demos/mongodb-demo.sh` - MongoDB Atlas feature demo
 - [ ] `demos/pinecone-demo.sh` - Pinecone feature demo
@@ -1033,6 +1248,17 @@ Each implementation must have:
 - ✅ Multi-tenancy support
 - ✅ Test coverage >80%
 - ✅ Demo script created
+
+### Neo4j Integration
+
+- ✅ All VectorDB interface methods implemented
+- ✅ Vector search with HNSW working
+- ✅ Cypher query generation functional
+- ✅ Graph + vector hybrid queries demonstrated
+- ✅ Clear positioning documentation (when to use vs. pure vector DBs)
+- ✅ Support for both Community and Aura
+- ✅ Test coverage >80%
+- ✅ Demo script with graph + vector examples
 
 ### Redis Integration
 
@@ -1105,6 +1331,15 @@ Each implementation must have:
 - Go SDK: https://github.com/amikos-tech/chroma-go
 - GitHub: https://github.com/chroma-core/chroma
 - Website: https://www.trychroma.com
+
+### Neo4j
+
+- Official Docs: https://neo4j.com/docs/
+- Vector Search Guide: https://neo4j.com/labs/genai-ecosystem/vector-search/
+- Go Driver: https://github.com/neo4j/neo4j-go-driver
+- Go Driver Docs: https://neo4j.com/docs/go-manual/current/
+- Aura Cloud: https://neo4j.com/cloud/aura/
+- Cypher Manual: https://neo4j.com/docs/cypher-manual/current/
 
 ### Redis
 
