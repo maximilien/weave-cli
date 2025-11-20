@@ -125,6 +125,10 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 		// MongoDB collections don't have separate schemas
 		utils.PrintWarning("MongoDB collections don't have separate schemas to delete")
 		return
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+		// Milvus collections don't have separate schemas - use collection delete instead
+		utils.PrintWarning("Milvus collections don't have separate schemas. Use 'weave cols delete' to delete collections.")
+		return
 	case config.VectorDBTypeMock:
 		// Mock collections don't have separate schemas
 		utils.PrintWarning("Mock collections don't have separate schemas to delete")
