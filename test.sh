@@ -62,6 +62,7 @@ print_help() {
     echo "  --supabase  Run only Supabase integration tests"
     echo "  --mongodb   Run only MongoDB integration tests"
     echo "  --mcp       Run only MCP integration tests"
+    echo "  --skip      Skip specified tests (e.g., --skip mcp weaviate)"
     echo ""
     echo "Examples:"
     echo "  ./test.sh unit                    # Run only unit tests"
@@ -71,6 +72,7 @@ print_help() {
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
     echo "  ./test.sh integration --mongodb   # Run only MongoDB integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
+    echo "  ./test.sh integration --skip mcp weaviate  # Skip MCP and Weaviate tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all                     # Run all tests"
     echo "  ./test.sh coverage                # Run tests with coverage report"
@@ -170,6 +172,13 @@ run_integration_tests() {
     local total_suites=0
     local passed_suites=0
     local failed_suites=0
+    local skipped_suites=0
+
+    # Arrays to track results per VDB
+    declare -a vdb_names=()
+    declare -a vdb_status=()
+    declare -a vdb_passed=()
+    declare -a vdb_failed=()
 
     # Parse integration test flags
     local run_weaviate=false
@@ -179,8 +188,41 @@ run_integration_tests() {
     local run_mcp=false
     local run_all=true
 
+    # Skip flags
+    local skip_weaviate=false
+    local skip_milvus=false
+    local skip_supabase=false
+    local skip_mongodb=false
+    local skip_mcp=false
+    local in_skip_mode=false
+
     # Check for specific flags
     for arg in "$@"; do
+        # Check if we're in skip mode (collecting tests to skip)
+        if [ "$in_skip_mode" = true ]; then
+            case "$arg" in
+                weaviate)
+                    skip_weaviate=true
+                    ;;
+                milvus)
+                    skip_milvus=true
+                    ;;
+                supabase)
+                    skip_supabase=true
+                    ;;
+                mongodb)
+                    skip_mongodb=true
+                    ;;
+                mcp)
+                    skip_mcp=true
+                    ;;
+                --*)
+                    # New flag, exit skip mode
+                    in_skip_mode=false
+                    ;;
+            esac
+        fi
+
         case "$arg" in
             --weaviate)
                 run_weaviate=true
@@ -201,6 +243,9 @@ run_integration_tests() {
             --mcp)
                 run_mcp=true
                 run_all=false
+                ;;
+            --skip)
+                in_skip_mode=true
                 ;;
         esac
     done
@@ -225,41 +270,104 @@ run_integration_tests() {
         fi
     fi
 
+    # Apply skip flags
+    if [ "$skip_weaviate" = true ]; then
+        run_weaviate=false
+        print_status "Skipping Weaviate tests (--skip)"
+    fi
+    if [ "$skip_milvus" = true ]; then
+        run_milvus=false
+        print_status "Skipping Milvus tests (--skip)"
+    fi
+    if [ "$skip_supabase" = true ]; then
+        run_supabase=false
+        print_status "Skipping Supabase tests (--skip)"
+    fi
+    if [ "$skip_mongodb" = true ]; then
+        run_mongodb=false
+        print_status "Skipping MongoDB tests (--skip)"
+    fi
+    if [ "$skip_mcp" = true ]; then
+        run_mcp=false
+        print_status "Skipping MCP tests (--skip)"
+    fi
+
     # Run Weaviate integration tests if requested
     if [ "$run_weaviate" = true ]; then
         if [ -n "$WEAVIATE_URL" ] && [ -n "$WEAVIATE_API_KEY" ] && [ -n "$OPENAI_API_KEY" ]; then
             print_status "Running Weaviate integration tests..."
             total_suites=$((total_suites + 1))
-            # Exclude the comprehensive test that's failing
-            if go test -v -timeout=2m ./tests/... -run="TestWeaviate(Integration|FactoryIntegration|VectorDBRegistry|ConnectionSpeed|ErrorHandling)$"; then
+            vdb_names+=("Weaviate")
+            # Capture test output to count tests
+            output=$(go test -v -timeout=2m ./tests/... -run="TestWeaviate(Integration|FactoryIntegration|VectorDBRegistry|ConnectionSpeed|ErrorHandling)$" 2>&1)
+            exit_code=$?
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
                 print_success "Weaviate integration tests passed!"
                 passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
             else
                 print_warning "Weaviate integration tests failed"
                 failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
             fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            echo "$output"
         else
             print_warning "Skipping Weaviate integration tests - credentials not configured"
             print_status "Set WEAVIATE_URL, WEAVIATE_API_KEY, and OPENAI_API_KEY to run Weaviate tests"
+            vdb_names+=("Weaviate")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
         fi
     fi
 
     # Run Milvus integration tests if requested
     if [ "$run_milvus" = true ]; then
-        # Check if Milvus is running locally
+        # Check if Milvus is running locally or cloud credentials exist
+        local milvus_available=false
         if ./tools/vdb/local/milvus.sh status &>/dev/null; then
+            milvus_available=true
+        fi
+
+        if [ "$milvus_available" = true ] || [ -n "$MILVUS_CLOUD_ADDRESS" ]; then
             print_status "Running Milvus integration tests..."
             total_suites=$((total_suites + 1))
-            if go test -v -timeout=2m ./tests/... -run="TestMilvus"; then
+            vdb_names+=("Milvus")
+            output=$(go test -v -timeout=2m ./tests/... -run="TestMilvus" 2>&1)
+            exit_code=$?
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
                 print_success "Milvus integration tests passed!"
                 passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
             else
                 print_warning "Milvus integration tests failed"
                 failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
             fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            echo "$output"
         else
             print_warning "Skipping Milvus integration tests - Milvus not running"
             print_status "Start Milvus with: ./tools/vdb/local/milvus.sh start"
+            vdb_names+=("Milvus")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
         fi
     fi
 
@@ -268,16 +376,34 @@ run_integration_tests() {
         if [ -n "$SUPABASE_DATABASE_URL" ] && [ -n "$SUPABASE_DATABASE_KEY" ]; then
             print_status "Running Supabase integration tests..."
             total_suites=$((total_suites + 1))
-            if go test -v -timeout=2m ./tests/... -run="TestSupabase"; then
+            vdb_names+=("Supabase")
+            output=$(go test -v -timeout=2m ./tests/... -run="TestSupabase" 2>&1)
+            exit_code=$?
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
                 print_success "Supabase integration tests passed!"
                 passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
             else
                 print_warning "Supabase integration tests failed"
                 failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
             fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            echo "$output"
         else
             print_warning "Skipping Supabase integration tests - credentials not configured"
             print_status "Set SUPABASE_DATABASE_URL and SUPABASE_DATABASE_KEY to run Supabase tests"
+            vdb_names+=("Supabase")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
         fi
     fi
 
@@ -286,16 +412,34 @@ run_integration_tests() {
         if [ -n "$MONGODB_URI" ]; then
             print_status "Running MongoDB integration tests..."
             total_suites=$((total_suites + 1))
-            if go test -v -timeout=2m ./tests/... -run="TestMongoDB"; then
+            vdb_names+=("MongoDB")
+            output=$(go test -v -timeout=2m ./tests/... -run="TestMongoDB" 2>&1)
+            exit_code=$?
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
                 print_success "MongoDB integration tests passed!"
                 passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
             else
                 print_warning "MongoDB integration tests failed"
                 failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
             fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            echo "$output"
         else
             print_warning "Skipping MongoDB integration tests - credentials not configured"
             print_status "Set MONGODB_URI and MONGODB_DATABASE to run MongoDB tests"
+            vdb_names+=("MongoDB")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
         fi
     fi
 
@@ -304,30 +448,103 @@ run_integration_tests() {
         if [ -n "$OPENAI_API_KEY" ] && [ -n "$WEAVE_MCP_STDIO_PATH" ]; then
             print_status "Running MCP integration tests..."
             total_suites=$((total_suites + 1))
-            if go test -v -tags=integration -timeout=5m ./tests -run="TestMCP"; then
+            vdb_names+=("MCP")
+            output=$(go test -v -tags=integration -timeout=5m ./tests -run="TestMCP" 2>&1)
+            exit_code=$?
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
                 print_success "MCP integration tests passed!"
                 passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
             else
                 print_warning "MCP integration tests failed"
                 failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
             fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            echo "$output"
         else
             print_warning "Skipping MCP integration tests - configuration not provided"
             print_status "Set OPENAI_API_KEY and WEAVE_MCP_STDIO_PATH to run MCP tests"
+            vdb_names+=("MCP")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
         fi
     fi
 
-    # Print summary
+    # Print detailed summary
     echo ""
-    print_header "Integration Test Summary"
-    echo "  Total test suites: $total_suites"
-    echo -e "  ${GREEN}Passed: $passed_suites${NC}"
-    echo -e "  ${RED}Failed: $failed_suites${NC}"
-    if [ $failed_suites -eq 0 ]; then
-        print_success "All integration test suites passed!"
+    echo ""
+    print_header "═══════════════════════════════════════════════════════════════"
+    print_header "                    INTEGRATION TEST SUMMARY                    "
+    print_header "═══════════════════════════════════════════════════════════════"
+    echo ""
+
+    # Print table header
+    printf "  %-15s %-12s %-20s\n" "VDB" "STATUS" "TESTS"
+    echo "  ─────────────────────────────────────────────"
+
+    # Print results for each VDB
+    for i in "${!vdb_names[@]}"; do
+        status="${vdb_status[$i]}"
+        passed="${vdb_passed[$i]}"
+        failed="${vdb_failed[$i]}"
+
+        case "$status" in
+            "PASS")
+                status_color="${GREEN}✓ PASS${NC}"
+                test_info="${GREEN}${passed} ✅${NC}"
+                ;;
+            "FAIL")
+                status_color="${RED}✗ FAIL${NC}"
+                if [ "$failed" -gt 0 ]; then
+                    test_info="${GREEN}${passed} ✅${NC} ${RED}${failed} ❌${NC}"
+                else
+                    test_info="${GREEN}${passed} ✅${NC}"
+                fi
+                ;;
+            "SKIP")
+                status_color="${YELLOW}○ SKIP${NC}"
+                test_info="${YELLOW}-${NC}"
+                ;;
+        esac
+        printf "  %-15s " "${vdb_names[$i]}"
+        echo -e "$status_color    $test_info"
+    done
+
+    echo "  ─────────────────────────────────────────"
+    echo ""
+
+    # Print totals
+    echo "  Summary:"
+    echo -e "    Total Suites:   $total_suites"
+    echo -e "    ${GREEN}Passed:         $passed_suites${NC}"
+    echo -e "    ${RED}Failed:         $failed_suites${NC}"
+    echo -e "    ${YELLOW}Skipped:        $skipped_suites${NC}"
+    echo ""
+
+    if [ $failed_suites -eq 0 ] && [ $passed_suites -gt 0 ]; then
+        echo -e "  ${GREEN}════════════════════════════════════════════════════════════${NC}"
+        echo -e "  ${GREEN}  ✓ ALL INTEGRATION TESTS PASSED!                          ${NC}"
+        echo -e "  ${GREEN}════════════════════════════════════════════════════════════${NC}"
+    elif [ $failed_suites -gt 0 ]; then
+        echo -e "  ${RED}════════════════════════════════════════════════════════════${NC}"
+        echo -e "  ${RED}  ✗ SOME TESTS FAILED                                       ${NC}"
+        echo -e "  ${RED}════════════════════════════════════════════════════════════${NC}"
+        print_warning "Failures may be due to network issues, cloud configuration, or test flakiness"
     else
-        print_warning "Some integration test suites failed (may be due to network, cloud issues, or test flakiness)"
+        echo -e "  ${YELLOW}════════════════════════════════════════════════════════════${NC}"
+        echo -e "  ${YELLOW}  ○ ALL TESTS SKIPPED - Check configuration                ${NC}"
+        echo -e "  ${YELLOW}════════════════════════════════════════════════════════════${NC}"
     fi
+    echo ""
 }
 
 # Function to run fast tests
