@@ -89,8 +89,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.ShowWeaviateCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	case config.VectorDBTypeSupabase:
-		utils.PrintError("Collection show not yet implemented for Supabase")
-		os.Exit(1)
+		utils.ShowGenericCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	case config.VectorDBTypeMongoDB:
 		utils.PrintError("Collection show not yet implemented for MongoDB")
 		os.Exit(1)
