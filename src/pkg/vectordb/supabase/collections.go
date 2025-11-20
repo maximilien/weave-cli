@@ -146,21 +146,21 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
 	tableName := a.getTableName(name)
+
+	// Use COUNT instead of EXISTS for better compatibility with Supabase pooling
 	query := `
-		SELECT EXISTS (
-			SELECT 1 FROM information_schema.tables 
-			WHERE table_schema = 'public' 
-			  AND table_name = $1
-		)
+		SELECT COUNT(*) FROM information_schema.tables
+		WHERE table_schema = 'public'
+		  AND table_name = $1
 	`
 
-	var exists bool
-	err := a.db.QueryRowContext(ctx, query, tableName).Scan(&exists)
+	var count int
+	err := a.db.QueryRowContext(ctx, query, tableName).Scan(&count)
 	if err != nil {
 		return false, a.wrapError(err, "check collection exists")
 	}
 
-	return exists, nil
+	return count > 0, nil
 }
 
 // GetCollectionCount returns the number of documents in a collection

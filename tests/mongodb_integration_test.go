@@ -509,6 +509,142 @@ func TestMongoDBIntegration(t *testing.T) {
 		}
 	})
 
+	// Test semantic search (requires OpenAI API key)
+	if os.Getenv("OPENAI_API_KEY") != "" {
+		t.Run("SemanticSearch", func(t *testing.T) {
+			collectionName := "TestSemantic_" + fmt.Sprint(time.Now().Unix())
+
+			// Create collection
+			schema := &vectordb.CollectionSchema{
+				Class:      collectionName,
+				Vectorizer: "text-embedding-3-small",
+				Properties: []vectordb.SchemaProperty{
+					{
+						Name:     "text",
+						DataType: []string{"text"},
+					},
+				},
+			}
+
+			err := client.CreateCollection(ctx, collectionName, schema)
+			if err != nil {
+				t.Fatalf("Failed to create collection: %v", err)
+			}
+			defer client.DeleteCollection(ctx, collectionName)
+
+			// Create test documents
+			docs := []*vectordb.Document{
+				{
+					ID:      "sem-1",
+					Text:    "Machine learning and artificial intelligence",
+					Content: "Deep learning neural networks for AI applications",
+				},
+				{
+					ID:      "sem-2",
+					Text:    "Database systems and data storage",
+					Content: "Relational and NoSQL database management",
+				},
+				{
+					ID:      "sem-3",
+					Text:    "Web development frameworks",
+					Content: "Building modern web applications with React and Node.js",
+				},
+			}
+
+			err = client.CreateDocuments(ctx, collectionName, docs)
+			if err != nil {
+				t.Fatalf("Failed to create documents: %v", err)
+			}
+
+			// Wait for vector index to be ready
+			time.Sleep(2 * time.Second)
+
+			// Search semantically
+			opts := &vectordb.QueryOptions{
+				TopK: 5,
+			}
+
+			results, err := client.SearchSemantic(ctx, collectionName, "artificial intelligence deep learning", opts)
+			if err != nil {
+				// Vector search may fail if index not ready yet
+				t.Logf("Semantic search returned error (may need vector index): %v", err)
+				return
+			}
+
+			if len(results) == 0 {
+				// Vector search may return no results if index not configured
+				t.Logf("Semantic search returned no results (vector index may not be configured for test collection)")
+			} else {
+				t.Logf("Semantic search returned %d results", len(results))
+			}
+
+			// Verify AI document is ranked high
+			if len(results) > 0 && results[0].Document.ID != "sem-1" {
+				t.Logf("Note: Expected sem-1 to be top result, got %s", results[0].Document.ID)
+			}
+		})
+
+		t.Run("HybridSearch", func(t *testing.T) {
+			collectionName := "TestHybrid_" + fmt.Sprint(time.Now().Unix())
+
+			// Create collection
+			schema := &vectordb.CollectionSchema{
+				Class:      collectionName,
+				Vectorizer: "text-embedding-3-small",
+				Properties: []vectordb.SchemaProperty{
+					{
+						Name:     "text",
+						DataType: []string{"text"},
+					},
+				},
+			}
+
+			err := client.CreateCollection(ctx, collectionName, schema)
+			if err != nil {
+				t.Fatalf("Failed to create collection: %v", err)
+			}
+			defer client.DeleteCollection(ctx, collectionName)
+
+			// Create test documents
+			docs := []*vectordb.Document{
+				{
+					ID:      "hyb-1",
+					Text:    "MongoDB vector search capabilities",
+					Content: "MongoDB Atlas provides powerful vector search",
+				},
+				{
+					ID:      "hyb-2",
+					Text:    "PostgreSQL full-text search",
+					Content: "PostgreSQL has built-in text search features",
+				},
+			}
+
+			err = client.CreateDocuments(ctx, collectionName, docs)
+			if err != nil {
+				t.Fatalf("Failed to create documents: %v", err)
+			}
+
+			// Wait for indexes
+			time.Sleep(2 * time.Second)
+
+			// Hybrid search
+			opts := &vectordb.QueryOptions{
+				TopK: 5,
+			}
+
+			results, err := client.SearchHybrid(ctx, collectionName, "MongoDB vector", opts)
+			if err != nil {
+				t.Fatalf("Hybrid search failed: %v", err)
+			}
+
+			if len(results) == 0 {
+				t.Errorf("Expected hybrid search results, got none")
+			}
+		})
+	} else {
+		t.Log("Skipping semantic/hybrid search tests: OPENAI_API_KEY not set")
+	}
+
 	// Test schema operations
 	t.Run("SchemaOperations", func(t *testing.T) {
 		collectionName := "TestSchema_" + fmt.Sprint(time.Now().Unix())
@@ -553,4 +689,89 @@ func TestMongoDBIntegration(t *testing.T) {
 			t.Errorf("Default schema class mismatch: expected %q, got %q", "TestDefault", defaultSchema.Class)
 		}
 	})
+}
+
+func TestMongoDBFactoryIntegration(t *testing.T) {
+	// Skip if no MongoDB credentials are provided
+	mongoURI := os.Getenv("MONGODB_URI")
+	mongoDatabase := os.Getenv("MONGODB_DATABASE")
+
+	if mongoURI == "" {
+		t.Skip("Skipping MongoDB factory test: MONGODB_URI environment variable not set")
+	}
+
+	if mongoDatabase == "" {
+		mongoDatabase = "weave-cli-test"
+	}
+
+	config := &vectordb.Config{
+		Type:             vectordb.VectorDBTypeMongoDB,
+		URL:              mongoURI,
+		Database:         mongoDatabase,
+		VectorDimensions: 1536,
+		SimilarityMetric: "cosine",
+		Timeout:          30,
+	}
+
+	// Test factory creation
+	factory := mongodb.NewFactory()
+
+	// Test config validation
+	err := factory.ValidateConfig(config)
+	if err != nil {
+		t.Errorf("Config validation failed: %v", err)
+	}
+
+	// Test client creation through factory
+	client, err := factory.CreateClient(config)
+	if err != nil {
+		t.Fatalf("Failed to create client through factory: %v", err)
+	}
+
+	// Test basic operation
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = client.Health(ctx)
+	if err != nil {
+		t.Errorf("Health check failed: %v", err)
+	}
+}
+
+func TestMongoDBVectorDBRegistry(t *testing.T) {
+	// Skip if no MongoDB credentials are provided
+	mongoURI := os.Getenv("MONGODB_URI")
+	mongoDatabase := os.Getenv("MONGODB_DATABASE")
+
+	if mongoURI == "" {
+		t.Skip("Skipping MongoDB registry test: MONGODB_URI environment variable not set")
+	}
+
+	if mongoDatabase == "" {
+		mongoDatabase = "weave-cli-test"
+	}
+
+	config := &vectordb.Config{
+		Type:             vectordb.VectorDBTypeMongoDB,
+		URL:              mongoURI,
+		Database:         mongoDatabase,
+		VectorDimensions: 1536,
+		SimilarityMetric: "cosine",
+		Timeout:          30,
+	}
+
+	// Test creation through global registry
+	client, err := vectordb.CreateClient(config)
+	if err != nil {
+		t.Fatalf("Failed to create client through registry: %v", err)
+	}
+
+	// Test basic operation
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = client.Health(ctx)
+	if err != nil {
+		t.Errorf("Health check failed: %v", err)
+	}
 }

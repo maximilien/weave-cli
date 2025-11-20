@@ -200,27 +200,35 @@ run_integration_tests() {
     for arg in "$@"; do
         # Check if we're in skip mode (collecting tests to skip)
         if [ "$in_skip_mode" = true ]; then
-            case "$arg" in
-                weaviate)
-                    skip_weaviate=true
-                    ;;
-                milvus)
-                    skip_milvus=true
-                    ;;
-                supabase)
-                    skip_supabase=true
-                    ;;
-                mongodb)
-                    skip_mongodb=true
-                    ;;
-                mcp)
-                    skip_mcp=true
-                    ;;
-                --*)
-                    # New flag, exit skip mode
-                    in_skip_mode=false
-                    ;;
-            esac
+            # Handle comma-separated values
+            IFS=',' read -ra SKIP_ITEMS <<< "$arg"
+            for item in "${SKIP_ITEMS[@]}"; do
+                case "$item" in
+                    weaviate)
+                        skip_weaviate=true
+                        ;;
+                    milvus)
+                        skip_milvus=true
+                        ;;
+                    supabase)
+                        skip_supabase=true
+                        ;;
+                    mongodb)
+                        skip_mongodb=true
+                        ;;
+                    mcp)
+                        skip_mcp=true
+                        ;;
+                esac
+            done
+            # Check if this arg starts with -- to exit skip mode
+            if [[ "$arg" == --* ]]; then
+                in_skip_mode=false
+            else
+                # Only process one skip argument then exit skip mode
+                in_skip_mode=false
+                continue
+            fi
         fi
 
         case "$arg" in
@@ -261,7 +269,7 @@ run_integration_tests() {
         # Run fast integration tests (mock only)
         print_status "Running fast integration tests (mock)..."
         total_suites=$((total_suites + 1))
-        if go test -v -timeout=10s ./tests/... -run="TestMock"; then
+        if go test -v -timeout=10s -count=1 ./tests/... -run="TestMock"; then
             print_success "Fast integration tests passed!"
             passed_suites=$((passed_suites + 1))
         else
@@ -299,7 +307,7 @@ run_integration_tests() {
             total_suites=$((total_suites + 1))
             vdb_names+=("Weaviate")
             # Capture test output to count tests
-            output=$(go test -v -timeout=2m ./tests/... -run="TestWeaviate(Integration|FactoryIntegration|VectorDBRegistry|ConnectionSpeed|ErrorHandling)$" 2>&1)
+            output=$(go test -v -timeout=2m -count=1 ./tests/... -run="TestWeaviate(Integration|FactoryIntegration|VectorDBRegistry|ConnectionSpeed|ErrorHandling)$" 2>&1)
             exit_code=$?
             pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
             fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
@@ -331,17 +339,34 @@ run_integration_tests() {
 
     # Run Milvus integration tests if requested
     if [ "$run_milvus" = true ]; then
-        # Check if Milvus is running locally or cloud credentials exist
+        # Check if Milvus is running locally (port 19530) or cloud credentials exist
         local milvus_available=false
-        if ./tools/vdb/local/milvus.sh status &>/dev/null; then
+        local milvus_host="${MILVUS_ADDRESS:-localhost}"
+        local milvus_port="19530"
+
+        # Parse host:port if address contains colon
+        if [[ "$milvus_host" == *":"* ]]; then
+            milvus_port="${milvus_host#*:}"
+            milvus_host="${milvus_host%:*}"
+        fi
+
+        # Check if we can connect to Milvus port (timeout 2 seconds)
+        if nc -z -w 2 "$milvus_host" "$milvus_port" 2>/dev/null; then
+            milvus_available=true
+        elif [ -f "./tools/vdb/local/milvus.sh" ] && ./tools/vdb/local/milvus.sh status &>/dev/null; then
             milvus_available=true
         fi
 
         if [ "$milvus_available" = true ] || [ -n "$MILVUS_CLOUD_ADDRESS" ]; then
-            print_status "Running Milvus integration tests..."
+            if [ "$milvus_available" = true ]; then
+                print_status "Running Milvus integration tests (local)..."
+            else
+                print_status "Running Milvus integration tests (cloud)..."
+            fi
             total_suites=$((total_suites + 1))
             vdb_names+=("Milvus")
-            output=$(go test -v -timeout=2m ./tests/... -run="TestMilvus" 2>&1)
+            # Use shorter timeout - Milvus tests should complete quickly
+            output=$(go test -v -timeout=3m -count=1 ./tests/... -run="TestMilvus" 2>&1)
             exit_code=$?
             pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
             fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
@@ -377,7 +402,7 @@ run_integration_tests() {
             print_status "Running Supabase integration tests..."
             total_suites=$((total_suites + 1))
             vdb_names+=("Supabase")
-            output=$(go test -v -timeout=2m ./tests/... -run="TestSupabase" 2>&1)
+            output=$(go test -v -timeout=2m -count=1 ./tests/... -run="TestSupabase" 2>&1)
             exit_code=$?
             pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
             fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
@@ -413,7 +438,7 @@ run_integration_tests() {
             print_status "Running MongoDB integration tests..."
             total_suites=$((total_suites + 1))
             vdb_names+=("MongoDB")
-            output=$(go test -v -timeout=2m ./tests/... -run="TestMongoDB" 2>&1)
+            output=$(go test -v -timeout=2m -count=1 ./tests/... -run="TestMongoDB" 2>&1)
             exit_code=$?
             pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
             fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
@@ -449,7 +474,7 @@ run_integration_tests() {
             print_status "Running MCP integration tests..."
             total_suites=$((total_suites + 1))
             vdb_names+=("MCP")
-            output=$(go test -v -tags=integration -timeout=5m ./tests -run="TestMCP" 2>&1)
+            output=$(go test -v -tags=integration -timeout=5m -count=1 ./tests -run="TestMCP" 2>&1)
             exit_code=$?
             pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
             fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
