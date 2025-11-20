@@ -88,7 +88,8 @@ source .env
 
 ### Configuration File
 
-Create `config.milvus-cloud.yaml`:
+Copy the example configuration from `configs/config.milvus-cloud.yaml` or create
+your own:
 
 ```yaml
 vectordb:
@@ -117,7 +118,7 @@ llm:
 Use with weave:
 
 ```bash
-weave --config config.milvus-cloud.yaml --milvus-cloud collections list
+weave --config configs/config.milvus-cloud.yaml --milvus-cloud collections list
 ```
 
 ## Security Best Practices

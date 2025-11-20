@@ -46,7 +46,8 @@ weave --milvus-cloud collections list
 
 ### Local Configuration
 
-Create `config.milvus-local.yaml`:
+Copy `configs/config.milvus-local.yaml` to use as a starting point, or create
+your own:
 
 ```yaml
 vectordb:
@@ -60,7 +61,8 @@ vectordb:
 
 ### Cloud Configuration
 
-Create `config.milvus-cloud.yaml`:
+Copy `configs/config.milvus-cloud.yaml` to use as a starting point, or create
+your own:
 
 ```yaml
 vectordb:

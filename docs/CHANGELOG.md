@@ -38,8 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `docs/milvus/README.md`: Comprehensive integration guide with examples
     - `docs/milvus/LOCAL_SETUP.md`: Step-by-step setup for local Milvus development
     - `docs/milvus/CLOUD_SETUP.md`: Complete guide for Zilliz Cloud setup
-    - `config.milvus-local.yaml`: Example configuration for local Milvus
-    - `config.milvus-cloud.yaml`: Example configuration for Milvus Cloud
+    - `configs/config.milvus-local.yaml`: Example configuration for local Milvus
+    - `configs/config.milvus-cloud.yaml`: Example configuration for Milvus Cloud
   - **Local Infrastructure**:
     - `local/milvus/docker-compose.yml`: Docker Compose configuration
     - `local/milvus/podman-compose.yml`: Podman Compose configuration
@@ -109,7 +109,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Documentation**:
     - `docs/mongodb/README.md`: Comprehensive integration guide with examples
     - `docs/mongodb/ATLAS_SETUP.md`: Step-by-step setup instructions for MongoDB Atlas
-    - `config.mongodb.yaml`: Example configuration file for MongoDB
+    - `configs/config.mongodb.yaml`: Example configuration file for MongoDB
   - **Configuration Examples**:
     - Updated `.env.example` with MongoDB credentials template
     - Updated `config.yaml` with MongoDB configuration example
