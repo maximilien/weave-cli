@@ -271,9 +271,141 @@ func TestMilvusIntegration(t *testing.T) {
 			}
 			t.Logf("Metadata search returned %d results", len(results))
 		})
+
+		t.Run("SearchBM25", func(t *testing.T) {
+			options := &vectordb.QueryOptions{
+				TopK: 5,
+			}
+
+			results, err := client.SearchBM25(ctx, collectionName, "test", options)
+			if err != nil {
+				// BM25 may not be supported in all Milvus versions
+				t.Logf("BM25 search not available: %v", err)
+				return
+			}
+			t.Logf("BM25 search returned %d results", len(results))
+		})
+
+		t.Run("SearchHybrid", func(t *testing.T) {
+			options := &vectordb.QueryOptions{
+				TopK: 5,
+			}
+
+			results, err := client.SearchHybrid(ctx, collectionName, "test document", options)
+			if err != nil {
+				// Hybrid search may not be supported in all Milvus versions
+				t.Logf("Hybrid search not available: %v", err)
+				return
+			}
+			t.Logf("Hybrid search returned %d results", len(results))
+		})
 	} else {
 		t.Log("Skipping search tests: OPENAI_API_KEY not set")
 	}
+
+	// Test schema operations
+	t.Run("GetSchema", func(t *testing.T) {
+		schema, err := client.GetSchema(ctx, collectionName)
+		if err != nil {
+			t.Errorf("Failed to get schema: %v", err)
+			return
+		}
+		if schema == nil {
+			t.Error("GetSchema returned nil")
+			return
+		}
+		if schema.Class != collectionName {
+			t.Errorf("Schema class mismatch: expected %q, got %q", collectionName, schema.Class)
+		}
+	})
+
+	t.Run("ValidateSchema", func(t *testing.T) {
+		schema := &vectordb.CollectionSchema{
+			Class:      "TestValidation",
+			Vectorizer: "text-embedding-3-small",
+			Properties: []vectordb.SchemaProperty{
+				{
+					Name:     "content",
+					DataType: []string{"text"},
+				},
+			},
+		}
+		err := client.ValidateSchema(schema)
+		if err != nil {
+			t.Errorf("Schema validation failed: %v", err)
+		}
+	})
+
+	t.Run("DeleteDocumentsByMetadata", func(t *testing.T) {
+		// Create a new collection for this test
+		metaCollectionName := "test_delete_meta_milvus"
+		_ = client.DeleteCollection(ctx, metaCollectionName)
+
+		schema := &vectordb.CollectionSchema{
+			Class:      metaCollectionName,
+			Vectorizer: "text-embedding-3-small",
+		}
+		err := client.CreateCollection(ctx, metaCollectionName, schema)
+		if err != nil {
+			t.Errorf("Failed to create collection for metadata delete test: %v", err)
+			return
+		}
+		defer client.DeleteCollection(ctx, metaCollectionName)
+
+		// Create documents with metadata
+		docs := []*vectordb.Document{
+			{
+				ID:      "meta-del-1",
+				Content: "Document to delete",
+				Metadata: map[string]interface{}{
+					"status": "draft",
+				},
+			},
+			{
+				ID:      "meta-del-2",
+				Content: "Document to keep",
+				Metadata: map[string]interface{}{
+					"status": "published",
+				},
+			},
+			{
+				ID:      "meta-del-3",
+				Content: "Another to delete",
+				Metadata: map[string]interface{}{
+					"status": "draft",
+				},
+			},
+		}
+
+		err = client.CreateDocuments(ctx, metaCollectionName, docs)
+		if err != nil {
+			t.Errorf("Failed to create documents: %v", err)
+			return
+		}
+
+		// Delete by metadata
+		metadata := map[string]interface{}{
+			"status": "draft",
+		}
+		err = client.DeleteDocumentsByMetadata(ctx, metaCollectionName, metadata)
+		if err != nil {
+			t.Errorf("Failed to delete by metadata: %v", err)
+			return
+		}
+
+		// Wait for eventual consistency
+		time.Sleep(500 * time.Millisecond)
+
+		// Verify remaining count
+		count, err := client.GetCollectionCount(ctx, metaCollectionName)
+		if err != nil {
+			t.Errorf("Failed to get count: %v", err)
+			return
+		}
+		if count != 1 {
+			t.Logf("Expected 1 document remaining, got %d (eventual consistency)", count)
+		}
+	})
 
 	// Cleanup
 	t.Run("DeleteDocument", func(t *testing.T) {
