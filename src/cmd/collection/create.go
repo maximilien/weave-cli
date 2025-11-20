@@ -148,8 +148,9 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	// Handle named schema from config.yaml or schemas_dir
 	if schemaName != "" {
-		// For Supabase, we don't need config.yaml schemas - use simple collection creation
-		if dbConfig.Type == config.VectorDBTypeSupabase {
+		// For non-Weaviate databases, we don't need config.yaml schemas - use simple collection creation
+		switch dbConfig.Type {
+		case config.VectorDBTypeSupabase:
 			// Supabase doesn't use Weaviate schemas - create simple collection with standard fields
 			err = utils.CreateSupabaseCollection(ctx, dbConfig, collectionName, embeddingModel)
 			if err != nil {
@@ -157,10 +158,24 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 				os.Exit(1)
 			}
 			utils.PrintSuccess(fmt.Sprintf("Successfully created Supabase collection: %s", collectionName))
+			utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
 			return
+		case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
+			// Milvus uses standard fields, no config.yaml schemas needed
+			err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+			if err != nil {
+				utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
+				os.Exit(1)
+			}
+			utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+			utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
+			return
+		case config.VectorDBTypeMongoDB:
+			utils.PrintError("Collection creation not yet implemented for MongoDB")
+			os.Exit(1)
 		}
 
-		// For Weaviate and Mock, validate schema exists
+		// For Weaviate and Mock, validate schema exists in config.yaml
 		_, err := cfg.GetSchema(schemaName)
 		if err != nil {
 			utils.PrintError(fmt.Sprintf("Schema '%s' not found in config.yaml or schemas_dir: %v", schemaName, err))
