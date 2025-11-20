@@ -20,6 +20,7 @@ This command provides information about embedding models available for text and 
 
 func init() {
 	rootCmd.AddCommand(embeddingsCmd)
+	embeddingsCmd.GroupID = "data"
 
 	// Add all embeddings subcommands
 	embeddingsCmd.AddCommand(embeddings.ListCmd)

@@ -20,6 +20,7 @@ This command provides subcommands to list, view, and delete collections.`,
 
 func init() {
 	rootCmd.AddCommand(collectionCmd)
+	collectionCmd.GroupID = "data"
 
 	// Add all collection subcommands
 	collectionCmd.AddCommand(collection.ListCmd)

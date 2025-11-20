@@ -9,5 +9,7 @@ import (
 
 func init() {
 	// Register the query command with its 'q' alias
-	rootCmd.AddCommand(query.NewQueryCommand())
+	queryCmd := query.NewQueryCommand()
+	queryCmd.GroupID = "ai"
+	rootCmd.AddCommand(queryCmd)
 }

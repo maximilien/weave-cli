@@ -59,6 +59,7 @@ Use 'weave config list' to see all available databases.`,
 
 func init() {
 	rootCmd.AddCommand(healthCmd)
+	healthCmd.GroupID = "config"
 	healthCmd.AddCommand(healthCheckCmd)
 }
 

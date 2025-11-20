@@ -116,8 +116,14 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig, initColor)
 
+	// Define command groups for better organization
+	rootCmd.AddGroup(&cobra.Group{ID: "data", Title: "Data Management:"})
+	rootCmd.AddGroup(&cobra.Group{ID: "config", Title: "Configuration & Health:"})
+	rootCmd.AddGroup(&cobra.Group{ID: "ai", Title: "AI & Search:"})
+
 	// Register command packages
 	rootCmd.AddCommand(configcmd.Cmd)
+	configcmd.Cmd.GroupID = "config"
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
@@ -149,6 +155,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useMilvusCloud, "milvus-cloud", false, "use Milvus cloud (Zilliz) vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
+
+	// Set custom usage template with grouped flags
+	rootCmd.SetUsageTemplate(getGroupedUsageTemplate())
 
 	// Bind flags to viper
 	_ = viper.BindPFlag("vector-db-type", rootCmd.PersistentFlags().Lookup("vector-db-type"))
@@ -250,6 +259,114 @@ func initColor() {
 // ShouldShowTips returns true if tips should be displayed to the user
 func ShouldShowTips() bool {
 	return !noTips
+}
+
+// getGroupedUsageTemplate returns a custom usage template with logically grouped flags
+func getGroupedUsageTemplate() string {
+	return `Usage:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+Aliases:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+Examples:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}{{$cmds := .Commands}}{{if eq (len .Groups) 0}}
+
+Available Commands:{{range $cmds}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{else}}{{range $group := .Groups}}
+
+{{.Title}}{{range $cmds}}{{if (and (eq .GroupID $group.ID) (or .IsAvailableCommand (eq .Name "help")))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if not .AllChildCommandsHaveGroup}}
+
+Additional Commands:{{range $cmds}}{{if (and (eq .GroupID "") (or .IsAvailableCommand (eq .Name "help")))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}{{if eq .Name "weave"}}
+
+Flags:
+
+  Database Selection:
+      --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
+      --milvus-local              use Milvus local vector database
+      --milvus-cloud              use Milvus cloud (Zilliz) vector database
+      --supabase                  use Supabase PGVector database
+      --mongodb                   use MongoDB Atlas Vector Search database
+      --mock                      use mock vector database
+      --all                       operate on all configured vector databases
+
+  Database Override:
+      --vector-db-type string     override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)
+      --vdb string                alias for --vector-db-type
+      --weaviate-api-key string   override WEAVIATE_API_KEY
+      --weaviate-url string       override WEAVIATE_URL
+      --timeout string            timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)
+
+  Configuration:
+      --config string             config file (default is ./config.yaml)
+      --env string                env file (default is ./.env)
+
+  Output Control:
+  -v, --verbose                   verbose output
+  -q, --quiet                     quiet output (minimal messages)
+      --json                      output results in JSON format
+      --no-color                  disable colored output
+      --no-truncate               show all data without truncation
+      --no-tips                   suppress helpful tips and suggestions
+      --quiet-config              suppress config location information
+
+  Behavior:
+      --no-confirm                skip confirmation prompts for destructive operations
+
+  REPL:
+      --query-strings string      file with queries to execute (one per line, batch mode)
+
+  Other:
+  -h, --help                      help for weave
+  -V, --version                   show version information
+{{else}}
+
+Flags:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+Global Flags:
+
+  Database Selection:
+      --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
+      --milvus-local              use Milvus local vector database
+      --milvus-cloud              use Milvus cloud (Zilliz) vector database
+      --supabase                  use Supabase PGVector database
+      --mongodb                   use MongoDB Atlas Vector Search database
+      --mock                      use mock vector database
+      --all                       operate on all configured vector databases
+
+  Database Override:
+      --vector-db-type string     override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)
+      --vdb string                alias for --vector-db-type
+      --weaviate-api-key string   override WEAVIATE_API_KEY
+      --weaviate-url string       override WEAVIATE_URL
+      --timeout string            timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)
+
+  Configuration:
+      --config string             config file (default is ./config.yaml)
+      --env string                env file (default is ./.env)
+
+  Output Control:
+  -v, --verbose                   verbose output
+  -q, --quiet                     quiet output (minimal messages)
+      --json                      output results in JSON format
+      --no-color                  disable colored output
+      --no-truncate               show all data without truncation
+      --no-tips                   suppress helpful tips and suggestions
+      --quiet-config              suppress config location information
+
+  Behavior:
+      --no-confirm                skip confirmation prompts for destructive operations
+{{end}}{{if .HasHelpSubCommands}}
+
+Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+`
 }
 
 // IsJSONOutput returns true if JSON output is requested
