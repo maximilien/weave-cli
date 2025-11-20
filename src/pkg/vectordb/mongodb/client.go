@@ -5,7 +5,6 @@ package mongodb
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -78,11 +77,10 @@ func NewClient(config *Config) (*Client, error) {
 	clientOptions.SetDirect(false)
 
 	// Set TLS configuration - MongoDB Atlas requires TLS
-	// Create a TLS config that uses system certificates
-	tlsConfig := &tls.Config{
-		MinVersion: tls.VersionTLS12, // MongoDB Atlas requires TLS 1.2+
-	}
-	clientOptions.SetTLSConfig(tlsConfig)
+	// Note: We don't set a custom TLS config here as the MongoDB driver
+	// handles TLS automatically when using mongodb+srv:// URIs.
+	// Setting a custom config without proper root CAs can cause issues.
+	// The driver will use system certificates by default.
 
 	// Create context with timeout for connection
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)

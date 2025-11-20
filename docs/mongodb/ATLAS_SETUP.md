@@ -182,11 +182,24 @@ VECTOR_DB_TYPE=mongodb weave collection list
 
 ### Connection Issues
 
+**Error**: `tls: internal error` or `remote error: tls: internal error`
+- **Cause**: This almost always means your IP address is not whitelisted in MongoDB Atlas
+- **Solution**:
+  1. Find your current IP: `curl ifconfig.me`
+  2. Go to MongoDB Atlas → **Network Access** → **Add IP Address**
+  3. Add your IP (e.g., `4.78.254.114/32`)
+  4. Wait 1-2 minutes for changes to propagate
+- **Note**: The "TLS error" is misleading - it's actually an access control issue
+
 **Error**: `connection refused` or `timeout`
 - **Solution**: Check Network Access settings, ensure your IP is whitelisted
 
 **Error**: `authentication failed`
 - **Solution**: Verify username and password, ensure user has correct privileges
+
+**Error**: `x509: certificate signed by unknown authority`
+- **Cause**: Custom TLS configuration issue
+- **Solution**: The MongoDB Go driver handles TLS automatically for `mongodb+srv://` URIs. Don't set custom TLS configs.
 
 ### Vector Search Not Working
 
