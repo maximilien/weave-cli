@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -312,8 +313,24 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 		FieldImage, FieldImageData, FieldURL, FieldMetadata,
 	}
 
-	// Milvus doesn't have native pagination - we'll query all and slice
-	result, err := c.client.Query(ctx, collectionName, nil, "", outputFields)
+	// Milvus requires limit when using empty expression
+	// Use a large default if limit is 0
+	queryLimit := limit
+	if queryLimit <= 0 {
+		queryLimit = 10000 // Default max limit for listing
+	}
+
+	// Use QueryByPks alternative or query with limit option
+	// For empty expression, we need to use the QueryOption with limit
+	result, err := c.client.Query(
+		ctx,
+		collectionName,
+		nil, // partition names
+		"",  // empty expression to get all
+		outputFields,
+		client.WithLimit(int64(queryLimit)),
+		client.WithOffset(int64(offset)),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list documents: %w", err)
 	}

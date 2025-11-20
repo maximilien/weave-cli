@@ -46,13 +46,20 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Get default database
-	dbConfig, err := cfg.GetDefaultDatabase()
+	// Use vector database selector based on flags
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
 	if err != nil {
-		utils.HandleConfigError(err, true)
+		utils.PrintError(fmt.Sprintf("Failed to determine vector databases: %v", err))
 		os.Exit(1)
 	}
 
+	// Document count requires a single database
+	if len(selection.Configs) != 1 {
+		utils.PrintError("Document count requires a single database. Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, or --mock")
+		os.Exit(1)
+	}
+
+	dbConfig := &selection.Configs[0]
 	ctx := context.Background()
 
 	type CollectionCount struct {

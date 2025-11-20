@@ -309,7 +309,64 @@ func getMilvusCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 		}
 	}
 
+	// Try to create from environment variables
+	if milvusConfig := tryCreateMilvusCloudConfigFromEnv(); milvusConfig != nil {
+		return milvusConfig, nil
+	}
+
 	return nil, fmt.Errorf("no Milvus Cloud configuration found")
+}
+
+// tryCreateMilvusCloudConfigFromEnv attempts to create a Milvus Cloud config from environment variables
+func tryCreateMilvusCloudConfigFromEnv() *config.VectorDBConfig {
+	address := os.Getenv("MILVUS_CLOUD_ADDRESS")
+	username := os.Getenv("MILVUS_CLOUD_USERNAME")
+	password := os.Getenv("MILVUS_CLOUD_PASSWORD")
+	token := os.Getenv("MILVUS_CLOUD_TOKEN")
+
+	// Require at least address
+	if address == "" {
+		return nil
+	}
+
+	// Prefer token if available (Zilliz serverless)
+	if token != "" {
+		return &config.VectorDBConfig{
+			Name:             "milvus-cloud",
+			Type:             config.VectorDBTypeMilvusCloud,
+			Address:          address,
+			APIKey:           token,
+			Database:         getEnvOrDefault("MILVUS_CLOUD_DATABASE", "default"),
+			VectorDimensions: 1536,
+			SimilarityMetric: "COSINE",
+			Timeout:          60, // Longer timeout for cloud connections
+		}
+	}
+
+	// Fall back to username/password
+	if username != "" && password != "" {
+		return &config.VectorDBConfig{
+			Name:             "milvus-cloud",
+			Type:             config.VectorDBTypeMilvusCloud,
+			Address:          address,
+			Username:         username,
+			Password:         password,
+			Database:         getEnvOrDefault("MILVUS_CLOUD_DATABASE", "default"),
+			VectorDimensions: 1536,
+			SimilarityMetric: "COSINE",
+			Timeout:          60, // Longer timeout for cloud connections
+		}
+	}
+
+	return nil
+}
+
+// getEnvOrDefault returns the environment variable value or a default
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 // getMockConfig returns mock configuration

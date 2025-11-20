@@ -24,6 +24,7 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		Address:          config.Address,
 		Username:         config.Username,
 		Password:         config.Password,
+		APIKey:           config.APIKey,
 		Database:         config.Database,
 		Timeout:          config.Timeout,
 		VectorDimensions: config.VectorDimensions,

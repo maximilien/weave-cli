@@ -70,9 +70,11 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 
 	// Cloud-specific validation
 	if config.Type == vectordb.VectorDBTypeMilvusCloud {
-		// Cloud instances typically require authentication
-		if config.Username == "" || config.Password == "" {
-			return vectordb.ErrInvalidConfig("Milvus cloud requires username and password")
+		// Cloud instances require authentication (either APIKey or username/password)
+		hasAPIKey := config.APIKey != ""
+		hasUserPass := config.Username != "" && config.Password != ""
+		if !hasAPIKey && !hasUserPass {
+			return vectordb.ErrInvalidConfig("Milvus cloud requires either APIKey or username and password")
 		}
 	}
 

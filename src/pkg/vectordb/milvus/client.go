@@ -6,6 +6,7 @@ package milvus
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
@@ -13,6 +14,23 @@ import (
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
+
+// isCloudEndpoint checks if the address is a cloud endpoint that requires TLS
+func isCloudEndpoint(address string) bool {
+	cloudDomains := []string{
+		"zilliz.com",
+		"zillizcloud.com",
+		"cloud.zilliz",
+		"serverless",
+	}
+	lowerAddr := strings.ToLower(address)
+	for _, domain := range cloudDomains {
+		if strings.Contains(lowerAddr, domain) {
+			return true
+		}
+	}
+	return false
+}
 
 // Client wraps the Milvus client with vector database functionality
 type Client struct {
@@ -26,6 +44,7 @@ type Config struct {
 	Address  string // Milvus server address (e.g., "localhost:19530")
 	Username string // Username for authentication (optional)
 	Password string // Password for authentication (optional)
+	APIKey   string // API key/token for Zilliz Cloud (optional)
 	Database string // Database name (default: "default")
 	Timeout  int    // Timeout in seconds for operations (default: 10)
 
@@ -63,8 +82,24 @@ func NewClient(config *Config) (*Client, error) {
 		Address: config.Address,
 	}
 
-	// Add authentication if provided
-	if config.Username != "" && config.Password != "" {
+	// Enable TLS for cloud endpoints (Zilliz Cloud requires TLS)
+	// Detect cloud by checking if address contains cloud provider domains
+	isCloud := isCloudEndpoint(config.Address)
+	if isCloud {
+		connConfig.EnableTLSAuth = true
+	}
+
+	// Add authentication
+	// For Zilliz Cloud, prefer APIKey/Token if available
+	if config.APIKey != "" {
+		// Direct API key/token (Zilliz serverless)
+		connConfig.APIKey = config.APIKey
+	} else if isCloud && config.Username != "" && config.Password != "" {
+		// Zilliz Cloud can use APIKey or username/password
+		// Try APIKey format first (more reliable for serverless)
+		connConfig.APIKey = config.Username + ":" + config.Password
+	} else if config.Username != "" && config.Password != "" {
+		// Standard username/password for non-cloud or explicit config
 		connConfig.Username = config.Username
 		connConfig.Password = config.Password
 	}
