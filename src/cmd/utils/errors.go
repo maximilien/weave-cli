@@ -172,6 +172,16 @@ func simplifyCommonErrors(errMsg string) string {
 	// Simplify nested error wrapping
 	errMsg = strings.ReplaceAll(errMsg, ": failed to", ":")
 
+	// Simplify Milvus "can't find collection" errors
+	if strings.Contains(errMsg, "can't find collection") {
+		// Extract collection name from pattern like [collection=WeaveDocs]
+		re := regexp.MustCompile(`\[collection=([^\]]+)\]`)
+		if matches := re.FindStringSubmatch(errMsg); len(matches) > 1 {
+			return fmt.Sprintf("Collection '%s' not found", matches[1])
+		}
+		return "Collection not found"
+	}
+
 	// Clean up excessive colons and spaces
 	errMsg = regexp.MustCompile(`: +:`).ReplaceAllString(errMsg, ":")
 	errMsg = regexp.MustCompile(`: +`).ReplaceAllString(errMsg, ": ")

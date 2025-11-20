@@ -5,6 +5,7 @@ package milvus
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -365,14 +366,21 @@ func mustMarshalJSON(v interface{}) []byte {
 	if v == nil {
 		return []byte("{}")
 	}
-	// Simple JSON marshaling for map
-	// In production, use encoding/json
-	return []byte("{}")
+	data, err := json.Marshal(v)
+	if err != nil {
+		return []byte("{}")
+	}
+	return data
 }
 
 // Helper function to unmarshal JSON metadata
 func mustUnmarshalJSON(data []byte) map[string]interface{} {
-	// Simple JSON unmarshaling
-	// In production, use encoding/json
-	return make(map[string]interface{})
+	if len(data) == 0 {
+		return make(map[string]interface{})
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return make(map[string]interface{})
+	}
+	return result
 }

@@ -433,10 +433,19 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 
 		err := client.CreateDocument(ctx, collectionName, doc)
 		if err != nil {
-			PrintError(fmt.Sprintf("Failed to create document chunk %d: %v", i, err))
+			// Check if this is a "collection not found" error - fail fast
+			errStr := err.Error()
+			if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+				return fmt.Errorf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName)
+			}
+			PrintError(fmt.Sprintf("Failed to create document chunk %d: %s", i, SimplifyError(err)))
 			continue
 		}
 		successCount++
+	}
+
+	if successCount == 0 {
+		return fmt.Errorf("failed to create any document chunks")
 	}
 
 	PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
@@ -1301,10 +1310,20 @@ func processTextFile(ctx context.Context, client *weaviate.Client, collectionNam
 
 		err := client.CreateDocument(ctx, collectionName, document)
 		if err != nil {
-			PrintError(fmt.Sprintf("Failed to create document chunk %d: %v", i, err))
+			// Check if this is a "collection not found" error - fail fast
+			errStr := err.Error()
+			if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+				PrintError(fmt.Sprintf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName))
+				return nil
+			}
+			PrintError(fmt.Sprintf("Failed to create document chunk %d: %s", i, SimplifyError(err)))
 			continue
 		}
 		successCount++
+	}
+
+	if successCount == 0 {
+		return fmt.Errorf("failed to create any document chunks")
 	}
 
 	PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
@@ -1993,10 +2012,21 @@ func processTextFileMock(ctx context.Context, client *mock.Client, collectionNam
 
 		err := client.CreateDocument(ctx, collectionName, document)
 		if err != nil {
-			PrintError(fmt.Sprintf("Failed to create document chunk %d: %v", i, err))
+			// Check if this is a "collection not found" error - fail fast
+			errStr := err.Error()
+			if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+				PrintError(fmt.Sprintf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName))
+				return
+			}
+			PrintError(fmt.Sprintf("Failed to create document chunk %d: %s", i, SimplifyError(err)))
 			continue
 		}
 		successCount++
+	}
+
+	if successCount == 0 {
+		PrintError("Failed to create any document chunks")
+		return
 	}
 
 	PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
