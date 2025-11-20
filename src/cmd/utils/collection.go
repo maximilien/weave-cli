@@ -1100,6 +1100,14 @@ func ShowWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, col
 		PrintStyledValueDimmed("[NOT CONFIGURED]")
 		fmt.Println()
 	}
+
+	// Get embedding model from schema
+	if schema, err := client.GetFullCollectionSchema(ctx, collectionName); err == nil && schema != nil && schema.Vectorizer != "" {
+		PrintStyledKeyProminent("  Embedding Model")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed(schema.Vectorizer)
+		fmt.Println()
+	}
 	fmt.Println()
 
 	if documentCount > 0 {
@@ -2249,15 +2257,145 @@ func ShowGenericCollection(ctx context.Context, cfg *config.VectorDBConfig, coll
 		return
 	}
 
-	// Display collection info
-	PrintHeader(fmt.Sprintf("Collection: %s", collectionName))
-	fmt.Printf("  Documents: %d\n", found.Count)
+	// Display collection information with styling (matching Weaviate format)
+	PrintStyledEmoji("📁")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Collection")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(collectionName)
+	fmt.Println()
+
+	PrintStyledKeyProminent("Database Type")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(string(cfg.Type))
+	fmt.Println()
+
+	PrintStyledKeyProminent("Document Count")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(fmt.Sprintf("%d", found.Count))
+	fmt.Println()
+	fmt.Println()
+
+	// Show collection properties
+	PrintStyledEmoji("⚙️")
+	fmt.Printf(" ")
+	PrintStyledKeyProminent("Collection Properties")
+	fmt.Println()
+	PrintStyledKeyProminent("  Vector Database")
+	fmt.Printf(": ")
+	PrintStyledValueDimmed(string(cfg.Type))
+	fmt.Println()
+
+	// Show URL/Address based on database type
+	if cfg.URL != "" {
+		PrintStyledKeyProminent("  URL")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed(cfg.URL)
+		fmt.Println()
+	} else if cfg.Address != "" {
+		PrintStyledKeyProminent("  Address")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed(cfg.Address)
+		fmt.Println()
+	}
+
+	// Show API Key status
+	if cfg.APIKey != "" || cfg.DatabaseKey != "" {
+		PrintStyledKeyProminent("  API Key")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed("[CONFIGURED]")
+		fmt.Println()
+	}
+
+	// Show embedding model if available
 	if found.Vectorizer != "" {
-		fmt.Printf("  Embedding Model: %s\n", found.Vectorizer)
+		PrintStyledKeyProminent("  Embedding Model")
+		fmt.Printf(": ")
+		PrintStyledValueDimmed(found.Vectorizer)
+		fmt.Println()
 	}
-	if found.Description != "" {
-		fmt.Printf("  Description: %s\n", found.Description)
+	fmt.Println()
+
+	// Show sample document if documents exist
+	if found.Count > 0 {
+		// Get sample document
+		sampleDocuments, err := client.ListDocuments(ctx, collectionName, 1, 0)
+		if err != nil {
+			PrintWarning(fmt.Sprintf("Could not retrieve sample document: %v", err))
+		} else if len(sampleDocuments) > 0 {
+			sampleDoc := sampleDocuments[0]
+
+			// Show sample metadata
+			PrintStyledEmoji("📋")
+			fmt.Printf(" ")
+			PrintStyledKeyProminent("Sample Document Metadata")
+			fmt.Println()
+			if len(sampleDoc.Metadata) > 0 {
+				metadataCount := 0
+				for key, value := range sampleDoc.Metadata {
+					if metadataCount >= shortLines {
+						remainingFields := len(sampleDoc.Metadata) - shortLines
+						fmt.Printf("... (truncated, %d more metadata fields)\n", remainingFields)
+						break
+					}
+
+					var displayValue string
+					if noTruncate {
+						displayValue = fmt.Sprintf("%v", value)
+					} else {
+						displayValue = TruncateMetadataValue(value, 100)
+					}
+
+					fmt.Printf("  - ")
+					PrintStyledKeyProminent(key)
+					fmt.Printf(": ")
+					if key == "id" {
+						PrintStyledID(displayValue)
+					} else {
+						PrintStyledValueDimmed(displayValue)
+					}
+					fmt.Println()
+					metadataCount++
+				}
+			} else {
+				PrintStyledKey("  No metadata available")
+				fmt.Println()
+			}
+			fmt.Println()
+
+			// Show sample content
+			if len(sampleDoc.Content) > 0 {
+				PrintStyledEmoji("📝")
+				fmt.Printf(" ")
+				PrintStyledKeyProminent("Sample Document Content")
+				fmt.Println()
+
+				if IsImageContent(sampleDoc.Content) {
+					fmt.Printf("  🖼️ Image Document (Base64 encoded)\n")
+					fmt.Printf("  📊 Content Size: %d characters\n", len(sampleDoc.Content))
+				} else {
+					if noTruncate {
+						fmt.Printf("%s\n", sampleDoc.Content)
+					} else {
+						contentLines := strings.Split(sampleDoc.Content, "\n")
+						maxLines := shortLines
+						if len(contentLines) > maxLines {
+							for i := 0; i < maxLines; i++ {
+								fmt.Printf("%s\n", contentLines[i])
+							}
+							fmt.Printf("  ... (%d more lines)\n", len(contentLines)-maxLines)
+						} else {
+							fmt.Printf("%s\n", sampleDoc.Content)
+						}
+					}
+				}
+				fmt.Println()
+			}
+		}
 	}
+
+	// Success message
+	PrintSuccess(fmt.Sprintf("Collection '%s' summary retrieved successfully", collectionName))
 
 	// TODO: Implement schema display for generic collections
 	if showSchema {
