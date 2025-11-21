@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2025-11-20
+
+### Fixed
+
+- **🐛 MongoDB Connection Issues**: Fixed MongoDB Atlas connection problems
+  - Removed custom TLS configuration that was causing connection failures
+  - MongoDB Go driver now handles TLS automatically for `mongodb+srv://` URIs
+  - Updated documentation with troubleshooting for common connection errors
+  - Clarified that TLS errors are often misleading (usually IP whitelist issues)
+
+- **🐛 Milvus Collection Operations**: Fixed multiple Milvus collection operation bugs
+  - Fixed `weave cols create` with named schema for Milvus VDBs
+  - Fixed deleting collections in `--milvus-*` VDBs (proper handling of schema deletion)
+  - Improved error messages for collection operations, especially "collection not found" scenarios
+  - Better Milvus-specific error message simplification
+
+### Added
+
+- **🧪 Comprehensive Integration Test Coverage**: Enhanced test coverage across all VDBs
+  - **Milvus Integration Tests**: Added comprehensive test suite (`tests/milvus_integration_test.go`)
+    - Health check tests
+    - Collection CRUD operations (Create, Exists, List, Delete)
+    - Document CRUD operations (Create, Get, Update, List, Delete)
+    - Batch document operations
+    - Metadata preservation verification
+    - Search operations (semantic, metadata, BM25, hybrid)
+    - Schema operations (GetSchema, ValidateSchema)
+    - DeleteDocumentsByMetadata test
+    - Factory and registry tests
+    - Milvus Cloud tests (separate test function)
+  - **MongoDB Integration Tests**: Expanded test coverage
+    - SemanticSearch test (requires OpenAI API key)
+    - HybridSearch test
+    - TestMongoDBFactoryIntegration test
+    - TestMongoDBVectorDBRegistry test
+  - **Test Infrastructure Improvements**: Enhanced `test.sh` with:
+    - Per-VDB status tracking (Weaviate, Milvus, Supabase, MongoDB, MCP)
+    - Detailed summary table showing pass/fail/skip per VDB
+    - Better visual output with box formatting
+    - Skipped tests counter
+    - Overall status message (ALL PASSED / SOME FAILED / ALL SKIPPED)
+    - `--skip` flag support to skip specific VDB tests
+    - Improved error handling for test counting
+
+- **✨ Collection Show for Supabase**: Enabled `weave cols show` command for Supabase VDB
+  - Generic collection display now works with Supabase
+  - Shows collection details, document count, and metadata
+
+### Changed
+
+- **🔧 Streamlined Collection Show Command**: Improved `cols show` command
+  - Enhanced generic collection display for non-Weaviate collections
+  - Better visual output matching Weaviate format
+  - Now works with MongoDB, Supabase, Milvus, and Mock VDBs
+  - Displays embedding model information, sample documents, and metadata
+
+- **📋 Improved Help Output**: Enhanced CLI help display
+  - Grouped flags logically (Database Selection, Database Override, Configuration, Output Control, Behavior)
+  - Organized commands into groups (Data Management, Configuration & Health, AI & Search)
+  - Better visual organization and readability
+
+- **📁 Configuration File Organization**: Moved example configuration files
+  - All `config.<vdb>.yaml` files moved to `configs/` directory
+  - Added `configs/README.md` with usage instructions
+  - Updated all documentation references to new paths
+
+### Documentation
+
+- **📚 Planning Updates**: Added planned VDB integrations
+  - Added Chroma to planned VDB integrations list
+  - Added Neo4j to planned VDB integrations list
+  - Updated planning document with integration details
+
+- **📖 MongoDB Setup Guide**: Enhanced troubleshooting documentation
+  - Added troubleshooting for `tls: internal error` (IP whitelist issue)
+  - Added note about x509 certificate errors
+  - Clarified TLS error causes and solutions
+
 ## [0.5.0] - 2025-11-17
 
 ### Added
