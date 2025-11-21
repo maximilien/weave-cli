@@ -26,6 +26,8 @@ const (
 	VectorDBTypeMongoDB     VectorDBType = "mongodb"
 	VectorDBTypeMilvusLocal VectorDBType = "milvus-local"
 	VectorDBTypeMilvusCloud VectorDBType = "milvus-cloud"
+	VectorDBTypeChromaLocal VectorDBType = "chroma-local"
+	VectorDBTypeChromaCloud VectorDBType = "chroma-cloud"
 )
 
 // Default configuration values
