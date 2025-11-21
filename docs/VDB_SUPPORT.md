@@ -390,9 +390,33 @@ databases:
 - [Local Setup Instructions](milvus/LOCAL_SETUP.md)
 - [Cloud Setup Guide](milvus/CLOUD_SETUP.md)
 
-### v0.5.0 - Qdrant Integration (Planned)
+### v0.6.0 - Chroma Integration (In Progress)
 
-**Timeline**: ~1-2 weeks
+**Timeline**: Nov 21-26, 2025
+
+**Completed**:
+- ✅ Add Chroma to VectorDBType enum
+- ✅ Create chroma/ directory structure
+- ✅ Add Chroma Go SDK dependency
+- ✅ Implement core client and collection operations
+- ✅ Create integration tests
+- ✅ Add to test.sh with skip support
+
+**Remaining**:
+- [ ] Document CRUD operations
+- [ ] Search operations
+- [ ] Factory and CLI flags
+- [ ] Documentation
+
+**Key Features**:
+- ✅ Open source (Apache 2.0)
+- ✅ Simple REST API
+- ✅ SQLite (local) or ClickHouse (cloud) storage
+- ✅ Automatic or manual embeddings
+
+### v0.7.0 - Qdrant Integration (Planned)
+
+**Timeline**: Dec 2-6, 2025
 
 - [ ] Implement QdrantClient with VectorDB interface
 - [ ] gRPC client integration
@@ -412,7 +436,41 @@ databases:
 See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
 details.
 
-### v0.6.0 - Redis Integration (Planned)
+### v0.8.0 - Neo4j Integration (Planned)
+
+**Timeline**: Dec 9-13, 2025
+
+- [ ] Implement Neo4jClient with VectorDB interface
+- [ ] Graph + vector hybrid queries
+- [ ] Cypher query integration
+- [ ] Relationship-aware search
+- [ ] Docker-based integration tests
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ Graph relationships + vector search
+- ✅ Enterprise adoption
+- ✅ GraphRAG support
+
+### v0.9.0 - OpenSearch Integration (Planned)
+
+**Timeline**: ~1-2 weeks
+
+- [ ] Implement OpenSearchClient with VectorDB interface
+- [ ] kNN vector search
+- [ ] BM25 + vector hybrid search
+- [ ] Index management
+- [ ] Docker-based integration tests
+- [ ] Documentation and demo script
+
+**Key Features**:
+- ✅ Open source (Apache 2.0)
+- ✅ Mature vector search with kNN
+- ✅ Best-in-class hybrid search
+- ✅ Elasticsearch API compatible
+- ✅ Massive enterprise adoption
+
+### v0.10.0 - Redis Integration (Planned)
 
 **Timeline**: ~1-2 weeks
 
@@ -480,7 +538,7 @@ details.
 
 See [MongoDB Documentation](mongodb/) for complete setup and usage details.
 
-### v0.7.0 - Pinecone Integration (Planned)
+### v1.0.0 - Pinecone Integration (Planned)
 
 **Timeline**: ~1-2 weeks
 
@@ -507,13 +565,12 @@ See [MongoDB Documentation](mongodb/) for complete setup and usage details.
 See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
 details.
 
-### Long Term (v0.9.0+)
+### Long Term (v1.1.0+)
 
 - [ ] Multi-database queries
 - [ ] Cross-database migration tools
 - [ ] Unified embedding caching layer
-- [ ] Additional vector DB support (Chroma, LanceDB, etc.)
-- [ ] Path to v1.0.0 release
+- [ ] Additional vector DB support (LanceDB, etc.)
 
 ## Contributing
 
