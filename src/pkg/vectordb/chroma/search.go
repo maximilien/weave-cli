@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	chroma "github.com/amikos-tech/chroma-go/pkg/api/v2"
+
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -17,7 +19,7 @@ func (c *Client) SearchSemantic(ctx context.Context, collectionName, query strin
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -28,54 +30,54 @@ func (c *Client) SearchSemantic(ctx context.Context, collectionName, query strin
 		topK = opts.TopK
 	}
 
-	// Use Chroma's Query with text (relies on collection's embedding function)
-	result, err := collection.Query(ctx, []string{query}, int32(topK), nil, nil, nil)
+	// Use Chroma's Query with text
+	result, err := collection.Query(ctx,
+		chroma.WithQueryTexts(query),
+		chroma.WithNResults(topK),
+		chroma.WithIncludeQuery(chroma.IncludeDocuments, chroma.IncludeMetadatas),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("semantic search failed: %w", err)
 	}
 
-	// Convert results
+	// Convert results - Query returns groups for each query text
 	var results []*vectordb.QueryResult
-	if len(result.Documents) > 0 && len(result.Documents[0]) > 0 {
-		for i, doc := range result.Documents[0] {
-			qr := &vectordb.QueryResult{
-				Document: vectordb.Document{
-					Content: doc,
-				},
-			}
-
-			// Add ID if available
-			if len(result.Ids) > 0 && i < len(result.Ids[0]) {
-				qr.Document.ID = result.Ids[0][i]
-			}
-
-			// Add distance/score if available
-			if len(result.Distances) > 0 && i < len(result.Distances[0]) {
-				// Chroma returns distances, convert to similarity score
-				qr.Score = float64(1.0 - result.Distances[0][i])
-			}
-
-			// Add metadata if available
-			if len(result.Metadatas) > 0 && i < len(result.Metadatas[0]) && result.Metadatas[0][i] != nil {
-				qr.Document.Metadata = make(map[string]interface{})
-				for k, v := range result.Metadatas[0][i] {
-					switch k {
-					case "url":
-						if s, ok := v.(string); ok {
-							qr.Document.URL = s
-						}
-					case "image":
-						if s, ok := v.(string); ok {
-							qr.Document.Image = s
-						}
-					default:
-						qr.Document.Metadata[k] = v
-					}
-				}
-			}
-
-			results = append(results, qr)
+	recordGroups := result.ToRecordsGroups()
+	if len(recordGroups) == 0 {
+		return results, nil
+	}
+	records := recordGroups[0] // First group for our single query
+	for _, record := range records {
+		qr := &vectordb.QueryResult{
+			Document: vectordb.Document{
+				ID: string(record.ID()),
+			},
 		}
+		if record.Document() != nil {
+			qr.Document.Content = record.Document().ContentString()
+		}
+
+		// Default score
+		qr.Score = 1.0
+
+		// Add metadata if available
+		if record.Metadata() != nil {
+			qr.Document.Metadata = make(map[string]interface{})
+			if v, ok := record.Metadata().GetString("url"); ok {
+				qr.Document.URL = v
+			}
+			if v, ok := record.Metadata().GetString("image"); ok {
+				qr.Document.Image = v
+			}
+			if v, ok := record.Metadata().GetString("filename"); ok {
+				qr.Document.Metadata["filename"] = v
+			}
+			if v, ok := record.Metadata().GetString("type"); ok {
+				qr.Document.Metadata["type"] = v
+			}
+		}
+
+		results = append(results, qr)
 	}
 
 	return results, nil
@@ -100,48 +102,71 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, me
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
 
-	// Get documents matching metadata filter
-	result, err := collection.Get(ctx, nil, metadata, nil, nil)
+	// Build where clauses from metadata
+	var clauses []chroma.WhereClause
+	for k, v := range metadata {
+		switch val := v.(type) {
+		case string:
+			clauses = append(clauses, chroma.EqString(k, val))
+		case int:
+			clauses = append(clauses, chroma.EqInt(k, val))
+		case float64:
+			clauses = append(clauses, chroma.EqFloat(k, float32(val)))
+		case bool:
+			clauses = append(clauses, chroma.EqBool(k, val))
+		}
+	}
+
+	// Build get options
+	getOpts := []chroma.CollectionGetOption{
+		chroma.WithIncludeGet(chroma.IncludeDocuments, chroma.IncludeMetadatas),
+	}
+
+	// Add where filter if we have clauses
+	if len(clauses) == 1 {
+		getOpts = append(getOpts, chroma.WithWhereGet(clauses[0]))
+	} else if len(clauses) > 1 {
+		getOpts = append(getOpts, chroma.WithWhereGet(chroma.And(clauses...)))
+	}
+
+	result, err := collection.Get(ctx, getOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("metadata search failed: %w", err)
 	}
 
 	// Convert results
 	var results []*vectordb.QueryResult
-	for i, id := range result.Ids {
+	records := result.ToRecords()
+	for _, record := range records {
 		qr := &vectordb.QueryResult{
 			Document: vectordb.Document{
-				ID: id,
+				ID: string(record.ID()),
 			},
 			Score: 1.0, // No score for metadata-only search
 		}
-
-		// Add content if available
-		if i < len(result.Documents) {
-			qr.Document.Content = result.Documents[i]
+		if record.Document() != nil {
+			qr.Document.Content = record.Document().ContentString()
 		}
 
 		// Add metadata if available
-		if i < len(result.Metadatas) && result.Metadatas[i] != nil {
+		if record.Metadata() != nil {
 			qr.Document.Metadata = make(map[string]interface{})
-			for k, v := range result.Metadatas[i] {
-				switch k {
-				case "url":
-					if s, ok := v.(string); ok {
-						qr.Document.URL = s
-					}
-				case "image":
-					if s, ok := v.(string); ok {
-						qr.Document.Image = s
-					}
-				default:
-					qr.Document.Metadata[k] = v
-				}
+			if v, ok := record.Metadata().GetString("url"); ok {
+				qr.Document.URL = v
+			}
+			if v, ok := record.Metadata().GetString("image"); ok {
+				qr.Document.Image = v
+			}
+			if v, ok := record.Metadata().GetString("filename"); ok {
+				qr.Document.Metadata["filename"] = v
+			}
+			if v, ok := record.Metadata().GetString("type"); ok {
+				qr.Document.Metadata["type"] = v
 			}
 		}
 

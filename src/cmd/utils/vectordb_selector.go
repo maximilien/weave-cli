@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, or --mock (found %d databases). "+
+					"Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -114,6 +114,8 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	useMongoDB, _ := cmd.Flags().GetBool("mongodb")
 	useMilvusLocal, _ := cmd.Flags().GetBool("milvus-local")
 	useMilvusCloud, _ := cmd.Flags().GetBool("milvus-cloud")
+	useChromaLocal, _ := cmd.Flags().GetBool("chroma-local")
+	useChromaCloud, _ := cmd.Flags().GetBool("chroma-cloud")
 	useMock, _ := cmd.Flags().GetBool("mock")
 	useAll, _ := cmd.Flags().GetBool("all")
 
@@ -121,7 +123,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useMock
+	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -174,6 +176,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *milvusCloudConfig)
 		types = append(types, string(milvusCloudConfig.Type))
+	}
+
+	if useChromaLocal {
+		chromaLocalConfig, err := getChromaLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Chroma Local configuration: %w", err)
+		}
+		configs = append(configs, *chromaLocalConfig)
+		types = append(types, string(chromaLocalConfig.Type))
+	}
+
+	if useChromaCloud {
+		chromaCloudConfig, err := getChromaCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Chroma Cloud configuration: %w", err)
+		}
+		configs = append(configs, *chromaCloudConfig)
+		types = append(types, string(chromaCloudConfig.Type))
 	}
 
 	if useMock {
@@ -315,6 +335,87 @@ func getMilvusCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	}
 
 	return nil, fmt.Errorf("no Milvus Cloud configuration found")
+}
+
+// getChromaLocalConfig returns Chroma Local configuration
+func getChromaLocalConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Chroma Local type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeChromaLocal {
+			return &dbConfig, nil
+		}
+	}
+
+	// Try to create from environment variables
+	if chromaConfig := tryCreateChromaLocalConfigFromEnv(); chromaConfig != nil {
+		return chromaConfig, nil
+	}
+
+	return nil, fmt.Errorf("no Chroma Local configuration found")
+}
+
+// getChromaCloudConfig returns Chroma Cloud configuration
+func getChromaCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Chroma Cloud type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeChromaCloud {
+			return &dbConfig, nil
+		}
+	}
+
+	// Try to create from environment variables
+	if chromaConfig := tryCreateChromaCloudConfigFromEnv(); chromaConfig != nil {
+		return chromaConfig, nil
+	}
+
+	return nil, fmt.Errorf("no Chroma Cloud configuration found")
+}
+
+// tryCreateChromaLocalConfigFromEnv attempts to create a Chroma Local config from environment variables
+func tryCreateChromaLocalConfigFromEnv() *config.VectorDBConfig {
+	url := os.Getenv("CHROMA_URL")
+
+	// Require URL for local
+	if url == "" {
+		return nil
+	}
+
+	return &config.VectorDBConfig{
+		Name:             "chroma-local",
+		Type:             config.VectorDBTypeChromaLocal,
+		URL:              url,
+		Database:         getEnvOrDefault("CHROMA_DATABASE", "default_database"),
+		VectorDimensions: 1536,
+		SimilarityMetric: "cosine",
+		Timeout:          30,
+	}
+}
+
+// tryCreateChromaCloudConfigFromEnv attempts to create a Chroma Cloud config from environment variables
+func tryCreateChromaCloudConfigFromEnv() *config.VectorDBConfig {
+	url := os.Getenv("CHROMA_CLOUD_URL")
+	apiKey := os.Getenv("CHROMA_CLOUD_API_KEY")
+
+	// Require both URL and API key for cloud
+	if url == "" || apiKey == "" {
+		return nil
+	}
+
+	// For Chroma Cloud, tenant is the team UUID and database is the database name
+	tenant := getEnvOrDefault("CHROMA_TENANT", "default_tenant")
+	database := getEnvOrDefault("CHROMA_DATABASE", "default_database")
+
+	return &config.VectorDBConfig{
+		Name:             "chroma-cloud",
+		Type:             config.VectorDBTypeChromaCloud,
+		URL:              url,
+		APIKey:           apiKey,
+		Tenant:           tenant,
+		Database:         database,
+		VectorDimensions: 1536,
+		SimilarityMetric: "cosine",
+		Timeout:          60, // Longer timeout for cloud connections
+	}
 }
 
 // tryCreateMilvusCloudConfigFromEnv attempts to create a Milvus Cloud config from environment variables

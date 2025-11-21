@@ -97,6 +97,8 @@ func runDocumentShow(cmd *cobra.Command, args []string) {
 		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
+	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+		utils.ShowDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	case config.VectorDBTypeMock:
 		utils.ShowMockDocument(ctx, dbConfig, collectionName, args[1:], showLong, shortLines, metadataFilters, name, showSchema, expandMetadata, jsonOutput)
 	default:

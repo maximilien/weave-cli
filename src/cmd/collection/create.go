@@ -274,6 +274,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeMock:
 		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	default:

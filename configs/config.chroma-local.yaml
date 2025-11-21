@@ -1,0 +1,35 @@
+---
+# Chroma Local Configuration
+# For local development using Docker/Podman
+
+databases:
+  # Set Chroma Local as the default database
+  default: chroma
+
+  vector_databases:
+    - name: chroma
+      type: chroma-local
+
+      # Connection settings
+      url: ${CHROMA_URL:-http://localhost:8000}
+      database: default_database
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, l2, ip
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example usage:
+# 1. Start Chroma:
+#    podman run -d --name chromadb -p 8000:8000 chromadb/chroma:0.6.2
+# 2. Set API key: export OPENAI_API_KEY="sk-..."
+# 3. Run weave:
+#    weave --config configs/config.chroma-local.yaml \
+#      --chroma-local cols ls

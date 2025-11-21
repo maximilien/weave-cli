@@ -62,6 +62,21 @@ Configuration for MongoDB Atlas Vector Search.
 - Requires MongoDB Atlas account with vector search enabled
 - Set `MONGODB_URI` and `MONGODB_DATABASE`
 
+### config.chroma-local.yaml
+
+Configuration for Chroma running locally.
+
+- Default URL: `http://localhost:8000`
+- No authentication required for local setup
+- Requires Docker/Podman: `podman run -d -p 8000:8000 chromadb/chroma:0.6.2`
+
+### config.chroma-cloud.yaml
+
+Configuration for Chroma Cloud.
+
+- Requires Chroma Cloud account
+- Set `CHROMA_CLOUD_URL` and `CHROMA_CLOUD_API_KEY`
+
 ## Environment Variables
 
 Most sensitive values (API keys, passwords) should be set via environment
@@ -86,6 +101,13 @@ SUPABASE_DATABASE_KEY="your-anon-key"
 # MongoDB
 MONGODB_URI="mongodb+srv://user:pass@cluster.mongodb.net/?appName=weave-cli"
 MONGODB_DATABASE="weave-cli"
+
+# Chroma Local
+CHROMA_URL="http://localhost:8000"
+
+# Chroma Cloud
+CHROMA_CLOUD_URL="https://your-instance.chroma.cloud"
+CHROMA_CLOUD_API_KEY="your-api-key"
 
 # OpenAI (required for embeddings)
 OPENAI_API_KEY="sk-..."
@@ -145,6 +167,7 @@ Then use flags to select which database to use:
 ```bash
 weave cols ls --weaviate      # Use Weaviate only
 weave cols ls --milvus-local  # Use Milvus local only
+weave cols ls --chroma-local  # Use Chroma local only
 weave cols ls --all           # Use all configured databases
 ```
 

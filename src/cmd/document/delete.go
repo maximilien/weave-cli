@@ -127,6 +127,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
+	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	case config.VectorDBTypeMock:
 		utils.DeleteMockDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	default:

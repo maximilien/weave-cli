@@ -8,15 +8,14 @@ import (
 	"fmt"
 	"time"
 
-	chroma "github.com/amikos-tech/chroma-go"
-	"github.com/amikos-tech/chroma-go/types"
+	chroma "github.com/amikos-tech/chroma-go/pkg/api/v2"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // Client wraps the Chroma client with vector database functionality
 type Client struct {
-	client *chroma.Client
+	client chroma.Client
 	config *Config
 }
 
@@ -57,27 +56,22 @@ func NewClient(config *Config) (*Client, error) {
 		config.Timeout = 10
 	}
 
-	// Create Chroma client
-	var client *chroma.Client
+	// Create Chroma client using v2 API
+	var client chroma.Client
 	var err error
 
-	if config.APIKey != "" {
-		// Chroma Cloud with API key
-		client, err = chroma.NewClient(
-			chroma.WithBasePath(config.URL),
-			chroma.WithAuth(types.NewTokenAuthCredentialsProvider(config.APIKey, types.AuthorizationTokenHeader)),
-			chroma.WithTenant(config.Tenant),
-			chroma.WithDatabase(config.Database),
-		)
-	} else {
-		// Local Chroma
-		client, err = chroma.NewClient(
-			chroma.WithBasePath(config.URL),
-			chroma.WithTenant(config.Tenant),
-			chroma.WithDatabase(config.Database),
-		)
+	// Build options
+	opts := []chroma.ClientOption{
+		chroma.WithBaseURL(config.URL),
+		chroma.WithDatabaseAndTenant(config.Database, config.Tenant),
 	}
 
+	// Add API key for cloud
+	if config.APIKey != "" {
+		opts = append(opts, chroma.WithCloudAPIKey(config.APIKey))
+	}
+
+	client, err = chroma.NewHTTPClient(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Chroma client: %w", err)
 	}
@@ -103,7 +97,7 @@ func (c *Client) Health(ctx context.Context) error {
 	defer cancel()
 
 	// Use heartbeat to check health
-	_, err := c.client.Heartbeat(ctx)
+	err := c.client.Heartbeat(ctx)
 	if err != nil {
 		return fmt.Errorf("Chroma health check failed: %w", err)
 	}
@@ -113,21 +107,23 @@ func (c *Client) Health(ctx context.Context) error {
 
 // Close closes the Chroma client connection
 func (c *Client) Close(ctx context.Context) error {
-	// Chroma Go client doesn't have a close method
+	if c.client != nil {
+		return c.client.Close()
+	}
 	return nil
 }
 
-// GetDistanceFunction returns the Chroma distance function for the configured similarity metric
-func (c *Client) GetDistanceFunction() types.DistanceFunction {
+// GetDistanceFunction returns the distance function string for the configured similarity metric
+func (c *Client) GetDistanceFunction() string {
 	switch c.config.SimilarityMetric {
 	case "l2", "euclidean":
-		return types.L2
+		return "l2"
 	case "ip", "inner_product":
-		return types.IP
+		return "ip"
 	case "cosine":
-		return types.COSINE
+		return "cosine"
 	default:
-		return types.COSINE
+		return "cosine"
 	}
 }
 
@@ -136,22 +132,18 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
-	// Build metadata from schema
-	metadata := make(map[string]interface{})
-	if schema != nil && schema.Vectorizer != "" {
-		metadata["vectorizer"] = schema.Vectorizer
-	}
+	// Build metadata options
+	var opts []chroma.CreateCollectionOption
 
-	// Create collection with distance function
-	// Use NewConsistentHashEmbeddingFunction to avoid loading ONNX models
-	_, err := c.client.CreateCollection(
-		ctx,
-		name,
-		map[string]interface{}{"hnsw:space": string(c.GetDistanceFunction())},
-		true, // createOrGet
-		types.NewConsistentHashEmbeddingFunction(), // Placeholder - we'll provide embeddings
-		c.GetDistanceFunction(),
-	)
+	// Add distance function metadata
+	opts = append(opts, chroma.WithCollectionMetadataCreate(
+		chroma.NewMetadata(
+			chroma.NewStringAttribute("hnsw:space", c.GetDistanceFunction()),
+		),
+	))
+
+	// Create collection
+	_, err := c.client.GetOrCreateCollection(ctx, name, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create collection %s: %w", name, err)
 	}
@@ -164,14 +156,17 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
-	// Get collection first to check if it exists
-	_, err := c.client.GetCollection(ctx, name, nil)
+	// Check if collection exists first
+	exists, err := c.CollectionExists(ctx, name)
 	if err != nil {
+		return err
+	}
+	if !exists {
 		return vectordb.ErrNotFound("collection", name)
 	}
 
 	// Delete the collection
-	_, err = c.client.DeleteCollection(ctx, name)
+	err = c.client.DeleteCollection(ctx, name)
 	if err != nil {
 		return fmt.Errorf("failed to delete collection %s: %w", name, err)
 	}
@@ -192,21 +187,17 @@ func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo
 	var result []vectordb.CollectionInfo
 	for _, col := range collections {
 		info := vectordb.CollectionInfo{
-			Name: col.Name,
+			Name: col.Name(),
 		}
 
-		// Get count for each collection
-		collection, err := c.client.GetCollection(ctx, col.Name, nil)
-		if err == nil {
-			count, err := collection.Count(ctx)
-			if err == nil {
-				info.Count = int64(count)
-			}
-		}
+		// Get count for each collection (ignore errors)
+		count, _ := col.Count(ctx)
+		info.Count = int64(count)
 
 		// Extract vectorizer from metadata if available
-		if col.Metadata != nil {
-			if v, ok := col.Metadata["vectorizer"].(string); ok {
+		metadata := col.Metadata()
+		if metadata != nil {
+			if v, ok := metadata.GetString("vectorizer"); ok {
 				info.Vectorizer = v
 			}
 		}
@@ -228,7 +219,7 @@ func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error
 	}
 
 	for _, col := range collections {
-		if col.Name == name {
+		if col.Name() == name {
 			return true, nil
 		}
 	}
@@ -241,7 +232,7 @@ func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, er
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
-	collection, err := c.client.GetCollection(ctx, name, nil)
+	collection, err := c.client.GetCollection(ctx, name)
 	if err != nil {
 		return 0, vectordb.ErrNotFound("collection", name)
 	}

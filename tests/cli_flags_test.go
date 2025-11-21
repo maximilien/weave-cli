@@ -172,4 +172,81 @@ func TestDatabaseFlagsExclusive(t *testing.T) {
 			t.Errorf("--mock flag should be recognized. Output: %s", string(output))
 		}
 	})
+
+	// Test that --chroma-local flag is recognized
+	t.Run("chroma-local flag recognized", func(t *testing.T) {
+		cmd := exec.Command(binary, "collection", "list", "--chroma-local", "--help")
+		cmd.Env = os.Environ()
+		output, _ := cmd.CombinedOutput()
+
+		if strings.Contains(string(output), "unknown flag") {
+			t.Errorf("--chroma-local flag should be recognized. Output: %s", string(output))
+		}
+	})
+
+	// Test that --chroma-cloud flag is recognized
+	t.Run("chroma-cloud flag recognized", func(t *testing.T) {
+		cmd := exec.Command(binary, "collection", "list", "--chroma-cloud", "--help")
+		cmd.Env = os.Environ()
+		output, _ := cmd.CombinedOutput()
+
+		if strings.Contains(string(output), "unknown flag") {
+			t.Errorf("--chroma-cloud flag should be recognized. Output: %s", string(output))
+		}
+	})
+}
+
+// TestChromaFlag tests the --chroma-local flag on various commands
+func TestChromaFlag(t *testing.T) {
+	// Skip if no Chroma URL is provided
+	chromaURL := os.Getenv("CHROMA_URL")
+	if chromaURL == "" {
+		t.Skip("Skipping Chroma flag test: CHROMA_URL environment variable not set")
+	}
+
+	binary := "../bin/weave"
+	if _, err := os.Stat(binary); os.IsNotExist(err) {
+		t.Skip("Skipping Chroma flag test: weave binary not found (run ./build.sh first)")
+	}
+
+	tests := []struct {
+		name    string
+		command []string
+		wantErr bool
+	}{
+		{
+			name:    "collection list with --chroma-local",
+			command: []string{"collection", "list", "--chroma-local"},
+			wantErr: false,
+		},
+		{
+			name:    "collection count with --chroma-local",
+			command: []string{"collection", "count", "--chroma-local"},
+			wantErr: false,
+		},
+		{
+			name:    "docs ls with --chroma-local",
+			command: []string{"docs", "ls", "--chroma-local"},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := exec.Command(binary, tt.command...)
+			cmd.Env = os.Environ()
+			output, err := cmd.CombinedOutput()
+
+			if tt.wantErr && err == nil {
+				t.Errorf("Expected error but got none. Output: %s", string(output))
+			}
+			if !tt.wantErr && err != nil {
+				// Check if error is "unknown flag" - this would indicate flag wasn't added
+				if strings.Contains(string(output), "unknown flag: --chroma-local") {
+					t.Errorf("Flag --chroma-local not recognized. Output: %s", string(output))
+				}
+				// Other errors are OK for this test (e.g., connection errors)
+			}
+		})
+	}
 }

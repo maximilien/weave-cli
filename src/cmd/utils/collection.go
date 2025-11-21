@@ -663,6 +663,131 @@ func ListMongoDBCollections(ctx context.Context, cfg *config.VectorDBConfig, lim
 	}
 }
 
+// ListChromaCollections lists Chroma collections
+func ListChromaCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		// Check if this might be a configuration error
+		formattedErr := config.FormatConfigError(err)
+		if formattedErr != err.Error() {
+			// Error was enhanced with configuration tips
+			PrintError(formattedErr)
+		} else {
+			PrintError(fmt.Sprintf("Failed to create Chroma client: %v", err))
+		}
+		return
+	}
+
+	// Add timeout to context for API operations
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	// List collections
+	collectionInfos, err := client.ListCollections(ctx)
+	if err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			PrintError("Failed to connect to Chroma: connection timeout after 30 seconds")
+			fmt.Println()
+			PrintInfo("Please check that:")
+			PrintInfo("  1. Chroma is running (for local) or credentials are correct (for cloud)")
+			PrintInfo("  2. The address is correct")
+			PrintInfo("  3. There are no network/firewall issues")
+		} else {
+			PrintError(fmt.Sprintf("Failed to list collections: %v", err))
+		}
+		return
+	}
+
+	if len(collectionInfos) == 0 {
+		if !jsonOutput {
+			PrintWarning("No collections found in the Chroma database")
+		} else {
+			// Output empty JSON
+			fmt.Println(`{"collections": [], "total": 0}`)
+		}
+		return
+	}
+
+	// Sort collections alphabetically by name
+	sort.Slice(collectionInfos, func(i, j int) bool {
+		return collectionInfos[i].Name < collectionInfos[j].Name
+	})
+
+	// Apply limit if specified
+	if limit > 0 && len(collectionInfos) > limit {
+		collectionInfos = collectionInfos[:limit]
+	}
+
+	if !jsonOutput {
+		PrintSuccess(fmt.Sprintf("Found %d collections:", len(collectionInfos)))
+		if limit > 0 && len(collectionInfos) == limit {
+			PrintInfo(fmt.Sprintf("(showing first %d collections)", limit))
+		}
+		fmt.Println()
+
+		// Display collections in compact format
+		for i, info := range collectionInfos {
+			// Color coding: green for collections with documents, yellow for empty
+			var nameColor string
+			if info.Count > 0 {
+				nameColor = GetStyledKeyProminent(info.Name)
+			} else {
+				nameColor = GetStyledKeyDimmed(info.Name)
+			}
+
+			// Document count with color
+			var countStr string
+			if info.Count > 0 {
+				countStr = GetStyledNumber(fmt.Sprintf("%d items", info.Count))
+			} else {
+				countStr = GetStyledValueDimmed("empty")
+			}
+
+			// Vectorizer/embedding model info
+			var vectorizerStr string
+			if info.Vectorizer != "" {
+				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
+			}
+
+			// Display collection info with vector icon
+			fmt.Printf("%2d. %s %s%s 🔍\n", i+1, nameColor, countStr, vectorizerStr)
+		}
+	} else {
+		// JSON output
+		type CollectionJSON struct {
+			Name       string `json:"name"`
+			Count      int64  `json:"count"`
+			Vectorizer string `json:"vectorizer,omitempty"`
+		}
+
+		type OutputJSON struct {
+			Collections []CollectionJSON `json:"collections"`
+			Total       int              `json:"total"`
+		}
+
+		collections := make([]CollectionJSON, len(collectionInfos))
+		for i, info := range collectionInfos {
+			collections[i] = CollectionJSON{
+				Name:       info.Name,
+				Count:      info.Count,
+				Vectorizer: info.Vectorizer,
+			}
+		}
+
+		output := OutputJSON{
+			Collections: collections,
+			Total:       len(collections),
+		}
+
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
+	}
+}
+
 // ListMilvusCollections lists Milvus collections
 func ListMilvusCollections(ctx context.Context, cfg *config.VectorDBConfig, limit int, virtual bool, jsonOutput bool) {
 	client, err := CreateVectorDBClient(cfg)

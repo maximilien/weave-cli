@@ -37,6 +37,8 @@ var (
 	useMongoDB     bool
 	useMilvusLocal bool
 	useMilvusCloud bool
+	useChromaLocal bool
+	useChromaCloud bool
 	useMock        bool
 	useAll         bool
 )
@@ -94,6 +96,8 @@ Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase P
   --mongodb                            # Use MongoDB database only
   --milvus-local                       # Use Milvus local database only
   --milvus-cloud                       # Use Milvus cloud (Zilliz) database only
+  --chroma-local                       # Use Chroma local database only
+  --chroma-cloud                       # Use Chroma cloud database only
   --mock                               # Use mock database only
   --all                                # Use all configured databases (default)
 
@@ -153,6 +157,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useMongoDB, "mongodb", false, "use MongoDB Atlas Vector Search database")
 	rootCmd.PersistentFlags().BoolVar(&useMilvusLocal, "milvus-local", false, "use Milvus local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMilvusCloud, "milvus-cloud", false, "use Milvus cloud (Zilliz) vector database")
+	rootCmd.PersistentFlags().BoolVar(&useChromaLocal, "chroma-local", false, "use Chroma local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useChromaCloud, "chroma-cloud", false, "use Chroma cloud vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
 
@@ -181,6 +187,8 @@ func init() {
 	_ = viper.BindPFlag("mongodb", rootCmd.PersistentFlags().Lookup("mongodb"))
 	_ = viper.BindPFlag("milvus-local", rootCmd.PersistentFlags().Lookup("milvus-local"))
 	_ = viper.BindPFlag("milvus-cloud", rootCmd.PersistentFlags().Lookup("milvus-cloud"))
+	_ = viper.BindPFlag("chroma-local", rootCmd.PersistentFlags().Lookup("chroma-local"))
+	_ = viper.BindPFlag("chroma-cloud", rootCmd.PersistentFlags().Lookup("chroma-cloud"))
 	_ = viper.BindPFlag("mock", rootCmd.PersistentFlags().Lookup("mock"))
 	_ = viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 

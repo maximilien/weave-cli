@@ -80,7 +80,8 @@ type VectorDBConfig struct {
 	APIKey             string       `yaml:"api_key,omitempty"`
 	DatabaseURL        string       `yaml:"database_url,omitempty"`      // For Supabase
 	DatabaseKey        string       `yaml:"database_key,omitempty"`      // For Supabase
-	Database           string       `yaml:"database,omitempty"`          // For MongoDB, Milvus
+	Database           string       `yaml:"database,omitempty"`          // For MongoDB, Milvus, Chroma
+	Tenant             string       `yaml:"tenant,omitempty"`            // For Chroma Cloud
 	VectorDimensions   int          `yaml:"vector_dimensions,omitempty"` // For MongoDB, Milvus
 	SimilarityMetric   string       `yaml:"similarity_metric,omitempty"` // For MongoDB, Milvus
 	Address            string       `yaml:"address,omitempty"`           // For Milvus

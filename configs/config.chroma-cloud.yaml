@@ -1,0 +1,42 @@
+---
+# Chroma Cloud Configuration
+# For Chroma's managed cloud service
+
+databases:
+  # Set Chroma Cloud as the default database
+  default: chroma-cloud
+
+  vector_databases:
+    - name: chroma-cloud
+      type: chroma-cloud
+
+      # Connection settings (use environment variables)
+      url: ${CHROMA_CLOUD_URL}
+      api_key: ${CHROMA_CLOUD_API_KEY}
+      database: default_database
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, l2, ip
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Environment variables required:
+# - CHROMA_CLOUD_URL: Your Chroma Cloud instance URL
+# - CHROMA_CLOUD_API_KEY: Your Chroma Cloud API key
+# - OPENAI_API_KEY: For embedding generation
+
+# Example usage:
+# 1. Set environment variables:
+#    export CHROMA_CLOUD_URL="https://your-instance.chroma.cloud"
+#    export CHROMA_CLOUD_API_KEY="your-api-key"
+#    export OPENAI_API_KEY="sk-..."
+# 2. Run weave:
+#    weave --config configs/config.chroma-cloud.yaml \
+#      --chroma-cloud cols ls

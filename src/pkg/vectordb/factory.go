@@ -46,6 +46,7 @@ type Config struct {
 	Username string `yaml:"username,omitempty"`
 	Password string `yaml:"password,omitempty"`
 	Database string `yaml:"database,omitempty"`
+	Tenant   string `yaml:"tenant,omitempty"`
 
 	// MongoDB-specific configuration
 	VectorDimensions int    `yaml:"vector_dimensions,omitempty"`
@@ -132,7 +133,8 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 		APIKey:             cfg.APIKey,
 		DatabaseURL:        cfg.DatabaseURL,      // For Supabase
 		DatabaseKey:        cfg.DatabaseKey,      // For Supabase
-		Database:           cfg.Database,         // For MongoDB, Milvus
+		Database:           cfg.Database,         // For MongoDB, Milvus, Chroma
+		Tenant:             cfg.Tenant,           // For Chroma Cloud
 		VectorDimensions:   cfg.VectorDimensions, // For MongoDB, Milvus
 		SimilarityMetric:   cfg.SimilarityMetric, // For MongoDB, Milvus
 		Address:            cfg.Address,          // For Milvus

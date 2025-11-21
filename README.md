@@ -93,6 +93,43 @@ weave health check
 semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md)
 for detailed instructions.
 
+### Chroma Setup (Beta)
+
+> **🧪 Beta**: Chroma support is feature complete and functional. Supports both
+> local development and cloud deployment. See the
+> [Chroma Documentation](docs/chroma/) for comprehensive setup guide.
+
+To use Chroma locally:
+
+```bash
+# Start Chroma using podman (preferred) or docker
+podman run -d --name chromadb -p 8000:8000 chromadb/chroma:0.6.2
+
+# Set OpenAI API key for automatic embeddings
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use local Chroma
+weave config create --database-type chroma-local
+
+# Verify Chroma connection
+weave health check
+```
+
+To use Chroma Cloud:
+
+```bash
+# Set Chroma Cloud credentials
+export CHROMA_CLOUD_URL="https://your-instance.chroma.cloud"
+export CHROMA_CLOUD_API_KEY="your-api-key"
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use Chroma Cloud
+weave config create --database-type chroma-cloud
+
+# Verify connection
+weave health check
+```
+
 ### Milvus Setup (Beta)
 
 > **🧪 Beta**: Milvus support is feature complete and functional. Supports both
@@ -143,6 +180,8 @@ weave cols ls --supabase      # Supabase only
 weave cols ls --mongodb       # MongoDB Atlas only
 weave cols ls --milvus-local  # Milvus local only
 weave cols ls --milvus-cloud  # Milvus cloud (Zilliz) only
+weave cols ls --chroma-local  # Chroma local only
+weave cols ls --chroma-cloud  # Chroma cloud only
 weave cols ls --mock          # Mock database only
 weave cols ls --all           # All configured databases
 
@@ -182,7 +221,7 @@ weave cols create MyCollection -e text-embedding-ada-002
   (AI Agent mode) with real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
-  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas)
+  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -212,6 +251,7 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ### Database-Specific
 
+- **[Chroma Documentation](docs/chroma/)** - Chroma integration guide (Beta)
 - **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
 - **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
@@ -352,6 +392,8 @@ allows seamless switching between different vector database backends.
 | **Milvus Cloud** | `milvus-cloud` | ✅ Functional | **Beta** - Zilliz cloud integration ready | [Guide](docs/milvus/) |
 | **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/supabase/) |
 | **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
+| **Chroma Local** | `chroma-local` | ✅ Functional | **Beta** - Feature complete, local testing ready | [Guide](docs/chroma/) |
+| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration ready | [Guide](docs/chroma/) |
 | **Mock** | `mock` | ✅ Testing Only | **Stable** | - |
 
 ### Maturity Levels

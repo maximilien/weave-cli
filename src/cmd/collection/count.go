@@ -61,6 +61,8 @@ func runCollectionCount(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		count, err = utils.CountGenericCollections(ctx, dbConfig)
+	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+		count, err = utils.CountGenericCollections(ctx, dbConfig)
 	case config.VectorDBTypeMock:
 		count, err = utils.CountMockCollections(ctx, dbConfig)
 	default:

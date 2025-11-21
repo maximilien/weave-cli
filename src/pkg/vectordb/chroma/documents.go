@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	chroma "github.com/amikos-tech/chroma-go/pkg/api/v2"
+
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -16,41 +18,49 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
-
-	// Prepare document data
-	ids := []string{document.ID}
 
 	// Prepare content - use Content or Text
 	content := document.Content
 	if content == "" {
 		content = document.Text
 	}
-	documents := []string{content}
 
-	// Prepare metadata
-	metadatas := []map[string]interface{}{}
-	metadata := make(map[string]interface{})
+	// Prepare metadata map
+	metadataMap := make(map[string]interface{})
 	if document.Metadata != nil {
 		for k, v := range document.Metadata {
-			metadata[k] = v
+			metadataMap[k] = v
 		}
 	}
 	// Add standard fields to metadata
 	if document.URL != "" {
-		metadata["url"] = document.URL
+		metadataMap["url"] = document.URL
 	}
 	if document.Image != "" {
-		metadata["image"] = document.Image
+		metadataMap["image"] = document.Image
 	}
-	metadatas = append(metadatas, metadata)
+
+	// Build add options
+	addOpts := []chroma.CollectionAddOption{
+		chroma.WithIDs(chroma.DocumentID(document.ID)),
+		chroma.WithTexts(content),
+	}
+
+	// Add metadata if we have any
+	if len(metadataMap) > 0 {
+		metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
+		if err != nil {
+			return fmt.Errorf("failed to create metadata: %w", err)
+		}
+		addOpts = append(addOpts, chroma.WithMetadatas(metadata))
+	}
 
 	// Add document to collection
-	// Note: Chroma will use its embedding function to generate embeddings
-	_, err = collection.Add(ctx, nil, metadatas, documents, ids)
+	err = collection.Add(ctx, addOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create document %s: %w", document.ID, err)
 	}
@@ -64,44 +74,50 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
 
-	// Get document by ID using Get with IDs filter
-	result, err := collection.Get(ctx, nil, nil, []string{documentID}, nil)
+	// Get document by ID
+	result, err := collection.Get(ctx,
+		chroma.WithIDsGet(chroma.DocumentID(documentID)),
+		chroma.WithIncludeGet(chroma.IncludeDocuments, chroma.IncludeMetadatas),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get document %s: %w", documentID, err)
 	}
 
 	// Check if document was found
-	if len(result.Documents) == 0 {
+	records := result.ToRecords()
+	if len(records) == 0 {
 		return nil, vectordb.ErrNotFound("document", documentID)
 	}
 
 	// Build document from result
+	record := records[0]
 	doc := &vectordb.Document{
-		ID:      documentID,
-		Content: result.Documents[0],
+		ID: string(record.ID()),
+	}
+	if record.Document() != nil {
+		doc.Content = record.Document().ContentString()
 	}
 
-	// Extract metadata
-	if len(result.Metadatas) > 0 && result.Metadatas[0] != nil {
+	// Extract metadata - check known keys
+	if record.Metadata() != nil {
 		doc.Metadata = make(map[string]interface{})
-		for k, v := range result.Metadatas[0] {
-			switch k {
-			case "url":
-				if s, ok := v.(string); ok {
-					doc.URL = s
-				}
-			case "image":
-				if s, ok := v.(string); ok {
-					doc.Image = s
-				}
-			default:
-				doc.Metadata[k] = v
-			}
+		if v, ok := record.Metadata().GetString("url"); ok {
+			doc.URL = v
+		}
+		if v, ok := record.Metadata().GetString("image"); ok {
+			doc.Image = v
+		}
+		// Copy other common metadata fields
+		if v, ok := record.Metadata().GetString("filename"); ok {
+			doc.Metadata["filename"] = v
+		}
+		if v, ok := record.Metadata().GetString("type"); ok {
+			doc.Metadata["type"] = v
 		}
 	}
 
@@ -114,39 +130,48 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, docu
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
-
-	// Prepare document data
-	ids := []string{document.ID}
 
 	// Prepare content
 	content := document.Content
 	if content == "" {
 		content = document.Text
 	}
-	documents := []string{content}
 
-	// Prepare metadata
-	metadatas := []map[string]interface{}{}
-	metadata := make(map[string]interface{})
+	// Prepare metadata map
+	metadataMap := make(map[string]interface{})
 	if document.Metadata != nil {
 		for k, v := range document.Metadata {
-			metadata[k] = v
+			metadataMap[k] = v
 		}
 	}
 	if document.URL != "" {
-		metadata["url"] = document.URL
+		metadataMap["url"] = document.URL
 	}
 	if document.Image != "" {
-		metadata["image"] = document.Image
+		metadataMap["image"] = document.Image
 	}
-	metadatas = append(metadatas, metadata)
 
-	// Update document using Modify (updates existing documents)
-	_, err = collection.Modify(ctx, nil, metadatas, documents, ids)
+	// Build update options
+	updateOpts := []chroma.CollectionUpdateOption{
+		chroma.WithIDsUpdate(chroma.DocumentID(document.ID)),
+		chroma.WithTextsUpdate(content),
+	}
+
+	// Add metadata if we have any
+	if len(metadataMap) > 0 {
+		metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
+		if err != nil {
+			return fmt.Errorf("failed to create metadata: %w", err)
+		}
+		updateOpts = append(updateOpts, chroma.WithMetadatasUpdate(metadata))
+	}
+
+	// Update document
+	err = collection.Update(ctx, updateOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to update document %s: %w", document.ID, err)
 	}
@@ -160,13 +185,13 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
 
 	// Delete document by ID
-	_, err = collection.Delete(ctx, []string{documentID}, nil, nil)
+	err = collection.Delete(ctx, chroma.WithIDsDelete(chroma.DocumentID(documentID)))
 	if err != nil {
 		return fmt.Errorf("failed to delete document %s: %w", documentID, err)
 	}
@@ -180,45 +205,55 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
 
-	// Get all documents (Chroma Get without filters returns all)
-	result, err := collection.Get(ctx, nil, nil, nil, nil)
+	// Build get options
+	getOpts := []chroma.CollectionGetOption{
+		chroma.WithIncludeGet(chroma.IncludeDocuments, chroma.IncludeMetadatas),
+	}
+	if limit > 0 {
+		getOpts = append(getOpts, chroma.WithLimitGet(limit+offset))
+	}
+
+	// Get all documents
+	result, err := collection.Get(ctx, getOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list documents: %w", err)
 	}
 
 	// Build document list
 	var docs []*vectordb.Document
-	for i, id := range result.Ids {
-		doc := &vectordb.Document{
-			ID: id,
+	records := result.ToRecords()
+	for i, record := range records {
+		// Apply offset
+		if i < offset {
+			continue
 		}
 
-		// Add content if available
-		if i < len(result.Documents) {
-			doc.Content = result.Documents[i]
+		doc := &vectordb.Document{
+			ID: string(record.ID()),
+		}
+		if record.Document() != nil {
+			doc.Content = record.Document().ContentString()
 		}
 
 		// Add metadata if available
-		if i < len(result.Metadatas) && result.Metadatas[i] != nil {
+		if record.Metadata() != nil {
 			doc.Metadata = make(map[string]interface{})
-			for k, v := range result.Metadatas[i] {
-				switch k {
-				case "url":
-					if s, ok := v.(string); ok {
-						doc.URL = s
-					}
-				case "image":
-					if s, ok := v.(string); ok {
-						doc.Image = s
-					}
-				default:
-					doc.Metadata[k] = v
-				}
+			if v, ok := record.Metadata().GetString("url"); ok {
+				doc.URL = v
+			}
+			if v, ok := record.Metadata().GetString("image"); ok {
+				doc.Image = v
+			}
+			if v, ok := record.Metadata().GetString("filename"); ok {
+				doc.Metadata["filename"] = v
+			}
+			if v, ok := record.Metadata().GetString("type"); ok {
+				doc.Metadata["type"] = v
 			}
 		}
 
@@ -243,18 +278,18 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
 
 	// Prepare batch data
-	var ids []string
+	var ids []chroma.DocumentID
 	var contents []string
-	var metadatas []map[string]interface{}
+	var metadatas []chroma.DocumentMetadata
 
 	for _, doc := range documents {
-		ids = append(ids, doc.ID)
+		ids = append(ids, chroma.DocumentID(doc.ID))
 
 		// Prepare content
 		content := doc.Content
@@ -263,24 +298,29 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 		}
 		contents = append(contents, content)
 
-		// Prepare metadata
-		metadata := make(map[string]interface{})
+		// Prepare metadata map
+		metadataMap := make(map[string]interface{})
 		if doc.Metadata != nil {
 			for k, v := range doc.Metadata {
-				metadata[k] = v
+				metadataMap[k] = v
 			}
 		}
 		if doc.URL != "" {
-			metadata["url"] = doc.URL
+			metadataMap["url"] = doc.URL
 		}
 		if doc.Image != "" {
-			metadata["image"] = doc.Image
+			metadataMap["image"] = doc.Image
 		}
+		metadata, _ := chroma.NewDocumentMetadataFromMap(metadataMap)
 		metadatas = append(metadatas, metadata)
 	}
 
 	// Add all documents
-	_, err = collection.Add(ctx, nil, metadatas, contents, ids)
+	err = collection.Add(ctx,
+		chroma.WithIDs(ids...),
+		chroma.WithTexts(contents...),
+		chroma.WithMetadatas(metadatas...),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create documents: %w", err)
 	}
@@ -298,13 +338,19 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, doc
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
 
+	// Convert to DocumentIDs
+	var ids []chroma.DocumentID
+	for _, id := range documentIDs {
+		ids = append(ids, chroma.DocumentID(id))
+	}
+
 	// Delete documents by IDs
-	_, err = collection.Delete(ctx, documentIDs, nil, nil)
+	err = collection.Delete(ctx, chroma.WithIDsDelete(ids...))
 	if err != nil {
 		return fmt.Errorf("failed to delete documents: %w", err)
 	}
@@ -318,13 +364,36 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName, nil)
+	collection, err := c.client.GetCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
 
+	// Build where clauses from metadata
+	var clauses []chroma.WhereClause
+	for k, v := range metadata {
+		switch val := v.(type) {
+		case string:
+			clauses = append(clauses, chroma.EqString(k, val))
+		case int:
+			clauses = append(clauses, chroma.EqInt(k, val))
+		case float64:
+			clauses = append(clauses, chroma.EqFloat(k, float32(val)))
+		case bool:
+			clauses = append(clauses, chroma.EqBool(k, val))
+		}
+	}
+
+	// Build delete options
+	var deleteOpts []chroma.CollectionDeleteOption
+	if len(clauses) == 1 {
+		deleteOpts = append(deleteOpts, chroma.WithWhereDelete(clauses[0]))
+	} else if len(clauses) > 1 {
+		deleteOpts = append(deleteOpts, chroma.WithWhereDelete(chroma.And(clauses...)))
+	}
+
 	// Delete documents matching metadata filter
-	_, err = collection.Delete(ctx, nil, metadata, nil)
+	err = collection.Delete(ctx, deleteOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to delete documents by metadata: %w", err)
 	}

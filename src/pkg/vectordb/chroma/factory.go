@@ -22,7 +22,7 @@ func (f *Factory) CreateClient(config *vectordb.Config) (vectordb.VectorDBClient
 	chromaConfig := &Config{
 		URL:              config.URL,
 		APIKey:           config.APIKey,
-		Tenant:           "default_tenant",
+		Tenant:           config.Tenant,
 		Database:         config.Database,
 		Timeout:          config.Timeout,
 		VectorDimensions: config.VectorDimensions,
@@ -30,6 +30,9 @@ func (f *Factory) CreateClient(config *vectordb.Config) (vectordb.VectorDBClient
 	}
 
 	// Set defaults
+	if chromaConfig.Tenant == "" {
+		chromaConfig.Tenant = "default_tenant"
+	}
 	if chromaConfig.Database == "" {
 		chromaConfig.Database = "default_database"
 	}

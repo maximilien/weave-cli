@@ -10,6 +10,8 @@ This document tracks feature support and compatibility across different vector d
 | Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` | v0.3.x |
 | Milvus Local | Self-hosted | 🧪 Beta | `milvus-local` | v0.3.16+ |
 | Milvus Cloud (Zilliz) | Cloud | 🧪 Beta | `milvus-cloud` | v0.3.16+ |
+| Chroma Local | Self-hosted | 🧪 Beta | `chroma-local` | v0.6.0 |
+| Chroma Cloud | Cloud | 🧪 Beta | `chroma-cloud` | v0.6.0 |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
 | MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |
@@ -21,76 +23,76 @@ This document tracks feature support and compatibility across different vector d
 
 ### Core Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|----------|---------|------|-------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI |
-| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less |
-| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI |
+| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less |
+| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation |
 
 ### Document Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|----------|---------|------|-------|
-| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Auto-embedding with OpenAI |
-| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Delete + insert |
-| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Auto-embedding with OpenAI |
+| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Delete + insert |
+| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Search Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|----------|---------|------|-------|
-| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: IVF_FLAT index |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Native BM25 support |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: RRF fusion |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: JSON field filtering |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: IVF_FLAT index |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | Milvus: Native BM25 support; Chroma: Not supported |
+| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | Milvus: RRF fusion; Chroma: Falls back to vector search |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: JSON field filtering |
 
 ### Embedding Support
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|----------|---------|------|-------|
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: text-embedding-3-small default |
-| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
-| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Manual embeddings |
-| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | Supabase: Limited |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: text-embedding-3-small default |
+| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
+| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
+| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Manual embeddings |
+| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | Supabase: Limited |
 
 ### CLI Commands
 
-| Command | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|----------|---------|------|-------|
-| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Command | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Configuration
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|----------|---------|------|-------|
-| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `~/.weave-cli` |
-| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `~/.weave-cli` |
+| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ## Database-Specific Notes
 
@@ -199,6 +201,49 @@ databases:
 **Documentation:**
 - [MongoDB Integration Guide](mongodb/README.md)
 - [Atlas Setup Instructions](mongodb/ATLAS_SETUP.md)
+
+### Chroma (Local & Cloud)
+
+**Status:** Beta - Core functionality complete, ready for testing
+
+**Strengths:**
+- Simple API, easy to get started
+- Python-friendly ecosystem
+- Good for development and prototyping
+- Lightweight and fast for smaller datasets
+
+**Considerations:**
+- No native BM25 search (keyword search not supported)
+- Simpler feature set than enterprise VDBs
+- Hybrid search falls back to vector-only search
+
+**Configuration (Local):**
+```yaml
+databases:
+  default: chroma-local
+  vector_databases:
+    - name: chroma-local
+      type: chroma-local
+      url: ${CHROMA_URL}
+      openai_api_key: ${OPENAI_API_KEY}
+```
+
+**Configuration (Cloud):**
+```yaml
+databases:
+  default: chroma-cloud
+  vector_databases:
+    - name: chroma-cloud
+      type: chroma-cloud
+      url: ${CHROMA_CLOUD_URL}
+      api_key: ${CHROMA_CLOUD_API_KEY}
+      openai_api_key: ${OPENAI_API_KEY}
+```
+
+**Environment Variables:**
+- `CHROMA_URL` - URL for local Chroma instance (e.g., `http://localhost:8000`)
+- `CHROMA_CLOUD_URL` - URL for Chroma Cloud instance
+- `CHROMA_CLOUD_API_KEY` - API key for Chroma Cloud authentication
 
 ### Milvus (🧪 Beta)
 
