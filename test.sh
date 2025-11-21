@@ -61,8 +61,9 @@ print_help() {
     echo "  --milvus    Run only Milvus integration tests"
     echo "  --supabase  Run only Supabase integration tests"
     echo "  --mongodb   Run only MongoDB integration tests"
+    echo "  --chroma    Run only Chroma integration tests"
     echo "  --mcp       Run only MCP integration tests"
-    echo "  --skip      Skip specified tests (e.g., --skip mcp weaviate)"
+    echo "  --skip      Skip specified tests (e.g., --skip mcp,weaviate)"
     echo ""
     echo "Examples:"
     echo "  ./test.sh unit                    # Run only unit tests"
@@ -71,8 +72,9 @@ print_help() {
     echo "  ./test.sh integration --milvus    # Run only Milvus integration tests"
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
     echo "  ./test.sh integration --mongodb   # Run only MongoDB integration tests"
+    echo "  ./test.sh integration --chroma    # Run only Chroma integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
-    echo "  ./test.sh integration --skip mcp weaviate  # Skip MCP and Weaviate tests"
+    echo "  ./test.sh integration --skip mcp,weaviate  # Skip MCP and Weaviate tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all                     # Run all tests"
     echo "  ./test.sh coverage                # Run tests with coverage report"
@@ -89,6 +91,7 @@ print_help() {
     echo "    - Milvus client testing (requires Milvus running locally at localhost:19530)"
     echo "    - Supabase client testing (requires SUPABASE_DATABASE_URL, SUPABASE_DATABASE_KEY)"
     echo "    - MongoDB client testing (requires MONGODB_URI, MONGODB_DATABASE)"
+    echo "    - Chroma client testing (requires Chroma running locally at localhost:8000)"
     echo "    - MCP server testing (requires OPENAI_API_KEY, WEAVE_MCP_STDIO_PATH)"
     echo "    - CLI command testing"
     echo "    - End-to-end workflow testing"
@@ -185,6 +188,7 @@ run_integration_tests() {
     local run_milvus=false
     local run_supabase=false
     local run_mongodb=false
+    local run_chroma=false
     local run_mcp=false
     local run_all=true
 
@@ -193,6 +197,7 @@ run_integration_tests() {
     local skip_milvus=false
     local skip_supabase=false
     local skip_mongodb=false
+    local skip_chroma=false
     local skip_mcp=false
     local in_skip_mode=false
 
@@ -215,6 +220,9 @@ run_integration_tests() {
                         ;;
                     mongodb)
                         skip_mongodb=true
+                        ;;
+                    chroma)
+                        skip_chroma=true
                         ;;
                     mcp)
                         skip_mcp=true
@@ -248,6 +256,10 @@ run_integration_tests() {
                 run_mongodb=true
                 run_all=false
                 ;;
+            --chroma)
+                run_chroma=true
+                run_all=false
+                ;;
             --mcp)
                 run_mcp=true
                 run_all=false
@@ -264,6 +276,7 @@ run_integration_tests() {
         run_milvus=true
         run_supabase=true
         run_mongodb=true
+        run_chroma=true
         run_mcp=true
 
         # Run fast integration tests (mock only)
@@ -294,6 +307,10 @@ run_integration_tests() {
     if [ "$skip_mongodb" = true ]; then
         run_mongodb=false
         print_status "Skipping MongoDB tests (--skip)"
+    fi
+    if [ "$skip_chroma" = true ]; then
+        run_chroma=false
+        print_status "Skipping Chroma tests (--skip)"
     fi
     if [ "$skip_mcp" = true ]; then
         run_mcp=false
@@ -461,6 +478,65 @@ run_integration_tests() {
             print_warning "Skipping MongoDB integration tests - credentials not configured"
             print_status "Set MONGODB_URI and MONGODB_DATABASE to run MongoDB tests"
             vdb_names+=("MongoDB")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
+        fi
+    fi
+
+    # Run Chroma integration tests if requested
+    if [ "$run_chroma" = true ]; then
+        # Check if Chroma is running locally (port 8000)
+        local chroma_available=false
+        local chroma_url="${CHROMA_URL:-http://localhost:8000}"
+        local chroma_host="localhost"
+        local chroma_port="8000"
+
+        # Parse host:port from URL
+        if [[ "$chroma_url" =~ ://([^:/]+):([0-9]+) ]]; then
+            chroma_host="${BASH_REMATCH[1]}"
+            chroma_port="${BASH_REMATCH[2]}"
+        elif [[ "$chroma_url" =~ ://([^:/]+) ]]; then
+            chroma_host="${BASH_REMATCH[1]}"
+        fi
+
+        # Check if we can connect to Chroma port
+        if nc -z -w 2 "$chroma_host" "$chroma_port" 2>/dev/null; then
+            chroma_available=true
+        fi
+
+        if [ "$chroma_available" = true ] || [ -n "$CHROMA_API_KEY" ]; then
+            if [ "$chroma_available" = true ]; then
+                print_status "Running Chroma integration tests (local)..."
+            else
+                print_status "Running Chroma integration tests (cloud)..."
+            fi
+            total_suites=$((total_suites + 1))
+            vdb_names+=("Chroma")
+            output=$(go test -v -timeout=2m -count=1 -tags=integration ./tests/... -run="TestChroma" 2>&1)
+            exit_code=$?
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
+                print_success "Chroma integration tests passed!"
+                passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
+            else
+                print_warning "Chroma integration tests failed"
+                failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
+            fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            echo "$output"
+        else
+            print_warning "Skipping Chroma integration tests - Chroma not running"
+            print_status "Start Chroma with: podman run -d -p 8000:8000 chromadb/chroma:0.6.2"
+            vdb_names+=("Chroma")
             vdb_status+=("SKIP")
             vdb_passed+=("0")
             vdb_failed+=("0")
