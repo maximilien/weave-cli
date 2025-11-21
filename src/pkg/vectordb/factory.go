@@ -20,6 +20,8 @@ const (
 	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
 	VectorDBTypeMilvusCloud   VectorDBType = "milvus-cloud"
 	VectorDBTypeMongoDB       VectorDBType = "mongodb"
+	VectorDBTypeChromaLocal   VectorDBType = "chroma-local"
+	VectorDBTypeChromaCloud   VectorDBType = "chroma-cloud"
 )
 
 // Config represents the configuration for a vector database client
