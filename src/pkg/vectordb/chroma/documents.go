@@ -38,7 +38,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 			switch v.(type) {
 			case string, int, int32, int64, float32, float64, bool:
 				metadataMap[k] = v
-			// Skip arrays, slices, maps and other complex types
+				// Skip arrays, slices, maps and other complex types
 			}
 		}
 	}
@@ -94,35 +94,38 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 		return nil, fmt.Errorf("failed to get document %s: %w", documentID, err)
 	}
 
-	// Check if document was found
-	records := result.ToRecords()
-	if len(records) == 0 {
+	// Check if document was found using raw result data
+	ids := result.GetIDs()
+	if len(ids) == 0 {
 		return nil, vectordb.ErrNotFound("document", documentID)
 	}
 
-	// Build document from result
-	record := records[0]
+	// Build document from raw result data
 	doc := &vectordb.Document{
-		ID: string(record.ID()),
+		ID: string(ids[0]),
 	}
-	if record.Document() != nil {
-		doc.Content = record.Document().ContentString()
+
+	// Get document content if available
+	documents := result.GetDocuments()
+	if len(documents) > 0 && documents[0] != nil {
+		doc.Content = documents[0].ContentString()
 	}
 
 	// Extract metadata - check known keys
-	if record.Metadata() != nil {
+	metadatas := result.GetMetadatas()
+	if len(metadatas) > 0 && metadatas[0] != nil {
 		doc.Metadata = make(map[string]interface{})
-		if v, ok := record.Metadata().GetString("url"); ok {
+		if v, ok := metadatas[0].GetString("url"); ok {
 			doc.URL = v
 		}
-		if v, ok := record.Metadata().GetString("image"); ok {
+		if v, ok := metadatas[0].GetString("image"); ok {
 			doc.Image = v
 		}
 		// Copy other common metadata fields
-		if v, ok := record.Metadata().GetString("filename"); ok {
+		if v, ok := metadatas[0].GetString("filename"); ok {
 			doc.Metadata["filename"] = v
 		}
-		if v, ok := record.Metadata().GetString("type"); ok {
+		if v, ok := metadatas[0].GetString("type"); ok {
 			doc.Metadata["type"] = v
 		}
 	}
@@ -216,12 +219,16 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
 
-	// Build get options
+	// Build get options - must include all fields we want
 	getOpts := []chroma.CollectionGetOption{
 		chroma.WithIncludeGet(chroma.IncludeDocuments, chroma.IncludeMetadatas),
 	}
+	// Chroma requires a limit to return results - use provided limit or default to high number
 	if limit > 0 {
 		getOpts = append(getOpts, chroma.WithLimitGet(limit+offset))
+	} else {
+		// Default to 10000 if no limit specified (Chroma won't return anything without a limit)
+		getOpts = append(getOpts, chroma.WithLimitGet(10000))
 	}
 
 	// Get all documents
@@ -230,35 +237,41 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 		return nil, fmt.Errorf("failed to list documents: %w", err)
 	}
 
-	// Build document list
+	// Build document list from raw result data
 	var docs []*vectordb.Document
-	records := result.ToRecords()
-	for i, record := range records {
+
+	ids := result.GetIDs()
+	documents := result.GetDocuments()
+	metadatas := result.GetMetadatas()
+
+	for i, id := range ids {
 		// Apply offset
 		if i < offset {
 			continue
 		}
 
 		doc := &vectordb.Document{
-			ID: string(record.ID()),
-		}
-		if record.Document() != nil {
-			doc.Content = record.Document().ContentString()
+			ID: string(id),
 		}
 
-		// Add metadata if available
-		if record.Metadata() != nil {
+		// Get document content if available
+		if i < len(documents) && documents[i] != nil {
+			doc.Content = documents[i].ContentString()
+		}
+
+		// Get metadata if available
+		if i < len(metadatas) && metadatas[i] != nil {
 			doc.Metadata = make(map[string]interface{})
-			if v, ok := record.Metadata().GetString("url"); ok {
+			if v, ok := metadatas[i].GetString("url"); ok {
 				doc.URL = v
 			}
-			if v, ok := record.Metadata().GetString("image"); ok {
+			if v, ok := metadatas[i].GetString("image"); ok {
 				doc.Image = v
 			}
-			if v, ok := record.Metadata().GetString("filename"); ok {
+			if v, ok := metadatas[i].GetString("filename"); ok {
 				doc.Metadata["filename"] = v
 			}
-			if v, ok := record.Metadata().GetString("type"); ok {
+			if v, ok := metadatas[i].GetString("type"); ok {
 				doc.Metadata["type"] = v
 			}
 		}
