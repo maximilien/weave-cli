@@ -9,6 +9,7 @@ import (
 	"time"
 
 	chroma "github.com/amikos-tech/chroma-go/pkg/api/v2"
+	"github.com/amikos-tech/chroma-go/pkg/embeddings"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
@@ -89,6 +90,13 @@ func (c *Client) getTimeout() time.Duration {
 		timeout = 10
 	}
 	return time.Duration(timeout) * time.Second
+}
+
+// getCollection retrieves a collection by name with the required embedding function
+func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collection, error) {
+	// Chroma v2 requires an embedding function for GetCollection
+	// Use ConsistentHashEmbeddingFunction as a placeholder for operations that don't need actual embeddings
+	return c.client.GetCollection(ctx, name, chroma.WithEmbeddingFunctionGet(embeddings.NewConsistentHashEmbeddingFunction()))
 }
 
 // Health checks the health of the Chroma instance
@@ -232,7 +240,7 @@ func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, er
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
-	collection, err := c.client.GetCollection(ctx, name)
+	collection, err := c.getCollection(ctx, name)
 	if err != nil {
 		return 0, vectordb.ErrNotFound("collection", name)
 	}

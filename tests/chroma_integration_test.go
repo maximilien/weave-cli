@@ -18,20 +18,39 @@ import (
 )
 
 func getChromaTestClient(t *testing.T) *chroma.Client {
-	// Check for Chroma URL - default to localhost for local testing
-	chromaURL := os.Getenv("CHROMA_URL")
+	// Check for Chroma URL - try cloud first, then local
+	chromaURL := os.Getenv("CHROMA_CLOUD_URL")
+	if chromaURL == "" {
+		chromaURL = os.Getenv("CHROMA_URL")
+	}
 	if chromaURL == "" {
 		chromaURL = "http://localhost:8000"
 	}
 
+	// Get API key
+	apiKey := os.Getenv("CHROMA_CLOUD_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("CHROMA_API_KEY")
+	}
+
+	// Get tenant and database
+	tenant := os.Getenv("CHROMA_TENANT")
+	if tenant == "" {
+		tenant = "default_tenant"
+	}
+	database := os.Getenv("CHROMA_DATABASE")
+	if database == "" {
+		database = "default_database"
+	}
+
 	config := &chroma.Config{
 		URL:              chromaURL,
-		APIKey:           os.Getenv("CHROMA_API_KEY"), // Optional for cloud
-		Tenant:           "default_tenant",
-		Database:         "default_database",
+		APIKey:           apiKey,
+		Tenant:           tenant,
+		Database:         database,
 		VectorDimensions: 1536,
 		SimilarityMetric: "cosine",
-		Timeout:          10,
+		Timeout:          30,
 	}
 
 	client, err := chroma.NewClient(config)
@@ -390,4 +409,99 @@ func TestChromaDeleteByMetadata(t *testing.T) {
 		t.Fatalf("Expected 'meta2' to remain, got '%s'", remaining[0].ID)
 	}
 	t.Log("Delete by metadata successful")
+}
+
+func TestChromaFactoryIntegration(t *testing.T) {
+	// Check for Chroma URL
+	chromaURL := os.Getenv("CHROMA_CLOUD_URL")
+	if chromaURL == "" {
+		chromaURL = os.Getenv("CHROMA_URL")
+	}
+	if chromaURL == "" {
+		t.Skip("Skipping Chroma factory test: no CHROMA_URL or CHROMA_CLOUD_URL set")
+	}
+
+	// Get API key
+	apiKey := os.Getenv("CHROMA_CLOUD_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("CHROMA_API_KEY")
+	}
+
+	// Get tenant and database
+	tenant := os.Getenv("CHROMA_TENANT")
+	if tenant == "" {
+		tenant = "default_tenant"
+	}
+	database := os.Getenv("CHROMA_DATABASE")
+	if database == "" {
+		database = "default_database"
+	}
+
+	// Determine type
+	dbType := vectordb.VectorDBTypeChromaLocal
+	if apiKey != "" {
+		dbType = vectordb.VectorDBTypeChromaCloud
+	}
+
+	config := &vectordb.Config{
+		Type:             dbType,
+		URL:              chromaURL,
+		APIKey:           apiKey,
+		Tenant:           tenant,
+		Database:         database,
+		VectorDimensions: 1536,
+		SimilarityMetric: "cosine",
+		Timeout:          30,
+	}
+
+	client, err := vectordb.CreateClient(config)
+	if err != nil {
+		t.Fatalf("Failed to create Chroma client via factory: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Test health
+	err = client.Health(ctx)
+	if err != nil {
+		t.Errorf("Health check failed: %v", err)
+	}
+	t.Log("Factory-created client health check passed")
+}
+
+func TestChromaVectorDBRegistry(t *testing.T) {
+	// Test that Chroma types are registered
+	supportedTypes := vectordb.GetSupportedTypes()
+
+	chromaLocalFound := false
+	chromaCloudFound := false
+
+	for _, dbType := range supportedTypes {
+		if dbType == vectordb.VectorDBTypeChromaLocal {
+			chromaLocalFound = true
+		}
+		if dbType == vectordb.VectorDBTypeChromaCloud {
+			chromaCloudFound = true
+		}
+	}
+
+	if !chromaLocalFound {
+		t.Error("chroma-local not found in supported types")
+	}
+
+	if !chromaCloudFound {
+		t.Error("chroma-cloud not found in supported types")
+	}
+
+	// Test IsSupported
+	if !vectordb.IsSupported(vectordb.VectorDBTypeChromaLocal) {
+		t.Error("chroma-local should be supported")
+	}
+
+	if !vectordb.IsSupported(vectordb.VectorDBTypeChromaCloud) {
+		t.Error("chroma-cloud should be supported")
+	}
+
+	t.Log("Chroma types correctly registered in vectordb registry")
 }

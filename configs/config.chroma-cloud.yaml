@@ -13,7 +13,8 @@ databases:
       # Connection settings (use environment variables)
       url: ${CHROMA_CLOUD_URL}
       api_key: ${CHROMA_CLOUD_API_KEY}
-      database: default_database
+      tenant: ${CHROMA_TENANT:-default_tenant}
+      database: ${CHROMA_DATABASE:-default_database}
       timeout: 60  # seconds (longer for cloud connections)
 
       # Vector configuration
@@ -30,12 +31,16 @@ databases:
 # Environment variables required:
 # - CHROMA_CLOUD_URL: Your Chroma Cloud instance URL
 # - CHROMA_CLOUD_API_KEY: Your Chroma Cloud API key
+# - CHROMA_TENANT: Your tenant/organization UUID (optional)
+# - CHROMA_DATABASE: Your database name (optional)
 # - OPENAI_API_KEY: For embedding generation
 
 # Example usage:
 # 1. Set environment variables:
-#    export CHROMA_CLOUD_URL="https://your-instance.chroma.cloud"
+#    export CHROMA_CLOUD_URL="https://api.trychroma.com"
 #    export CHROMA_CLOUD_API_KEY="your-api-key"
+#    export CHROMA_TENANT="your-tenant-uuid"
+#    export CHROMA_DATABASE="your-database"
 #    export OPENAI_API_KEY="sk-..."
 # 2. Run weave:
 #    weave --config configs/config.chroma-cloud.yaml \

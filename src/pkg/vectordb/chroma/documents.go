@@ -18,9 +18,9 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
-		return vectordb.ErrNotFound("collection", collectionName)
+		return fmt.Errorf("failed to get collection '%s': %w", collectionName, err)
 	}
 
 	// Prepare content - use Content or Text
@@ -29,11 +29,17 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 		content = document.Text
 	}
 
-	// Prepare metadata map
+	// Prepare metadata map - filter out unsupported types
+	// Chroma only supports string, int, float, bool in metadata
 	metadataMap := make(map[string]interface{})
 	if document.Metadata != nil {
 		for k, v := range document.Metadata {
-			metadataMap[k] = v
+			// Only include primitive types that Chroma supports
+			switch v.(type) {
+			case string, int, int32, int64, float32, float64, bool:
+				metadataMap[k] = v
+			// Skip arrays, slices, maps and other complex types
+			}
 		}
 	}
 	// Add standard fields to metadata
@@ -74,7 +80,7 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -130,7 +136,7 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, docu
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -185,7 +191,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -205,7 +211,7 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -278,7 +284,7 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -338,7 +344,7 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, doc
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -364,7 +370,7 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return vectordb.ErrNotFound("collection", collectionName)
 	}

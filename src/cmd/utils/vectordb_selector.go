@@ -380,11 +380,18 @@ func tryCreateChromaLocalConfigFromEnv() *config.VectorDBConfig {
 		return nil
 	}
 
+	// For local Chroma, use CHROMA_LOCAL_DATABASE to avoid conflict with cloud CHROMA_DATABASE
+	// Local Chroma typically uses default_database/default_tenant
+	database := os.Getenv("CHROMA_LOCAL_DATABASE")
+	if database == "" {
+		database = "default_database"
+	}
+
 	return &config.VectorDBConfig{
 		Name:             "chroma-local",
 		Type:             config.VectorDBTypeChromaLocal,
 		URL:              url,
-		Database:         getEnvOrDefault("CHROMA_DATABASE", "default_database"),
+		Database:         database,
 		VectorDimensions: 1536,
 		SimilarityMetric: "cosine",
 		Timeout:          30,

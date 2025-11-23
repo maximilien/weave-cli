@@ -19,7 +19,7 @@ func (c *Client) SearchSemantic(ctx context.Context, collectionName, query strin
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
@@ -102,7 +102,7 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, me
 	defer cancel()
 
 	// Get collection
-	collection, err := c.client.GetCollection(ctx, collectionName)
+	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
 		return nil, vectordb.ErrNotFound("collection", collectionName)
 	}
