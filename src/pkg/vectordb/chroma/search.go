@@ -139,33 +139,38 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, me
 		return nil, fmt.Errorf("metadata search failed: %w", err)
 	}
 
-	// Convert results
+	// Convert results using raw result data
 	var results []*vectordb.QueryResult
-	records := result.ToRecords()
-	for _, record := range records {
+	ids := result.GetIDs()
+	documents := result.GetDocuments()
+	metadatas := result.GetMetadatas()
+
+	for i, id := range ids {
 		qr := &vectordb.QueryResult{
 			Document: vectordb.Document{
-				ID: string(record.ID()),
+				ID: string(id),
 			},
 			Score: 1.0, // No score for metadata-only search
 		}
-		if record.Document() != nil {
-			qr.Document.Content = record.Document().ContentString()
+
+		// Get document content if available
+		if i < len(documents) && documents[i] != nil {
+			qr.Document.Content = documents[i].ContentString()
 		}
 
 		// Add metadata if available
-		if record.Metadata() != nil {
+		if i < len(metadatas) && metadatas[i] != nil {
 			qr.Document.Metadata = make(map[string]interface{})
-			if v, ok := record.Metadata().GetString("url"); ok {
+			if v, ok := metadatas[i].GetString("url"); ok {
 				qr.Document.URL = v
 			}
-			if v, ok := record.Metadata().GetString("image"); ok {
+			if v, ok := metadatas[i].GetString("image"); ok {
 				qr.Document.Image = v
 			}
-			if v, ok := record.Metadata().GetString("filename"); ok {
+			if v, ok := metadatas[i].GetString("filename"); ok {
 				qr.Document.Metadata["filename"] = v
 			}
-			if v, ok := record.Metadata().GetString("type"); ok {
+			if v, ok := metadatas[i].GetString("type"); ok {
 				qr.Document.Metadata["type"] = v
 			}
 		}
