@@ -93,11 +93,11 @@ weave health check
 semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md)
 for detailed instructions.
 
-### Chroma Setup (Beta)
+### Chroma Setup
 
-> **🧪 Beta**: Chroma support is feature complete and functional. Supports both
-> local development and cloud deployment. See the
-> [Chroma Documentation](docs/chroma/) for comprehensive setup guide.
+> **✅ Stable**: Chroma support is feature complete and fully tested. Supports
+> both local development and cloud deployment. Uses Chroma Go SDK v2 API. See
+> the [Chroma Documentation](docs/chroma/) for comprehensive setup guide.
 
 To use Chroma locally:
 
@@ -392,8 +392,8 @@ allows seamless switching between different vector database backends.
 | **Milvus Cloud** | `milvus-cloud` | ✅ Functional | **Beta** - Zilliz cloud integration ready | [Guide](docs/milvus/) |
 | **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/supabase/) |
 | **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
-| **Chroma Local** | `chroma-local` | ✅ Functional | **Beta** - Feature complete, local testing ready | [Guide](docs/chroma/) |
-| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration ready | [Guide](docs/chroma/) |
+| **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API | [Guide](docs/chroma/) |
+| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration (API key required) | [Guide](docs/chroma/) |
 | **Mock** | `mock` | ✅ Testing Only | **Stable** | - |
 
 ### Maturity Levels

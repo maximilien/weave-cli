@@ -10,8 +10,8 @@ This document tracks feature support and compatibility across different vector d
 | Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` | v0.3.x |
 | Milvus Local | Self-hosted | 🧪 Beta | `milvus-local` | v0.3.16+ |
 | Milvus Cloud (Zilliz) | Cloud | 🧪 Beta | `milvus-cloud` | v0.3.16+ |
-| Chroma Local | Self-hosted | 🧪 Beta | `chroma-local` | v0.6.0 |
-| Chroma Cloud | Cloud | 🧪 Beta | `chroma-cloud` | v0.6.0 |
+| Chroma Local | Self-hosted | ✅ Production | `chroma-local` | v0.6.0+ |
+| Chroma Cloud | Cloud | 🧪 Beta | `chroma-cloud` | v0.6.0+ |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
 | MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |

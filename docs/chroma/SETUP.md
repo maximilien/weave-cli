@@ -208,12 +208,15 @@ If you get "connection refused" errors:
 
 ### API Version Mismatch
 
-If you see API version errors, ensure you're using Chroma v0.6.2:
+If you see API version errors, ensure you're using Chroma v0.6.2 or later:
 
 ```bash
 podman stop chromadb && podman rm chromadb
 podman run -d --name chromadb -p 8000:8000 chromadb/chroma:0.6.2
 ```
+
+> **Note**: weave-cli uses Chroma Go SDK v2 API which requires Chroma server
+> v0.6.0+
 
 ### Collection Not Found
 

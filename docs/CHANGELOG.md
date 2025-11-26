@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **🔧 Chroma v2 API Migration**: Migrated Chroma integration to Go SDK v2
+  - Fixed GetDocument to use raw result data methods instead of ToRecords()
+  - Fixed ListDocuments to use GetIDs(), GetDocuments(), GetMetadatas()
+  - Fixed SearchByMetadata to use raw result data instead of ToRecords()
+  - Added embedding function requirement for GetCollection (v2 API)
+  - Enhanced metadata type filtering (only primitives: string, int, float, bool)
+  - Root cause: Chroma v2 SDK quirk where ToRecords() returns empty results
+  - All Chroma integration tests passing
+  - Chroma Local promoted to Production Ready status
+
 ## [0.5.1] - 2025-11-20
 
 ### Fixed
