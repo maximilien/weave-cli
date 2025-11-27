@@ -120,6 +120,11 @@ func TestPDFIntegration(t *testing.T) {
 	})
 
 	t.Run("ExtractPDFContentPreservesAllContent", func(t *testing.T) {
+		// Skip in short mode to avoid timeout in CI
+		if testing.Short() {
+			t.Skip("Skipping long-running PDF content preservation test")
+		}
+
 		// Extract with different chunk sizes and verify total content is similar
 		textData1, _, err := pdf.ExtractPDFContent(fixturePath, 500, true, 10240, false)
 		if err != nil {
