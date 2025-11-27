@@ -98,10 +98,10 @@ jobs:
           # Windows ARM64 is not commonly used
           - goos: windows
             goarch: arm64
-          # Linux AMD64 already built natively, skip cross-compile (Chroma has CGO dependencies)
+          # Linux AMD64 built natively, skip cross-compile
           - goos: linux
             goarch: amd64
-          # Darwin AMD64 cross-compile fails due to Chroma CGO dependencies
+          # Darwin cross-compile from Linux fails (Chroma CGO deps)
           - goos: darwin
             goarch: amd64
 
