@@ -11,7 +11,7 @@ This document tracks feature support and compatibility across different vector d
 | Milvus Local | Self-hosted | 🧪 Beta | `milvus-local` | v0.3.16+ |
 | Milvus Cloud (Zilliz) | Cloud | 🧪 Beta | `milvus-cloud` | v0.3.16+ |
 | Chroma Local | Self-hosted | ✅ Production | `chroma-local` | v0.6.0+ |
-| Chroma Cloud | Cloud | 🧪 Beta | `chroma-cloud` | v0.6.0+ |
+| Chroma Cloud | Cloud | ✅ Production | `chroma-cloud` | v0.6.0+ |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
 | MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |
@@ -204,18 +204,21 @@ databases:
 
 ### Chroma (Local & Cloud)
 
-**Status:** Beta - Core functionality complete, ready for testing
+**Status:** Production - Fully functional with Chroma Go SDK v2 API
 
 **Strengths:**
 - Simple API, easy to get started
 - Python-friendly ecosystem
 - Good for development and prototyping
 - Lightweight and fast for smaller datasets
+- Automatic switching between local and cloud clients
+- Free cloud tier available
 
 **Considerations:**
 - No native BM25 search (keyword search not supported)
 - Simpler feature set than enterprise VDBs
 - Hybrid search falls back to vector-only search
+- Cloud free tier has quota limits (300 documents/request)
 
 **Configuration (Local):**
 ```yaml
@@ -242,8 +245,18 @@ databases:
 
 **Environment Variables:**
 - `CHROMA_URL` - URL for local Chroma instance (e.g., `http://localhost:8000`)
-- `CHROMA_CLOUD_URL` - URL for Chroma Cloud instance
-- `CHROMA_CLOUD_API_KEY` - API key for Chroma Cloud authentication
+- `CHROMA_CLOUD_URL` - URL for Chroma Cloud (defaults to
+  `https://api.trychroma.com`)
+- `CHROMA_CLOUD_API_KEY` or `CHROMA_API_KEY` - API key for Chroma Cloud
+- `CHROMA_TENANT` - Team UUID for Chroma Cloud
+- `CHROMA_DATABASE` - Database name for Chroma Cloud
+
+**Known Limitations:**
+- **Quota Limits**: Free tier limited to 300 documents per GET request (vs
+  10,000 default)
+- **No BM25**: Keyword search not supported natively
+- Some integration tests may fail on free tier due to quota limits (expected
+  behavior)
 
 ### Milvus (🧪 Beta)
 
@@ -377,22 +390,23 @@ databases:
 
 ## Integration Test Coverage
 
-| Test Type | Weaviate | Milvus | Supabase | MongoDB | Mock |
-|-----------|----------|--------|----------|---------|------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Collection CRUD | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Document CRUD | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Batch Operations | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Semantic Search | ✅ | ✅ | ✅ | ✅ | ✅ |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Schema Operations | ✅ | ✅ | ✅ | ✅ | ✅ |
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ |
-| E2E Tests | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Test Type | Weaviate | Milvus | Chroma | Supabase | MongoDB | Mock |
+|-----------|----------|--------|--------|----------|---------|------|
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Collection CRUD | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Document CRUD | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Batch Operations | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ |
+| Semantic Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| BM25 Search | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
+| Hybrid Search | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Schema Operations | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| E2E Tests | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
 
-**Legend:** ✅ Tested | 🚧 Planned | ⚠️ Network issues | ❌ Not applicable/pending
+**Legend:** ✅ Tested | 🚧 Planned | ⚠️ Quota limits or known issues | ❌ Not
+supported
 
 ## Roadmap
 
@@ -435,29 +449,38 @@ databases:
 - [Local Setup Instructions](milvus/LOCAL_SETUP.md)
 - [Cloud Setup Guide](milvus/CLOUD_SETUP.md)
 
-### v0.6.0 - Chroma Integration (In Progress)
+### v0.6.0 - Chroma Integration (✅ Completed)
 
-**Timeline**: Nov 21-26, 2025
+**Timeline**: Nov 21-27, 2025
+
+**Status**: ✅ Production - Fully functional with Chroma Go SDK v2 API
 
 **Completed**:
 - ✅ Add Chroma to VectorDBType enum
 - ✅ Create chroma/ directory structure
-- ✅ Add Chroma Go SDK dependency
-- ✅ Implement core client and collection operations
-- ✅ Create integration tests
-- ✅ Add to test.sh with skip support
-
-**Remaining**:
-- [ ] Document CRUD operations
-- [ ] Search operations
-- [ ] Factory and CLI flags
-- [ ] Documentation
+- ✅ Add Chroma Go SDK v2 dependency
+- ✅ Implement core client with automatic local/cloud switching
+- ✅ Collection operations (create, delete, list, exists, count)
+- ✅ Document CRUD operations
+- ✅ Batch operations
+- ✅ Search operations (semantic, metadata)
+- ✅ Factory and CLI flags (--chroma-local, --chroma-cloud)
+- ✅ Integration tests with quota limit handling
+- ✅ Test script improvements (live output, summary reporting)
+- ✅ Documentation updates
 
 **Key Features**:
 - ✅ Open source (Apache 2.0)
 - ✅ Simple REST API
 - ✅ SQLite (local) or ClickHouse (cloud) storage
 - ✅ Automatic or manual embeddings
+- ✅ Chroma Go SDK v2 API (NewCloudClient for cloud, NewHTTPClient for local)
+- ✅ Free cloud tier with quota limits clearly documented
+
+**Known Limitations**:
+- ⚠️ No native BM25 support (keyword search not available)
+- ⚠️ Cloud free tier limited to 300 documents per GET request
+- ⚠️ Some integration tests fail on free tier due to quota (expected behavior)
 
 ### v0.7.0 - Qdrant Integration (Planned)
 
