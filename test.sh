@@ -514,8 +514,10 @@ run_integration_tests() {
             fi
             total_suites=$((total_suites + 1))
             vdb_names+=("Chroma")
-            output=$(go test -v -timeout=2m -count=1 -tags=integration ./tests/... -run="TestChroma" 2>&1)
-            exit_code=$?
+            # Run tests with live output to avoid appearance of hanging
+            go test -v -timeout=2m -count=1 -tags=integration ./tests -run="TestChroma" 2>&1 | tee /tmp/chroma_test_output.txt
+            exit_code=${PIPESTATUS[0]}
+            output=$(cat /tmp/chroma_test_output.txt)
             pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
             fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
             [ -z "$pass_count" ] && pass_count=0
@@ -540,7 +542,8 @@ run_integration_tests() {
             fi
             vdb_passed+=("$pass_count")
             vdb_failed+=("$fail_count")
-            echo "$output"
+            # Output already shown via tee, clean up temp file
+            rm -f /tmp/chroma_test_output.txt
         else
             print_warning "Skipping Chroma integration tests - Chroma not running"
             print_status "Start Chroma with: podman run -d -p 8000:8000 chromadb/chroma:0.6.2"
