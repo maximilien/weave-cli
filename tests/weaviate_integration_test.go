@@ -131,6 +131,11 @@ func TestWeaviateComprehensiveIntegration(t *testing.T) {
 		doc, err := client.GetDocument(ctx, collectionName, testDoc.ID)
 		if err != nil {
 			t.Errorf("Failed to get document: %v", err)
+			return
+		}
+		if doc == nil {
+			t.Error("GetDocument returned nil document without error")
+			return
 		}
 		if doc.ID != testDoc.ID {
 			t.Errorf("Expected document ID %s, got %s", testDoc.ID, doc.ID)
@@ -417,6 +422,11 @@ func TestWeaviateComprehensiveIntegration(t *testing.T) {
 		retrievedDoc, err := client.GetDocument(ctx, noneCollection, noneDoc.ID)
 		if err != nil {
 			t.Errorf("Failed to retrieve document from non-vectorized collection: %v", err)
+			return
+		}
+		if retrievedDoc == nil {
+			t.Error("GetDocument returned nil document without error")
+			return
 		}
 		if retrievedDoc.Content != noneDoc.Content {
 			t.Errorf("Expected content %s, got %s", noneDoc.Content, retrievedDoc.Content)
