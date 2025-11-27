@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-11-27
+
+### Added
+
+- **🗄️ Chroma Vector Database Integration (✅ Production Ready)**: Complete Chroma support for vector database operations
+  - **Status**: ✅ Production Ready - Fully functional with Chroma Go SDK v2 API
+  - **What Works**:
+    - ✅ Connection and health checks for both Chroma Local and Chroma Cloud
+    - ✅ Collection management (create, list, delete, show, count, exists)
+    - ✅ Document CRUD operations with automatic embedding generation
+    - ✅ Batch document operations
+    - ✅ Vector search (semantic search)
+    - ✅ Metadata search and filtering
+    - ✅ Automatic client switching (local HTTP client vs cloud client)
+  - **New Features**:
+    - Automatic OpenAI embedding generation on document creation
+    - Support for both Chroma Local (Docker/Podman) and Chroma Cloud
+    - `--chroma-local` and `--chroma-cloud` flag support across all commands
+    - Chroma Go SDK v2 API integration (NewCloudClient for cloud, NewHTTPClient for local)
+    - Free cloud tier support with quota limit handling
+  - **New Adapter**: `src/pkg/vectordb/chroma/` package with complete VectorDB interface implementation
+    - `client.go`: Chroma client with automatic local/cloud switching
+    - `factory.go`: Factory pattern for Chroma adapter creation
+    - `schema.go`: Schema operations and collection management
+    - `documents.go`: Document CRUD operations with embedding support
+    - `search.go`: Vector search and metadata filtering
+  - **Documentation**:
+    - `docs/chroma/SETUP.md`: Comprehensive setup guide for local and cloud
+    - `configs/config.chroma-local.yaml`: Example configuration for local Chroma
+    - `configs/config.chroma-cloud.yaml`: Example configuration for Chroma Cloud
+    - Updated `docs/VDB_SUPPORT.md`: Chroma marked as Production Ready
+    - Updated `README.md`: Chroma setup instructions and status
+  - **Configuration Examples**:
+    - Updated `.env.example` with Chroma credentials template
+    - Updated `config.yaml` with Chroma configuration examples
+  - **Integration Tests**:
+    - `tests/chroma_integration_test.go`: Comprehensive integration test suite
+    - Tests cover: health checks, collections, documents, batch ops, search operations
+    - Quota limit handling for cloud free tier
+    - All Chroma integration tests passing
+
 ### Fixed
 
 - **🔧 Chroma v2 API Migration**: Migrated Chroma integration to Go SDK v2
@@ -17,7 +58,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced metadata type filtering (only primitives: string, int, float, bool)
   - Root cause: Chroma v2 SDK quirk where ToRecords() returns empty results
   - All Chroma integration tests passing
-  - Chroma Local promoted to Production Ready status
+
+- **🔧 Chroma Cloud Client Configuration**: Improved Chroma Cloud client setup
+  - Use NewCloudClient for cloud configurations instead of HTTP client
+  - Make URL optional for Chroma Cloud (uses api.trychroma.com automatically)
+  - Add fallback to CHROMA_API_KEY if CHROMA_CLOUD_API_KEY not set
+  - Improve client initialization logic to distinguish cloud vs local
+  - Fixed 403 Permission Denied errors with proper cloud client usage
+
+- **🔧 Chroma Commands**: Fixed docs and cols commands for Chroma
+  - Fixed document listing and retrieval operations
+  - Fixed collection operations to work correctly with Chroma v2 API
+
+### Changed
+
+- **Vector Database Support Maturity Levels**: Updated VDB_SUPPORT.md with Chroma support
+  - Chroma Local: ✅ Production Ready (fully tested and stable)
+  - Chroma Cloud: ✅ Production Ready (fully functional with quota limits documented)
+  - Updated integration test coverage table to include Chroma
+  - Documented known limitations (no BM25, quota limits on free tier)
+
+- **Documentation**: Comprehensive Chroma documentation updates
+  - Added Chroma troubleshooting guide (403 errors, quota limits, connection issues)
+  - Documented cloud vs local client implementation details
+  - Added credential setup instructions for Chroma Cloud
+  - Updated CHANGELOG with Chroma v2 API migration details
+
+### Known Limitations
+
+- **Chroma BM25 Search**: No native BM25 support (keyword search not available)
+- **Chroma Cloud Quota**: Free tier limited to 300 documents per GET request
+- **Integration Tests**: Some tests may fail on free tier due to quota limits (expected behavior)
 
 ## [0.5.1] - 2025-11-20
 
