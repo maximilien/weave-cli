@@ -15,6 +15,11 @@ import (
 )
 
 func TestSupabaseIntegration(t *testing.T) {
+	// Skip in short mode - integration tests require external services
+	if testing.Short() {
+		t.Skip("Skipping Supabase integration test in short mode")
+	}
+
 	// Skip if no Supabase credentials are provided
 	databaseURL := os.Getenv("SUPABASE_DATABASE_URL")
 	databaseKey := os.Getenv("SUPABASE_DATABASE_KEY")
