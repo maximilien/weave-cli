@@ -400,17 +400,24 @@ func tryCreateChromaLocalConfigFromEnv() *config.VectorDBConfig {
 
 // tryCreateChromaCloudConfigFromEnv attempts to create a Chroma Cloud config from environment variables
 func tryCreateChromaCloudConfigFromEnv() *config.VectorDBConfig {
-	url := os.Getenv("CHROMA_CLOUD_URL")
+	// Try CHROMA_CLOUD_API_KEY first, then fall back to CHROMA_API_KEY
 	apiKey := os.Getenv("CHROMA_CLOUD_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("CHROMA_API_KEY")
+	}
 
-	// Require both URL and API key for cloud
-	if url == "" || apiKey == "" {
+	// Require API key for cloud
+	if apiKey == "" {
 		return nil
 	}
 
 	// For Chroma Cloud, tenant is the team UUID and database is the database name
 	tenant := getEnvOrDefault("CHROMA_TENANT", "default_tenant")
 	database := getEnvOrDefault("CHROMA_DATABASE", "default_database")
+
+	// URL is not needed for cloud client (it uses api.trychroma.com automatically)
+	// but we keep it in config for informational purposes
+	url := getEnvOrDefault("CHROMA_CLOUD_URL", "https://api.trychroma.com")
 
 	return &config.VectorDBConfig{
 		Name:             "chroma-cloud",

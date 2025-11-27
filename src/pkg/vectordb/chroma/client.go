@@ -36,8 +36,9 @@ type Config struct {
 
 // NewClient creates a new Chroma client
 func NewClient(config *Config) (*Client, error) {
-	if config.URL == "" {
-		return nil, fmt.Errorf("Chroma URL is required")
+	// For local client, URL is required. For cloud client (with API key), URL is optional.
+	if config.APIKey == "" && config.URL == "" {
+		return nil, fmt.Errorf("Chroma URL is required for local client")
 	}
 
 	// Set defaults
@@ -61,20 +62,35 @@ func NewClient(config *Config) (*Client, error) {
 	var client chroma.Client
 	var err error
 
-	// Build options
-	opts := []chroma.ClientOption{
-		chroma.WithBaseURL(config.URL),
-		chroma.WithDatabaseAndTenant(config.Database, config.Tenant),
-	}
-
-	// Add API key for cloud
+	// Use cloud client for cloud configurations, HTTP client for local
 	if config.APIKey != "" {
-		opts = append(opts, chroma.WithCloudAPIKey(config.APIKey))
-	}
+		// Cloud client - automatically uses https://api.trychroma.com
+		// The cloud client reads tenant/database from CHROMA_TENANT and CHROMA_DATABASE env vars
+		// We pass them explicitly if they're set in config and not defaults
+		opts := []chroma.ClientOption{
+			chroma.WithCloudAPIKey(config.APIKey),
+		}
 
-	client, err = chroma.NewHTTPClient(opts...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create Chroma client: %w", err)
+		// Only pass tenant/database if they're non-default values
+		if config.Tenant != "" && config.Tenant != "default_tenant" &&
+			config.Database != "" && config.Database != "default_database" {
+			opts = append(opts, chroma.WithDatabaseAndTenant(config.Database, config.Tenant))
+		}
+
+		client, err = chroma.NewCloudClient(opts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Chroma cloud client: %w", err)
+		}
+	} else {
+		// Local HTTP client
+		opts := []chroma.ClientOption{
+			chroma.WithBaseURL(config.URL),
+			chroma.WithDatabaseAndTenant(config.Database, config.Tenant),
+		}
+		client, err = chroma.NewHTTPClient(opts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Chroma HTTP client: %w", err)
+		}
 	}
 
 	return &Client{

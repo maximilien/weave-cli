@@ -521,12 +521,20 @@ run_integration_tests() {
             [ -z "$pass_count" ] && pass_count=0
             [ -z "$fail_count" ] && fail_count=0
 
+            # Check if failures are due to quota limits
+            quota_failures=$(echo "$output" | grep -c "Quota exceeded" 2>/dev/null || true)
+
             if [ $exit_code -eq 0 ]; then
                 print_success "Chroma integration tests passed!"
                 passed_suites=$((passed_suites + 1))
                 vdb_status+=("PASS")
             else
-                print_warning "Chroma integration tests failed"
+                if [ "$quota_failures" -gt 0 ]; then
+                    print_warning "Chroma integration tests failed"
+                    print_status "Note: ${quota_failures} test(s) failed due to Chroma Cloud free tier quota limits (300 documents/request)"
+                else
+                    print_warning "Chroma integration tests failed"
+                fi
                 failed_suites=$((failed_suites + 1))
                 vdb_status+=("FAIL")
             fi
@@ -639,7 +647,7 @@ run_integration_tests() {
         echo -e "  ${RED}════════════════════════════════════════════════════════════${NC}"
         echo -e "  ${RED}  ✗ SOME TESTS FAILED                                       ${NC}"
         echo -e "  ${RED}════════════════════════════════════════════════════════════${NC}"
-        print_warning "Failures may be due to network issues, cloud configuration, or test flakiness"
+        print_warning "Failures may be due to network issues, cloud configuration, quota limits, or test flakiness"
     else
         echo -e "  ${YELLOW}════════════════════════════════════════════════════════════${NC}"
         echo -e "  ${YELLOW}  ○ ALL TESTS SKIPPED - Check configuration                ${NC}"
