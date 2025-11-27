@@ -102,6 +102,16 @@ RUN_UNIT_TESTS=false
 RUN_INTEGRATION_TESTS=false
 RUN_COVERAGE=false
 
+# Global variables for integration test summary (must be global for trap handler)
+declare -a vdb_names=()
+declare -a vdb_status=()
+declare -a vdb_passed=()
+declare -a vdb_failed=()
+total_suites=0
+passed_suites=0
+failed_suites=0
+skipped_suites=0
+
 # Check command line arguments
 case "${1:-unit}" in
     "unit")
@@ -171,17 +181,18 @@ run_integration_tests() {
         exit 1
     fi
 
-    # Initialize test counters
-    local total_suites=0
-    local passed_suites=0
-    local failed_suites=0
-    local skipped_suites=0
+    # Reset global counters and arrays for this test run
+    total_suites=0
+    passed_suites=0
+    failed_suites=0
+    skipped_suites=0
+    vdb_names=()
+    vdb_status=()
+    vdb_passed=()
+    vdb_failed=()
 
-    # Arrays to track results per VDB
-    declare -a vdb_names=()
-    declare -a vdb_status=()
-    declare -a vdb_passed=()
-    declare -a vdb_failed=()
+    # Trap to ensure summary is always printed (even on Ctrl+C or error)
+    trap 'print_integration_summary; trap - EXIT' EXIT INT TERM
 
     # Parse integration test flags
     local run_weaviate=false
@@ -591,6 +602,25 @@ run_integration_tests() {
         fi
     fi
 
+    # Call summary function
+    print_integration_summary
+
+    # Clear trap and return exit code based on results
+    trap - EXIT
+    if [ $failed_suites -gt 0 ]; then
+        return 1
+    fi
+    return 0
+}
+
+# Function to print integration test summary
+# This is a separate function so it can be called by trap handlers
+print_integration_summary() {
+    # Only print if we have vdb_names (i.e., tests have started running)
+    if [ ${#vdb_names[@]} -eq 0 ]; then
+        return
+    fi
+
     # Print detailed summary
     echo ""
     echo ""
@@ -819,24 +849,38 @@ run_coverage_tests() {
 
 
 # Run tests based on command
+# Track overall exit code
+overall_exit_code=0
+
 if [ "$RUN_UNIT_TESTS" = true ] && [ "$RUN_INTEGRATION_TESTS" = true ]; then
     # Check if this is a fast test run
     if [ "${1:-unit}" = "fast" ]; then
         run_fast_tests
+        overall_exit_code=$?
     else
         run_unit_tests
-        run_integration_tests "${@:2}"
+        overall_exit_code=$?
+        # Run integration tests even if unit tests fail
+        run_integration_tests "${@:2}" || overall_exit_code=1
     fi
 elif [ "$RUN_UNIT_TESTS" = true ]; then
     run_unit_tests
+    overall_exit_code=$?
 elif [ "$RUN_INTEGRATION_TESTS" = true ]; then
     run_integration_tests "${@:2}"
+    overall_exit_code=$?
 fi
 
 # Run coverage tests if requested
 if [ "$RUN_COVERAGE" = true ]; then
     run_coverage_tests
+    overall_exit_code=$?
 fi
 
-print_status "All requested tests completed!"
-exit 0
+if [ $overall_exit_code -eq 0 ]; then
+    print_status "All requested tests completed successfully!"
+else
+    print_warning "Tests completed with failures. See summary above for details."
+fi
+
+exit $overall_exit_code
