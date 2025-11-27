@@ -1,5 +1,5 @@
-//go:build linux && amd64
-// +build linux,amd64
+//go:build (linux && amd64) || (darwin && amd64) || (darwin && arm64)
+// +build linux,amd64 darwin,amd64 darwin,arm64
 
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max

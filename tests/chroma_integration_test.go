@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max
 
-//go:build integration
+//go:build integration && ((linux && amd64) || (darwin && amd64) || (darwin && arm64))
 // +build integration
+// +build linux,amd64 darwin,amd64 darwin,arm64
 
 package tests
 
