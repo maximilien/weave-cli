@@ -22,6 +22,8 @@ const (
 	VectorDBTypeMongoDB       VectorDBType = "mongodb"
 	VectorDBTypeChromaLocal   VectorDBType = "chroma-local"
 	VectorDBTypeChromaCloud   VectorDBType = "chroma-cloud"
+	VectorDBTypeQdrantLocal   VectorDBType = "qdrant-local"
+	VectorDBTypeQdrantCloud   VectorDBType = "qdrant-cloud"
 )
 
 // Config represents the configuration for a vector database client
