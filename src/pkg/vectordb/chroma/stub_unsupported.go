@@ -1,5 +1,4 @@
-//go:build !((linux && amd64) || (darwin && amd64) || (darwin && arm64))
-// +build !linux !amd64
+//go:build !((darwin && amd64) || (darwin && arm64))
 // +build !darwin !amd64
 // +build !darwin !arm64
 
@@ -7,7 +6,8 @@
 // Copyright (c) 2025 dr.max
 
 // Package chroma stub for unsupported platforms
-// Chroma is only supported on Linux AMD64, macOS AMD64, and macOS ARM64
+// Chroma is only supported on macOS AMD64 and macOS ARM64 due to SDK limitations
+// Linux support is blocked by libtokenizers CGO dependency in chroma-go v0.2.5
 package chroma
 
 import (
@@ -26,12 +26,12 @@ func NewFactory() *Factory {
 
 // CreateClient returns an error indicating Chroma is not supported on this platform
 func (f *Factory) CreateClient(config *vectordb.Config) (vectordb.VectorDBClient, error) {
-	return nil, fmt.Errorf("Chroma is only supported on Linux AMD64, macOS AMD64, and macOS ARM64")
+	return nil, fmt.Errorf("Chroma is only supported on macOS (AMD64/ARM64) - Linux blocked by SDK CGO dependency")
 }
 
 // ValidateConfig returns an error indicating Chroma is not supported on this platform
 func (f *Factory) ValidateConfig(config *vectordb.Config) error {
-	return fmt.Errorf("Chroma is only supported on Linux AMD64, macOS AMD64, and macOS ARM64")
+	return fmt.Errorf("Chroma is only supported on macOS (AMD64/ARM64) - Linux blocked by SDK CGO dependency")
 }
 
 // GetSupportedTypes returns the list of supported database types
