@@ -99,6 +99,11 @@ for detailed instructions.
 > both local development and cloud deployment. Uses Chroma Go SDK v2 API. See
 > the [Chroma Documentation](docs/chroma/) for comprehensive setup guide.
 
+> **⚠️ Platform Limitation**: Chroma is only supported on **macOS (AMD64/ARM64)**
+> due to chroma-go v0.2.5 SDK's CGO dependency (libtokenizers). Linux and Windows
+> are not supported. For other platforms, use Weaviate, Milvus, Qdrant, MongoDB,
+> or Supabase.
+
 To use Chroma locally:
 
 ```bash

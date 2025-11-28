@@ -2,6 +2,22 @@
 
 This guide covers setting up Chroma for use with weave-cli.
 
+## Platform Requirements
+
+⚠️ **Important**: Chroma support is **macOS only (AMD64/ARM64)**.
+
+**Why?** The chroma-go v0.2.5 SDK has a CGO dependency (libtokenizers) that does
+not support Linux or Windows build targets.
+
+**Alternatives for Linux/Windows:**
+- Weaviate (Cloud or Local)
+- Milvus (Cloud or Local)
+- Qdrant (Cloud or Local)
+- MongoDB Atlas
+- Supabase
+
+If you are on macOS, continue with the setup below.
+
 ## Local Development Setup
 
 ### Prerequisites
