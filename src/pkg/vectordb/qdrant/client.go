@@ -6,7 +6,6 @@ package qdrant
 import (
 	"context"
 	"fmt"
-	"time"
 
 	qdrant "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc"
@@ -70,14 +69,11 @@ func NewClient(config *Config) (*Client, error) {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
-	// Add timeout
-	opts = append(opts, grpc.WithTimeout(time.Duration(config.Timeout)*time.Second))
-
-	// Connect to Qdrant
+	// Connect to Qdrant using new grpc.NewClient API
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
-	conn, err := grpc.Dial(addr, opts...)
+	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Qdrant at %s: %w", addr, err)
+		return nil, fmt.Errorf("failed to create Qdrant client for %s: %w", addr, err)
 	}
 
 	// Create Qdrant clients

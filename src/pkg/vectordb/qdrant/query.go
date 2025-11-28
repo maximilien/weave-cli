@@ -207,7 +207,8 @@ func scoredPointToDocument(point *qdrant.ScoredPoint) (*Document, error) {
 	// Extract vector - VectorsOutput vs Vectors for input/output
 	if point.Vectors != nil {
 		if vec, ok := point.Vectors.VectorsOptions.(*qdrant.VectorsOutput_Vector); ok {
-			doc.Vector = vec.Vector.Data
+			// Use GetData() instead of deprecated Data field
+			doc.Vector = vec.Vector.GetData()
 		}
 	}
 
