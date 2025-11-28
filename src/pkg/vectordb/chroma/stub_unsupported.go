@@ -1,4 +1,4 @@
-//go:build !(linux && amd64) && !(darwin && amd64) && !(darwin && arm64)
+//go:build !((linux && amd64) || (darwin && amd64) || (darwin && arm64))
 // +build !linux !amd64
 // +build !darwin !amd64
 // +build !darwin !arm64
