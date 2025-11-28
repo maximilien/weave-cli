@@ -207,8 +207,10 @@ func scoredPointToDocument(point *qdrant.ScoredPoint) (*Document, error) {
 	// Extract vector - VectorsOutput vs Vectors for input/output
 	if point.Vectors != nil {
 		if vec, ok := point.Vectors.VectorsOptions.(*qdrant.VectorsOutput_Vector); ok {
-			// Use GetData() instead of deprecated Data field
-			doc.Vector = vec.Vector.GetData()
+			// Use GetDense().GetData() for the new Vector structure
+			if dense := vec.Vector.GetDense(); dense != nil {
+				doc.Vector = dense.GetData()
+			}
 		}
 	}
 
