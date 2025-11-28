@@ -104,6 +104,8 @@ jobs:
           # Darwin cross-compile from Linux fails (Chroma CGO deps)
           - goos: darwin
             goarch: amd64
+          - goos: darwin
+            goarch: arm64
 
     steps:
       - name: Checkout code

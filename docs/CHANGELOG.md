@@ -48,6 +48,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Chroma Platform Restriction (macOS only)**: Due to chroma-go v0.2.5 SDK's CGO dependency (libtokenizers), Chroma support is now restricted to macOS (AMD64/ARM64) only
+  - Linux and Windows builds use stub implementation with clear error messages
+  - Updated all Chroma package files with `//go:build (darwin && amd64) || (darwin && arm64)` constraints
+  - Updated `stub_unsupported.go` to handle all non-macOS platforms
+  - Updated documentation to clearly indicate platform limitation
+  - Alternatives for Linux/Windows: Weaviate, Milvus, Qdrant, MongoDB, or Supabase
+
+- **Qdrant Deprecated API Updates**: Updated Qdrant client to use modern gRPC APIs
+  - Replaced deprecated `grpc.Dial()` with `grpc.NewClient()`
+  - Removed deprecated `grpc.WithTimeout()`
+  - Updated vector data access from `vec.Vector.GetData()` to `vec.Vector.GetDense().GetData()`
+  - Fixed staticcheck warnings in CI builds
+
 - **Vector Database Type Configuration**: Added Qdrant type constants
   - Added `VectorDBTypeQdrantLocal` and `VectorDBTypeQdrantCloud` to config package
   - Updated CLI flag handling in `src/cmd/root.go` and `src/cmd/utils/vectordb_selector.go`

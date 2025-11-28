@@ -10,8 +10,8 @@ This document tracks feature support and compatibility across different vector d
 | Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` | v0.3.x |
 | Milvus Local | Self-hosted | 🧪 Beta | `milvus-local` | v0.3.16+ |
 | Milvus Cloud (Zilliz) | Cloud | 🧪 Beta | `milvus-cloud` | v0.3.16+ |
-| Chroma Local | Self-hosted | ✅ Production | `chroma-local` | v0.6.0+ |
-| Chroma Cloud | Cloud | ✅ Production | `chroma-cloud` | v0.6.0+ |
+| Chroma Local | Self-hosted | ✅ Production | `chroma-local` | v0.6.0+ (macOS only) |
+| Chroma Cloud | Cloud | ✅ Production | `chroma-cloud` | v0.6.0+ (macOS only) |
 | Qdrant Local | Self-hosted | 🧪 Experimental | `qdrant-local` | v0.7.0+ |
 | Qdrant Cloud | Cloud | 🧪 Experimental | `qdrant-cloud` | v0.7.0+ |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
@@ -207,6 +207,10 @@ databases:
 
 **Status:** Production - Fully functional with Chroma Go SDK v2 API
 
+**Platform Support:** ⚠️ **macOS only (AMD64/ARM64)** - Due to chroma-go v0.2.5
+SDK's CGO dependency (libtokenizers), Chroma is not supported on Linux or Windows.
+For other platforms, use Weaviate, Milvus, Qdrant, MongoDB, or Supabase.
+
 **Strengths:**
 - Simple API, easy to get started
 - Python-friendly ecosystem
@@ -220,6 +224,7 @@ databases:
 - Simpler feature set than enterprise VDBs
 - Hybrid search falls back to vector-only search
 - Cloud free tier has quota limits (300 documents/request)
+- **macOS only** - Linux/Windows not supported due to SDK limitations
 
 **Configuration (Local):**
 ```yaml
