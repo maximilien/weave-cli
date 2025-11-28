@@ -17,6 +17,25 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
+// noopEmbeddingFunction is a simple embedding function that doesn't use tokenizers
+// This avoids the libtokenizers CGO dependency issues from default_ef
+type noopEmbeddingFunction struct{}
+
+func (n *noopEmbeddingFunction) EmbedDocuments(ctx context.Context, documents []string) ([]embeddings.Embedding, error) {
+	// We don't actually use this - we provide embeddings externally
+	return embeddings.NewEmptyEmbeddings(), nil
+}
+
+func (n *noopEmbeddingFunction) EmbedQuery(ctx context.Context, query string) (embeddings.Embedding, error) {
+	// We don't actually use this - we provide embeddings externally
+	return embeddings.NewEmptyEmbedding(), nil
+}
+
+func (n *noopEmbeddingFunction) EmbedRecords(ctx context.Context, records []*chroma.Record, force bool) error {
+	// We don't actually use this - we provide embeddings externally
+	return nil
+}
+
 // Client wraps the Chroma client with vector database functionality
 type Client struct {
 	client chroma.Client
@@ -114,8 +133,9 @@ func (c *Client) getTimeout() time.Duration {
 // getCollection retrieves a collection by name with the required embedding function
 func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collection, error) {
 	// Chroma v2 requires an embedding function for GetCollection
-	// Use ConsistentHashEmbeddingFunction as a placeholder for operations that don't need actual embeddings
-	return c.client.GetCollection(ctx, name, chroma.WithEmbeddingFunctionGet(embeddings.NewConsistentHashEmbeddingFunction()))
+	// Use noopEmbeddingFunction to avoid tokenizer CGO dependencies
+	// We provide embeddings externally, so this is just a placeholder
+	return c.client.GetCollection(ctx, name, chroma.WithEmbeddingFunctionGet(&noopEmbeddingFunction{}))
 }
 
 // Health checks the health of the Chroma instance
