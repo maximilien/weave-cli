@@ -130,6 +130,46 @@ weave config create --database-type chroma-cloud
 weave health check
 ```
 
+### Qdrant Setup (Experimental)
+
+> **🧪 Experimental**: Qdrant support is newly added and functional. Supports
+> both local development and cloud deployment. Requires testing with real
+> Qdrant instances. See the [Qdrant Documentation](docs/qdrant/) for setup
+> guide.
+
+To use Qdrant locally:
+
+```bash
+# Start Qdrant using podman or docker
+podman run -d --name qdrant -p 6333:6333 -p 6334:6334 \
+  -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+  qdrant/qdrant
+
+# Set OpenAI API key for automatic embeddings
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use local Qdrant
+weave config create --database-type qdrant-local
+
+# Verify Qdrant connection
+weave health check --qdrant-local
+```
+
+To use Qdrant Cloud:
+
+```bash
+# Set Qdrant Cloud credentials
+export QDRANT_URL="https://your-cluster.cloud.qdrant.io:6334"
+export QDRANT_API_KEY="your-api-key"
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use Qdrant Cloud
+weave config create --database-type qdrant-cloud
+
+# Verify connection
+weave health check --qdrant-cloud
+```
+
 ### Milvus Setup (Beta)
 
 > **🧪 Beta**: Milvus support is feature complete and functional. Supports both
@@ -182,6 +222,8 @@ weave cols ls --milvus-local  # Milvus local only
 weave cols ls --milvus-cloud  # Milvus cloud (Zilliz) only
 weave cols ls --chroma-local  # Chroma local only
 weave cols ls --chroma-cloud  # Chroma cloud only
+weave cols ls --qdrant-local  # Qdrant local only
+weave cols ls --qdrant-cloud  # Qdrant cloud only
 weave cols ls --mock          # Mock database only
 weave cols ls --all           # All configured databases
 

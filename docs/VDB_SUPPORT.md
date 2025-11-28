@@ -12,10 +12,11 @@ This document tracks feature support and compatibility across different vector d
 | Milvus Cloud (Zilliz) | Cloud | 🧪 Beta | `milvus-cloud` | v0.3.16+ |
 | Chroma Local | Self-hosted | ✅ Production | `chroma-local` | v0.6.0+ |
 | Chroma Cloud | Cloud | ✅ Production | `chroma-cloud` | v0.6.0+ |
+| Qdrant Local | Self-hosted | 🧪 Experimental | `qdrant-local` | v0.7.0+ |
+| Qdrant Cloud | Cloud | 🧪 Experimental | `qdrant-cloud` | v0.7.0+ |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
 | MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |
-| **Qdrant** | **Cloud/Self-hosted** | **📋 Planned** | **`qdrant`** | **v0.5.0** |
 | **Redis** | **Cloud/Self-hosted** | **📋 Planned** | **`redis`** | **v0.6.0** |
 | **Pinecone** | **Cloud** | **📋 Planned** | **`pinecone`** | **v0.8.0** |
 
@@ -23,76 +24,76 @@ This document tracks feature support and compatibility across different vector d
 
 ### Core Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI |
-| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less |
-| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI |
+| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less |
+| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation |
 
 ### Document Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Auto-embedding with OpenAI |
-| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: Delete + insert |
-| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: Auto-embedding with OpenAI |
+| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: Delete + insert |
+| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
 
 ### Search Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: IVF_FLAT index |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | Milvus: Native BM25 support; Chroma: Not supported |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | Milvus: RRF fusion; Chroma: Falls back to vector search |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: JSON field filtering |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: IVF_FLAT; Qdrant: HNSW |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | Milvus: Native BM25; Chroma/Qdrant: Not supported |
+| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | Milvus: RRF fusion; Chroma/Qdrant: Falls back to vector search |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: JSON field filtering |
 
 ### Embedding Support
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus: text-embedding-3-small default |
-| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
-| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | Manual embeddings |
-| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ✅ | Supabase: Limited |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: text-embedding-3-small default |
+| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
+| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
+| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Manual embeddings |
+| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ⚠️ | ✅ | ✅ | Supabase: Limited |
 
 ### CLI Commands
 
-| Command | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Command | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
 
 ### Configuration
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | `~/.weave-cli` |
-| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
-| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
+| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | `~/.weave-cli` |
+| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
 
 ## Database-Specific Notes
 
@@ -362,6 +363,93 @@ databases:
 - [Local Setup Instructions](milvus/LOCAL_SETUP.md)
 - [Cloud Setup Guide (Zilliz)](milvus/CLOUD_SETUP.md)
 
+### Qdrant (🧪 Experimental)
+
+**Status:** Experimental - Core functionality complete, testing in progress
+
+**Strengths:**
+- High-performance vector search with HNSW indexing
+- gRPC and REST API support
+- Advanced filtering capabilities
+- Efficient payload storage and retrieval
+- Both local (Docker/Podman) and cloud deployment
+- Written in Rust for speed and safety
+- Quantization support for memory efficiency
+
+**Configuration (Local):**
+```yaml
+databases:
+  default: qdrant-local
+  vector_databases:
+    - name: qdrant-local
+      type: qdrant-local
+      host: localhost
+      port: 6334  # gRPC port
+      vector_dimensions: 1536
+      similarity_metric: Cosine
+      timeout: 10
+```
+
+**Configuration (Cloud):**
+```yaml
+databases:
+  default: qdrant-cloud
+  vector_databases:
+    - name: qdrant-cloud
+      type: qdrant-cloud
+      url: ${QDRANT_URL}
+      api_key: ${QDRANT_API_KEY}
+      vector_dimensions: 1536
+      similarity_metric: Cosine
+      timeout: 30
+```
+
+**What Works:**
+- 🧪 Connection and health checks (gRPC)
+- 🧪 Collection management (create, delete, list, exists, count)
+- 🧪 Document CRUD operations
+- 🧪 Automatic OpenAI embedding generation
+- 🧪 Vector similarity search (HNSW index)
+- 🧪 Metadata filtering (payload-based)
+- 🧪 Batch operations
+
+**Known Limitations:**
+- **Experimental Status**: Not yet tested in production
+- **No BM25**: Keyword search not supported natively
+- **Hybrid Search**: Falls back to vector-only search
+- **Float32 Vectors**: Embeddings converted from float64 to float32
+- **Testing Needed**: Local and cloud instances need real-world validation
+
+**Local Development:**
+```bash
+# Start Qdrant with Docker
+docker run -p 6333:6333 -p 6334:6334 \
+  -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+  qdrant/qdrant
+
+# Or with Podman
+podman run -p 6333:6333 -p 6334:6334 \
+  -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+  qdrant/qdrant
+```
+
+**Key Features:**
+- ✅ Open source (Apache 2.0)
+- ✅ gRPC API for high performance
+- ✅ HNSW indexing for fast similarity search
+- ✅ Flexible payload filtering with JSON support
+- ✅ Quantization for reduced memory usage
+- ✅ Both local and cloud deployment options
+
+**Performance:**
+- HNSW index provides excellent speed and accuracy
+- Efficient payload storage separate from vectors
+- Configurable index parameters
+- Support for multiple distance metrics (Cosine, Dot, Euclidean)
+
+**Documentation:**
+- [Qdrant Setup Guide](qdrant/SETUP.md)
+
 ### Mock Database
 
 **Strengths:**
@@ -390,23 +478,22 @@ databases:
 
 ## Integration Test Coverage
 
-| Test Type | Weaviate | Milvus | Chroma | Supabase | MongoDB | Mock |
-|-----------|----------|--------|--------|----------|---------|------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Collection CRUD | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Document CRUD | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Batch Operations | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ |
-| Semantic Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| BM25 Search | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ |
-| Hybrid Search | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Schema Operations | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| E2E Tests | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| Test Type | Weaviate | Milvus | Chroma | Qdrant | Supabase | MongoDB | Mock |
+|-----------|----------|--------|--------|--------|----------|---------|------|
+| Health Check | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| Collection CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| Document CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| Batch Operations | ✅ | ✅ | ⚠️ | 🧪 | ✅ | ✅ | ✅ |
+| Semantic Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| BM25 Search | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Hybrid Search | ✅ | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ |
+| Metadata Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| Schema Operations | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| OpenAI Embeddings | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| No Vectorizer | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
+| E2E Tests | ✅ | ✅ | ✅ | 🚧 | ✅ | ⚠️ | ✅ |
 
-**Legend:** ✅ Tested | 🚧 Planned | ⚠️ Quota limits or known issues | ❌ Not
-supported
+**Legend:** ✅ Tested | 🧪 Experimental (implemented, needs real-world testing) | 🚧 Planned | ⚠️ Quota limits or known issues | ❌ Not supported
 
 ## Roadmap
 
@@ -482,27 +569,43 @@ supported
 - ⚠️ Cloud free tier limited to 300 documents per GET request
 - ⚠️ Some integration tests fail on free tier due to quota (expected behavior)
 
-### v0.7.0 - Qdrant Integration (Planned)
+### v0.7.0 - Qdrant Integration (🧪 Experimental)
 
-**Timeline**: Dec 2-6, 2025
+**Timeline**: Nov 28 - Dec 3, 2025
 
-- [ ] Implement QdrantClient with VectorDB interface
-- [ ] gRPC client integration
-- [ ] Point-based data model mapping
-- [ ] JSON payload filtering
-- [ ] HNSW + quantization support
-- [ ] Docker-based integration tests
-- [ ] Documentation and demo script
+**Status**: 🧪 Experimental - Core implementation complete, testing in progress
+
+**Completed**:
+- ✅ Implement QdrantClient with VectorDB interface
+- ✅ gRPC client integration (port 6334)
+- ✅ Point-based data model mapping
+- ✅ JSON payload filtering
+- ✅ Collection operations (create, delete, list, exists, count)
+- ✅ Document CRUD operations
+- ✅ Automatic OpenAI embedding generation
+- ✅ Vector similarity search (HNSW index)
+- ✅ Batch operations
+- ✅ Factory registration and config validation
+- ✅ CLI flags (--qdrant-local, --qdrant-cloud)
+- ✅ Integration test suite
+
+**Remaining Tasks**:
+- [ ] Test with local Qdrant instance (Docker/Podman)
+- [ ] Test with Qdrant Cloud
+- [ ] Documentation (SETUP.md)
+- [ ] Demo script
+- [ ] Production readiness validation
 
 **Key Features**:
 - ✅ Open source (Apache 2.0)
 - ✅ High-performance gRPC API
-- ✅ HNSW indexing + quantization
-- ✅ Multiple vectors per point
+- ✅ HNSW indexing for fast similarity search
 - ✅ Flexible payload filtering
+- ✅ Both local and cloud deployment
+- ✅ Float32 vector support with auto-conversion
 
-See [Vector DB Integrations Planning](planning/VECTOR_DB_INTEGRATIONS.md) for
-details.
+**Documentation**:
+- [Qdrant Setup Guide](qdrant/SETUP.md)
 
 ### v0.8.0 - Neo4j Integration (Planned)
 

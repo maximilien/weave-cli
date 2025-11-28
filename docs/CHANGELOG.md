@@ -7,6 +7,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2025-11-28 (Planned)
+
+### Added
+
+- **🧪 Qdrant Vector Database Integration (Experimental)**: Initial Qdrant support for vector database operations
+  - **Status**: 🧪 Experimental - Core implementation complete, real-world testing in progress
+  - **What Works**:
+    - 🧪 Connection and health checks (gRPC on port 6334)
+    - 🧪 Collection management (create, list, delete, exists, count)
+    - 🧪 Document CRUD operations with automatic embedding generation
+    - 🧪 Batch document operations
+    - 🧪 Vector similarity search (HNSW indexing)
+    - 🧪 Metadata filtering (payload-based queries)
+  - **New Features**:
+    - Automatic OpenAI embedding generation on document creation
+    - Support for both Qdrant Local (Docker/Podman) and Qdrant Cloud
+    - `--qdrant-local` and `--qdrant-cloud` flag support across all commands
+    - gRPC client integration for high-performance communication
+    - HNSW indexing for fast and accurate similarity search
+    - Multiple distance metrics: Cosine, Dot Product, Euclidean
+    - Float32 vector support with auto-conversion from OpenAI's float64
+  - **New Package**: `src/pkg/vectordb/qdrant/` with complete VectorDB interface implementation
+    - `client.go`: Qdrant gRPC client with separate clients for Collections, Points, and Health
+    - `collection.go`: Collection operations with HNSW configuration
+    - `document.go`: Document CRUD with point-based data model
+    - `query.go`: Search operations with payload filtering
+    - `adapter.go`: VectorDB interface adapter with embedding support
+    - `factory.go`: Factory pattern for Qdrant client creation
+  - **Documentation**:
+    - `docs/qdrant/SETUP.md`: Comprehensive setup guide for local and cloud
+    - `configs/config.qdrant-local.yaml`: Example configuration for local Qdrant
+    - `configs/config.qdrant-cloud.yaml`: Example configuration for Qdrant Cloud
+    - Updated `docs/VDB_SUPPORT.md`: Qdrant marked as Experimental
+    - Updated `README.md`: Qdrant setup instructions with experimental warning
+  - **Integration Tests**:
+    - `tests/qdrant_integration_test.go`: Comprehensive integration test suite
+    - Tests cover: health checks, collections, documents, batch ops, search operations
+    - All tests written, awaiting validation with live Qdrant instances
+
+### Changed
+
+- **Vector Database Type Configuration**: Added Qdrant type constants
+  - Added `VectorDBTypeQdrantLocal` and `VectorDBTypeQdrantCloud` to config package
+  - Updated CLI flag handling in `src/cmd/root.go` and `src/cmd/utils/vectordb_selector.go`
+  - New selector functions: `getQdrantLocalConfig()` and `getQdrantCloudConfig()`
+
+- **Documentation**: Updated vector database support documentation
+  - `docs/VDB_SUPPORT.md`: Added Qdrant to all feature matrices with 🧪 status
+  - Added Qdrant database-specific notes section
+  - Updated integration test coverage table
+  - Updated roadmap section marking Qdrant as experimental
+
+### Known Limitations
+
+- **Experimental Status**: Not yet tested with live Qdrant instances (local or cloud)
+- **No BM25 Search**: Keyword search not supported natively by Qdrant
+- **Hybrid Search Fallback**: Falls back to vector-only search
+- **Float32 Conversion**: Embeddings converted from float64 to float32 (may have minor precision loss)
+- **Testing Needed**: Real-world validation with Docker/Podman local and Qdrant Cloud
+
+### Next Steps
+
+- [ ] Test with local Qdrant instance (Docker/Podman)
+- [ ] Test with Qdrant Cloud cluster
+- [ ] Validate integration tests with live instances
+- [ ] Performance benchmarking
+- [ ] Production readiness assessment
+
 ## [0.6.0] - 2025-11-27
 
 ### Added

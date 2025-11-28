@@ -1,0 +1,41 @@
+---
+# Qdrant Cloud Configuration
+# For Qdrant Cloud managed service
+
+databases:
+  # Set Qdrant Cloud as the default database
+  default: qdrant
+
+  vector_databases:
+    - name: qdrant
+      type: qdrant-cloud
+
+      # Connection settings
+      url: ${QDRANT_URL}  # e.g., https://xyz.cloud.qdrant.io:6334
+      api_key: ${QDRANT_API_KEY}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: Cosine  # Options: Cosine, Dot, Euclidean
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Environment variables required:
+# - QDRANT_URL: Your Qdrant Cloud cluster URL
+# - QDRANT_API_KEY: Your Qdrant Cloud API key
+# - OPENAI_API_KEY: Your OpenAI API key for embeddings
+
+# Example usage:
+# 1. Set environment variables:
+#    export QDRANT_URL="https://xyz.cloud.qdrant.io:6334"
+#    export QDRANT_API_KEY="your-api-key"
+#    export OPENAI_API_KEY="sk-..."
+# 2. Run weave:
+#    weave --config configs/config.qdrant-cloud.yaml \
+#      --qdrant-cloud cols ls
