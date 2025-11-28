@@ -116,6 +116,8 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	useMilvusCloud, _ := cmd.Flags().GetBool("milvus-cloud")
 	useChromaLocal, _ := cmd.Flags().GetBool("chroma-local")
 	useChromaCloud, _ := cmd.Flags().GetBool("chroma-cloud")
+	useQdrantLocal, _ := cmd.Flags().GetBool("qdrant-local")
+	useQdrantCloud, _ := cmd.Flags().GetBool("qdrant-cloud")
 	useMock, _ := cmd.Flags().GetBool("mock")
 	useAll, _ := cmd.Flags().GetBool("all")
 
@@ -123,7 +125,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useMock
+	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -194,6 +196,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *chromaCloudConfig)
 		types = append(types, string(chromaCloudConfig.Type))
+	}
+
+	if useQdrantLocal {
+		qdrantLocalConfig, err := getQdrantLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Qdrant Local configuration: %w", err)
+		}
+		configs = append(configs, *qdrantLocalConfig)
+		types = append(types, string(qdrantLocalConfig.Type))
+	}
+
+	if useQdrantCloud {
+		qdrantCloudConfig, err := getQdrantCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Qdrant Cloud configuration: %w", err)
+		}
+		configs = append(configs, *qdrantCloudConfig)
+		types = append(types, string(qdrantCloudConfig.Type))
 	}
 
 	if useMock {

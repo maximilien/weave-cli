@@ -28,6 +28,8 @@ const (
 	VectorDBTypeMilvusCloud VectorDBType = "milvus-cloud"
 	VectorDBTypeChromaLocal VectorDBType = "chroma-local"
 	VectorDBTypeChromaCloud VectorDBType = "chroma-cloud"
+	VectorDBTypeQdrantLocal VectorDBType = "qdrant-local"
+	VectorDBTypeQdrantCloud VectorDBType = "qdrant-cloud"
 )
 
 // Default configuration values
