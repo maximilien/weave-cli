@@ -1,0 +1,37 @@
+---
+# Qdrant Local Configuration
+# For local development using Docker/Podman
+
+databases:
+  # Set Qdrant Local as the default database
+  default: qdrant
+
+  vector_databases:
+    - name: qdrant
+      type: qdrant-local
+
+      # Connection settings
+      host: ${QDRANT_HOST:-localhost}
+      port: ${QDRANT_GRPC_PORT:-6334}  # gRPC port (6333 for REST)
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: Cosine  # Options: Cosine, Dot, Euclidean
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example usage:
+# 1. Start Qdrant:
+#    docker run -p 6333:6333 -p 6334:6334 \
+#      -v $(pwd)/qdrant_storage:/qdrant/storage:z \
+#      qdrant/qdrant
+# 2. Set API key: export OPENAI_API_KEY="sk-..."
+# 3. Run weave:
+#    weave --config configs/config.qdrant-local.yaml \
+#      --qdrant-local cols ls
