@@ -55,7 +55,10 @@ temp/
 # Working documents (personal planning, not for public repo)
 TODO*
 TODOs.md
+TODOs-*.md
 NEXT_STEPS.md
+WORK_PLAN_*.md
+SESSION_SUMMARY_*.md
 
 # Test artifacts
 test-results/
