@@ -39,6 +39,8 @@ var (
 	useMilvusCloud bool
 	useChromaLocal bool
 	useChromaCloud bool
+	useQdrantLocal bool
+	useQdrantCloud bool
 	useMock        bool
 	useAll         bool
 )
@@ -98,6 +100,8 @@ Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase P
   --milvus-cloud                       # Use Milvus cloud (Zilliz) database only
   --chroma-local                       # Use Chroma local database only
   --chroma-cloud                       # Use Chroma cloud database only
+  --qdrant-local                       # Use Qdrant local database only
+  --qdrant-cloud                       # Use Qdrant cloud database only
   --mock                               # Use mock database only
   --all                                # Use all configured databases (default)
 
@@ -159,6 +163,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useMilvusCloud, "milvus-cloud", false, "use Milvus cloud (Zilliz) vector database")
 	rootCmd.PersistentFlags().BoolVar(&useChromaLocal, "chroma-local", false, "use Chroma local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useChromaCloud, "chroma-cloud", false, "use Chroma cloud vector database")
+	rootCmd.PersistentFlags().BoolVar(&useQdrantLocal, "qdrant-local", false, "use Qdrant local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useQdrantCloud, "qdrant-cloud", false, "use Qdrant cloud vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
 
@@ -189,6 +195,8 @@ func init() {
 	_ = viper.BindPFlag("milvus-cloud", rootCmd.PersistentFlags().Lookup("milvus-cloud"))
 	_ = viper.BindPFlag("chroma-local", rootCmd.PersistentFlags().Lookup("chroma-local"))
 	_ = viper.BindPFlag("chroma-cloud", rootCmd.PersistentFlags().Lookup("chroma-cloud"))
+	_ = viper.BindPFlag("qdrant-local", rootCmd.PersistentFlags().Lookup("qdrant-local"))
+	_ = viper.BindPFlag("qdrant-cloud", rootCmd.PersistentFlags().Lookup("qdrant-cloud"))
 	_ = viper.BindPFlag("mock", rootCmd.PersistentFlags().Lookup("mock"))
 	_ = viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 

@@ -14,6 +14,7 @@ import (
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/milvus"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/mock"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/mongodb"
+	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/qdrant"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/supabase"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
