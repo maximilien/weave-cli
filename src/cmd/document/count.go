@@ -81,6 +81,8 @@ func runDocumentCount(cmd *cobra.Command, args []string) {
 			count, err = utils.CountDocuments(ctx, dbConfig, collectionName)
 		case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
 			count, err = utils.CountDocuments(ctx, dbConfig, collectionName)
+		case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+			count, err = utils.CountDocuments(ctx, dbConfig, collectionName)
 		case config.VectorDBTypeMock:
 			count, err = utils.CountMockDocuments(ctx, dbConfig, collectionName)
 		default:

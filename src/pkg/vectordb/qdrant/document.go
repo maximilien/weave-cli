@@ -340,6 +340,31 @@ func interfaceToValue(v interface{}) (*qdrant.Value, error) {
 		return &qdrant.Value{Kind: &qdrant.Value_DoubleValue{DoubleValue: float64(val)}}, nil
 	case bool:
 		return &qdrant.Value{Kind: &qdrant.Value_BoolValue{BoolValue: val}}, nil
+	case []int:
+		// Convert []int to ListValue
+		values := make([]*qdrant.Value, len(val))
+		for i, item := range val {
+			values[i] = &qdrant.Value{Kind: &qdrant.Value_IntegerValue{IntegerValue: int64(item)}}
+		}
+		return &qdrant.Value{Kind: &qdrant.Value_ListValue{ListValue: &qdrant.ListValue{Values: values}}}, nil
+	case []string:
+		// Convert []string to ListValue
+		values := make([]*qdrant.Value, len(val))
+		for i, item := range val {
+			values[i] = &qdrant.Value{Kind: &qdrant.Value_StringValue{StringValue: item}}
+		}
+		return &qdrant.Value{Kind: &qdrant.Value_ListValue{ListValue: &qdrant.ListValue{Values: values}}}, nil
+	case []interface{}:
+		// Convert []interface{} to ListValue recursively
+		values := make([]*qdrant.Value, len(val))
+		for i, item := range val {
+			convertedVal, err := interfaceToValue(item)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert array element at index %d: %w", i, err)
+			}
+			values[i] = convertedVal
+		}
+		return &qdrant.Value{Kind: &qdrant.Value_ListValue{ListValue: &qdrant.ListValue{Values: values}}}, nil
 	default:
 		return nil, fmt.Errorf("unsupported value type: %T", v)
 	}
@@ -356,6 +381,16 @@ func valueToInterface(v *qdrant.Value) interface{} {
 		return val.DoubleValue
 	case *qdrant.Value_BoolValue:
 		return val.BoolValue
+	case *qdrant.Value_ListValue:
+		// Convert ListValue back to []interface{}
+		if val.ListValue == nil {
+			return []interface{}{}
+		}
+		result := make([]interface{}, len(val.ListValue.Values))
+		for i, item := range val.ListValue.Values {
+			result[i] = valueToInterface(item)
+		}
+		return result
 	default:
 		return nil
 	}

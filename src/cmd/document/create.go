@@ -157,6 +157,11 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
+	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode, embeddingModel); err != nil {
+			utils.PrintError(utils.FormatCreationError("document", err))
+			os.Exit(1)
+		}
 	case config.VectorDBTypeMock:
 		utils.CreateMockDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode)
 	default:
