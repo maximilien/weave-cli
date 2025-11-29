@@ -360,15 +360,67 @@ func parseAddress(config *vectordb.Config) (string, int) {
 	host := "localhost"
 	port := 6334
 
+	// Check environment variables first
+	if envHost := os.Getenv("QDRANT_HOST"); envHost != "" {
+		host = envHost
+	}
+	if envPort := os.Getenv("QDRANT_GRPC_PORT"); envPort != "" {
+		fmt.Sscanf(envPort, "%d", &port)
+	}
+
+	// Config takes precedence over environment
 	if config.Address != "" {
-		// Parse address (e.g., "localhost:6334")
-		// For simplicity, just use the address as host for now
-		host = config.Address
+		// Parse address (e.g., "localhost:6334" or just "localhost")
+		parts := splitHostPort(config.Address)
+		if len(parts) > 0 {
+			host = parts[0]
+		}
+		if len(parts) > 1 {
+			fmt.Sscanf(parts[1], "%d", &port)
+		}
 	} else if config.URL != "" {
-		// Parse URL to extract host
-		// For simplicity, just use the URL as host for now
-		host = config.URL
+		// Parse URL to extract host and port
+		parts := splitHostPort(config.URL)
+		if len(parts) > 0 {
+			host = parts[0]
+		}
+		if len(parts) > 1 {
+			fmt.Sscanf(parts[1], "%d", &port)
+		}
 	}
 
 	return host, port
+}
+
+// splitHostPort splits a host:port string, handling cases with or without port
+func splitHostPort(addr string) []string {
+	// Remove any protocol prefix (https://, http://)
+	if idx := findProtocol(addr); idx >= 0 {
+		addr = addr[idx:]
+	}
+
+	// Split on last colon to handle IPv6 addresses
+	lastColon := -1
+	for i := len(addr) - 1; i >= 0; i-- {
+		if addr[i] == ':' {
+			lastColon = i
+			break
+		}
+	}
+
+	if lastColon >= 0 {
+		return []string{addr[:lastColon], addr[lastColon+1:]}
+	}
+	return []string{addr}
+}
+
+// findProtocol returns the index after the protocol, or -1 if not found
+func findProtocol(addr string) int {
+	if len(addr) > 8 && addr[:8] == "https://" {
+		return 8
+	}
+	if len(addr) > 7 && addr[:7] == "http://" {
+		return 7
+	}
+	return -1
 }
