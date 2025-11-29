@@ -104,6 +104,8 @@ func listCollectionsForDatabase(ctx context.Context, dbConfig *config.VectorDBCo
 		utils.ListMilvusCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
 		utils.ListChromaCollections(ctx, dbConfig, limit, virtual, jsonOutput)
+	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+		utils.ListQdrantCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 	}

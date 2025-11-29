@@ -130,6 +130,7 @@ func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {
 		utils.PrintWarning("Milvus collections don't have separate schemas. Use 'weave cols delete' to delete collections.")
 		return
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		// Chroma collections don't have separate schemas - use collection delete instead
 		utils.PrintWarning("Chroma collections don't have separate schemas. Use 'weave cols delete' to delete collections.")
 		return

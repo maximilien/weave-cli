@@ -95,6 +95,7 @@ func runCollectionShow(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		utils.ShowGenericCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		utils.ShowGenericCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)
 	case config.VectorDBTypeMock:
 		utils.ShowMockCollection(ctx, dbConfig, collectionName, shortLines, noTruncate, verbose, showSchema, showMetadata, expandMetadata, outputYAML, outputJSON, yamlFile, jsonFile, compact)

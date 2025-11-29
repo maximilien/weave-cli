@@ -117,6 +117,7 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 			err = utils.DeleteGenericCollections(ctx, dbConfig, args)
 		}
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		if pattern != "" {
 			err = utils.DeleteGenericCollectionsByPattern(ctx, dbConfig, pattern)
 		} else {
