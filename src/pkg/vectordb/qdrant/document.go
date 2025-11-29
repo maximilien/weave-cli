@@ -81,10 +81,16 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 
 // GetDocument retrieves a document by ID
 func (c *Client) GetDocument(ctx context.Context, collectionName string, id string) (*Document, error) {
+	// Convert string ID to UUID
+	uuidStr, err := stringToUUID(id)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert ID to UUID: %w", err)
+	}
+
 	// Convert string ID to Qdrant PointId
 	pointID := &qdrant.PointId{
 		PointIdOptions: &qdrant.PointId_Uuid{
-			Uuid: id,
+			Uuid: uuidStr,
 		},
 	}
 
@@ -120,10 +126,16 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, doc 
 
 // DeleteDocument deletes a document by ID
 func (c *Client) DeleteDocument(ctx context.Context, collectionName string, id string) error {
+	// Convert string ID to UUID
+	uuidStr, err := stringToUUID(id)
+	if err != nil {
+		return fmt.Errorf("failed to convert ID to UUID: %w", err)
+	}
+
 	// Convert string ID to Qdrant PointId
 	pointID := &qdrant.PointId{
 		PointIdOptions: &qdrant.PointId_Uuid{
-			Uuid: id,
+			Uuid: uuidStr,
 		},
 	}
 
@@ -138,9 +150,9 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName string, id s
 		},
 	}
 
-	_, err := c.pointsClient.Delete(ctx, req)
-	if err != nil {
-		return fmt.Errorf("failed to delete document %s from collection %s: %w", id, collectionName, err)
+	_, delErr := c.pointsClient.Delete(ctx, req)
+	if delErr != nil {
+		return fmt.Errorf("failed to delete document %s from collection %s: %w", id, collectionName, delErr)
 	}
 
 	return nil
@@ -155,9 +167,13 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, ids
 	// Convert string IDs to Qdrant PointIds
 	pointIDs := make([]*qdrant.PointId, len(ids))
 	for i, id := range ids {
+		uuidStr, err := stringToUUID(id)
+		if err != nil {
+			return fmt.Errorf("failed to convert ID %s to UUID: %w", id, err)
+		}
 		pointIDs[i] = &qdrant.PointId{
 			PointIdOptions: &qdrant.PointId_Uuid{
-				Uuid: id,
+				Uuid: uuidStr,
 			},
 		}
 	}
@@ -232,11 +248,22 @@ func documentToPoint(doc *Document) (*qdrant.PointStruct, error) {
 		}
 	}
 
+	// Always store original ID in payload for retrieval
+	payload["_original_id"] = &qdrant.Value{
+		Kind: &qdrant.Value_StringValue{StringValue: doc.ID},
+	}
+
+	// Convert ID to valid UUID
+	pointID, err := stringToUUID(doc.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert ID to UUID: %w", err)
+	}
+
 	// Create point
 	point := &qdrant.PointStruct{
 		Id: &qdrant.PointId{
 			PointIdOptions: &qdrant.PointId_Uuid{
-				Uuid: doc.ID,
+				Uuid: pointID,
 			},
 		},
 		Vectors: &qdrant.Vectors{
@@ -258,8 +285,17 @@ func pointToDocument(point *qdrant.RetrievedPoint) (*Document, error) {
 		Metadata: make(map[string]interface{}),
 	}
 
-	// Extract ID
-	if point.Id != nil {
+	// Extract ID - prefer _original_id from payload if available
+	if point.Payload != nil {
+		if originalID, ok := point.Payload["_original_id"]; ok {
+			if strVal, ok := originalID.Kind.(*qdrant.Value_StringValue); ok {
+				doc.ID = strVal.StringValue
+			}
+		}
+	}
+
+	// Fallback to UUID if no original ID found
+	if doc.ID == "" && point.Id != nil {
 		if uuid, ok := point.Id.PointIdOptions.(*qdrant.PointId_Uuid); ok {
 			doc.ID = uuid.Uuid
 		}
@@ -323,4 +359,20 @@ func valueToInterface(v *qdrant.Value) interface{} {
 	default:
 		return nil
 	}
+}
+
+// stringToUUID converts a string ID to a valid UUID format
+// If the string is already a valid UUID, it returns it as-is
+// Otherwise, it generates a deterministic UUID v5 based on the string
+func stringToUUID(id string) (string, error) {
+	// Try to parse as UUID first
+	if _, err := uuid.Parse(id); err == nil {
+		return id, nil
+	}
+
+	// Generate deterministic UUID v5 from string
+	// Using DNS namespace as it's standard and collision-resistant
+	namespace := uuid.NameSpaceDNS
+	deterministicUUID := uuid.NewSHA1(namespace, []byte(id))
+	return deterministicUUID.String(), nil
 }

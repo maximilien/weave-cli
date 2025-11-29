@@ -52,6 +52,11 @@ logs/
 tmp/
 temp/
 
+# Local VDB storage
+qdrant_storage/
+milvus_storage/
+chroma_data/
+
 # Working documents (personal planning, not for public repo)
 TODO*
 TODOs.md
