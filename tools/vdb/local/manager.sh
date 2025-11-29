@@ -11,7 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Supported VDBs
-SUPPORTED_VDBS=("milvus")
+SUPPORTED_VDBS=("milvus" "qdrant")
 
 usage() {
     cat <<EOF
@@ -31,7 +31,8 @@ Commands:
 Examples:
     ./manager.sh milvus start
     ./manager.sh milvus status
-    ./manager.sh milvus logs
+    ./manager.sh qdrant start
+    ./manager.sh qdrant logs
     ./manager.sh milvus stop
 
     # Start all VDBs

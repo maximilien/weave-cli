@@ -80,6 +80,9 @@ check_all_local() {
     # Check Milvus
     check_local_vdb "milvus" || status=1
 
+    # Check Qdrant
+    check_local_vdb "qdrant" || status=1
+
     return $status
 }
 
@@ -100,6 +103,12 @@ check_all_cloud() {
 
     # Check Milvus Cloud (Zilliz)
     check_cloud_vdb "milvus-cloud" || status=1
+
+    # Check Qdrant Cloud
+    check_cloud_vdb "qdrant-cloud" || status=1
+
+    # Check Chroma Cloud
+    check_cloud_vdb "chroma-cloud" || status=1
 
     return $status
 }
