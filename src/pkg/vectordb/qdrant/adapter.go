@@ -365,7 +365,7 @@ func parseAddress(config *vectordb.Config) (string, int) {
 		host = envHost
 	}
 	if envPort := os.Getenv("QDRANT_GRPC_PORT"); envPort != "" {
-		fmt.Sscanf(envPort, "%d", &port)
+		_, _ = fmt.Sscanf(envPort, "%d", &port)
 	}
 
 	// Config takes precedence over environment
@@ -376,7 +376,7 @@ func parseAddress(config *vectordb.Config) (string, int) {
 			host = parts[0]
 		}
 		if len(parts) > 1 {
-			fmt.Sscanf(parts[1], "%d", &port)
+			_, _ = fmt.Sscanf(parts[1], "%d", &port)
 		}
 	} else if config.URL != "" {
 		// Parse URL to extract host and port
@@ -385,7 +385,7 @@ func parseAddress(config *vectordb.Config) (string, int) {
 			host = parts[0]
 		}
 		if len(parts) > 1 {
-			fmt.Sscanf(parts[1], "%d", &port)
+			_, _ = fmt.Sscanf(parts[1], "%d", &port)
 		}
 	}
 
