@@ -1,6 +1,4 @@
-//go:build !((darwin && amd64) || (darwin && arm64))
-// +build !darwin !amd64
-// +build !darwin !arm64
+//go:build !(darwin && (amd64 || arm64))
 
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max
