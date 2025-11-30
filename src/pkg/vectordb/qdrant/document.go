@@ -411,3 +411,23 @@ func stringToUUID(id string) (string, error) {
 	deterministicUUID := uuid.NewSHA1(namespace, []byte(id))
 	return deterministicUUID.String(), nil
 }
+
+// DeleteAllDocuments deletes all documents from a collection
+func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	// Create delete request with empty filter to match all points
+	_, err := c.pointsClient.Delete(ctx, &qdrant.DeletePoints{
+		CollectionName: collectionName,
+		Points: &qdrant.PointsSelector{
+			PointsSelectorOneOf: &qdrant.PointsSelector_Filter{
+				Filter: &qdrant.Filter{
+					// Empty filter matches all points
+				},
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete all documents: %w", err)
+	}
+
+	return nil
+}

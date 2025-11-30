@@ -871,6 +871,26 @@ func DeleteAllDocuments(ctx context.Context, cfg *config.VectorDBConfig, collect
 			os.Exit(1)
 		}
 		PrintSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
+	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud, config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud, config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+		client, err := CreateVectorDBClient(cfg)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to create client: %v", err))
+			os.Exit(1)
+		}
+		// Type assert to access DeleteAllDocuments method
+		type deleteAllSupported interface {
+			DeleteAllDocuments(ctx context.Context, collectionName string) error
+		}
+		if deleter, ok := client.(deleteAllSupported); ok {
+			if err := deleter.DeleteAllDocuments(ctx, collectionName); err != nil {
+				PrintError(fmt.Sprintf("Failed to delete all documents: %v", err))
+				os.Exit(1)
+			}
+		} else {
+			PrintError(fmt.Sprintf("%s client does not support DeleteAllDocuments", cfg.Type))
+			os.Exit(1)
+		}
+		PrintSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
 	case config.VectorDBTypeMock:
 		DeleteAllMockDocuments(ctx, cfg, collectionName)
 	default:
