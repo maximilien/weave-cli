@@ -53,9 +53,11 @@ tmp/
 temp/
 
 # Local VDB storage
+local/
 qdrant_storage/
 milvus_storage/
 chroma_data/
+neo4j_storage/
 
 # Working documents (personal planning, not for public repo)
 TODO*

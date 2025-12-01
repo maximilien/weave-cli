@@ -98,7 +98,8 @@ Configuration for Neo4j running locally.
 
 - Default URL: `bolt://localhost:7687`
 - Requires authentication (username/password)
-- Requires Docker/Podman: `podman run -d -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/password neo4j:latest`
+- Requires Docker/Podman: `podman run -d -p 7474:7474 -p 7687:7687 -e
+  NEO4J_AUTH=neo4j/password neo4j:latest`
 
 ### config.neo4j-cloud.yaml
 

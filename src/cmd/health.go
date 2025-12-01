@@ -142,13 +142,20 @@ func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.Ve
 
 	// Use vectordb abstraction for all database types
 	vdbConfig := &vectordb.Config{
-		Type:         vectordb.VectorDBType(dbConfig.Type),
-		URL:          dbConfig.URL,
-		APIKey:       dbConfig.APIKey,
-		OpenAIAPIKey: dbConfig.OpenAIAPIKey,
-		DatabaseURL:  dbConfig.DatabaseURL,
-		DatabaseKey:  dbConfig.DatabaseKey,
-		Timeout:      dbConfig.Timeout,
+		Type:             vectordb.VectorDBType(dbConfig.Type),
+		URL:              dbConfig.URL,
+		APIKey:           dbConfig.APIKey,
+		OpenAIAPIKey:     dbConfig.OpenAIAPIKey,
+		DatabaseURL:      dbConfig.DatabaseURL,
+		DatabaseKey:      dbConfig.DatabaseKey,
+		Database:         dbConfig.Database,
+		Username:         dbConfig.Username,
+		Password:         dbConfig.Password,
+		Address:          dbConfig.Address,
+		Tenant:           dbConfig.Tenant,
+		VectorDimensions: dbConfig.VectorDimensions,
+		SimilarityMetric: dbConfig.SimilarityMetric,
+		Timeout:          dbConfig.Timeout,
 	}
 
 	client, err := vectordb.CreateClient(vdbConfig)

@@ -107,7 +107,7 @@ func listCollectionsForDatabase(ctx context.Context, dbConfig *config.VectorDBCo
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		utils.ListQdrantCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
-		utils.ListQdrantCollections(ctx, dbConfig, limit, virtual, jsonOutput) // Use same generic implementation
+		utils.ListNeo4jCollections(ctx, dbConfig, limit, virtual, jsonOutput)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
 	}
