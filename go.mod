@@ -12,6 +12,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/milvus-io/milvus-sdk-go/v2 v2.4.2
+	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
 	github.com/openai/openai-go v1.12.0
 	github.com/pdfcpu/pdfcpu v0.11.0
 	github.com/qdrant/go-client v1.16.2

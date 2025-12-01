@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 dr.max
+
+//go:build integration
+// +build integration
+
+package tests
+
+import (
+	"context"
+	"testing"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/neo4j"
+)
+
+func TestNeo4jBasicConnectivity(t *testing.T) {
+	// Create client
+	config := &neo4j.Config{
+		URI:      "bolt://localhost:7687",
+		Username: "neo4j",
+		Password: "testpassword",
+		Database: "neo4j",
+	}
+
+	client, err := neo4j.NewClient(config)
+	if err != nil {
+		t.Fatalf("Failed to create Neo4j client: %v", err)
+	}
+	defer client.Close(context.Background())
+
+	// Test health check
+	ctx := context.Background()
+	err = client.Health(ctx)
+	if err != nil {
+		t.Fatalf("Health check failed: %v", err)
+	}
+
+	t.Log("✓ Neo4j connectivity test passed")
+}
