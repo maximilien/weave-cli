@@ -984,7 +984,14 @@ func ListNeo4jCollections(ctx context.Context, cfg *config.VectorDBConfig, limit
 				countStr = GetStyledValueDimmed("empty")
 			}
 
-			fmt.Printf("%d. %s - %s\n", i+1, nameColor, countStr)
+			// Vectorizer/embedding model info
+			var vectorizerStr string
+			if info.Vectorizer != "" {
+				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
+			}
+
+			// Display collection info with emoji (🔍 for vector search)
+			fmt.Printf("%2d. %s %s%s 🔍\n", i+1, nameColor, countStr, vectorizerStr)
 		}
 	} else {
 		// JSON output

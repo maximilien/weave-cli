@@ -51,8 +51,9 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 			count = 0 // If we can't get count, just use 0
 		}
 		collections[i] = vectordb.CollectionInfo{
-			Name:  name,
-			Count: count,
+			Name:       name,
+			Count:      count,
+			Vectorizer: "text-embedding-3-small", // Default embedding model used by Neo4j adapter
 		}
 	}
 
