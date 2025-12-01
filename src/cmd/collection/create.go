@@ -173,6 +173,36 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		case config.VectorDBTypeMongoDB:
 			utils.PrintError("Collection creation not yet implemented for MongoDB")
 			os.Exit(1)
+		case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+			// Chroma uses standard fields, no config.yaml schemas needed
+			err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+			if err != nil {
+				utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
+				os.Exit(1)
+			}
+			utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+			utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
+			return
+		case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+			// Qdrant uses standard fields, no config.yaml schemas needed
+			err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+			if err != nil {
+				utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
+				os.Exit(1)
+			}
+			utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+			utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
+			return
+		case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
+			// Neo4j uses standard fields, no config.yaml schemas needed
+			err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+			if err != nil {
+				utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
+				os.Exit(1)
+			}
+			utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+			utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
+			return
 		}
 
 		// For Weaviate and Mock, validate schema exists in config.yaml
@@ -276,6 +306,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
 		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeMock:
 		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
