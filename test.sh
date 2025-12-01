@@ -336,6 +336,10 @@ run_integration_tests() {
         run_chroma=false
         print_status "Skipping Chroma tests (--skip)"
     fi
+    if [ "$skip_qdrant" = true ]; then
+        run_qdrant=false
+        print_status "Skipping Qdrant tests (--skip)"
+    fi
     if [ "$skip_mcp" = true ]; then
         run_mcp=false
         print_status "Skipping MCP tests (--skip)"
