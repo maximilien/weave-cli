@@ -1,7 +1,4 @@
-//go:build !(linux && amd64) && !(darwin && amd64) && !(darwin && arm64)
-// +build !linux !amd64
-// +build !darwin !amd64
-// +build !darwin !arm64
+//go:build !(darwin && (amd64 || arm64))
 
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2025 dr.max
@@ -13,4 +10,4 @@ import (
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/chroma"
 )
 
-// Chroma adapter only available on Linux AMD64, macOS AMD64, and macOS ARM64
+// Chroma adapter only available on macOS AMD64 and macOS ARM64 (not Linux due to CGO)
