@@ -62,6 +62,7 @@ print_help() {
     echo "  --supabase  Run only Supabase integration tests"
     echo "  --mongodb   Run only MongoDB integration tests"
     echo "  --chroma    Run only Chroma integration tests"
+    echo "  --qdrant    Run only Qdrant integration tests"
     echo "  --mcp       Run only MCP integration tests"
     echo "  --skip      Skip specified tests (e.g., --skip mcp,weaviate)"
     echo ""
@@ -73,6 +74,7 @@ print_help() {
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
     echo "  ./test.sh integration --mongodb   # Run only MongoDB integration tests"
     echo "  ./test.sh integration --chroma    # Run only Chroma integration tests"
+    echo "  ./test.sh integration --qdrant    # Run only Qdrant integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
     echo "  ./test.sh integration --skip mcp,weaviate  # Skip MCP and Weaviate tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
@@ -92,6 +94,7 @@ print_help() {
     echo "    - Supabase client testing (requires SUPABASE_DATABASE_URL, SUPABASE_DATABASE_KEY)"
     echo "    - MongoDB client testing (requires MONGODB_URI, MONGODB_DATABASE)"
     echo "    - Chroma client testing (requires Chroma running locally at localhost:8000)"
+    echo "    - Qdrant client testing (requires Qdrant running locally at localhost:6333)"
     echo "    - MCP server testing (requires OPENAI_API_KEY, WEAVE_MCP_STDIO_PATH)"
     echo "    - CLI command testing"
     echo "    - End-to-end workflow testing"
@@ -200,6 +203,7 @@ run_integration_tests() {
     local run_supabase=false
     local run_mongodb=false
     local run_chroma=false
+    local run_qdrant=false
     local run_mcp=false
     local run_all=true
 
@@ -209,6 +213,7 @@ run_integration_tests() {
     local skip_supabase=false
     local skip_mongodb=false
     local skip_chroma=false
+    local skip_qdrant=false
     local skip_mcp=false
     local in_skip_mode=false
 
@@ -234,6 +239,9 @@ run_integration_tests() {
                         ;;
                     chroma)
                         skip_chroma=true
+                        ;;
+                    qdrant)
+                        skip_qdrant=true
                         ;;
                     mcp)
                         skip_mcp=true
@@ -271,6 +279,10 @@ run_integration_tests() {
                 run_chroma=true
                 run_all=false
                 ;;
+            --qdrant)
+                run_qdrant=true
+                run_all=false
+                ;;
             --mcp)
                 run_mcp=true
                 run_all=false
@@ -288,6 +300,7 @@ run_integration_tests() {
         run_supabase=true
         run_mongodb=true
         run_chroma=true
+        run_qdrant=true
         run_mcp=true
 
         # Run fast integration tests (mock only)
@@ -559,6 +572,59 @@ run_integration_tests() {
             print_warning "Skipping Chroma integration tests - Chroma not running"
             print_status "Start Chroma with: podman run -d -p 8000:8000 chromadb/chroma:0.6.2"
             vdb_names+=("Chroma")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
+        fi
+    fi
+
+    # Run Qdrant integration tests if requested
+    if [ "$run_qdrant" = true ]; then
+        # Check if Qdrant is running locally (port 6333 HTTP, 6334 gRPC)
+        local qdrant_available=false
+        local qdrant_host="localhost"
+        local qdrant_port="6333"
+
+        # Check if we can connect to Qdrant HTTP port
+        if nc -z -w 2 "$qdrant_host" "$qdrant_port" 2>/dev/null; then
+            qdrant_available=true
+        fi
+
+        if [ "$qdrant_available" = true ] || [ -n "$QDRANT_API_KEY" ]; then
+            if [ "$qdrant_available" = true ]; then
+                print_status "Running Qdrant integration tests (local)..."
+            else
+                print_status "Running Qdrant integration tests (cloud)..."
+            fi
+            total_suites=$((total_suites + 1))
+            vdb_names+=("Qdrant")
+            # Run tests with live output
+            go test -v -timeout=2m -count=1 -tags=integration ./tests -run="TestQdrant" 2>&1 | tee /tmp/qdrant_test_output.txt
+            exit_code=${PIPESTATUS[0]}
+            output=$(cat /tmp/qdrant_test_output.txt)
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
+                print_success "Qdrant integration tests passed!"
+                passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
+            else
+                print_warning "Qdrant integration tests failed"
+                failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
+            fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            # Clean up temp file
+            rm -f /tmp/qdrant_test_output.txt
+        else
+            print_warning "Skipping Qdrant integration tests - Qdrant not running"
+            print_status "Start Qdrant with: podman run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant:latest"
+            vdb_names+=("Qdrant")
             vdb_status+=("SKIP")
             vdb_passed+=("0")
             vdb_failed+=("0")
