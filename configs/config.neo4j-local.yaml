@@ -1,0 +1,40 @@
+---
+# Neo4j Local Configuration
+# For local development using Docker/Podman
+
+databases:
+  # Set Neo4j Local as the default database
+  default: neo4j
+
+  vector_databases:
+    - name: neo4j
+      type: neo4j-local
+
+      # Connection settings
+      url: ${NEO4J_URL:-bolt://localhost:7687}
+      username: ${NEO4J_USERNAME:-neo4j}
+      password: ${NEO4J_PASSWORD}
+      database: ${NEO4J_DATABASE:-neo4j}  # Database name (default: neo4j)
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, euclidean
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example usage:
+# 1. Start Neo4j:
+#    docker run -p 7474:7474 -p 7687:7687 \
+#      -e NEO4J_AUTH=neo4j/yourpassword \
+#      neo4j:latest
+# 2. Set credentials: export NEO4J_PASSWORD="yourpassword"
+# 3. Set API key: export OPENAI_API_KEY="sk-..."
+# 4. Run weave:
+#    weave --config configs/config.neo4j-local.yaml \
+#      --neo4j-local cols ls

@@ -77,6 +77,36 @@ Configuration for Chroma Cloud.
 - Requires Chroma Cloud account
 - Set `CHROMA_CLOUD_URL` and `CHROMA_CLOUD_API_KEY`
 
+### config.qdrant-local.yaml
+
+Configuration for Qdrant running locally.
+
+- Default URL: `http://localhost:6334` (gRPC)
+- No authentication required for local setup
+- Requires Docker/Podman: `podman run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant`
+
+### config.qdrant-cloud.yaml
+
+Configuration for Qdrant Cloud.
+
+- Requires Qdrant Cloud account
+- Set `QDRANT_URL` and `QDRANT_API_KEY`
+
+### config.neo4j-local.yaml
+
+Configuration for Neo4j running locally.
+
+- Default URL: `bolt://localhost:7687`
+- Requires authentication (username/password)
+- Requires Docker/Podman: `podman run -d -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/password neo4j:latest`
+
+### config.neo4j-cloud.yaml
+
+Configuration for Neo4j Cloud (Aura).
+
+- Requires Neo4j Aura account
+- Set `NEO4J_CLOUD_URL`, `NEO4J_CLOUD_USERNAME`, and `NEO4J_CLOUD_PASSWORD`
+
 ## Environment Variables
 
 Most sensitive values (API keys, passwords) should be set via environment
@@ -108,6 +138,24 @@ CHROMA_URL="http://localhost:8000"
 # Chroma Cloud
 CHROMA_CLOUD_URL="https://your-instance.chroma.cloud"
 CHROMA_CLOUD_API_KEY="your-api-key"
+
+# Qdrant Local
+QDRANT_HOST="localhost"
+QDRANT_GRPC_PORT="6334"
+
+# Qdrant Cloud
+QDRANT_URL="https://your-cluster.cloud.qdrant.io:6334"
+QDRANT_API_KEY="your-api-key"
+
+# Neo4j Local
+NEO4J_URL="bolt://localhost:7687"
+NEO4J_USERNAME="neo4j"
+NEO4J_PASSWORD="yourpassword"
+
+# Neo4j Cloud (Aura)
+NEO4J_CLOUD_URL="neo4j+s://xxxxx.databases.neo4j.io"
+NEO4J_CLOUD_USERNAME="neo4j"
+NEO4J_CLOUD_PASSWORD="your-password"
 
 # OpenAI (required for embeddings)
 OPENAI_API_KEY="sk-..."
@@ -168,6 +216,8 @@ Then use flags to select which database to use:
 weave cols ls --weaviate      # Use Weaviate only
 weave cols ls --milvus-local  # Use Milvus local only
 weave cols ls --chroma-local  # Use Chroma local only
+weave cols ls --qdrant-local  # Use Qdrant local only
+weave cols ls --neo4j-local   # Use Neo4j local only
 weave cols ls --all           # Use all configured databases
 ```
 

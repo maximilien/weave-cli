@@ -175,6 +175,46 @@ weave config create --database-type qdrant-cloud
 weave health check --qdrant-cloud
 ```
 
+### Neo4j Setup (Experimental)
+
+> **🧪 Experimental**: Neo4j support is newly added and functional. Supports
+> both local development and cloud deployment (Aura). Requires testing with real
+> Neo4j instances. See the [Neo4j Documentation](docs/neo4j/) for setup guide.
+
+To use Neo4j locally:
+
+```bash
+# Start Neo4j using podman or docker
+podman run -d --name neo4j -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j/yourpassword \
+  neo4j:latest
+
+# Set Neo4j credentials
+export NEO4J_PASSWORD="yourpassword"
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use local Neo4j
+weave config create --database-type neo4j-local
+
+# Verify Neo4j connection
+weave health check --neo4j-local
+```
+
+To use Neo4j Cloud (Aura):
+
+```bash
+# Set Neo4j Aura credentials
+export NEO4J_CLOUD_URL="neo4j+s://xxxxx.databases.neo4j.io"
+export NEO4J_CLOUD_PASSWORD="your-password"
+export OPENAI_API_KEY="sk-..."
+
+# Configure weave to use Neo4j Aura
+weave config create --database-type neo4j-cloud
+
+# Verify connection
+weave health check --neo4j-cloud
+```
+
 ### Milvus Setup (Beta)
 
 > **🧪 Beta**: Milvus support is feature complete and functional. Supports both
@@ -229,6 +269,8 @@ weave cols ls --chroma-local  # Chroma local only
 weave cols ls --chroma-cloud  # Chroma cloud only
 weave cols ls --qdrant-local  # Qdrant local only
 weave cols ls --qdrant-cloud  # Qdrant cloud only
+weave cols ls --neo4j-local   # Neo4j local only
+weave cols ls --neo4j-cloud   # Neo4j cloud (Aura) only
 weave cols ls --mock          # Mock database only
 weave cols ls --all           # All configured databases
 
@@ -268,7 +310,7 @@ weave cols create MyCollection -e text-embedding-ada-002
   (AI Agent mode) with real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
-  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma)
+  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant, Neo4j)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -301,6 +343,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 - **[Chroma Documentation](docs/chroma/)** - Chroma integration guide (Beta)
 - **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
 - **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
+- **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Experimental)
+- **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Experimental)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
 

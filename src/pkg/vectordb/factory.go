@@ -24,6 +24,8 @@ const (
 	VectorDBTypeChromaCloud   VectorDBType = "chroma-cloud"
 	VectorDBTypeQdrantLocal   VectorDBType = "qdrant-local"
 	VectorDBTypeQdrantCloud   VectorDBType = "qdrant-cloud"
+	VectorDBTypeNeo4jLocal    VectorDBType = "neo4j-local"
+	VectorDBTypeNeo4jCloud    VectorDBType = "neo4j-cloud"
 )
 
 // Config represents the configuration for a vector database client

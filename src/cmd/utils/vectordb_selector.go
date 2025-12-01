@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, or --mock (found %d databases). "+
+					"Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -118,6 +118,8 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	useChromaCloud, _ := cmd.Flags().GetBool("chroma-cloud")
 	useQdrantLocal, _ := cmd.Flags().GetBool("qdrant-local")
 	useQdrantCloud, _ := cmd.Flags().GetBool("qdrant-cloud")
+	useNeo4jLocal, _ := cmd.Flags().GetBool("neo4j-local")
+	useNeo4jCloud, _ := cmd.Flags().GetBool("neo4j-cloud")
 	useMock, _ := cmd.Flags().GetBool("mock")
 	useAll, _ := cmd.Flags().GetBool("all")
 
@@ -125,7 +127,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useMock
+	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -214,6 +216,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *qdrantCloudConfig)
 		types = append(types, string(qdrantCloudConfig.Type))
+	}
+
+	if useNeo4jLocal {
+		neo4jLocalConfig, err := getNeo4jLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Neo4j Local configuration: %w", err)
+		}
+		configs = append(configs, *neo4jLocalConfig)
+		types = append(types, string(neo4jLocalConfig.Type))
+	}
+
+	if useNeo4jCloud {
+		neo4jCloudConfig, err := getNeo4jCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Neo4j Cloud configuration: %w", err)
+		}
+		configs = append(configs, *neo4jCloudConfig)
+		types = append(types, string(neo4jCloudConfig.Type))
 	}
 
 	if useMock {

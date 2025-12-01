@@ -41,6 +41,8 @@ var (
 	useChromaCloud bool
 	useQdrantLocal bool
 	useQdrantCloud bool
+	useNeo4jLocal  bool
+	useNeo4jCloud  bool
 	useMock        bool
 	useAll         bool
 )
@@ -52,7 +54,7 @@ var rootCmd = &cobra.Command{
 	SuggestionsMinimumDistance: 2,
 	Run:                        runREPL,
 	Long: `Weave is a command-line tool for managing vector databases.
-Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase PGVector, and Mock databases.
+Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase PGVector, Chroma (local/cloud), Qdrant (local/cloud), Neo4j (local/cloud), and Mock databases.
 
 📁 COLLECTION MANAGEMENT:
   weave cols ls                        # List all collections
@@ -102,6 +104,8 @@ Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase P
   --chroma-cloud                       # Use Chroma cloud database only
   --qdrant-local                       # Use Qdrant local database only
   --qdrant-cloud                       # Use Qdrant cloud database only
+  --neo4j-local                        # Use Neo4j local database only
+  --neo4j-cloud                        # Use Neo4j cloud (Aura) database only
   --mock                               # Use mock database only
   --all                                # Use all configured databases (default)
 
@@ -165,6 +169,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useChromaCloud, "chroma-cloud", false, "use Chroma cloud vector database")
 	rootCmd.PersistentFlags().BoolVar(&useQdrantLocal, "qdrant-local", false, "use Qdrant local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useQdrantCloud, "qdrant-cloud", false, "use Qdrant cloud vector database")
+	rootCmd.PersistentFlags().BoolVar(&useNeo4jLocal, "neo4j-local", false, "use Neo4j local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useNeo4jCloud, "neo4j-cloud", false, "use Neo4j cloud (Aura) vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
 
@@ -197,6 +203,8 @@ func init() {
 	_ = viper.BindPFlag("chroma-cloud", rootCmd.PersistentFlags().Lookup("chroma-cloud"))
 	_ = viper.BindPFlag("qdrant-local", rootCmd.PersistentFlags().Lookup("qdrant-local"))
 	_ = viper.BindPFlag("qdrant-cloud", rootCmd.PersistentFlags().Lookup("qdrant-cloud"))
+	_ = viper.BindPFlag("neo4j-local", rootCmd.PersistentFlags().Lookup("neo4j-local"))
+	_ = viper.BindPFlag("neo4j-cloud", rootCmd.PersistentFlags().Lookup("neo4j-cloud"))
 	_ = viper.BindPFlag("mock", rootCmd.PersistentFlags().Lookup("mock"))
 	_ = viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 
@@ -306,6 +314,12 @@ Flags:
       --milvus-cloud              use Milvus cloud (Zilliz) vector database
       --supabase                  use Supabase PGVector database
       --mongodb                   use MongoDB Atlas Vector Search database
+      --chroma-local              use Chroma local vector database
+      --chroma-cloud              use Chroma cloud vector database
+      --qdrant-local              use Qdrant local vector database
+      --qdrant-cloud              use Qdrant cloud vector database
+      --neo4j-local               use Neo4j local vector database
+      --neo4j-cloud               use Neo4j cloud (Aura) vector database
       --mock                      use mock vector database
       --all                       operate on all configured vector databases
 
@@ -351,6 +365,12 @@ Global Flags:
       --milvus-cloud              use Milvus cloud (Zilliz) vector database
       --supabase                  use Supabase PGVector database
       --mongodb                   use MongoDB Atlas Vector Search database
+      --chroma-local              use Chroma local vector database
+      --chroma-cloud              use Chroma cloud vector database
+      --qdrant-local              use Qdrant local vector database
+      --qdrant-cloud              use Qdrant cloud vector database
+      --neo4j-local               use Neo4j local vector database
+      --neo4j-cloud               use Neo4j cloud (Aura) vector database
       --mock                      use mock vector database
       --all                       operate on all configured vector databases
 

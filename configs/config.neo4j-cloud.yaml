@@ -1,0 +1,46 @@
+---
+# Neo4j Cloud (Aura) Configuration
+# For Neo4j Aura managed service
+
+databases:
+  # Set Neo4j Cloud as the default database
+  default: neo4j
+
+  vector_databases:
+    - name: neo4j
+      type: neo4j-cloud
+
+      # Connection settings
+      url: ${NEO4J_CLOUD_URL}  # e.g., neo4j+s://xxxxx.databases.neo4j.io
+      username: ${NEO4J_CLOUD_USERNAME:-neo4j}
+      password: ${NEO4J_CLOUD_PASSWORD}
+      database: ${NEO4J_CLOUD_DATABASE:-neo4j}  # Database name (default: neo4j)
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, euclidean
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Environment variables required:
+# - NEO4J_CLOUD_URL: Your Neo4j Aura connection URI (neo4j+s://...)
+# - NEO4J_CLOUD_PASSWORD: Your Neo4j Aura password
+# - OPENAI_API_KEY: Your OpenAI API key for embeddings
+# Optional:
+# - NEO4J_CLOUD_USERNAME: Database username (default: neo4j)
+# - NEO4J_CLOUD_DATABASE: Database name (default: neo4j)
+
+# Example usage:
+# 1. Set environment variables:
+#    export NEO4J_CLOUD_URL="neo4j+s://xxxxx.databases.neo4j.io"
+#    export NEO4J_CLOUD_PASSWORD="your-password"
+#    export OPENAI_API_KEY="sk-..."
+# 2. Run weave:
+#    weave --config configs/config.neo4j-cloud.yaml \
+#      --neo4j-cloud cols ls

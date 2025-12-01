@@ -30,8 +30,8 @@ func (c *Client) CreateCollection(ctx context.Context, name string, dimensions i
 		ON (n.embedding)
 		OPTIONS {
 			indexConfig: {
-				` + "`vector.dimensions`" + `: $dimensions,
-				` + "`vector.similarity_function`" + `: $similarity
+				`+"`vector.dimensions`"+`: $dimensions,
+				`+"`vector.similarity_function`"+`: $similarity
 			}
 		}
 	`, indexName, name)
