@@ -14,6 +14,8 @@ This document tracks feature support and compatibility across different vector d
 | Chroma Cloud | Cloud | ✅ Production | `chroma-cloud` | v0.6.0+ (macOS only) |
 | Qdrant Local | Self-hosted | 🧪 Experimental | `qdrant-local` | v0.7.0+ |
 | Qdrant Cloud | Cloud | 🧪 Experimental | `qdrant-cloud` | v0.7.0+ |
+| Neo4j Local | Self-hosted | ✅ Production | `neo4j-local` | v0.7.1+ |
+| Neo4j Cloud (Aura) | Cloud | ⚠️ Untested | `neo4j-cloud` | v0.7.1+ |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
 | MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |
@@ -24,47 +26,47 @@ This document tracks feature support and compatibility across different vector d
 
 ### Core Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI |
-| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less |
-| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|----------|---------|------|-------|
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI; Neo4j: Creates VECTOR INDEX |
+| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less; Neo4j: Flexible properties |
+| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation; Neo4j: Validates dimensions |
 
 ### Document Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: Auto-embedding with OpenAI |
-| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: Delete + insert |
-| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|----------|---------|------|-------|
+| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j: Auto-embedding with OpenAI |
+| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus/Qdrant: Delete + insert; Neo4j: Native MERGE |
+| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
+| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | - |
 
 ### Search Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: IVF_FLAT; Qdrant: HNSW |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | Milvus: Native BM25; Chroma/Qdrant: Not supported |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ | Milvus: RRF fusion; Chroma/Qdrant: Falls back to vector search |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: JSON field filtering |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|----------|---------|------|-------|
+| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus: IVF_FLAT; Qdrant: HNSW; Neo4j: HNSW |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | Milvus: Native BM25; Chroma/Qdrant/Neo4j: Not supported |
+| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ✅ | ✅ | ✅ | Milvus: RRF fusion; Chroma/Qdrant: Falls back to vector search; Neo4j: Not supported |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j: JSON field filtering |
 
 ### Embedding Support
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|----------|---------|------|-------|
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant: text-embedding-3-small default |
-| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
-| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Manual embeddings |
-| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ⚠️ | ✅ | ✅ | Supabase: Limited |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | Supabase | MongoDB | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|----------|---------|------|-------|
+| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j: text-embedding-3-small default |
+| Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
+| Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
+| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | Manual embeddings |
+| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | Supabase: Limited |
 
 ### CLI Commands
 
@@ -455,6 +457,97 @@ podman run -p 6333:6333 -p 6334:6334 \
 **Documentation:**
 - [Qdrant Setup Guide](qdrant/SETUP.md)
 
+### Neo4j (✅ Production - Local Only)
+
+**Status:** Production (Local), Cloud Untested
+
+**Strengths:**
+- Graph database with vector search (best of both worlds)
+- ACID transactions for data consistency
+- Combines relationship queries with semantic search
+- High-performance HNSW vector indexing
+- Mature enterprise database
+- Flexible property-based metadata
+- Native Cypher query language for complex queries
+
+**Configuration (Local):**
+```yaml
+databases:
+  default: neo4j
+  vector_databases:
+    - name: neo4j
+      type: neo4j-local
+      url: ${NEO4J_URL:-bolt://localhost:7687}
+      username: ${NEO4J_USERNAME:-neo4j}
+      password: ${NEO4J_PASSWORD}
+      database: ${NEO4J_DATABASE:-neo4j}
+      timeout: 30
+      vector_dimensions: 1536
+      similarity_metric: cosine
+```
+
+**What Works:**
+- ✅ Connection and health checks
+- ✅ Collection management (create, list, delete, exists, count)
+- ✅ Document CRUD operations
+- ✅ Automatic OpenAI embedding generation
+- ✅ Vector similarity search (HNSW index)
+- ✅ Metadata filtering with Cypher WHERE clauses
+- ✅ Batch operations
+- ✅ Graph + vector combined queries
+
+**Known Limitations:**
+- **No BM25**: Keyword search not supported natively
+- **No Hybrid Search**: Vector-only search
+- **Local Only**: Cloud (Aura) support not yet tested
+- **Vector Dimensions**: Must be consistent across collection
+- **Requires Neo4j 5.11+**: Vector search added in 5.11
+
+**Local Development:**
+```bash
+# Start Neo4j with Docker/Podman
+./tools/vdb/local/neo4j.sh start
+
+# Check status
+./tools/vdb/local/neo4j.sh status
+
+# View logs
+./tools/vdb/local/neo4j.sh logs
+
+# Stop Neo4j
+./tools/vdb/local/neo4j.sh stop
+```
+
+**Key Features:**
+- ✅ Open source (GPL/Commercial)
+- ✅ Graph relationships + vector search
+- ✅ HNSW indexing for fast similarity search
+- ✅ ACID transactions
+- ✅ Flexible metadata (any property)
+- ✅ Cypher query language
+- ✅ Enterprise-ready (clustering, backup, monitoring)
+
+**Unique Capabilities:**
+- **GraphRAG**: Combine graph traversal with vector search
+- **Relationship-Aware Search**: Find similar documents connected by relationships
+- **Complex Queries**: Use Cypher for sophisticated multi-hop queries
+
+**Performance:**
+- HNSW index provides excellent speed and accuracy
+- Property-based storage for flexible metadata
+- Configurable index parameters (M, ef_construction)
+- Support for cosine and euclidean similarity
+
+**Use Cases:**
+- Knowledge graphs with semantic search
+- Recommendation systems
+- Fraud detection with similarity
+- Complex relationship analysis + RAG
+
+**Documentation:**
+- [Neo4j Integration Guide](neo4j/README.md)
+- [Neo4j Vector Search Docs](https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/)
+
 ### Mock Database
 
 **Strengths:**
@@ -483,20 +576,20 @@ databases:
 
 ## Integration Test Coverage
 
-| Test Type | Weaviate | Milvus | Chroma | Qdrant | Supabase | MongoDB | Mock |
-|-----------|----------|--------|--------|--------|----------|---------|------|
-| Health Check | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Collection CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Document CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Batch Operations | ✅ | ✅ | ⚠️ | 🧪 | ✅ | ✅ | ✅ |
-| Semantic Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| BM25 Search | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
-| Hybrid Search | ✅ | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ✅ |
-| Metadata Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Schema Operations | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| OpenAI Embeddings | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| No Vectorizer | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| E2E Tests | ✅ | ✅ | ✅ | 🚧 | ✅ | ⚠️ | ✅ |
+| Test Type | Weaviate | Milvus | Chroma | Qdrant | Neo4j | Supabase | MongoDB | Mock |
+|-----------|----------|--------|--------|--------|-------|----------|---------|------|
+| Health Check | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| Collection CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| Document CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| Batch Operations | ✅ | ✅ | ⚠️ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| Semantic Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| BM25 Search | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Hybrid Search | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ✅ | ✅ | ✅ |
+| Metadata Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| Schema Operations | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| OpenAI Embeddings | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| No Vectorizer | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ |
+| E2E Tests | ✅ | ✅ | ✅ | 🚧 | ✅ | ✅ | ⚠️ | ✅ |
 
 **Legend:** ✅ Tested | 🧪 Experimental (implemented, needs real-world testing) | 🚧 Planned | ⚠️ Quota limits or known issues | ❌ Not supported
 
@@ -612,21 +705,49 @@ databases:
 **Documentation**:
 - [Qdrant Setup Guide](qdrant/SETUP.md)
 
-### v0.8.0 - Neo4j Integration (Planned)
+### v0.7.1 - Neo4j Integration (✅ Completed - Local)
 
-**Timeline**: Dec 9-13, 2025
+**Timeline**: Dec 1-2, 2025
 
-- [ ] Implement Neo4jClient with VectorDB interface
-- [ ] Graph + vector hybrid queries
-- [ ] Cypher query integration
-- [ ] Relationship-aware search
-- [ ] Docker-based integration tests
-- [ ] Documentation and demo script
+**Status**: ✅ Production (Local Only) - Core functionality complete and tested
+
+**Completed**:
+- ✅ Implement Neo4jClient with VectorDB interface
+- ✅ Collection operations (create, delete, list, exists, count)
+- ✅ Document CRUD operations
+- ✅ Automatic OpenAI embedding generation
+- ✅ Vector similarity search (HNSW index)
+- ✅ Metadata filtering with Cypher WHERE clauses
+- ✅ Batch operations
+- ✅ Factory registration and config validation
+- ✅ CLI flags (--neo4j-local, --neo4j-cloud)
+- ✅ Integration test suite (4 test suites passing)
+- ✅ test.sh support with --neo4j flag
+- ✅ Comprehensive documentation (docs/neo4j/README.md)
+- ✅ Local management script (tools/vdb/local/neo4j.sh)
 
 **Key Features**:
 - ✅ Graph relationships + vector search
-- ✅ Enterprise adoption
-- ✅ GraphRAG support
+- ✅ HNSW indexing for fast similarity search
+- ✅ Cypher query language support
+- ✅ ACID transactions
+- ✅ Flexible metadata (any property)
+- ✅ GraphRAG support ready
+
+**Known Limitations**:
+- ⚠️ No BM25 keyword search
+- ⚠️ No hybrid search
+- ⚠️ Cloud (Aura) support untested
+- ⚠️ Requires Neo4j 5.11+ for vector support
+
+**Remaining Tasks**:
+- [ ] Test with Neo4j Cloud (Aura)
+- [ ] Test batch document creation (100+ documents)
+- [ ] Decide on cloud support status
+- [ ] Production validation at scale
+
+**Documentation**:
+- [Neo4j Integration Guide](neo4j/README.md)
 
 ### v0.9.0 - OpenSearch Integration (Planned)
 
