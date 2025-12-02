@@ -1,0 +1,10 @@
+{
+  "file_path": "tests/data/neo4j-batch-test/doc-10.txt",
+  "processed_at": "2025-12-02T12:22:37.191869-08:00",
+  "success": true,
+  "text_chunks": 0,
+  "images": 0,
+  "processing_time_ms": 728,
+  "file_size": 147,
+  "retry_count": 0
+}

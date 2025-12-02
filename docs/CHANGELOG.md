@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Neo4j Vector Database Integration (v0.7.1)
+- **Neo4j Local Support**: Full integration with Neo4j graph database for vector search
+  - Collection management (create, list, delete, exists, count)
+  - Document CRUD operations (create, get, update, delete, batch)
+  - Automatic OpenAI embedding generation (text-embedding-3-small)
+  - Vector similarity search using HNSW indexes
+  - Metadata filtering with Cypher WHERE clauses
+  - Support for cosine and euclidean similarity metrics
+  - ACID transactions for data consistency
+- **CLI Commands**:
+  - `--neo4j-local` flag for all commands
+  - `--neo4j-cloud` flag (experimental, untested, for future Aura support)
+  - Integration with existing document and collection commands
+- **Testing**:
+  - Comprehensive integration test suite (4 test suites, all passing)
+  - `./test.sh integration --neo4j` support
+  - `--skip neo4j` flag for skipping Neo4j tests
+- **Infrastructure**:
+  - Local management script: `tools/vdb/local/neo4j.sh`
+  - Configuration examples: `configs/config.neo4j-local.yaml`
+  - Docker/Podman support for local development
+- **Documentation**:
+  - Complete Neo4j integration guide: `docs/neo4j/README.md`
+  - Updated VDB support matrix with Neo4j columns
+  - Quick start examples and troubleshooting guide
+- **Requirements**:
+  - Neo4j 5.11+ (for vector search support)
+  - OpenAI API key (for embedding generation)
+  - Bolt protocol support (bolt://localhost:7687)
+
+#### Development Tools
+- **Linting**: Updated `lint.sh` to exclude .gitignore markdown files
+  - Excludes: `TODOs.md`, `TODOs-*.md`, `NEXT_STEPS*.md`, `WORK_PLAN*.md`, `SESSION_SUMMARY_*.md`
+  - Prevents false positives on temporary working documents
+
+### Changed
+- **Document Commands**: Added Neo4j support to all document operations
+  - `weave docs create` - Create documents in Neo4j collections
+  - `weave docs list` - List documents from Neo4j
+  - `weave docs show` - Show specific Neo4j documents
+  - `weave docs count` - Count documents in Neo4j collections
+  - `weave docs delete` - Delete documents from Neo4j
+  - `weave docs delete-all` - Delete all documents from Neo4j collection
+- **Test Infrastructure**: Enhanced `test.sh` with Neo4j integration
+  - Automatic Neo4j availability detection (port 7687)
+  - Environment variable support (`NEO4J_PASSWORD`)
+  - Integration with test summary reporting
+- **Test Authentication**: Updated all Neo4j tests to use `NEO4J_PASSWORD` environment variable
+  - Replaced hardcoded passwords with env var lookups
+  - Default fallback to "weaveneo4j" for local development
+
+### Fixed
+- **Neo4j Test Authentication**: Fixed authentication failures in integration tests
+  - Tests now properly read `NEO4J_PASSWORD` from environment
+  - Added default password fallback for local development
+- **Document Command Coverage**: Added missing Neo4j cases to document commands
+  - Fixed "Unknown vector database type" errors
+  - Ensures consistent behavior across all vector databases
+- **Batch Document Creation**: Fixed database-agnostic support in batch operations
+  - Changed from hardcoded `CreateWeaviateDocument` to generic `CreateDocument`
+  - Enables batch operations to work with all vector databases including Neo4j
+  - Tested with 100+ documents using parallel processing (3 workers)
+
 ## [0.7.0] - 2025-11-29
 
 ### Added
