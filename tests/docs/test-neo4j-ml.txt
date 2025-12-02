@@ -1,0 +1,1 @@
+Machine learning is a powerful branch of artificial intelligence that enables systems to learn and improve from experience. Deep learning, a subset of machine learning, uses neural networks with multiple layers to process complex patterns in data.

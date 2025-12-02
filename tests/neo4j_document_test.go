@@ -8,6 +8,7 @@ package tests
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/neo4j"
@@ -15,10 +16,15 @@ import (
 
 func TestNeo4jDocumentOperations(t *testing.T) {
 	// Create client
+	password := os.Getenv("NEO4J_PASSWORD")
+	if password == "" {
+		password = "weaveneo4j" // Default password
+	}
+
 	config := &neo4j.Config{
 		URI:      "bolt://localhost:7687",
 		Username: "neo4j",
-		Password: "testpassword",
+		Password: password,
 		Database: "neo4j",
 	}
 

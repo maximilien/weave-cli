@@ -91,6 +91,8 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 		utils.DeleteAllDocuments(ctx, dbConfig, collectionName)
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		utils.DeleteAllDocuments(ctx, dbConfig, collectionName)
+	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
+		utils.DeleteAllDocuments(ctx, dbConfig, collectionName)
 	case config.VectorDBTypeMock:
 		utils.DeleteAllMockDocuments(ctx, dbConfig, collectionName)
 	default:

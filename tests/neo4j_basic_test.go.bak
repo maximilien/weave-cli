@@ -7,7 +7,6 @@
 package tests
 
 import (
-	"os"
 	"context"
 	"testing"
 

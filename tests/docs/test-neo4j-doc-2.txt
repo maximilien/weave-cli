@@ -1,0 +1,5 @@
+This is the second test document for Neo4j.
+
+It will be used to test batch operations and multiple document handling.
+
+Neo4j is a graph database with powerful vector search capabilities.

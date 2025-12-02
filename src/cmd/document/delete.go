@@ -131,6 +131,8 @@ func runDocumentDelete(cmd *cobra.Command, args []string) {
 		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
+	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
+		utils.DeleteDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	case config.VectorDBTypeMock:
 		utils.DeleteMockDocuments(ctx, dbConfig, collectionName, args[1:], metadataFilters, virtual, pattern, name)
 	default:

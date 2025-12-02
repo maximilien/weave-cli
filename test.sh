@@ -63,8 +63,9 @@ print_help() {
     echo "  --mongodb   Run only MongoDB integration tests"
     echo "  --chroma    Run only Chroma integration tests"
     echo "  --qdrant    Run only Qdrant integration tests"
+    echo "  --neo4j     Run only Neo4j integration tests"
     echo "  --mcp       Run only MCP integration tests"
-    echo "  --skip      Skip specified tests (e.g., --skip mcp,weaviate)"
+    echo "  --skip      Skip specified tests (e.g., --skip mcp,weaviate,neo4j)"
     echo ""
     echo "Examples:"
     echo "  ./test.sh unit                    # Run only unit tests"
@@ -75,8 +76,9 @@ print_help() {
     echo "  ./test.sh integration --mongodb   # Run only MongoDB integration tests"
     echo "  ./test.sh integration --chroma    # Run only Chroma integration tests"
     echo "  ./test.sh integration --qdrant    # Run only Qdrant integration tests"
+    echo "  ./test.sh integration --neo4j     # Run only Neo4j integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
-    echo "  ./test.sh integration --skip mcp,weaviate  # Skip MCP and Weaviate tests"
+    echo "  ./test.sh integration --skip mcp,weaviate,neo4j  # Skip MCP, Weaviate, and Neo4j tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all                     # Run all tests"
     echo "  ./test.sh coverage                # Run tests with coverage report"
@@ -95,6 +97,7 @@ print_help() {
     echo "    - MongoDB client testing (requires MONGODB_URI, MONGODB_DATABASE)"
     echo "    - Chroma client testing (requires Chroma running locally at localhost:8000)"
     echo "    - Qdrant client testing (requires Qdrant running locally at localhost:6333)"
+    echo "    - Neo4j client testing (requires Neo4j running locally at localhost:7687, NEO4J_PASSWORD)"
     echo "    - MCP server testing (requires OPENAI_API_KEY, WEAVE_MCP_STDIO_PATH)"
     echo "    - CLI command testing"
     echo "    - End-to-end workflow testing"
@@ -204,6 +207,7 @@ run_integration_tests() {
     local run_mongodb=false
     local run_chroma=false
     local run_qdrant=false
+    local run_neo4j=false
     local run_mcp=false
     local run_all=true
 
@@ -214,6 +218,7 @@ run_integration_tests() {
     local skip_mongodb=false
     local skip_chroma=false
     local skip_qdrant=false
+    local skip_neo4j=false
     local skip_mcp=false
     local in_skip_mode=false
 
@@ -242,6 +247,9 @@ run_integration_tests() {
                         ;;
                     qdrant)
                         skip_qdrant=true
+                        ;;
+                    neo4j)
+                        skip_neo4j=true
                         ;;
                     mcp)
                         skip_mcp=true
@@ -283,6 +291,10 @@ run_integration_tests() {
                 run_qdrant=true
                 run_all=false
                 ;;
+            --neo4j)
+                run_neo4j=true
+                run_all=false
+                ;;
             --mcp)
                 run_mcp=true
                 run_all=false
@@ -301,6 +313,7 @@ run_integration_tests() {
         run_mongodb=true
         run_chroma=true
         run_qdrant=true
+        run_neo4j=true
         run_mcp=true
 
         # Run fast integration tests (mock only)
@@ -339,6 +352,10 @@ run_integration_tests() {
     if [ "$skip_qdrant" = true ]; then
         run_qdrant=false
         print_status "Skipping Qdrant tests (--skip)"
+    fi
+    if [ "$skip_neo4j" = true ]; then
+        run_neo4j=false
+        print_status "Skipping Neo4j tests (--skip)"
     fi
     if [ "$skip_mcp" = true ]; then
         run_mcp=false
@@ -629,6 +646,57 @@ run_integration_tests() {
             print_warning "Skipping Qdrant integration tests - Qdrant not running"
             print_status "Start Qdrant with: podman run -d -p 6333:6333 -p 6334:6334 qdrant/qdrant:latest"
             vdb_names+=("Qdrant")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
+        fi
+    fi
+
+    # Run Neo4j integration tests if requested
+    if [ "$run_neo4j" = true ]; then
+        # Check if Neo4j is running locally (port 7687 Bolt)
+        local neo4j_available=false
+        local neo4j_host="localhost"
+        local neo4j_port="7687"
+
+        # Check if we can connect to Neo4j Bolt port
+        if nc -z -w 2 "$neo4j_host" "$neo4j_port" 2>/dev/null; then
+            neo4j_available=true
+        fi
+
+        # Check for required environment variables
+        if [ "$neo4j_available" = true ] && [ -n "$NEO4J_PASSWORD" ]; then
+            print_status "Running Neo4j integration tests (local)..."
+            total_suites=$((total_suites + 1))
+            vdb_names+=("Neo4j")
+            # Run tests with live output
+            go test -v -timeout=2m -count=1 -tags=integration ./tests -run="TestNeo4j" 2>&1 | tee /tmp/neo4j_test_output.txt
+            exit_code=${PIPESTATUS[0]}
+            output=$(cat /tmp/neo4j_test_output.txt)
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
+                print_success "Neo4j integration tests passed!"
+                passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
+            else
+                print_warning "Neo4j integration tests failed"
+                failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
+            fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            # Clean up temp file
+            rm -f /tmp/neo4j_test_output.txt
+        else
+            print_warning "Skipping Neo4j integration tests - Neo4j not running or credentials not configured"
+            print_status "Start Neo4j with: ./tools/vdb/local/neo4j.sh start"
+            print_status "Set NEO4J_PASSWORD environment variable"
+            vdb_names+=("Neo4j")
             vdb_status+=("SKIP")
             vdb_passed+=("0")
             vdb_failed+=("0")
