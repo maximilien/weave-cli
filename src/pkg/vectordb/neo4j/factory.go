@@ -62,9 +62,20 @@ func (f *Factory) CreateClient(config *vectordb.Config) (vectordb.VectorDBClient
 		return nil, fmt.Errorf("failed to create Neo4j client: %w", err)
 	}
 
+	// Create LLM client on-demand if not already created and API key is available
+	llmClient := f.llmClient
+	if llmClient == nil {
+		if openaiKey := os.Getenv("OPENAI_API_KEY"); openaiKey != "" {
+			llmClient, err = llm.NewOpenAIClient(openaiKey)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: Failed to create OpenAI client for embeddings: %v\n", err)
+			}
+		}
+	}
+
 	return &Adapter{
 		client:    client,
-		llmClient: f.llmClient,
+		llmClient: llmClient,
 	}, nil
 }
 
@@ -94,17 +105,7 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 
 // Register registers the Neo4j factory with the global registry
 func init() {
-	// Create LLM client for embeddings (optional, only if OpenAI API key is available)
-	var llmClient *llm.OpenAIClient
-	if openaiKey := os.Getenv("OPENAI_API_KEY"); openaiKey != "" {
-		var err error
-		llmClient, err = llm.NewOpenAIClient(openaiKey)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: Failed to create OpenAI client for embeddings: %v\n", err)
-		}
-	}
-
-	factory := &Factory{llmClient: llmClient}
+	factory := NewFactory()
 	vectordb.RegisterFactory(vectordb.VectorDBTypeNeo4jLocal, factory)
 	vectordb.RegisterFactory(vectordb.VectorDBTypeNeo4jCloud, factory)
 }

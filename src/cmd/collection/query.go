@@ -115,7 +115,10 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
+		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
+		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
+	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeMock:
 		utils.QueryMockCollection(ctx, dbConfig, collectionName, queryText, options)
