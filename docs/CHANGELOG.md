@@ -7,9 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.3] - 2025-12-03
+
+### Added
+- **Neo4j Query Support**: Added vector search query support for Neo4j databases
+  - `weave cols query COLLECTION "query text" --neo4j-local` now works
+  - `weave cols q COLLECTION "text" --neo4j-local` shorthand supported
+  - Semantic search with similarity scoring
+  - Integration with OpenAI embeddings for query vectorization
+- **Explicit Weaviate Flags**: Added granular database selection flags
+  - `--weaviate-local` flag for Weaviate local instances
+  - `--weaviate-cloud` flag for Weaviate cloud instances
+  - `--weaviate` flag still works as convenience (matches both)
+  - Consistent with other VDB naming (`--milvus-local`, `--milvus-cloud`, etc.)
+- **Chroma Query Support**: Added error reporting for Chroma queries
+  - Changed from silent failure to proper error display
+  - Shows helpful error messages (e.g., embedding dimension mismatches)
+
+### Changed
+- **Neo4j Factory Initialization**: Improved LLM client initialization
+  - Changed from eager (init-time) to lazy (on-demand) initialization
+  - Now reads `OPENAI_API_KEY` at runtime after `.env` file is loaded
+  - Fixes issue where installed binaries couldn't find API key
+  - Works correctly when binary is installed to `~/.local/bin`
+
+### Fixed
+- **Neo4j Query Command**: Fixed "Unknown vector database type: neo4j-local" error
+  - Added missing Neo4j cases to query command switch statement
+  - Both `neo4j-local` and `neo4j-cloud` now supported
+- **Chroma Query Command**: Fixed silent failure on query operations
+  - Added missing call to `QueryCollection()` for Chroma databases
+  - Properly displays error messages instead of silently ignoring
+- **Markdown Linting**: Fixed all linting issues in status documents
+  - `RELEASE_BLOCKER.md` - Fixed line length, blank lines, code block language
+  - `STATUS.md` - Fixed heading spacing, list formatting, emphasis usage
+
+## [0.7.2] - 2025-12-03
+
 ### Added
 
-#### VDB Naming Convention Standardization (v0.7.2)
+#### VDB Naming Convention Standardization
 - **Consistent Naming**: Standardized vector database naming convention
   - All databases now use `-local` and `-cloud` suffixes consistently
   - Example: `mongodb-cloud`, `supabase-cloud`, `milvus-local`, `qdrant-local`
