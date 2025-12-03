@@ -79,7 +79,7 @@ jobs:
           chmod +x dist/*
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: linux-windows
           path: dist/
@@ -116,7 +116,7 @@ jobs:
           chmod +x dist/*
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos
           path: dist/
@@ -133,13 +133,13 @@ jobs:
           fetch-depth: "0"
 
       - name: Download Linux/Windows artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-windows
           path: dist/
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: macos
           path: dist/
