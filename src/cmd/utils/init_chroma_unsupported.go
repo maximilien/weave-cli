@@ -6,9 +6,35 @@
 package utils
 
 import (
-	// Import Chroma stub package to register stub factory
-	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/chroma"
+	"fmt"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
-// Chroma adapter only available on macOS AMD64 and macOS ARM64
-// On other platforms, the stub factory is registered and returns platform errors
+// ChromaStubFactory implements the ClientFactory interface for unsupported platforms
+type ChromaStubFactory struct{}
+
+// CreateClient returns an error indicating Chroma is not supported on this platform
+func (f *ChromaStubFactory) CreateClient(config *vectordb.Config) (vectordb.VectorDBClient, error) {
+	return nil, fmt.Errorf("Chroma is only supported on macOS (AMD64/ARM64) - not available on this platform due to CGO dependencies")
+}
+
+// ValidateConfig returns an error indicating Chroma is not supported on this platform
+func (f *ChromaStubFactory) ValidateConfig(config *vectordb.Config) error {
+	return fmt.Errorf("Chroma is only supported on macOS (AMD64/ARM64) - not available on this platform due to CGO dependencies")
+}
+
+// GetSupportedTypes returns the list of supported database types
+func (f *ChromaStubFactory) GetSupportedTypes() []vectordb.VectorDBType {
+	return []vectordb.VectorDBType{
+		vectordb.VectorDBTypeChromaLocal,
+		vectordb.VectorDBTypeChromaCloud,
+	}
+}
+
+// init registers the Chroma stub factory on unsupported platforms
+func init() {
+	factory := &ChromaStubFactory{}
+	vectordb.RegisterFactory(vectordb.VectorDBTypeChromaLocal, factory)
+	vectordb.RegisterFactory(vectordb.VectorDBTypeChromaCloud, factory)
+}
