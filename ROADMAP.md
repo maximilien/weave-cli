@@ -5,7 +5,9 @@
 
 ## Overview
 
-Weave CLI is a command-line tool for managing vector databases with a unified interface. This roadmap outlines completed milestones and upcoming features.
+Weave CLI is a command-line tool for managing vector databases with a
+unified interface. This roadmap outlines completed milestones and upcoming
+features.
 
 ## Version History
 
@@ -14,6 +16,7 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Released
 
 **Features:**
+
 - Neo4j local vector database support
 - Graph + vector hybrid capabilities
 - HNSW vector indexing
@@ -21,8 +24,8 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 - Batch document operations (tested with 100+ documents)
 - Comprehensive integration tests (4 test suites passing)
 - Full documentation and examples
-
 **Integration Status:**
+
 - Neo4j Local: ✅ Production Ready
 - Neo4j Cloud (Aura): ⚠️ Experimental (untested)
 
@@ -31,13 +34,14 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Released
 
 **Features:**
+
 - Qdrant local and cloud support
 - gRPC-based high-performance communication
 - HNSW vector indexing
 - Metadata filtering via payload queries
 - Comprehensive integration tests (14 tests passing)
-
 **Integration Status:**
+
 - Qdrant Local: ✅ Production Ready
 - Qdrant Cloud: ✅ Production Ready
 
@@ -46,11 +50,12 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Released (macOS only)
 
 **Features:**
+
 - Chroma local and cloud support
 - Client-side embedding generation
 - Platform restriction: macOS only (SDK limitation)
-
 **Known Issues:**
+
 - 3 integration test failures (under investigation)
 
 ### ✅ v0.5.0 (2025-10-15) - Milvus Integration
@@ -58,6 +63,7 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Released
 
 **Features:**
+
 - Milvus local and cloud (Zilliz) support
 - Native BM25 and hybrid search
 - High-performance vector operations
@@ -80,10 +86,10 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Target**: 2025-12-03
 
 **Issues:**
+
 - 3 integration test failures
 - Need root cause analysis
 - Verify authentication and API compatibility
-
 **See**: `WORK_PLAN-chroma.md`
 
 ### 🧪 Neo4j Cloud Support
@@ -93,6 +99,7 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Target**: TBD
 
 **Tasks:**
+
 - Test with Neo4j Aura instances
 - Add cloud configuration examples
 - Update integration tests for cloud
@@ -108,13 +115,14 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Planned
 
 **Features:**
+
 - OpenSearch k-NN plugin support
 - Native vector search with HNSW/IVF algorithms
 - Hybrid search (vector + BM25)
 - Advanced filtering with query DSL
 - Both local and cloud (AWS OpenSearch) support
-
 **Benefits:**
+
 - Open-source and AWS managed options
 - Powerful full-text + vector hybrid search
 - Rich ecosystem and tooling
@@ -127,12 +135,13 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Planned
 
 **Features:**
+
 - Pinecone serverless support
 - Metadata filtering
 - Namespaces support
 - Pod-based and serverless indexes
-
 **Benefits:**
+
 - Fully managed vector database
 - Excellent production scalability
 - Low-latency queries
@@ -143,12 +152,14 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 **Status**: Planned
 
 **Features:**
+
 - Redis Stack vector search
 - RediSearch integration
 - Hybrid search (vector + full-text)
 - In-memory performance
 
 **Benefits:**
+
 - Ultra-fast queries (in-memory)
 - Existing Redis ecosystem
 - Cost-effective for small datasets
@@ -185,6 +196,7 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 ### Vector Database Coverage
 
 **Tier 1 (Production Ready):**
+
 - ✅ Weaviate
 - ✅ Qdrant
 - ✅ Milvus
@@ -192,15 +204,15 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 - ✅ MongoDB Atlas
 - ✅ Supabase PGVector
 - 🔧 Chroma (fixing tests)
-
 **Tier 2 (Planned):**
+
 - ⏳ OpenSearch (Next - v0.8.0)
 - ⏳ Pinecone
 - ⏳ Redis Stack
 - ⏳ Elasticsearch
 - ⏳ Vespa
-
 **Tier 3 (Consideration):**
+
 - 🤔 Azure Cognitive Search
 - 🤔 Google Vertex AI Matching Engine
 - 🤔 AWS OpenSearch Serverless
@@ -209,25 +221,26 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 ### Advanced Features
 
 **Multi-modal Support:**
+
 - Image embeddings and search
 - Audio embeddings
 - Video embeddings
 - Cross-modal search
-
 **RAG Enhancements:**
+
 - Built-in chunking strategies
 - Context window optimization
 - Citation tracking
 - Source attribution
-
 **Enterprise Features:**
+
 - Multi-tenancy support
 - RBAC (Role-Based Access Control)
 - Audit logging
 - Cost tracking per VDB
 - SLA monitoring
-
 **AI/ML Integration:**
+
 - Auto-embedding model selection
 - Fine-tuning workflows
 - Embedding model comparison
@@ -270,16 +283,17 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 ### Current Status (v0.7.1)
 
 **Vector Databases:**
+
 - Supported: 8 (7 production, 1 experimental)
 - Integration test coverage: 90%+
 - Documentation coverage: 100%
-
 **Code Quality:**
+
 - Linting: ✅ Passing
 - Security scans: ✅ Passing (Go 1.24.11)
 - Build matrix: ✅ All platforms
-
 **Performance:**
+
 - Batch operations: Tested with 100+ documents
 - Parallel processing: Tested with 3 workers
 - Average operation time: <1s per document
@@ -297,10 +311,11 @@ Weave CLI is a command-line tool for managing vector databases with a unified in
 ## How to Contribute
 
 See specific work plans for current tasks:
+
 - `WORK_PLAN-chroma.md` - Fix Chroma integration tests
 - `WORK_PLAN-current.md` - Today's priorities
-
 For new features, please:
+
 1. Check this roadmap for planned work
 2. Open an issue for discussion
 3. Wait for maintainer feedback
@@ -321,4 +336,4 @@ For new features, please:
 
 **Maintained by**: @maximilien
 **License**: MIT
-**Repository**: https://github.com/maximilien/weave-cli
+**Repository**: <https://github.com/maximilien/weave-cli>

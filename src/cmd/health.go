@@ -61,10 +61,14 @@ func init() {
 	rootCmd.AddCommand(healthCmd)
 	healthCmd.GroupID = "config"
 	healthCmd.AddCommand(healthCheckCmd)
+
+	// Add summary flag for concise table output
+	healthCheckCmd.Flags().Bool("summary", false, "Show summary table of health checks")
 }
 
 func runHealthCheck(cmd *cobra.Command, args []string) {
 	jsonOutput, _ := cmd.Flags().GetBool("json")
+	summaryOutput, _ := cmd.Flags().GetBool("summary")
 
 	// Load configuration
 	cfg, err := LoadConfigWithOverrides()
@@ -88,6 +92,8 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 		result := checkSingleDatabase(ctx, dbName, dbConfig)
 		if jsonOutput {
 			outputHealthCheckJSON([]HealthCheckResult{result})
+		} else if summaryOutput {
+			displayHealthCheckSummary([]HealthCheckResult{result})
 		} else {
 			printHeader(fmt.Sprintf("Database Health Check: %s", dbName))
 			fmt.Println()
@@ -113,6 +119,8 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 	// Output results
 	if jsonOutput {
 		outputHealthCheckJSON(results)
+	} else if summaryOutput {
+		displayHealthCheckSummary(results)
 	} else {
 		if len(results) == 1 {
 			printHeader(fmt.Sprintf("%s Database Health Check", results[0].DatabaseName))
@@ -239,4 +247,56 @@ func outputHealthCheckJSON(results []HealthCheckResult) {
 	}
 
 	fmt.Println(string(jsonBytes))
+}
+
+func displayHealthCheckSummary(results []HealthCheckResult) {
+	// Print header
+	printHeader("Vector Database Health Check Summary")
+	fmt.Println()
+
+	// Table header
+	fmt.Printf("%-20s %-15s %-10s %-8s %s\n", "DATABASE", "TYPE", "STATUS", "COLS", "URL")
+	fmt.Println("──────────────────────────────────────────────────────────────────────────────────")
+
+	// Count healthy/unhealthy
+	healthy := 0
+	unhealthy := 0
+
+	// Print each result
+	for _, result := range results {
+		status := "✗ FAIL"
+		statusColor := color.New(color.FgRed)
+		if result.Healthy {
+			status = "✓ OK"
+			statusColor = color.New(color.FgGreen)
+			healthy++
+		} else {
+			unhealthy++
+		}
+
+		// Truncate URL if too long
+		url := result.URL
+		if len(url) > 40 {
+			url = url[:37] + "..."
+		}
+
+		// Print row
+		fmt.Printf("%-20s %-15s ", result.DatabaseName, result.DatabaseType)
+		statusColor.Printf("%-10s ", status)
+		fmt.Printf("%-8d %s\n", result.CollectionsCount, url)
+	}
+
+	// Print footer summary
+	fmt.Println("──────────────────────────────────────────────────────────────────────────────────")
+	fmt.Printf("Total: %d databases  |  ", len(results))
+	if healthy > 0 {
+		color.New(color.FgGreen).Printf("Healthy: %d", healthy)
+	}
+	if unhealthy > 0 {
+		if healthy > 0 {
+			fmt.Print("  |  ")
+		}
+		color.New(color.FgRed).Printf("Unhealthy: %d", unhealthy)
+	}
+	fmt.Println()
 }
