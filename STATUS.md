@@ -9,6 +9,7 @@
 ## 🎉 v0.7.2 Completed
 
 ### Major Features
+
 1. **VDB Naming Standardization** ✅
    - Consistent `-local` and `-cloud` naming
    - Shortcut resolution (e.g., `weaviate` → `weaviate-cloud`)
@@ -38,7 +39,8 @@
 ## 📊 Test Results
 
 ### Integration Tests: 7/8 Passing (87.5%)
-```
+
+```text
 ✅ Weaviate    5 suites
 ✅ Milvus      4 suites
 ✅ Supabase    6 suites
@@ -50,6 +52,7 @@
 ```
 
 ### Health Check: 10/10 Databases ✅
+
 All configured databases healthy and operational.
 
 ---
@@ -57,17 +60,22 @@ All configured databases healthy and operational.
 ## 🚀 What's Next
 
 ### Immediate (After Lunch - 4 hours)
-**v0.7.3 Development**
+
+#### v0.7.3 Development
+
 - [ ] Weaviate local support (2-3 hours)
 - [ ] Supabase local research (1 hour)
 
 ### Tomorrow (6-8 hours)
-**v0.7.3 Completion**
+
+#### v0.7.3 Completion
+
 - [ ] Complete Supabase local support (3-4 hours)
 - [ ] Fix Supabase collection name preservation (1-2 hours)
 - [ ] Release v0.7.3
 
 ### Future Versions
+
 - **v0.8.0** - OpenSearch integration
 - **v0.9.0** - Redis integration
 - **v1.0.0** - Pinecone integration
@@ -79,15 +87,18 @@ All configured databases healthy and operational.
 See **NEXT_STEPS.md** for detailed breakdown.
 
 ### High Priority
+
 1. ⭐ **Weaviate Local** - Add local development option
 2. ⭐ **Supabase Local** - PostgreSQL+pgvector local setup
 
 ### Medium Priority
+
 1. Supabase collection name preservation (1-2 hours)
 2. Supabase additional embedding providers (4-6 hours)
 3. Chroma quota handling improvements (2-3 hours)
 
 ### Low Priority
+
 1. Supabase BM25 optimization with GIN indexes (6-8 hours)
 2. Performance benchmarking across VDBs
 3. Additional unit test coverage
@@ -111,29 +122,35 @@ See **NEXT_STEPS.md** for detailed breakdown.
 ## 💡 Your Ideas (To Implement)
 
 ### Weaviate Local Support
+
 **Status**: Agreed ✅ - High priority for v0.7.3
 
 **Rationale:**
+
 - Weaviate supports podman/docker compose for local setup
 - Consistency with other VDBs (local/cloud variants)
 - Better developer experience
 
 **Tasks:**
+
 - Research local setup (Docker/Podman)
 - Create `tools/vdb/local/weaviate.sh`
 - Add weaviate-local config
 - Test and document
 
 ### Supabase Local Support
+
 **Status**: Agreed ✅ - High priority for v0.7.3
 
 **Options:**
+
 1. **Full Supabase stack** (complex, multiple containers)
 2. **PostgreSQL + pgvector** (simpler, recommended)
 
 **Recommendation**: Start with PostgreSQL+pgvector, upgrade if needed
 
 **Tasks:**
+
 - Decide on approach
 - Create local setup script
 - Rename `supabase` → `supabase-cloud`
@@ -141,6 +158,7 @@ See **NEXT_STEPS.md** for detailed breakdown.
 - Test and document
 
 **Benefits:**
+
 - Local development without cloud dependency
 - Consistent naming across all VDBs
 - Better testing capabilities
@@ -150,11 +168,13 @@ See **NEXT_STEPS.md** for detailed breakdown.
 ## 🎯 Recommendation
 
 ### Now (Before Lunch)
+
 1. Review this status document
 2. Confirm v0.7.2 is ready
 3. Commit and push if everything looks good
 
 ### After Lunch
+
 1. Start with Weaviate local (quick win, 2-3 hours)
 2. Research Supabase local options
 3. Target v0.7.3 for tomorrow
