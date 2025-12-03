@@ -56,11 +56,17 @@ jobs:
         with:
           go-version: '1.24.11'
 
-      - name: Remove Chroma dependency
+      - name: Exclude Chroma from build
         run: |
-          # Remove chroma-go from go.mod to avoid CGO issues on Linux
-          go mod edit -droprequire github.com/amikos-tech/chroma-go
-          go mod tidy
+          # Remove chroma package files so they're not compiled or imported
+          rm -rf src/pkg/vectordb/chroma/*.go
+          # Restore only the stub for registration
+          git checkout src/pkg/vectordb/chroma/stub_unsupported.go
+          # Remove darwin-specific init file
+          rm -f src/cmd/utils/init_chroma_darwin.go
+          # Keep unsupported init file for stub registration
+          ls -la src/pkg/vectordb/chroma/
+          ls -la src/cmd/utils/init_chroma*.go
 
       - name: Build Linux/Windows
         run: |
