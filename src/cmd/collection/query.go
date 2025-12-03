@@ -108,9 +108,9 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.QueryWeaviateCollection(ctx, dbConfig, collectionName, queryText, options)
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		utils.QueryCollection(ctx, dbConfig, collectionName, queryText, options)

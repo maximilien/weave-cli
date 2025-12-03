@@ -36,8 +36,8 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 		return vectordb.ErrInvalidConfig("config cannot be nil")
 	}
 
-	// Validate database type
-	if config.Type != vectordb.VectorDBTypeSupabase {
+	// Validate database type (accept both legacy and new naming)
+	if config.Type != vectordb.VectorDBTypeSupabase && config.Type != vectordb.VectorDBTypeSupabaseCloud {
 		return vectordb.ErrInvalidConfig(fmt.Sprintf("unsupported Supabase type: %s", config.Type))
 	}
 
@@ -81,5 +81,6 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 // init registers the Supabase factory
 func init() {
 	factory := NewFactory()
-	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabase, factory)
+	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabase, factory)      // Legacy support
+	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabaseCloud, factory) // New naming
 }

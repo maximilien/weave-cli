@@ -53,10 +53,10 @@ func runCollectionCount(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		count, err = utils.CountWeaviateCollections(ctx, dbConfig)
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		utils.PrintError("Collection count not yet implemented for Supabase")
 		os.Exit(1)
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		utils.PrintError("Collection count not yet implemented for MongoDB")
 		os.Exit(1)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:

@@ -831,7 +831,7 @@ func DeleteAllDocuments(ctx context.Context, cfg *config.VectorDBConfig, collect
 	switch cfg.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		DeleteAllWeaviateDocuments(ctx, cfg, collectionName)
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		client, err := CreateVectorDBClient(cfg)
 		if err != nil {
 			PrintError(fmt.Sprintf("Failed to create Supabase client: %v", err))
@@ -851,7 +851,7 @@ func DeleteAllDocuments(ctx context.Context, cfg *config.VectorDBConfig, collect
 			os.Exit(1)
 		}
 		PrintSuccess(fmt.Sprintf("Successfully deleted all documents from collection: %s", collectionName))
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		client, err := CreateVectorDBClient(cfg)
 		if err != nil {
 			PrintError(fmt.Sprintf("Failed to create MongoDB client: %v", err))

@@ -46,10 +46,11 @@ export SUPABASE_DATABASE_URL="postgresql://postgres:[password]@db.[project-ref].
 export SUPABASE_DATABASE_KEY="your-supabase-anon-key"
 
 # Configure weave to use Supabase
+# Note: Use 'supabase-local' for consistency (v0.7.2+)
 weave config create --database-type supabase
 
 # Verify Supabase connection
-weave health check
+weave health check supabase-local
 ```
 
 **Important Notes**:
@@ -83,10 +84,11 @@ export MONGODB_DATABASE="weave-cli"
 export OPENAI_API_KEY="sk-..."  # Required for automatic embeddings
 
 # Configure weave to use MongoDB
+# Note: Use 'mongodb-local' for consistency (v0.7.2+)
 weave config create --database-type mongodb
 
 # Verify MongoDB connection
-weave health check
+weave health check mongodb-local
 ```
 
 **Important**: You must create a vector search index in the Atlas UI before
@@ -441,6 +443,53 @@ weave cols query MyCollection "search" --weaviate --supabase
 2. If `VECTOR_DB_TYPE` set → use as default
 3. If `--weaviate` flag used → try all Weaviate databases for the collection
 4. Otherwise → show error with available options
+
+### Summary Views and Filtering (New in v0.7.2)
+
+View database status and collections across multiple databases with summary
+tables and progressive output:
+
+```bash
+# Collections summary across all databases (default for multiple VDBs)
+weave cols ls                    # Shows summary table by default
+weave cols ls -S                 # Explicit summary flag (shorthand)
+weave cols ls --summary          # Explicit summary flag (long form)
+
+# Health check with progressive output (new in v0.7.2)
+weave health check               # Shows summary table, results appear
+weave health check -S            # Same as above (shorthand)
+
+# Filter databases by deployment type (new in v0.7.2)
+weave config list --cloud        # Show only cloud databases
+weave config list --local        # Show only local databases
+
+weave health check --cloud       # Check only cloud databases
+weave health check --local       # Check only local databases
+weave health check --local -S    # Local databases summary
+
+# Force detailed view for single database
+weave cols ls --weaviate         # Detailed list (default for single VDB)
+weave health check weaviate      # Detailed health check
+
+# Collections summary also supports filtering
+weave cols ls --cloud            # Collections from cloud databases only
+weave cols ls --local -S         # Local collections summary
+```
+
+**Summary Table Features**:
+
+- **Progressive Output**: Results appear immediately as they're
+  retrieved/checked (no waiting!)
+- **Status Indicators**: ✓ OK (green) or ✗ FAIL (red) with color
+  coding
+- **Footer Statistics**: Total count, collections/healthy count,
+  failures
+- **Auto-Selection**: Summary for multiple VDBs, detailed for single
+  VDB
+- **Cloud/Local Filtering**: Filter by deployment type with `--cloud`
+  or `--local` flags
+- **Consistent UX**: Same behavior across `cols ls`, `health check`,
+  and `config list`
 
 ### More Examples
 

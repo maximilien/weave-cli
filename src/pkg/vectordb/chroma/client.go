@@ -18,21 +18,41 @@ import (
 
 // noopEmbeddingFunction is a simple embedding function that doesn't use tokenizers
 // This avoids the libtokenizers CGO dependency issues from default_ef
-type noopEmbeddingFunction struct{}
+// It generates dummy embeddings of the correct dimensions
+type noopEmbeddingFunction struct {
+	dimensions int
+}
 
 func (n *noopEmbeddingFunction) EmbedDocuments(ctx context.Context, documents []string) ([]embeddings.Embedding, error) {
-	// We don't actually use this - we provide embeddings externally
-	return embeddings.NewEmptyEmbeddings(), nil
+	// Generate dummy embeddings for each document
+	embeds := make([]embeddings.Embedding, len(documents))
+	for i := range documents {
+		embeds[i] = n.generateDummyEmbedding()
+	}
+	return embeds, nil
 }
 
 func (n *noopEmbeddingFunction) EmbedQuery(ctx context.Context, query string) (embeddings.Embedding, error) {
-	// We don't actually use this - we provide embeddings externally
-	return embeddings.NewEmptyEmbedding(), nil
+	// Generate a dummy embedding for the query
+	return n.generateDummyEmbedding(), nil
 }
 
 func (n *noopEmbeddingFunction) EmbedRecords(ctx context.Context, records []*chroma.Record, force bool) error {
-	// We don't actually use this - we provide embeddings externally
+	// EmbedDocuments and EmbedQuery handle embedding generation
+	// This method is called by the SDK - we don't need to do anything here
+	// The SDK will use EmbedDocuments for batch operations
 	return nil
+}
+
+// generateDummyEmbedding creates a dummy embedding vector of the correct dimensions
+func (n *noopEmbeddingFunction) generateDummyEmbedding() embeddings.Embedding {
+	dims := n.dimensions
+	if dims == 0 {
+		dims = 1536 // Default to OpenAI text-embedding-3-small dimensions
+	}
+	// Create a vector of zeros (simplest dummy embedding)
+	vec := make([]float32, dims)
+	return embeddings.NewEmbeddingFromFloat32(vec)
 }
 
 // Client wraps the Chroma client with vector database functionality
@@ -133,8 +153,8 @@ func (c *Client) getTimeout() time.Duration {
 func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collection, error) {
 	// Chroma v2 requires an embedding function for GetCollection
 	// Use noopEmbeddingFunction to avoid tokenizer CGO dependencies
-	// We provide embeddings externally, so this is just a placeholder
-	return c.client.GetCollection(ctx, name, chroma.WithEmbeddingFunctionGet(&noopEmbeddingFunction{}))
+	// It generates dummy embeddings of the correct dimensions
+	return c.client.GetCollection(ctx, name, chroma.WithEmbeddingFunctionGet(&noopEmbeddingFunction{dimensions: c.config.VectorDimensions}))
 }
 
 // Health checks the health of the Chroma instance
@@ -187,6 +207,10 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 			chroma.NewStringAttribute("hnsw:space", c.GetDistanceFunction()),
 		),
 	))
+
+	// Add noopEmbeddingFunction to avoid tokenizer CGO dependencies
+	// It generates dummy embeddings of the correct dimensions
+	opts = append(opts, chroma.WithEmbeddingFunctionCreate(&noopEmbeddingFunction{dimensions: c.config.VectorDimensions}))
 
 	// Create collection
 	_, err := c.client.GetOrCreateCollection(ctx, name, opts...)

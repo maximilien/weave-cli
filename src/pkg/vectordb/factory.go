@@ -16,10 +16,12 @@ const (
 	VectorDBTypeWeaviateCloud VectorDBType = "weaviate-cloud"
 	VectorDBTypeWeaviateLocal VectorDBType = "weaviate-local"
 	VectorDBTypeMock          VectorDBType = "mock"
-	VectorDBTypeSupabase      VectorDBType = "supabase"
+	VectorDBTypeSupabase      VectorDBType = "supabase" // Legacy
+	VectorDBTypeSupabaseCloud VectorDBType = "supabase-cloud"
 	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
 	VectorDBTypeMilvusCloud   VectorDBType = "milvus-cloud"
-	VectorDBTypeMongoDB       VectorDBType = "mongodb"
+	VectorDBTypeMongoDB       VectorDBType = "mongodb" // Legacy
+	VectorDBTypeMongoDBCloud  VectorDBType = "mongodb-cloud"
 	VectorDBTypeChromaLocal   VectorDBType = "chroma-local"
 	VectorDBTypeChromaCloud   VectorDBType = "chroma-cloud"
 	VectorDBTypeQdrantLocal   VectorDBType = "qdrant-local"

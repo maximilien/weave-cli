@@ -52,23 +52,18 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 		metadataMap["image"] = document.Image
 	}
 
-	// Build add options
-	addOpts := []chroma.CollectionAddOption{
-		chroma.WithIDs(chroma.DocumentID(document.ID)),
-		chroma.WithTexts(content),
+	// Prepare metadata - ALWAYS provide it (even if empty) to keep array lengths consistent
+	metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
+	if err != nil {
+		return fmt.Errorf("failed to create metadata: %w", err)
 	}
 
-	// Add metadata if we have any
-	if len(metadataMap) > 0 {
-		metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
-		if err != nil {
-			return fmt.Errorf("failed to create metadata: %w", err)
-		}
-		addOpts = append(addOpts, chroma.WithMetadatas(metadata))
-	}
-
-	// Add document to collection
-	err = collection.Add(ctx, addOpts...)
+	// Add document to collection - wrap single values in slices and spread them
+	err = collection.Add(ctx,
+		chroma.WithIDs([]chroma.DocumentID{chroma.DocumentID(document.ID)}...),
+		chroma.WithTexts([]string{content}...),
+		chroma.WithMetadatas([]chroma.DocumentMetadata{metadata}...),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to create document %s: %w", document.ID, err)
 	}
@@ -166,23 +161,18 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, docu
 		metadataMap["image"] = document.Image
 	}
 
-	// Build update options
-	updateOpts := []chroma.CollectionUpdateOption{
-		chroma.WithIDsUpdate(chroma.DocumentID(document.ID)),
-		chroma.WithTextsUpdate(content),
+	// Prepare metadata - ALWAYS provide it (even if empty) to keep array lengths consistent
+	metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
+	if err != nil {
+		return fmt.Errorf("failed to create metadata: %w", err)
 	}
 
-	// Add metadata if we have any
-	if len(metadataMap) > 0 {
-		metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
-		if err != nil {
-			return fmt.Errorf("failed to create metadata: %w", err)
-		}
-		updateOpts = append(updateOpts, chroma.WithMetadatasUpdate(metadata))
-	}
-
-	// Update document
-	err = collection.Update(ctx, updateOpts...)
+	// Update document - wrap single values in slices and spread them
+	err = collection.Update(ctx,
+		chroma.WithIDsUpdate([]chroma.DocumentID{chroma.DocumentID(document.ID)}...),
+		chroma.WithTextsUpdate([]string{content}...),
+		chroma.WithMetadatasUpdate([]chroma.DocumentMetadata{metadata}...),
+	)
 	if err != nil {
 		return fmt.Errorf("failed to update document %s: %w", document.ID, err)
 	}
@@ -201,7 +191,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 		return vectordb.ErrNotFound("collection", collectionName)
 	}
 
-	// Delete document by ID
+	// Delete document by ID - Chroma expects variadic argument
 	err = collection.Delete(ctx, chroma.WithIDsDelete(chroma.DocumentID(documentID)))
 	if err != nil {
 		return fmt.Errorf("failed to delete document %s: %w", documentID, err)
@@ -336,7 +326,7 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 		metadatas = append(metadatas, metadata)
 	}
 
-	// Add all documents
+	// Add all documents - use variadic expansion (spread with ...)
 	err = collection.Add(ctx,
 		chroma.WithIDs(ids...),
 		chroma.WithTexts(contents...),

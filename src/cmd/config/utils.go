@@ -22,9 +22,9 @@ func displayDatabaseConfig(name string, dbConfig *config.VectorDBConfig) {
 		displayWeaviateCloudConfig(dbConfig)
 	case config.VectorDBTypeLocal:
 		displayWeaviateLocalConfig(dbConfig)
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		displaySupabaseConfig(dbConfig)
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		displayMongoDBConfig(dbConfig)
 	case config.VectorDBTypeMilvusLocal:
 		displayMilvusLocalConfig(dbConfig)

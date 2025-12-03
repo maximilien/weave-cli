@@ -510,7 +510,7 @@ func tryCreateSupabaseConfigFromLoadedConfig(cfg *config.Config) *config.VectorD
 
 	return &config.VectorDBConfig{
 		Name:        "supabase-from-config",
-		Type:        config.VectorDBTypeSupabase,
+		Type:        config.VectorDBTypeSupabaseCloud,
 		DatabaseURL: databaseURL,
 		DatabaseKey: databaseKey,
 		Enabled:     true,

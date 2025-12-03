@@ -35,8 +35,8 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 		return vectordb.ErrInvalidConfig("config cannot be nil")
 	}
 
-	// Validate database type
-	if config.Type != vectordb.VectorDBTypeMongoDB {
+	// Validate database type (accept both legacy and new naming)
+	if config.Type != vectordb.VectorDBTypeMongoDB && config.Type != vectordb.VectorDBTypeMongoDBCloud {
 		return vectordb.ErrInvalidConfig(fmt.Sprintf("unsupported MongoDB type: %s", config.Type))
 	}
 
@@ -78,5 +78,6 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 // init registers the MongoDB factory
 func init() {
 	factory := NewFactory()
-	vectordb.RegisterFactory(vectordb.VectorDBTypeMongoDB, factory)
+	vectordb.RegisterFactory(vectordb.VectorDBTypeMongoDB, factory)      // Legacy support
+	vectordb.RegisterFactory(vectordb.VectorDBTypeMongoDBCloud, factory) // New naming
 }

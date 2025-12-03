@@ -9,6 +9,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### VDB Naming Convention Standardization (v0.7.2)
+- **Consistent Naming**: Standardized vector database naming convention
+  - All databases now use `-local` and `-cloud` suffixes consistently
+  - Example: `mongodb-cloud`, `supabase-cloud`, `milvus-local`, `qdrant-local`
+  - Shortcut resolution: bare names (e.g., `weaviate`) automatically resolve to `-cloud` variants
+- **Type Constants**: Added new type constants for consistent naming
+  - `VectorDBTypeMongoDBCloud` and `VectorDBTypeSupabaseCloud`
+  - Factories support both legacy and new type names for backward compatibility
+- **Configuration Updates**:
+  - Updated `config.yaml` with standardized naming
+  - Fixed Qdrant similarity metric capitalization (Cosine, Euclidean, Dot)
+  - Fixed Qdrant port to use gRPC port 6334 instead of HTTP port 6333
+  - All command case statements updated to support new type constants
+
+#### Summary Table Views
+- **Collections Summary**: Added `--summary` / `-S` flag to `weave cols ls`
+  - Shows table of all databases with collection counts and status
+  - Default behavior: summary for multiple VDBs, detailed list for single VDB
+  - Columns: VDB, TYPE, COLS, STATUS
+  - Progressive output: displays results as they're retrieved
+- **Health Check Progressive Display**: Improved `weave health check`
+  - Added `-S` shorthand for `--summary` flag
+  - Progressive output: displays each database status as checked (no waiting)
+  - Matches `cols ls` behavior for consistent UX
+- **Filtering Support**:
+  - `weave config list --cloud` / `--local`: Filter databases by deployment type
+  - `weave health check --cloud` / `--local`: Check only cloud or local databases
+
+### Changed
+- **Command Updates**: Updated 13 files to support new type constants
+  - All collection commands (list, create, delete, count, show, query, etc.)
+  - All document commands (create, delete, show)
+  - Config utilities and health check commands
+- **Health Check Behavior**: Changed from collecting all results to progressive display
+  - Results appear immediately as each database is checked
+  - Improves perceived performance for multi-database checks
+
 #### Neo4j Vector Database Integration (v0.7.1)
 - **Neo4j Local Support**: Full integration with Neo4j graph database for vector search
   - Collection management (create, list, delete, exists, count)

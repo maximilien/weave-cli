@@ -101,13 +101,13 @@ func runCollectionDelete(cmd *cobra.Command, args []string) {
 		} else {
 			err = utils.DeleteWeaviateCollections(ctx, dbConfig, args)
 		}
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		if pattern != "" {
 			err = utils.DeleteSupabaseCollectionsByPattern(ctx, dbConfig, pattern)
 		} else {
 			err = utils.DeleteSupabaseCollections(ctx, dbConfig, args)
 		}
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		utils.PrintError("Collection deletion not yet implemented for MongoDB")
 		os.Exit(1)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:

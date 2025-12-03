@@ -137,12 +137,12 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode, embeddingModel); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, reportPath, reportMode, embeddingModel); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)

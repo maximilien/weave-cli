@@ -19,19 +19,21 @@ import (
 type VectorDBType string
 
 const (
-	VectorDBTypeCloud       VectorDBType = "weaviate-cloud"
-	VectorDBTypeLocal       VectorDBType = "weaviate-local"
-	VectorDBTypeMock        VectorDBType = "mock"
-	VectorDBTypeSupabase    VectorDBType = "supabase"
-	VectorDBTypeMongoDB     VectorDBType = "mongodb"
-	VectorDBTypeMilvusLocal VectorDBType = "milvus-local"
-	VectorDBTypeMilvusCloud VectorDBType = "milvus-cloud"
-	VectorDBTypeChromaLocal VectorDBType = "chroma-local"
-	VectorDBTypeChromaCloud VectorDBType = "chroma-cloud"
-	VectorDBTypeQdrantLocal VectorDBType = "qdrant-local"
-	VectorDBTypeQdrantCloud VectorDBType = "qdrant-cloud"
-	VectorDBTypeNeo4jLocal  VectorDBType = "neo4j-local"
-	VectorDBTypeNeo4jCloud  VectorDBType = "neo4j-cloud"
+	VectorDBTypeCloud         VectorDBType = "weaviate-cloud"
+	VectorDBTypeLocal         VectorDBType = "weaviate-local"
+	VectorDBTypeMock          VectorDBType = "mock"
+	VectorDBTypeSupabase      VectorDBType = "supabase" // Legacy
+	VectorDBTypeSupabaseCloud VectorDBType = "supabase-cloud"
+	VectorDBTypeMongoDB       VectorDBType = "mongodb" // Legacy
+	VectorDBTypeMongoDBCloud  VectorDBType = "mongodb-cloud"
+	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
+	VectorDBTypeMilvusCloud   VectorDBType = "milvus-cloud"
+	VectorDBTypeChromaLocal   VectorDBType = "chroma-local"
+	VectorDBTypeChromaCloud   VectorDBType = "chroma-cloud"
+	VectorDBTypeQdrantLocal   VectorDBType = "qdrant-local"
+	VectorDBTypeQdrantCloud   VectorDBType = "qdrant-cloud"
+	VectorDBTypeNeo4jLocal    VectorDBType = "neo4j-local"
+	VectorDBTypeNeo4jCloud    VectorDBType = "neo4j-cloud"
 )
 
 // Default configuration values
@@ -568,6 +570,13 @@ func (c *Config) GetDefaultDatabase() (*VectorDBConfig, error) {
 }
 
 // GetDatabase returns a specific vector database configuration by name
+// Supports shortcut names that resolve to -cloud variants:
+//
+//	weaviate -> weaviate-cloud
+//	milvus -> milvus-cloud
+//	chroma -> chroma-cloud
+//	neo4j -> neo4j-cloud
+//	qdrant -> qdrant-cloud
 func (c *Config) GetDatabase(name string) (*VectorDBConfig, error) {
 	if len(c.Databases.VectorDatabases) == 0 {
 		// Check for missing environment variables and return a detailed error
@@ -577,13 +586,22 @@ func (c *Config) GetDatabase(name string) (*VectorDBConfig, error) {
 		return nil, fmt.Errorf("no vector databases configured")
 	}
 
+	// First, try exact match
 	for i := range c.Databases.VectorDatabases {
 		if c.Databases.VectorDatabases[i].Name == name {
 			return &c.Databases.VectorDatabases[i], nil
 		}
 	}
 
-	return nil, fmt.Errorf("database '%s' not found", name)
+	// If no exact match, try shortcut resolution (name -> name-cloud)
+	cloudName := name + "-cloud"
+	for i := range c.Databases.VectorDatabases {
+		if c.Databases.VectorDatabases[i].Name == cloudName {
+			return &c.Databases.VectorDatabases[i], nil
+		}
+	}
+
+	return nil, fmt.Errorf("database '%s' not found (also tried '%s')", name, cloudName)
 }
 
 // ListDatabases returns a list of all configured database names

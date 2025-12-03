@@ -150,7 +150,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	if schemaName != "" {
 		// For non-Weaviate databases, we don't need config.yaml schemas - use simple collection creation
 		switch dbConfig.Type {
-		case config.VectorDBTypeSupabase:
+		case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 			// Supabase doesn't use Weaviate schemas - create simple collection with standard fields
 			err = utils.CreateSupabaseCollection(ctx, dbConfig, collectionName, embeddingModel)
 			if err != nil {
@@ -170,7 +170,7 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 			utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
 			utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
 			return
-		case config.VectorDBTypeMongoDB:
+		case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 			utils.PrintError("Collection creation not yet implemented for MongoDB")
 			os.Exit(1)
 		case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
@@ -232,10 +232,10 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			err = utils.CreateWeaviateCollectionFromConfigSchema(ctx, cfg, dbConfig, collectionName, schemaName, metadataMode)
-		case config.VectorDBTypeSupabase:
+		case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 			utils.PrintError("Schema creation from config.yaml not yet supported for Supabase")
 			os.Exit(1)
-		case config.VectorDBTypeMongoDB:
+		case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 			utils.PrintError("Schema creation from config.yaml not yet supported for MongoDB")
 			os.Exit(1)
 		case config.VectorDBTypeMock:
@@ -260,10 +260,10 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			err = utils.CreateWeaviateCollectionFromSchemaFile(ctx, dbConfig, collectionName, schemaYAMLFile)
-		case config.VectorDBTypeSupabase:
+		case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 			utils.PrintError("Schema file creation not yet supported for Supabase")
 			os.Exit(1)
-		case config.VectorDBTypeMongoDB:
+		case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 			utils.PrintError("Schema file creation not yet supported for MongoDB")
 			os.Exit(1)
 		case config.VectorDBTypeMock:
@@ -297,9 +297,9 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		err = utils.CreateWeaviateCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
-	case config.VectorDBTypeSupabase:
+	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		err = utils.CreateSupabaseCollection(ctx, dbConfig, collectionName, embeddingModel)
-	case config.VectorDBTypeMongoDB:
+	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		utils.PrintError("Collection creation not yet implemented for MongoDB")
 		os.Exit(1)
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:

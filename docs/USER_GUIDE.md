@@ -728,8 +728,11 @@ weave config show                      # Shows location (local/global)
 # Show configuration with custom files
 weave config show --config /path/to/config.yaml --env /path/to/.env
 
-# List all configured databases
-weave config list
+# List all configured databases (table view by default)
+weave config list                      # Table view
+weave config list --details            # Detailed view with full config
+weave config list --cloud              # Show only cloud databases
+weave config list --local              # Show only local databases
 
 # List all configured schemas
 weave config list-schemas
@@ -750,8 +753,19 @@ weave config ls
 ### Health Management
 
 ```bash
-# Check database health
-weave health check
+# Check database health (progressive output - NEW in v0.7.2)
+weave health check                     # Summary table (default), results appear as checked
+weave health check -S                  # Explicit summary flag (shorthand)
+weave health check --summary           # Explicit summary flag (long form)
+weave health check --details           # Detailed view for all databases
+
+# Check specific database
+weave health check weaviate            # Detailed health check for one database
+
+# Filter by deployment type (NEW in v0.7.2)
+weave health check --cloud             # Check only cloud databases
+weave health check --local             # Check only local databases
+weave health check --local -S          # Local databases summary
 
 # Check health with verbose output
 weave health check --verbose
@@ -760,14 +774,21 @@ weave health check --verbose
 ### Collection Management
 
 ```bash
-# List all collections
-weave collection list
+# List all collections (summary table by default for multiple VDBs - NEW in v0.7.2)
+weave collection list                  # Summary table (default)
+weave cols ls                          # Shorthand alias
+weave cols ls -S                       # Explicit summary flag
+weave cols ls --summary                # Explicit summary flag (long form)
 
 # List collections with virtual structure summary
 weave collection list --virtual
 
-# List collections in specific database
-weave collection list mock
+# List collections for single database (detailed view)
+weave cols ls --weaviate               # Detailed list for one VDB
+weave cols ls --weaviate -S            # Force summary even for single VDB
+
+# List collections in specific database (legacy)
+weave collection list weaviate-cloud
 
 # Create a new collection
 weave collection create MyCollection
