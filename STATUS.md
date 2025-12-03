@@ -102,8 +102,9 @@ See **NEXT_STEPS.md** for detailed breakdown.
 - [x] CHANGELOG.md complete
 - [x] Markdown linting passing
 - [x] All 10 databases healthy
-- [ ] Final commit and push
-- [ ] Tag release v0.7.2
+- [x] Fixed Linux/Windows build (Chroma constraints)
+- [x] Tested cross-compilation (CGO_ENABLED=0)
+- [ ] Tag release v0.7.2 (ready when you are!)
 
 ---
 
