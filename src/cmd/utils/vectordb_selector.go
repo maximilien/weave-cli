@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --supabase, --mongodb, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, or --mock (found %d databases). "+
+					"Please specify --weaviate, --weaviate-local, --weaviate-cloud, --supabase, --mongodb, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -110,6 +110,8 @@ func HandleSingleDatabaseSelection(ctx context.Context, selection *VectorDBSelec
 func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSelection, error) {
 	// Get flags
 	useWeaviate, _ := cmd.Flags().GetBool("weaviate")
+	useWeaviateLocal, _ := cmd.Flags().GetBool("weaviate-local")
+	useWeaviateCloud, _ := cmd.Flags().GetBool("weaviate-cloud")
 	useSupabase, _ := cmd.Flags().GetBool("supabase")
 	useMongoDB, _ := cmd.Flags().GetBool("mongodb")
 	useMilvusLocal, _ := cmd.Flags().GetBool("milvus-local")
@@ -127,7 +129,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useMock
+	hasSpecificFlags := useWeaviate || useWeaviateLocal || useWeaviateCloud || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -144,6 +146,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		for _, config := range weaviateConfigs {
 			types = append(types, string(config.Type))
 		}
+	}
+
+	if useWeaviateLocal {
+		weaviateLocalConfig, err := getWeaviateLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Weaviate Local configuration: %w", err)
+		}
+		configs = append(configs, *weaviateLocalConfig)
+		types = append(types, string(weaviateLocalConfig.Type))
+	}
+
+	if useWeaviateCloud {
+		weaviateCloudConfig, err := getWeaviateCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Weaviate Cloud configuration: %w", err)
+		}
+		configs = append(configs, *weaviateCloudConfig)
+		types = append(types, string(weaviateCloudConfig.Type))
 	}
 
 	if useSupabase {
@@ -311,6 +331,28 @@ func getWeaviateConfigs(cfg *config.Config) ([]config.VectorDBConfig, error) {
 	}
 
 	return configs, nil
+}
+
+// getWeaviateLocalConfig returns Weaviate local configuration
+func getWeaviateLocalConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Weaviate local type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeLocal {
+			return &dbConfig, nil
+		}
+	}
+	return nil, fmt.Errorf("no Weaviate local configuration found")
+}
+
+// getWeaviateCloudConfig returns Weaviate cloud configuration
+func getWeaviateCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Weaviate cloud type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeCloud {
+			return &dbConfig, nil
+		}
+	}
+	return nil, fmt.Errorf("no Weaviate cloud configuration found")
 }
 
 // getSupabaseConfig returns Supabase configuration

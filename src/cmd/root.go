@@ -32,19 +32,21 @@ var (
 	queryStrings   string
 
 	// Vector database type flags
-	useWeaviate    bool
-	useSupabase    bool
-	useMongoDB     bool
-	useMilvusLocal bool
-	useMilvusCloud bool
-	useChromaLocal bool
-	useChromaCloud bool
-	useQdrantLocal bool
-	useQdrantCloud bool
-	useNeo4jLocal  bool
-	useNeo4jCloud  bool
-	useMock        bool
-	useAll         bool
+	useWeaviate      bool
+	useWeaviateLocal bool
+	useWeaviateCloud bool
+	useSupabase      bool
+	useMongoDB       bool
+	useMilvusLocal   bool
+	useMilvusCloud   bool
+	useChromaLocal   bool
+	useChromaCloud   bool
+	useQdrantLocal   bool
+	useQdrantCloud   bool
+	useNeo4jLocal    bool
+	useNeo4jCloud    bool
+	useMock          bool
+	useAll           bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -161,6 +163,8 @@ func init() {
 
 	// Vector database type selection flags
 	rootCmd.PersistentFlags().BoolVar(&useWeaviate, "weaviate", false, "use Weaviate vector database (weaviate-cloud or weaviate-local)")
+	rootCmd.PersistentFlags().BoolVar(&useWeaviateLocal, "weaviate-local", false, "use Weaviate local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useWeaviateCloud, "weaviate-cloud", false, "use Weaviate cloud vector database")
 	rootCmd.PersistentFlags().BoolVar(&useSupabase, "supabase", false, "use Supabase PGVector database")
 	rootCmd.PersistentFlags().BoolVar(&useMongoDB, "mongodb", false, "use MongoDB Atlas Vector Search database")
 	rootCmd.PersistentFlags().BoolVar(&useMilvusLocal, "milvus-local", false, "use Milvus local vector database")
@@ -195,6 +199,8 @@ func init() {
 
 	// Bind vector database type flags
 	_ = viper.BindPFlag("weaviate", rootCmd.PersistentFlags().Lookup("weaviate"))
+	_ = viper.BindPFlag("weaviate-local", rootCmd.PersistentFlags().Lookup("weaviate-local"))
+	_ = viper.BindPFlag("weaviate-cloud", rootCmd.PersistentFlags().Lookup("weaviate-cloud"))
 	_ = viper.BindPFlag("supabase", rootCmd.PersistentFlags().Lookup("supabase"))
 	_ = viper.BindPFlag("mongodb", rootCmd.PersistentFlags().Lookup("mongodb"))
 	_ = viper.BindPFlag("milvus-local", rootCmd.PersistentFlags().Lookup("milvus-local"))
@@ -310,6 +316,8 @@ Flags:
 
   Database Selection:
       --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
+      --weaviate-local            use Weaviate local vector database
+      --weaviate-cloud            use Weaviate cloud vector database
       --milvus-local              use Milvus local vector database
       --milvus-cloud              use Milvus cloud (Zilliz) vector database
       --supabase                  use Supabase PGVector database
@@ -361,6 +369,8 @@ Global Flags:
 
   Database Selection:
       --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
+      --weaviate-local            use Weaviate local vector database
+      --weaviate-cloud            use Weaviate cloud vector database
       --milvus-local              use Milvus local vector database
       --milvus-cloud              use Milvus cloud (Zilliz) vector database
       --supabase                  use Supabase PGVector database
