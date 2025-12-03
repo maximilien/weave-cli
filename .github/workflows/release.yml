@@ -106,6 +106,15 @@ jobs:
         with:
           go-version: '1.24.11'
 
+      - name: Exclude Chroma from build
+        run: |
+          # Same as Linux - remove chroma files for release builds
+          # Note: Local builds with ./build.sh will still have full Chroma support
+          rm -rf src/pkg/vectordb/chroma/*.go
+          git checkout src/pkg/vectordb/chroma/stub_unsupported.go
+          rm -f src/cmd/utils/init_chroma_darwin.go
+          echo "Chroma excluded from release build (available in source builds only)"
+
       - name: Build macOS
         run: |
           mkdir -p dist
