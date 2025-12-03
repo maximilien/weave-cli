@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
+	config2 "github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
 )
 
 // Client wraps the Neo4j driver to provide vector database operations
@@ -43,7 +44,7 @@ func NewClient(config *Config) (*Client, error) {
 	driver, err := neo4j.NewDriverWithContext(
 		config.URI,
 		neo4j.BasicAuth(config.Username, config.Password, ""),
-		func(c *neo4j.Config) {
+		func(c *config2.Config) {
 			c.MaxConnectionPoolSize = config.MaxConnections
 		},
 	)
@@ -82,24 +83,4 @@ func (c *Client) executeQuery(ctx context.Context, query string, params map[stri
 		return nil, err
 	}
 	return result, nil
-}
-
-// executeWrite is a helper for write transactions
-func (c *Client) executeWrite(ctx context.Context, work func(tx neo4j.ManagedTransaction) (interface{}, error)) (interface{}, error) {
-	session := c.driver.NewSession(ctx, neo4j.SessionConfig{
-		DatabaseName: c.config.Database,
-	})
-	defer session.Close(ctx)
-
-	return session.ExecuteWrite(ctx, work)
-}
-
-// executeRead is a helper for read transactions
-func (c *Client) executeRead(ctx context.Context, work func(tx neo4j.ManagedTransaction) (interface{}, error)) (interface{}, error) {
-	session := c.driver.NewSession(ctx, neo4j.SessionConfig{
-		DatabaseName: c.config.Database,
-	})
-	defer session.Close(ctx)
-
-	return session.ExecuteRead(ctx, work)
 }

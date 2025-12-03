@@ -23,7 +23,7 @@ func (c *Client) VectorSearch(ctx context.Context, collectionName string, vector
 	indexName := fmt.Sprintf("%s_vector_idx", collectionName)
 
 	// Use db.index.vector.queryNodes() for vector similarity search
-	query := fmt.Sprintf(`
+	query := `
 		CALL db.index.vector.queryNodes($indexName, $limit, $vector)
 		YIELD node, score
 		RETURN node.id as id,
@@ -32,7 +32,7 @@ func (c *Client) VectorSearch(ctx context.Context, collectionName string, vector
 		       properties(node) as props,
 		       score
 		ORDER BY score DESC
-	`)
+	`
 
 	params := map[string]interface{}{
 		"indexName": indexName,
