@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --weaviate-local, --weaviate-cloud, --supabase, --mongodb, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, or --mock (found %d databases). "+
+					"Please specify --weaviate, --weaviate-local, --weaviate-cloud, --supabase, --supabase-local, --supabase-cloud, --mongodb, --mongodb-local, --mongodb-cloud, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -113,7 +113,11 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	useWeaviateLocal, _ := cmd.Flags().GetBool("weaviate-local")
 	useWeaviateCloud, _ := cmd.Flags().GetBool("weaviate-cloud")
 	useSupabase, _ := cmd.Flags().GetBool("supabase")
+	useSupabaseLocal, _ := cmd.Flags().GetBool("supabase-local")
+	useSupabaseCloud, _ := cmd.Flags().GetBool("supabase-cloud")
 	useMongoDB, _ := cmd.Flags().GetBool("mongodb")
+	useMongoDBLocal, _ := cmd.Flags().GetBool("mongodb-local")
+	useMongoDBCloud, _ := cmd.Flags().GetBool("mongodb-cloud")
 	useMilvusLocal, _ := cmd.Flags().GetBool("milvus-local")
 	useMilvusCloud, _ := cmd.Flags().GetBool("milvus-cloud")
 	useChromaLocal, _ := cmd.Flags().GetBool("chroma-local")
@@ -129,7 +133,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useWeaviateLocal || useWeaviateCloud || useSupabase || useMongoDB || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useMock
+	hasSpecificFlags := useWeaviate || useWeaviateLocal || useWeaviateCloud || useSupabase || useSupabaseLocal || useSupabaseCloud || useMongoDB || useMongoDBLocal || useMongoDBCloud || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -175,6 +179,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		types = append(types, string(supabaseConfig.Type))
 	}
 
+	if useSupabaseLocal {
+		supabaseLocalConfig, err := getSupabaseLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Supabase Local configuration: %w", err)
+		}
+		configs = append(configs, *supabaseLocalConfig)
+		types = append(types, string(supabaseLocalConfig.Type))
+	}
+
+	if useSupabaseCloud {
+		supabaseCloudConfig, err := getSupabaseCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get Supabase Cloud configuration: %w", err)
+		}
+		configs = append(configs, *supabaseCloudConfig)
+		types = append(types, string(supabaseCloudConfig.Type))
+	}
+
 	if useMongoDB {
 		mongoDBConfig, err := getMongoDBConfig(cfg)
 		if err != nil {
@@ -182,6 +204,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *mongoDBConfig)
 		types = append(types, string(mongoDBConfig.Type))
+	}
+
+	if useMongoDBLocal {
+		mongoDBLocalConfig, err := getMongoDBLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get MongoDB Local configuration: %w", err)
+		}
+		configs = append(configs, *mongoDBLocalConfig)
+		types = append(types, string(mongoDBLocalConfig.Type))
+	}
+
+	if useMongoDBCloud {
+		mongoDBCloudConfig, err := getMongoDBCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get MongoDB Cloud configuration: %w", err)
+		}
+		configs = append(configs, *mongoDBCloudConfig)
+		types = append(types, string(mongoDBCloudConfig.Type))
 	}
 
 	if useMilvusLocal {
@@ -355,11 +395,11 @@ func getWeaviateCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) 
 	return nil, fmt.Errorf("no Weaviate cloud configuration found")
 }
 
-// getSupabaseConfig returns Supabase configuration
+// getSupabaseConfig returns Supabase configuration (any type)
 func getSupabaseConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	// Check all configured databases for Supabase type
 	for _, dbConfig := range cfg.Databases.VectorDatabases {
-		if dbConfig.Type == config.VectorDBTypeSupabase {
+		if dbConfig.Type == config.VectorDBTypeSupabase || dbConfig.Type == config.VectorDBTypeSupabaseCloud {
 			return &dbConfig, nil
 		}
 	}
@@ -378,16 +418,71 @@ func getSupabaseConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	return nil, fmt.Errorf("no Supabase configuration found")
 }
 
-// getMongoDBConfig returns MongoDB configuration
+// getSupabaseLocalConfig returns Supabase local configuration
+func getSupabaseLocalConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Supabase local type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeSupabase {
+			return &dbConfig, nil
+		}
+	}
+	return nil, fmt.Errorf("no Supabase local configuration found")
+}
+
+// getSupabaseCloudConfig returns Supabase cloud configuration
+func getSupabaseCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for Supabase cloud type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeSupabaseCloud {
+			return &dbConfig, nil
+		}
+	}
+
+	// If no explicit Supabase cloud config found, check if we can create one from the loaded configuration
+	if supabaseConfig := tryCreateSupabaseConfigFromLoadedConfig(cfg); supabaseConfig != nil {
+		return supabaseConfig, nil
+	}
+
+	// Fallback to environment variables
+	if supabaseConfig := tryCreateSupabaseConfigFromEnv(); supabaseConfig != nil {
+		return supabaseConfig, nil
+	}
+
+	return nil, fmt.Errorf("no Supabase cloud configuration found")
+}
+
+// getMongoDBConfig returns MongoDB configuration (any type)
 func getMongoDBConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	// Check all configured databases for MongoDB type
 	for _, dbConfig := range cfg.Databases.VectorDatabases {
-		if dbConfig.Type == config.VectorDBTypeMongoDB {
+		if dbConfig.Type == config.VectorDBTypeMongoDB || dbConfig.Type == config.VectorDBTypeMongoDBCloud {
 			return &dbConfig, nil
 		}
 	}
 
 	return nil, fmt.Errorf("no MongoDB configuration found")
+}
+
+// getMongoDBLocalConfig returns MongoDB local configuration
+func getMongoDBLocalConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for MongoDB local type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeMongoDB {
+			return &dbConfig, nil
+		}
+	}
+	return nil, fmt.Errorf("no MongoDB local configuration found")
+}
+
+// getMongoDBCloudConfig returns MongoDB cloud (Atlas) configuration
+func getMongoDBCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
+	// Check all configured databases for MongoDB cloud type
+	for _, dbConfig := range cfg.Databases.VectorDatabases {
+		if dbConfig.Type == config.VectorDBTypeMongoDBCloud {
+			return &dbConfig, nil
+		}
+	}
+	return nil, fmt.Errorf("no MongoDB cloud configuration found")
 }
 
 // getMilvusLocalConfig returns Milvus Local configuration

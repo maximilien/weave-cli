@@ -36,7 +36,11 @@ var (
 	useWeaviateLocal bool
 	useWeaviateCloud bool
 	useSupabase      bool
+	useSupabaseLocal bool
+	useSupabaseCloud bool
 	useMongoDB       bool
+	useMongoDBLocal  bool
+	useMongoDBCloud  bool
 	useMilvusLocal   bool
 	useMilvusCloud   bool
 	useChromaLocal   bool
@@ -98,8 +102,14 @@ Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase P
 
 🗄️ DATABASE SELECTION:
   --weaviate                           # Use Weaviate databases only
+  --weaviate-local                     # Use Weaviate local database only
+  --weaviate-cloud                     # Use Weaviate cloud database only
   --supabase                           # Use Supabase database only
+  --supabase-local                     # Use Supabase local database only
+  --supabase-cloud                     # Use Supabase cloud database only
   --mongodb                            # Use MongoDB database only
+  --mongodb-local                      # Use MongoDB local database only
+  --mongodb-cloud                      # Use MongoDB cloud (Atlas) database only
   --milvus-local                       # Use Milvus local database only
   --milvus-cloud                       # Use Milvus cloud (Zilliz) database only
   --chroma-local                       # Use Chroma local database only
@@ -165,8 +175,12 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useWeaviate, "weaviate", false, "use Weaviate vector database (weaviate-cloud or weaviate-local)")
 	rootCmd.PersistentFlags().BoolVar(&useWeaviateLocal, "weaviate-local", false, "use Weaviate local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useWeaviateCloud, "weaviate-cloud", false, "use Weaviate cloud vector database")
-	rootCmd.PersistentFlags().BoolVar(&useSupabase, "supabase", false, "use Supabase PGVector database")
-	rootCmd.PersistentFlags().BoolVar(&useMongoDB, "mongodb", false, "use MongoDB Atlas Vector Search database")
+	rootCmd.PersistentFlags().BoolVar(&useSupabase, "supabase", false, "use Supabase PGVector database (supabase-cloud or supabase-local)")
+	rootCmd.PersistentFlags().BoolVar(&useSupabaseLocal, "supabase-local", false, "use Supabase local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useSupabaseCloud, "supabase-cloud", false, "use Supabase cloud vector database")
+	rootCmd.PersistentFlags().BoolVar(&useMongoDB, "mongodb", false, "use MongoDB Atlas Vector Search database (mongodb-cloud or mongodb-local)")
+	rootCmd.PersistentFlags().BoolVar(&useMongoDBLocal, "mongodb-local", false, "use MongoDB local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useMongoDBCloud, "mongodb-cloud", false, "use MongoDB cloud (Atlas) vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMilvusLocal, "milvus-local", false, "use Milvus local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMilvusCloud, "milvus-cloud", false, "use Milvus cloud (Zilliz) vector database")
 	rootCmd.PersistentFlags().BoolVar(&useChromaLocal, "chroma-local", false, "use Chroma local vector database")
@@ -202,7 +216,11 @@ func init() {
 	_ = viper.BindPFlag("weaviate-local", rootCmd.PersistentFlags().Lookup("weaviate-local"))
 	_ = viper.BindPFlag("weaviate-cloud", rootCmd.PersistentFlags().Lookup("weaviate-cloud"))
 	_ = viper.BindPFlag("supabase", rootCmd.PersistentFlags().Lookup("supabase"))
+	_ = viper.BindPFlag("supabase-local", rootCmd.PersistentFlags().Lookup("supabase-local"))
+	_ = viper.BindPFlag("supabase-cloud", rootCmd.PersistentFlags().Lookup("supabase-cloud"))
 	_ = viper.BindPFlag("mongodb", rootCmd.PersistentFlags().Lookup("mongodb"))
+	_ = viper.BindPFlag("mongodb-local", rootCmd.PersistentFlags().Lookup("mongodb-local"))
+	_ = viper.BindPFlag("mongodb-cloud", rootCmd.PersistentFlags().Lookup("mongodb-cloud"))
 	_ = viper.BindPFlag("milvus-local", rootCmd.PersistentFlags().Lookup("milvus-local"))
 	_ = viper.BindPFlag("milvus-cloud", rootCmd.PersistentFlags().Lookup("milvus-cloud"))
 	_ = viper.BindPFlag("chroma-local", rootCmd.PersistentFlags().Lookup("chroma-local"))
@@ -318,10 +336,14 @@ Flags:
       --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
       --weaviate-local            use Weaviate local vector database
       --weaviate-cloud            use Weaviate cloud vector database
+      --supabase                  use Supabase PGVector database (supabase-cloud or supabase-local)
+      --supabase-local            use Supabase local vector database
+      --supabase-cloud            use Supabase cloud vector database
+      --mongodb                   use MongoDB Atlas Vector Search database (mongodb-cloud or mongodb-local)
+      --mongodb-local             use MongoDB local vector database
+      --mongodb-cloud             use MongoDB cloud (Atlas) vector database
       --milvus-local              use Milvus local vector database
       --milvus-cloud              use Milvus cloud (Zilliz) vector database
-      --supabase                  use Supabase PGVector database
-      --mongodb                   use MongoDB Atlas Vector Search database
       --chroma-local              use Chroma local vector database
       --chroma-cloud              use Chroma cloud vector database
       --qdrant-local              use Qdrant local vector database
@@ -371,10 +393,14 @@ Global Flags:
       --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
       --weaviate-local            use Weaviate local vector database
       --weaviate-cloud            use Weaviate cloud vector database
+      --supabase                  use Supabase PGVector database (supabase-cloud or supabase-local)
+      --supabase-local            use Supabase local vector database
+      --supabase-cloud            use Supabase cloud vector database
+      --mongodb                   use MongoDB Atlas Vector Search database (mongodb-cloud or mongodb-local)
+      --mongodb-local             use MongoDB local vector database
+      --mongodb-cloud             use MongoDB cloud (Atlas) vector database
       --milvus-local              use Milvus local vector database
       --milvus-cloud              use Milvus cloud (Zilliz) vector database
-      --supabase                  use Supabase PGVector database
-      --mongodb                   use MongoDB Atlas Vector Search database
       --chroma-local              use Chroma local vector database
       --chroma-cloud              use Chroma cloud vector database
       --qdrant-local              use Qdrant local vector database

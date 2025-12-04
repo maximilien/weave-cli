@@ -38,6 +38,7 @@ func init() {
 	ListCmd.Flags().IntP("limit", "l", 100, "Maximum number of collections to show")
 	ListCmd.Flags().BoolP("virtual", "", false, "Show collections in virtual structure")
 	ListCmd.Flags().BoolP("summary", "S", false, "Show summary table (default for multiple VDBs)")
+	ListCmd.Flags().Bool("details", false, "Show detailed list (overrides default summary for multiple VDBs)")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
@@ -45,6 +46,7 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 	virtual, _ := cmd.Flags().GetBool("virtual")
 	jsonOutput, _ := cmd.Flags().GetBool("json")
 	summaryOutput, _ := cmd.Flags().GetBool("summary")
+	detailsOutput, _ := cmd.Flags().GetBool("details")
 
 	// Load configuration with interactive help
 	cfg, err := utils.LoadConfigWithInteractiveHelp()
@@ -74,8 +76,11 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Decide whether to show summary: default to summary for multiple VDBs
-	showSummary := summaryOutput || (len(selection.Configs) > 1 && !jsonOutput)
+	// Decide whether to show summary:
+	// - Explicit --summary/-S flag: always show summary
+	// - Explicit --details flag: never show summary (force detailed view)
+	// - Default: summary for multiple VDBs, detailed for single VDB
+	showSummary := summaryOutput || (len(selection.Configs) > 1 && !jsonOutput && !detailsOutput)
 
 	// If summary mode, collect all results first
 	if showSummary && !jsonOutput {
