@@ -15,11 +15,28 @@ cd weave-cli
 # Binary available at bin/weave
 ```
 
-### Setup (Interactive - Recommended)
+### Choose Your Vector Database
+
+Weave CLI supports multiple vector databases. Choose the one that best fits
+your needs:
+
+| VDB | Status | Local | Cloud | Best For |
+|-----|--------|-------|-------|----------|
+| **[Weaviate](docs/weaviate/SETUP.md)** | ✅ Stable | ✅ | ✅ | Production, all features, easiest setup |
+| **[Supabase](docs/supabase/SETUP.md)** | 🟡 Alpha | ✅ | ✅ | PostgreSQL users, cost-effective |
+| **[MongoDB](docs/mongodb/SETUP.md)** | 🧪 Experimental | ❌ | ✅ | Existing MongoDB users |
+| **[Milvus](docs/milvus/SETUP.md)** | 🟢 Beta | ✅ | ✅ | High performance, scale |
+| **[Chroma](docs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup |
+| **[Qdrant](docs/qdrant/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Rust performance |
+| **[Neo4j](docs/neo4j/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Graph + vector search |
+
+📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md) for
+detailed feature comparison**
+
+### Quick Setup (Weaviate - Recommended)
 
 ```bash
 # Interactive configuration - fastest way to get started
-# defaults to Weaviate vector database
 weave config create --env
 
 # Follow prompts to enter:
@@ -31,229 +48,7 @@ weave config create --env
 weave health check
 ```
 
-### Supabase Setup (Alpha)
-
-> **ℹ️ Alpha**: Supabase support is feature complete and functional.
-> Recommended for development and testing. See the
-> [Supabase Documentation](docs/supabase/) for comprehensive setup and usage
-> guide.
-
-To use Supabase as your vector database:
-
-```bash
-# Set Supabase configuration
-export SUPABASE_DATABASE_URL="postgresql://postgres:[password]@db.[project-ref].supabase.co:5432/postgres"
-export SUPABASE_DATABASE_KEY="your-supabase-anon-key"
-
-# Configure weave to use Supabase
-# Note: Use 'supabase-local' for consistency (v0.7.2+)
-weave config create --database-type supabase
-
-# Verify Supabase connection
-weave health check supabase-local
-```
-
-**Important Notes**:
-
-1. **IPv6 Requirement**: Supabase database endpoints are IPv6-only. If your
-   network doesn't support IPv6, use the connection pooler instead:
-
-   ```bash
-   # Get pooler URL from: Project Settings → Database → Connection Pooling
-   export SUPABASE_DATABASE_URL="postgresql://postgres.[project].[string]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres"
-   ```
-
-2. **pgvector Extension**: Ensure your Supabase project has pgvector enabled:
-
-   ```sql
-   CREATE EXTENSION IF NOT EXISTS vector;
-   ```
-
-### MongoDB Atlas Setup (Experimental)
-
-> **🧪 Experimental**: MongoDB Atlas support is functional but requires manual
-> vector search index setup. See the [MongoDB Documentation](docs/mongodb/)
-> for complete setup guide.
-
-To use MongoDB Atlas as your vector database:
-
-```bash
-# Set MongoDB configuration
-export MONGODB_URI="mongodb+srv://username:password@cluster.mongodb.net/?appName=weave-cli"
-export MONGODB_DATABASE="weave-cli"
-export OPENAI_API_KEY="sk-..."  # Required for automatic embeddings
-
-# Configure weave to use MongoDB
-# Note: Use 'mongodb-local' for consistency (v0.7.2+)
-weave config create --database-type mongodb
-
-# Verify MongoDB connection
-weave health check mongodb-local
-```
-
-**Important**: You must create a vector search index in the Atlas UI before
-semantic search will work. See [ATLAS_SETUP.md](docs/mongodb/ATLAS_SETUP.md)
-for detailed instructions.
-
-### Chroma Setup
-
-> **✅ Stable**: Chroma support is feature complete and fully tested. Supports
-> both local development and cloud deployment. Uses Chroma Go SDK v2 API. See
-> the [Chroma Documentation](docs/chroma/) for comprehensive setup guide.
->
-> **⚠️ Platform Limitation**: Chroma is only supported on **macOS (AMD64/ARM64)**
-> due to chroma-go v0.2.5 SDK's CGO dependency (libtokenizers). Linux and Windows
-> are not supported. For other platforms, use Weaviate, Milvus, Qdrant, MongoDB,
-> or Supabase.
-
-To use Chroma locally:
-
-```bash
-# Start Chroma using podman (preferred) or docker
-podman run -d --name chromadb -p 8000:8000 chromadb/chroma:0.6.2
-
-# Set OpenAI API key for automatic embeddings
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use local Chroma
-weave config create --database-type chroma-local
-
-# Verify Chroma connection
-weave health check
-```
-
-To use Chroma Cloud:
-
-```bash
-# Set Chroma Cloud credentials
-export CHROMA_CLOUD_URL="https://your-instance.chroma.cloud"
-export CHROMA_CLOUD_API_KEY="your-api-key"
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use Chroma Cloud
-weave config create --database-type chroma-cloud
-
-# Verify connection
-weave health check
-```
-
-### Qdrant Setup (Experimental)
-
-> **🧪 Experimental**: Qdrant support is newly added and functional. Supports
-> both local development and cloud deployment. Requires testing with real
-> Qdrant instances. See the [Qdrant Documentation](docs/qdrant/) for setup
-> guide.
-
-To use Qdrant locally:
-
-```bash
-# Start Qdrant using podman or docker
-podman run -d --name qdrant -p 6333:6333 -p 6334:6334 \
-  -v $(pwd)/qdrant_storage:/qdrant/storage:z \
-  qdrant/qdrant
-
-# Set OpenAI API key for automatic embeddings
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use local Qdrant
-weave config create --database-type qdrant-local
-
-# Verify Qdrant connection
-weave health check --qdrant-local
-```
-
-To use Qdrant Cloud:
-
-```bash
-# Set Qdrant Cloud credentials
-export QDRANT_URL="https://your-cluster.cloud.qdrant.io:6334"
-export QDRANT_API_KEY="your-api-key"
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use Qdrant Cloud
-weave config create --database-type qdrant-cloud
-
-# Verify connection
-weave health check --qdrant-cloud
-```
-
-### Neo4j Setup (Experimental)
-
-> **🧪 Experimental**: Neo4j support is newly added and functional. Supports
-> both local development and cloud deployment (Aura). Requires testing with real
-> Neo4j instances. See the [Neo4j Documentation](docs/neo4j/) for setup guide.
-
-To use Neo4j locally:
-
-```bash
-# Start Neo4j using podman or docker
-podman run -d --name neo4j -p 7474:7474 -p 7687:7687 \
-  -e NEO4J_AUTH=neo4j/yourpassword \
-  neo4j:latest
-
-# Set Neo4j credentials
-export NEO4J_PASSWORD="yourpassword"
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use local Neo4j
-weave config create --database-type neo4j-local
-
-# Verify Neo4j connection
-weave health check --neo4j-local
-```
-
-To use Neo4j Cloud (Aura):
-
-```bash
-# Set Neo4j Aura credentials
-export NEO4J_CLOUD_URL="neo4j+s://xxxxx.databases.neo4j.io"
-export NEO4J_CLOUD_PASSWORD="your-password"
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use Neo4j Aura
-weave config create --database-type neo4j-cloud
-
-# Verify connection
-weave health check --neo4j-cloud
-```
-
-### Milvus Setup (Beta)
-
-> **🧪 Beta**: Milvus support is feature complete and functional. Supports both
-> local development and cloud deployment (Zilliz). See the
-> [Milvus Documentation](docs/milvus/) for comprehensive setup guide.
-
-To use Milvus locally:
-
-```bash
-# Start Milvus using podman (preferred) or docker
-./tools/vdb/local/milvus.sh start
-
-# Set OpenAI API key for automatic embeddings
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use local Milvus
-weave config create --database-type milvus-local
-
-# Verify Milvus connection
-weave health check
-```
-
-To use Milvus Cloud (Zilliz):
-
-```bash
-# Set Zilliz credentials
-export MILVUS_CLOUD_ADDRESS="your-cluster.aws-us-west-2.vectordb.zillizcloud.com:19530"
-export MILVUS_CLOUD_USERNAME="your-username"
-export MILVUS_CLOUD_PASSWORD="your-password"
-export OPENAI_API_KEY="sk-..."
-
-# Configure weave to use Milvus Cloud
-weave config create --database-type milvus-cloud
-
-# Verify connection
-weave health check
-```
+For other databases, see their setup guides linked in the table above.
 
 ### Basic Usage
 
