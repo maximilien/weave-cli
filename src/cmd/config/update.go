@@ -184,7 +184,7 @@ func updateEnvFileInDir(targetDir string) error {
 	}
 
 	// Get all environment variables to configure
-	envVars := getEnvVariables()
+	envVars := getEnvVariables("") // No filter for update - show all
 	updatedValues := make(map[string]string)
 	changedCount := 0
 

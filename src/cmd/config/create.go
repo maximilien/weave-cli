@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // createCmd represents the config create command
@@ -24,7 +25,8 @@ This command provides a guided way to create configuration files:
 - Create .env file from .env.example with your credentials
 - Create config.yaml from config.yaml.example
 - Warn if files already exist before overwriting
-- Interactive prompts for all configuration values
+- Interactive prompts for configuration values
+- Smart filtering: use VDB flags to only prompt for specific database configs
 
 The command will:
 1. Check if files already exist and warn before overwriting
@@ -34,15 +36,31 @@ The command will:
 5. Allow you to skip values to use defaults
 6. Confirm before saving changes
 
+VDB-Specific Configuration:
+  Use any VDB flag (--weaviate-cloud, --supabase-cloud, etc.) to configure
+  only that database's variables plus common ones (OPENAI_API_KEY, etc.)
+
 Examples:
-  # Create .env file interactively
+  # Create .env file interactively (prompts for ALL databases)
   weave config create --env
+
+  # Create .env for Weaviate Cloud only
+  weave config create --env --weaviate-cloud
+
+  # Create .env for Supabase only
+  weave config create --env --supabase-cloud
+
+  # Create .env for MongoDB Atlas only
+  weave config create --env --mongodb-cloud
+
+  # Create .env for Neo4j local only
+  weave config create --env --neo4j-local
 
   # Create config.yaml file
   weave config create --config-yaml
 
-  # Create both files
-  weave config create --env --config-yaml`,
+  # Create both files (with VDB filter)
+  weave config create --env --config-yaml --milvus-cloud`,
 	Run: runConfigCreate,
 }
 
@@ -172,8 +190,15 @@ func createEnvFileInDir(targetDir string) error {
 	color.New(color.FgGreen).Printf("✓ Found template: %s\n", exampleFile)
 	fmt.Println()
 
-	// Get all environment variables to configure
-	envVars := getEnvVariables()
+	// Determine which VDB is selected (if any)
+	vdbFilter := determineVDBFilter()
+	if vdbFilter != "" {
+		color.New(color.FgCyan).Printf("🎯 Configuring for: %s\n", vdbFilter)
+		fmt.Println()
+	}
+
+	// Get environment variables to configure (filtered by VDB if specified)
+	envVars := getEnvVariables(vdbFilter)
 	updatedValues := make(map[string]string)
 
 	// Prompt for each variable
@@ -337,4 +362,66 @@ func confirmCreate(filename string) bool {
 	response = strings.ToLower(strings.TrimSpace(response))
 	// Default to yes if empty
 	return response == "" || response == "y" || response == "yes"
+}
+
+// determineVDBFilter checks which VDB flag is set and returns the filter name
+func determineVDBFilter() string {
+	// Check each VDB flag in priority order
+	if viper.GetBool("weaviate-cloud") {
+		return "weaviate-cloud"
+	}
+	if viper.GetBool("weaviate-local") {
+		return "weaviate-local"
+	}
+	if viper.GetBool("weaviate") {
+		return "weaviate"
+	}
+	if viper.GetBool("supabase-cloud") {
+		return "supabase-cloud"
+	}
+	if viper.GetBool("supabase-local") {
+		return "supabase-local"
+	}
+	if viper.GetBool("supabase") {
+		return "supabase"
+	}
+	if viper.GetBool("mongodb-cloud") {
+		return "mongodb-cloud"
+	}
+	if viper.GetBool("mongodb-local") {
+		return "mongodb-local"
+	}
+	if viper.GetBool("mongodb") {
+		return "mongodb"
+	}
+	if viper.GetBool("milvus-cloud") {
+		return "milvus-cloud"
+	}
+	if viper.GetBool("milvus-local") {
+		return "milvus-local"
+	}
+	if viper.GetBool("chroma-cloud") {
+		return "chroma-cloud"
+	}
+	if viper.GetBool("chroma-local") {
+		return "chroma-local"
+	}
+	if viper.GetBool("qdrant-cloud") {
+		return "qdrant-cloud"
+	}
+	if viper.GetBool("qdrant-local") {
+		return "qdrant-local"
+	}
+	if viper.GetBool("neo4j-cloud") {
+		return "neo4j-cloud"
+	}
+	if viper.GetBool("neo4j-local") {
+		return "neo4j-local"
+	}
+	if viper.GetBool("mock") {
+		return "mock"
+	}
+
+	// No VDB flag set, return empty string (prompt for all)
+	return ""
 }

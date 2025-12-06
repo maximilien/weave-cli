@@ -35,10 +35,21 @@ docker run -d \
 
 ### 2. Configure Weave
 
+**Interactive Setup (Recommended)**:
+
 ```bash
-export NEO4J_URI="bolt://localhost:7687"
-export NEO4J_USERNAME="neo4j"
-export NEO4J_PASSWORD="your-password"
+# Configure only Neo4j local variables (smart filtering)
+weave config create --env --neo4j-local
+
+# Follow prompts to enter credentials
+```
+
+**Manual Setup**:
+
+```bash
+export NEO4J_LOCAL_URI="bolt://localhost:7687"
+export NEO4J_LOCAL_USERNAME="neo4j"
+export NEO4J_LOCAL_PASSWORD="your-password"
 export OPENAI_API_KEY="sk-..."
 
 weave health check --neo4j-local
@@ -54,10 +65,21 @@ weave health check --neo4j-local
 
 ### 2. Configure Weave
 
+**Interactive Setup (Recommended)**:
+
 ```bash
-export NEO4J_URI="neo4j+s://your-instance.databases.neo4j.io"
-export NEO4J_USERNAME="neo4j"
-export NEO4J_PASSWORD="your-generated-password"
+# Configure only Neo4j Aura variables (smart filtering)
+weave config create --env --neo4j-cloud
+
+# Follow prompts to enter credentials
+```
+
+**Manual Setup**:
+
+```bash
+export NEO4J_CLOUD_URI="neo4j+s://your-instance.databases.neo4j.io"
+export NEO4J_CLOUD_USERNAME="neo4j"
+export NEO4J_CLOUD_PASSWORD="your-generated-password"
 export OPENAI_API_KEY="sk-..."
 
 weave health check --neo4j-cloud

@@ -20,56 +20,233 @@ type envVariable struct {
 	Example     string
 	IsSecret    bool
 	Required    bool
+	VDBTypes    []string // List of VDB types this variable applies to (empty = all)
 }
 
 // getEnvVariables returns the list of environment variables to configure
-func getEnvVariables() []envVariable {
-	return []envVariable{
+// If vdbFilter is specified, only returns variables for that VDB + common variables
+func getEnvVariables(vdbFilter string) []envVariable {
+	allVars := []envVariable{
 		// Weaviate Configuration
 		{
 			Key:         "WEAVIATE_URL",
-			Description: "Your Weaviate Cloud URL (optional if using Supabase)",
+			Description: "Your Weaviate Cloud/Local URL",
 			Example:     "https://your-cluster-id.c0.us-west3.gcp.weaviate.cloud",
 			IsSecret:    false,
-			Required:    false,
+			Required:    true,
+			VDBTypes:    []string{"weaviate", "weaviate-cloud", "weaviate-local"},
 		},
 		{
 			Key:         "WEAVIATE_API_KEY",
-			Description: "Your Weaviate Cloud API Key (optional if using Supabase)",
+			Description: "Your Weaviate Cloud API Key (not needed for local)",
 			Example:     "your-weaviate-api-key-here",
 			IsSecret:    true,
 			Required:    false,
+			VDBTypes:    []string{"weaviate", "weaviate-cloud"},
 		},
 		// Supabase Configuration
 		{
 			Key:         "SUPABASE_DATABASE_URL",
-			Description: "Supabase PostgreSQL connection URL (optional if using Weaviate)",
+			Description: "Supabase PostgreSQL connection URL (pooler recommended)",
 			Example:     "postgres://postgres:password@db.project.supabase.co:6543/postgres",
 			IsSecret:    false,
-			Required:    false,
+			Required:    true,
+			VDBTypes:    []string{"supabase", "supabase-cloud", "supabase-local"},
 		},
 		{
 			Key:         "SUPABASE_DATABASE_KEY",
-			Description: "Supabase Anon/Service Key (optional if using Weaviate)",
+			Description: "Supabase Anon/Service Key",
 			Example:     "eyJhbGc...",
 			IsSecret:    true,
 			Required:    false,
+			VDBTypes:    []string{"supabase", "supabase-cloud", "supabase-local"},
 		},
-		// OpenAI Configuration
+		// MongoDB Configuration
+		{
+			Key:         "MONGODB_URI",
+			Description: "MongoDB Atlas connection string",
+			Example:     "mongodb+srv://username:password@cluster.mongodb.net/?appName=weave-cli",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"mongodb", "mongodb-cloud"},
+		},
+		{
+			Key:         "MONGODB_DATABASE",
+			Description: "MongoDB database name",
+			Example:     "weave-cli",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"mongodb", "mongodb-cloud"},
+		},
+		// Milvus Local Configuration
+		{
+			Key:         "MILVUS_LOCAL_ADDRESS",
+			Description: "Milvus local server address",
+			Example:     "localhost:19530",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"milvus-local"},
+		},
+		{
+			Key:         "MILVUS_LOCAL_DATABASE",
+			Description: "Milvus local database name",
+			Example:     "default",
+			IsSecret:    false,
+			Required:    false,
+			VDBTypes:    []string{"milvus-local"},
+		},
+		// Milvus Cloud (Zilliz) Configuration
+		{
+			Key:         "MILVUS_CLOUD_ADDRESS",
+			Description: "Milvus Cloud (Zilliz) server address",
+			Example:     "your-cluster.aws-us-west-2.vectordb.zillizcloud.com:19530",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"milvus-cloud"},
+		},
+		{
+			Key:         "MILVUS_CLOUD_USERNAME",
+			Description: "Milvus Cloud username",
+			Example:     "db_admin",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"milvus-cloud"},
+		},
+		{
+			Key:         "MILVUS_CLOUD_PASSWORD",
+			Description: "Milvus Cloud password",
+			Example:     "your-secure-password",
+			IsSecret:    true,
+			Required:    true,
+			VDBTypes:    []string{"milvus-cloud"},
+		},
+		{
+			Key:         "MILVUS_CLOUD_DATABASE",
+			Description: "Milvus Cloud database name",
+			Example:     "default",
+			IsSecret:    false,
+			Required:    false,
+			VDBTypes:    []string{"milvus-cloud"},
+		},
+		// Chroma Local Configuration
+		{
+			Key:         "CHROMA_LOCAL_ADDRESS",
+			Description: "Chroma local server address",
+			Example:     "localhost:8000",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"chroma-local"},
+		},
+		// Chroma Cloud Configuration
+		{
+			Key:         "CHROMA_CLOUD_ADDRESS",
+			Description: "Chroma Cloud server address",
+			Example:     "api.trychroma.com",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"chroma-cloud"},
+		},
+		{
+			Key:         "CHROMA_CLOUD_API_KEY",
+			Description: "Chroma Cloud API key",
+			Example:     "your-chroma-api-key",
+			IsSecret:    true,
+			Required:    true,
+			VDBTypes:    []string{"chroma-cloud"},
+		},
+		// Qdrant Local Configuration
+		{
+			Key:         "QDRANT_LOCAL_ADDRESS",
+			Description: "Qdrant local server address",
+			Example:     "localhost:6333",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"qdrant-local"},
+		},
+		// Qdrant Cloud Configuration
+		{
+			Key:         "QDRANT_CLOUD_ADDRESS",
+			Description: "Qdrant Cloud cluster URL",
+			Example:     "xyz-example.eu-central.aws.cloud.qdrant.io",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"qdrant-cloud"},
+		},
+		{
+			Key:         "QDRANT_CLOUD_API_KEY",
+			Description: "Qdrant Cloud API key",
+			Example:     "your-qdrant-api-key",
+			IsSecret:    true,
+			Required:    true,
+			VDBTypes:    []string{"qdrant-cloud"},
+		},
+		// Neo4j Local Configuration
+		{
+			Key:         "NEO4J_LOCAL_URI",
+			Description: "Neo4j local server URI",
+			Example:     "bolt://localhost:7687",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"neo4j-local"},
+		},
+		{
+			Key:         "NEO4J_LOCAL_USERNAME",
+			Description: "Neo4j local username",
+			Example:     "neo4j",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"neo4j-local"},
+		},
+		{
+			Key:         "NEO4J_LOCAL_PASSWORD",
+			Description: "Neo4j local password",
+			Example:     "your-password",
+			IsSecret:    true,
+			Required:    true,
+			VDBTypes:    []string{"neo4j-local"},
+		},
+		// Neo4j Cloud (Aura) Configuration
+		{
+			Key:         "NEO4J_CLOUD_URI",
+			Description: "Neo4j Aura connection URI",
+			Example:     "neo4j+s://xxxxx.databases.neo4j.io",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"neo4j-cloud"},
+		},
+		{
+			Key:         "NEO4J_CLOUD_USERNAME",
+			Description: "Neo4j Aura username",
+			Example:     "neo4j",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"neo4j-cloud"},
+		},
+		{
+			Key:         "NEO4J_CLOUD_PASSWORD",
+			Description: "Neo4j Aura password",
+			Example:     "your-secure-password",
+			IsSecret:    true,
+			Required:    true,
+			VDBTypes:    []string{"neo4j-cloud"},
+		},
+		// OpenAI Configuration (common to all)
 		{
 			Key:         "OPENAI_API_KEY",
 			Description: "OpenAI API Key (for embeddings and AI agents)",
 			Example:     "sk-proj-your-openai-api-key-here",
 			IsSecret:    true,
 			Required:    true,
+			VDBTypes:    []string{}, // Empty = applies to all
 		},
-		// Optional Services
+		// Optional Services (common to all)
 		{
 			Key:         "OPIK_API_KEY",
 			Description: "Opik API Key (optional - for LLM observability)",
 			Example:     "your-opik-api-key-here",
 			IsSecret:    true,
 			Required:    false,
+			VDBTypes:    []string{}, // Empty = applies to all
 		},
 		{
 			Key:         "WEAVE_MCP_STDIO_PATH",
@@ -77,8 +254,35 @@ func getEnvVariables() []envVariable {
 			Example:     "/path/to/weave-mcp/bin/weave-mcp-stdio",
 			IsSecret:    false,
 			Required:    false,
+			VDBTypes:    []string{}, // Empty = applies to all
 		},
 	}
+
+	// If no filter, return all variables
+	if vdbFilter == "" {
+		return allVars
+	}
+
+	// Filter variables by VDB type
+	var filtered []envVariable
+	for _, v := range allVars {
+		// Include if VDBTypes is empty (common variable) or matches filter
+		if len(v.VDBTypes) == 0 || containsString(v.VDBTypes, vdbFilter) {
+			filtered = append(filtered, v)
+		}
+	}
+
+	return filtered
+}
+
+// containsString checks if a string slice contains a specific string
+func containsString(slice []string, str string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }
 
 // File operation helpers

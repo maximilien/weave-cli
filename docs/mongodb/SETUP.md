@@ -69,6 +69,10 @@ See [ATLAS_SETUP.md](./ATLAS_SETUP.md) for detailed instructions with screenshot
 **Interactive Setup**:
 
 ```bash
+# Configure only MongoDB Atlas variables (smart filtering)
+weave config create --env --mongodb-cloud
+
+# OR configure all databases
 weave config create --env
 
 # When prompted, enter:

@@ -56,6 +56,10 @@ postgresql://postgres.[project].[string]:[password]@aws-0-[region].pooler.supaba
 **Interactive Setup**:
 
 ```bash
+# Configure only Supabase variables (smart filtering)
+weave config create --env --supabase-cloud
+
+# OR configure all databases
 weave config create --env
 
 # When prompted, enter:

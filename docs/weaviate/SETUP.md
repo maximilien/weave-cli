@@ -29,6 +29,10 @@ deployments.
 **Interactive Setup (Recommended)**:
 
 ```bash
+# Configure only Weaviate Cloud variables (smart filtering)
+weave config create --env --weaviate-cloud
+
+# OR configure all databases
 weave config create --env
 
 # Follow prompts to enter:
