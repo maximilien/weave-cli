@@ -40,7 +40,7 @@ func ValidateDatabaseSelection(selection *VectorDBSelection, opType OperationTyp
 		if len(selection.Configs) > 1 {
 			return fmt.Errorf(
 				"%s operation requires a single database. "+
-					"Please specify --weaviate, --weaviate-local, --weaviate-cloud, --supabase, --supabase-local, --supabase-cloud, --mongodb, --mongodb-local, --mongodb-cloud, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, or --mock (found %d databases). "+
+					"Please specify --weaviate, --weaviate-local, --weaviate-cloud, --supabase, --supabase-local, --supabase-cloud, --mongodb, --mongodb-local, --mongodb-cloud, --milvus-local, --milvus-cloud, --chroma-local, --chroma-cloud, --qdrant-local, --qdrant-cloud, --neo4j-local, --neo4j-cloud, --opensearch-local, --opensearch-cloud, or --mock (found %d databases). "+
 					"Use 'weave config list' to see configured databases",
 				operationName, len(selection.Configs))
 		}
@@ -126,6 +126,8 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	useQdrantCloud, _ := cmd.Flags().GetBool("qdrant-cloud")
 	useNeo4jLocal, _ := cmd.Flags().GetBool("neo4j-local")
 	useNeo4jCloud, _ := cmd.Flags().GetBool("neo4j-cloud")
+	useOpenSearchLocal, _ := cmd.Flags().GetBool("opensearch-local")
+	useOpenSearchCloud, _ := cmd.Flags().GetBool("opensearch-cloud")
 	useMock, _ := cmd.Flags().GetBool("mock")
 	useAll, _ := cmd.Flags().GetBool("all")
 
@@ -133,7 +135,7 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	var types []string
 
 	// Check if any specific database flags are set
-	hasSpecificFlags := useWeaviate || useWeaviateLocal || useWeaviateCloud || useSupabase || useSupabaseLocal || useSupabaseCloud || useMongoDB || useMongoDBLocal || useMongoDBCloud || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useMock
+	hasSpecificFlags := useWeaviate || useWeaviateLocal || useWeaviateCloud || useSupabase || useSupabaseLocal || useSupabaseCloud || useMongoDB || useMongoDBLocal || useMongoDBCloud || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useOpenSearchLocal || useOpenSearchCloud || useMock
 
 	// If --all flag is used OR no specific flags are set, return all configured databases
 	if useAll || !hasSpecificFlags {
@@ -294,6 +296,24 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 		}
 		configs = append(configs, *neo4jCloudConfig)
 		types = append(types, string(neo4jCloudConfig.Type))
+	}
+
+	if useOpenSearchLocal {
+		opensearchLocalConfig, err := getOpenSearchLocalConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get OpenSearch Local configuration: %w", err)
+		}
+		configs = append(configs, *opensearchLocalConfig)
+		types = append(types, string(opensearchLocalConfig.Type))
+	}
+
+	if useOpenSearchCloud {
+		opensearchCloudConfig, err := getOpenSearchCloudConfig(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get OpenSearch Cloud configuration: %w", err)
+		}
+		configs = append(configs, *opensearchCloudConfig)
+		types = append(types, string(opensearchCloudConfig.Type))
 	}
 
 	if useMock {

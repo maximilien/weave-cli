@@ -32,25 +32,27 @@ var (
 	queryStrings   string
 
 	// Vector database type flags
-	useWeaviate      bool
-	useWeaviateLocal bool
-	useWeaviateCloud bool
-	useSupabase      bool
-	useSupabaseLocal bool
-	useSupabaseCloud bool
-	useMongoDB       bool
-	useMongoDBLocal  bool
-	useMongoDBCloud  bool
-	useMilvusLocal   bool
-	useMilvusCloud   bool
-	useChromaLocal   bool
-	useChromaCloud   bool
-	useQdrantLocal   bool
-	useQdrantCloud   bool
-	useNeo4jLocal    bool
-	useNeo4jCloud    bool
-	useMock          bool
-	useAll           bool
+	useWeaviate        bool
+	useWeaviateLocal   bool
+	useWeaviateCloud   bool
+	useSupabase        bool
+	useSupabaseLocal   bool
+	useSupabaseCloud   bool
+	useMongoDB         bool
+	useMongoDBLocal    bool
+	useMongoDBCloud    bool
+	useMilvusLocal     bool
+	useMilvusCloud     bool
+	useChromaLocal     bool
+	useChromaCloud     bool
+	useQdrantLocal     bool
+	useQdrantCloud     bool
+	useNeo4jLocal      bool
+	useNeo4jCloud      bool
+	useOpenSearchLocal bool
+	useOpenSearchCloud bool
+	useMock            bool
+	useAll             bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -118,6 +120,8 @@ Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase P
   --qdrant-cloud                       # Use Qdrant cloud database only
   --neo4j-local                        # Use Neo4j local database only
   --neo4j-cloud                        # Use Neo4j cloud (Aura) database only
+  --opensearch-local                   # Use OpenSearch local database only
+  --opensearch-cloud                   # Use OpenSearch cloud/AWS database only
   --mock                               # Use mock database only
   --all                                # Use all configured databases (default)
 
@@ -189,6 +193,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useQdrantCloud, "qdrant-cloud", false, "use Qdrant cloud vector database")
 	rootCmd.PersistentFlags().BoolVar(&useNeo4jLocal, "neo4j-local", false, "use Neo4j local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useNeo4jCloud, "neo4j-cloud", false, "use Neo4j cloud (Aura) vector database")
+	rootCmd.PersistentFlags().BoolVar(&useOpenSearchLocal, "opensearch-local", false, "use OpenSearch local vector database")
+	rootCmd.PersistentFlags().BoolVar(&useOpenSearchCloud, "opensearch-cloud", false, "use OpenSearch cloud/AWS vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
 
@@ -229,6 +235,8 @@ func init() {
 	_ = viper.BindPFlag("qdrant-cloud", rootCmd.PersistentFlags().Lookup("qdrant-cloud"))
 	_ = viper.BindPFlag("neo4j-local", rootCmd.PersistentFlags().Lookup("neo4j-local"))
 	_ = viper.BindPFlag("neo4j-cloud", rootCmd.PersistentFlags().Lookup("neo4j-cloud"))
+	_ = viper.BindPFlag("opensearch-local", rootCmd.PersistentFlags().Lookup("opensearch-local"))
+	_ = viper.BindPFlag("opensearch-cloud", rootCmd.PersistentFlags().Lookup("opensearch-cloud"))
 	_ = viper.BindPFlag("mock", rootCmd.PersistentFlags().Lookup("mock"))
 	_ = viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 

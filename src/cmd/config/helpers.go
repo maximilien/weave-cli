@@ -230,6 +230,48 @@ func getEnvVariables(vdbFilter string) []envVariable {
 			Required:    true,
 			VDBTypes:    []string{"neo4j-cloud"},
 		},
+		// OpenSearch Local Configuration
+		{
+			Key:         "OPENSEARCH_LOCAL_ADDRESS",
+			Description: "OpenSearch local server address",
+			Example:     "http://localhost:9200",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"opensearch-local"},
+		},
+		// OpenSearch Cloud Configuration
+		{
+			Key:         "OPENSEARCH_CLOUD_ADDRESS",
+			Description: "OpenSearch Cloud/AWS endpoint URL",
+			Example:     "https://your-domain.us-east-1.es.amazonaws.com",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"opensearch-cloud"},
+		},
+		{
+			Key:         "OPENSEARCH_CLOUD_USERNAME",
+			Description: "OpenSearch Cloud username (if using basic auth)",
+			Example:     "admin",
+			IsSecret:    false,
+			Required:    false,
+			VDBTypes:    []string{"opensearch-cloud"},
+		},
+		{
+			Key:         "OPENSEARCH_CLOUD_PASSWORD",
+			Description: "OpenSearch Cloud password (if using basic auth)",
+			Example:     "your-secure-password",
+			IsSecret:    true,
+			Required:    false,
+			VDBTypes:    []string{"opensearch-cloud"},
+		},
+		{
+			Key:         "OPENSEARCH_CLOUD_API_KEY",
+			Description: "OpenSearch Cloud API key (alternative to username/password)",
+			Example:     "your-api-key",
+			IsSecret:    true,
+			Required:    false,
+			VDBTypes:    []string{"opensearch-cloud"},
+		},
 		// OpenAI Configuration (common to all)
 		{
 			Key:         "OPENAI_API_KEY",

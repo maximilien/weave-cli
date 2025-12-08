@@ -56,6 +56,12 @@ Examples:
   # Create .env for Neo4j local only
   weave config create --env --neo4j-local
 
+  # Create .env for OpenSearch Cloud only
+  weave config create --env --opensearch-cloud
+
+  # Create .env for OpenSearch local only
+  weave config create --env --opensearch-local
+
   # Create config.yaml file
   weave config create --config-yaml
 
@@ -417,6 +423,12 @@ func determineVDBFilter() string {
 	}
 	if viper.GetBool("neo4j-local") {
 		return "neo4j-local"
+	}
+	if viper.GetBool("opensearch-cloud") {
+		return "opensearch-cloud"
+	}
+	if viper.GetBool("opensearch-local") {
+		return "opensearch-local"
 	}
 	if viper.GetBool("mock") {
 		return "mock"
