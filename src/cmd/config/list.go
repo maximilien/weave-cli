@@ -37,6 +37,7 @@ func init() {
 	listCmd.Flags().Bool("details", false, "Show detailed list view instead of table")
 	listCmd.Flags().Bool("cloud", false, "Show only cloud databases")
 	listCmd.Flags().Bool("local", false, "Show only local databases")
+	listCmd.Flags().String("sort-by", "name", "Sort by: name, type, or deployment")
 }
 
 func runList(cobraCmd *cobra.Command, args []string) {
@@ -57,6 +58,7 @@ func runList(cobraCmd *cobra.Command, args []string) {
 	details, _ := cobraCmd.Flags().GetBool("details")
 	cloudOnly, _ := cobraCmd.Flags().GetBool("cloud")
 	localOnly, _ := cobraCmd.Flags().GetBool("local")
+	sortBy, _ := cobraCmd.Flags().GetString("sort-by")
 
 	// Filter databases based on flags
 	if cloudOnly || localOnly {
@@ -84,14 +86,14 @@ func runList(cobraCmd *cobra.Command, args []string) {
 
 	if details {
 		// Show detailed list view with full configuration
-		displayDatabasesDetails(cfg, databaseNames)
+		displayDatabasesDetails(cfg, databaseNames, sortBy)
 	} else {
 		// Show table view (default)
-		displayDatabasesTable(databaseNames)
+		displayDatabasesTable(databaseNames, sortBy)
 	}
 }
 
-func displayDatabasesTable(databaseNames map[string]config.VectorDBType) {
+func displayDatabasesTable(databaseNames map[string]config.VectorDBType, sortBy string) {
 	printHeader("Configured Vector Databases")
 	fmt.Println()
 
@@ -99,48 +101,75 @@ func displayDatabasesTable(databaseNames map[string]config.VectorDBType) {
 	fmt.Printf("%-20s %-20s %-15s\n", "NAME", "TYPE", "DEPLOYMENT")
 	fmt.Println("─────────────────────────────────────────────────────────")
 
-	// Sort and categorize databases
-	var localDBs []string
-	var cloudDBs []string
+	// Build list of database entries
+	type dbEntry struct {
+		name       string
+		dbType     string
+		deployment string
+		isCloud    bool
+	}
+
+	var entries []dbEntry
+	localCount := 0
+	cloudCount := 0
 
 	for name, dbType := range databaseNames {
 		if name == "default" {
 			continue // Skip default entry
 		}
 
-		// Determine if local or cloud based on type suffix
-		if isCloudDeployment(dbType) {
-			cloudDBs = append(cloudDBs, name)
+		isCloud := isCloudDeployment(dbType)
+		deployment := "Local"
+		if isCloud {
+			deployment = "Cloud"
+			cloudCount++
 		} else {
-			localDBs = append(localDBs, name)
+			localCount++
 		}
+
+		entries = append(entries, dbEntry{
+			name:       name,
+			dbType:     string(dbType),
+			deployment: deployment,
+			isCloud:    isCloud,
+		})
 	}
 
-	// Sort for consistent output
-	sort.Strings(localDBs)
-	sort.Strings(cloudDBs)
-
-	// Print local databases
-	for _, name := range localDBs {
-		dbType := string(databaseNames[name])
-		fmt.Printf("%-20s %-20s %-15s\n", name, dbType, "Local")
+	// Sort based on user preference
+	switch sortBy {
+	case "type":
+		// Sort by type, then by name
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].dbType != entries[j].dbType {
+				return entries[i].dbType < entries[j].dbType
+			}
+			return entries[i].name < entries[j].name
+		})
+	case "deployment":
+		// Sort by deployment (Local first), then by name
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].isCloud != entries[j].isCloud {
+				return !entries[i].isCloud // Local before cloud
+			}
+			return entries[i].name < entries[j].name
+		})
+	default: // "name" or anything else
+		// Sort alphabetically by name only
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].name < entries[j].name
+		})
 	}
 
-	// Print cloud databases
-	for _, name := range cloudDBs {
-		dbType := string(databaseNames[name])
-		deployment := "Cloud"
-		if false {
-			deployment += " (default)"
-		}
-		fmt.Printf("%-20s %-20s %-15s\n", name, dbType, deployment)
+	// Print all entries
+	for _, entry := range entries {
+		fmt.Printf("%-20s %-20s %-15s\n", entry.name, entry.dbType, entry.deployment)
 	}
 
 	fmt.Println("─────────────────────────────────────────────────────────")
 	fmt.Printf("Total: %d databases  |  Local: %d  |  Cloud: %d\n",
-		len(localDBs)+len(cloudDBs),
-		len(localDBs),
-		len(cloudDBs))
+		len(entries),
+		localCount,
+		cloudCount)
 }
 
 func isCloudDeployment(dbType config.VectorDBType) bool {
@@ -161,18 +190,58 @@ func isCloudDeployment(dbType config.VectorDBType) bool {
 	return false
 }
 
-func displayDatabasesDetails(cfg *config.Config, databaseNames map[string]config.VectorDBType) {
+func displayDatabasesDetails(cfg *config.Config, databaseNames map[string]config.VectorDBType, sortBy string) {
 	printHeader("Configured Databases - Detailed View")
 	fmt.Println()
 
-	// Sort database names for consistent output
-	var names []string
-	for name := range databaseNames {
+	// Build list of database entries for sorting
+	type dbEntry struct {
+		name    string
+		dbType  config.VectorDBType
+		isCloud bool
+	}
+
+	var entries []dbEntry
+	for name, dbType := range databaseNames {
 		if name != "default" {
-			names = append(names, name)
+			entries = append(entries, dbEntry{
+				name:    name,
+				dbType:  dbType,
+				isCloud: isCloudDeployment(dbType),
+			})
 		}
 	}
-	sort.Strings(names)
+
+	// Sort based on user preference
+	switch sortBy {
+	case "type":
+		// Sort by type, then by name
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].dbType != entries[j].dbType {
+				return entries[i].dbType < entries[j].dbType
+			}
+			return entries[i].name < entries[j].name
+		})
+	case "deployment":
+		// Sort by deployment (Local first), then by name
+		sort.Slice(entries, func(i, j int) bool {
+			if entries[i].isCloud != entries[j].isCloud {
+				return !entries[i].isCloud // Local before cloud
+			}
+			return entries[i].name < entries[j].name
+		})
+	default: // "name" or anything else
+		// Sort alphabetically by name only
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].name < entries[j].name
+		})
+	}
+
+	// Extract sorted names
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.name)
+	}
 
 	for i, name := range names {
 		if i > 0 {

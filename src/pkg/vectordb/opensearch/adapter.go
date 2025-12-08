@@ -48,6 +48,7 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 	if timeout == 0 {
 		timeout = 30 * time.Second
 	}
+	_ = timeout // Will be used when we implement context timeouts
 
 	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{

@@ -349,7 +349,9 @@ func getAllConfiguredDatabases(cfg *config.Config) (*VectorDBSelection, error) {
 	// Also check for Supabase from environment variables if not already in config
 	hasSupabase := false
 	for _, dbConfig := range configs {
-		if dbConfig.Type == config.VectorDBTypeSupabase {
+		if dbConfig.Type == config.VectorDBTypeSupabase ||
+			dbConfig.Type == config.VectorDBTypeSupabaseCloud ||
+			dbConfig.Type == config.VectorDBTypeSupabaseLocal {
 			hasSupabase = true
 			break
 		}

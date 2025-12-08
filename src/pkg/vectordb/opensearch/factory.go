@@ -71,11 +71,9 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 	}
 
 	// Cloud-specific validation (AWS OpenSearch Service)
-	if config.Type == vectordb.VectorDBTypeOpenSearchCloud {
-		// For AWS OpenSearch, we need either API key or AWS credentials
-		// AWS credentials will be picked up from environment/config by SDK
-		// So we don't strictly require APIKey here
-	}
+	// For AWS OpenSearch, we need either API key or AWS credentials
+	// AWS credentials will be picked up from environment/config by SDK
+	// So we don't strictly require APIKey for cloud type
 
 	return nil
 }

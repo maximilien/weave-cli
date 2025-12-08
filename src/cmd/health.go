@@ -77,6 +77,9 @@ func init() {
 	// Add flags for filtering by deployment type
 	healthCheckCmd.Flags().Bool("cloud", false, "Check only cloud databases")
 	healthCheckCmd.Flags().Bool("local", false, "Check only local databases")
+
+	// Add flag for sorting
+	healthCheckCmd.Flags().String("sort-by", "name", "Sort by: name or type")
 }
 
 func runHealthCheck(cmd *cobra.Command, args []string) {
@@ -85,6 +88,7 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 	detailsOutput, _ := cmd.Flags().GetBool("details")
 	cloudOnly, _ := cmd.Flags().GetBool("cloud")
 	localOnly, _ := cmd.Flags().GetBool("local")
+	sortBy, _ := cmd.Flags().GetString("sort-by")
 
 	// Load configuration
 	cfg, err := LoadConfigWithOverrides()
@@ -109,7 +113,7 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 		if jsonOutput {
 			outputHealthCheckJSON([]HealthCheckResult{result})
 		} else if summaryOutput {
-			displayHealthCheckSummary([]HealthCheckResult{result})
+			displayHealthCheckSummary([]HealthCheckResult{result}, sortBy)
 		} else {
 			// Single VDB: default to detailed view
 			printHeader(fmt.Sprintf("Database Health Check: %s", dbName))
@@ -187,7 +191,7 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 	}
 
 	// For summary table: print header and rows progressively
-	displayHealthCheckSummaryProgressive(ctx, filteredConfigs)
+	displayHealthCheckSummaryProgressive(ctx, filteredConfigs, sortBy)
 }
 
 func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.VectorDBConfig) HealthCheckResult {
@@ -298,7 +302,7 @@ func outputHealthCheckJSON(results []HealthCheckResult) {
 	fmt.Println(string(jsonBytes))
 }
 
-func displayHealthCheckSummary(results []HealthCheckResult) {
+func displayHealthCheckSummary(results []HealthCheckResult, sortBy string) {
 	// Print header
 	printHeader("Vector Database Health Check Summary")
 	fmt.Println()
@@ -306,6 +310,23 @@ func displayHealthCheckSummary(results []HealthCheckResult) {
 	// Table header
 	fmt.Printf("%-15s %-15s %-8s %-6s %s\n", "VDB", "TYPE", "STATUS", "COLS", "URL")
 	fmt.Println("───────────────────────────────────────────────────────────────────────────────")
+
+	// Sort results based on user preference
+	switch sortBy {
+	case "type":
+		// Sort by type, then by name
+		sort.Slice(results, func(i, j int) bool {
+			if results[i].DatabaseType != results[j].DatabaseType {
+				return results[i].DatabaseType < results[j].DatabaseType
+			}
+			return results[i].DatabaseName < results[j].DatabaseName
+		})
+	default: // "name" or anything else
+		// Sort alphabetically by name only
+		sort.Slice(results, func(i, j int) bool {
+			return results[i].DatabaseName < results[j].DatabaseName
+		})
+	}
 
 	// Count healthy/unhealthy
 	healthy := 0
@@ -351,7 +372,7 @@ func displayHealthCheckSummary(results []HealthCheckResult) {
 }
 
 // displayHealthCheckSummaryProgressive shows health check results progressively as they're checked
-func displayHealthCheckSummaryProgressive(ctx context.Context, dbConfigs []config.VectorDBConfig) {
+func displayHealthCheckSummaryProgressive(ctx context.Context, dbConfigs []config.VectorDBConfig, sortBy string) {
 	// Print header
 	printHeader("Vector Database Health Check Summary")
 	fmt.Println()
@@ -359,6 +380,23 @@ func displayHealthCheckSummaryProgressive(ctx context.Context, dbConfigs []confi
 	// Table header
 	fmt.Printf("%-15s %-15s %-8s %-6s %s\n", "VDB", "TYPE", "STATUS", "COLS", "URL")
 	fmt.Println("───────────────────────────────────────────────────────────────────────────────")
+
+	// Sort databases based on user preference
+	switch sortBy {
+	case "type":
+		// Sort by type, then by name
+		sort.Slice(dbConfigs, func(i, j int) bool {
+			if dbConfigs[i].Type != dbConfigs[j].Type {
+				return dbConfigs[i].Type < dbConfigs[j].Type
+			}
+			return dbConfigs[i].Name < dbConfigs[j].Name
+		})
+	default: // "name" or anything else
+		// Sort alphabetically by name only
+		sort.Slice(dbConfigs, func(i, j int) bool {
+			return dbConfigs[i].Name < dbConfigs[j].Name
+		})
+	}
 
 	// Count healthy/unhealthy
 	healthy := 0

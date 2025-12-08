@@ -108,6 +108,14 @@ func prepareConnectionString(dbURL string) (string, error) {
 		port = "5432"
 	}
 
+	// Determine SSL mode based on hostname
+	// For local development (localhost, 127.0.0.1), disable SSL
+	// For cloud services (supabase.co, etc.), require SSL
+	sslMode := "require"
+	if hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1" {
+		sslMode = "disable"
+	}
+
 	// Try to resolve to IPv4 address
 	ips, err := net.LookupIP(hostname)
 	if err != nil {
@@ -118,7 +126,7 @@ func prepareConnectionString(dbURL string) (string, error) {
 		} else {
 			connStr += "&"
 		}
-		connStr += "sslmode=require&connect_timeout=10"
+		connStr += fmt.Sprintf("sslmode=%s&connect_timeout=10", sslMode)
 		return connStr, nil
 	}
 
@@ -138,7 +146,7 @@ func prepareConnectionString(dbURL string) (string, error) {
 
 	// Add connection parameters
 	query := parsedURL.Query()
-	query.Set("sslmode", "require")
+	query.Set("sslmode", sslMode)
 	query.Set("connect_timeout", "10")
 	parsedURL.RawQuery = query.Encode()
 
