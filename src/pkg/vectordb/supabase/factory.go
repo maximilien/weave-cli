@@ -27,6 +27,8 @@ func (f *Factory) CreateClient(config *vectordb.Config) (vectordb.VectorDBClient
 func (f *Factory) GetSupportedTypes() []vectordb.VectorDBType {
 	return []vectordb.VectorDBType{
 		vectordb.VectorDBTypeSupabase,
+		vectordb.VectorDBTypeSupabaseCloud,
+		vectordb.VectorDBTypeSupabaseLocal,
 	}
 }
 
@@ -36,8 +38,10 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 		return vectordb.ErrInvalidConfig("config cannot be nil")
 	}
 
-	// Validate database type (accept both legacy and new naming)
-	if config.Type != vectordb.VectorDBTypeSupabase && config.Type != vectordb.VectorDBTypeSupabaseCloud {
+	// Validate database type (accept legacy, cloud, and local)
+	if config.Type != vectordb.VectorDBTypeSupabase &&
+		config.Type != vectordb.VectorDBTypeSupabaseCloud &&
+		config.Type != vectordb.VectorDBTypeSupabaseLocal {
 		return vectordb.ErrInvalidConfig(fmt.Sprintf("unsupported Supabase type: %s", config.Type))
 	}
 
@@ -51,9 +55,9 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 		return vectordb.ErrInvalidConfig("database URL must be a valid PostgreSQL connection string")
 	}
 
-	// Validate database key (anon key)
-	if config.DatabaseKey == "" {
-		return vectordb.ErrInvalidConfig("database key (anon key) is required for Supabase")
+	// Validate database key (anon key) - not required for local
+	if config.Type != vectordb.VectorDBTypeSupabaseLocal && config.DatabaseKey == "" {
+		return vectordb.ErrInvalidConfig("database key (anon key) is required for Supabase cloud")
 	}
 
 	// Validate timeout
@@ -82,5 +86,6 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 func init() {
 	factory := NewFactory()
 	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabase, factory)      // Legacy support
-	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabaseCloud, factory) // New naming
+	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabaseCloud, factory) // Cloud
+	vectordb.RegisterFactory(vectordb.VectorDBTypeSupabaseLocal, factory) // Local
 }

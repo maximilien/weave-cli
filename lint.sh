@@ -135,8 +135,8 @@ fi
 
 # JSON linting
 echo "📄 Checking JSON files..."
-if find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*" -not -path "./local/*/volumes/*" -not -path "./bin/*" | grep -q .; then
-    find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*" -not -path "./local/*/volumes/*" -not -path "./bin/*" -print0 | while IFS= read -r -d '' json_file; do
+if find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*" -not -path "./local/*" -not -path "./bin/*" | grep -q .; then
+    find . -name "*.json" -not -path "./src/vendor/*" -not -path "./node_modules/*" -not -path "./local/*" -not -path "./bin/*" -print0 | while IFS= read -r -d '' json_file; do
         if ! python3 -m json.tool "$json_file" >/dev/null 2>&1; then
             print_error "Invalid JSON found in $json_file"
             exit 1

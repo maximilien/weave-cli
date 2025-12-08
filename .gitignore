@@ -79,3 +79,4 @@ videos/*.cast
 !videos/weave-cli-full-demo.cast
 !videos/weave-cli-repl-demo.cast
 videos/latest-demo-uploads.txt
+/local/storage/

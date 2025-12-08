@@ -60,7 +60,29 @@ weave health check --weaviate-cloud
 
 ### 1. Start Weaviate Locally
 
-Using Docker:
+**Using Weave CLI Helper Script (Recommended)**:
+
+```bash
+# Start Weaviate (uses podman or docker automatically)
+./tools/vdb/local/weaviate.sh start
+
+# Check status
+./tools/vdb/local/weaviate.sh status
+
+# View logs
+./tools/vdb/local/weaviate.sh logs
+
+# Stop Weaviate
+./tools/vdb/local/weaviate.sh stop
+```
+
+The script automatically:
+- Uses OPENAI_API_KEY from .env if available
+- Creates persistent storage in `weaviate_storage/`
+- Configures text2vec-openai module
+- Waits for health check to pass
+
+**Using Docker (Manual)**:
 
 ```bash
 docker run -d \
@@ -72,7 +94,7 @@ docker run -d \
   semitechnologies/weaviate:latest
 ```
 
-Using Docker Compose (recommended):
+**Using Docker Compose**:
 
 ```yaml
 # docker-compose.yml
@@ -103,13 +125,31 @@ docker-compose up -d
 
 ### 2. Configure Weave CLI
 
+**Interactive Setup (Recommended)**:
+
 ```bash
-export WEAVIATE_URL="http://localhost:8080"
+# Configure only Weaviate Local variables (smart filtering)
+weave config create --env --weaviate-local
+
+# Follow prompts to enter:
+# - Leave WEAVIATE_URL as http://localhost:8080 (or press Enter)
+# - OPENAI_API_KEY: sk-...
+```
+
+**Manual Setup**:
+
+```bash
+# Set environment variables
+export VECTOR_DB_TYPE="weaviate-local"
 export OPENAI_API_KEY="sk-..."  # Required for embeddings
 
-# Update config.yaml to use weaviate-local
-weave config create --env
+# URL defaults to http://localhost:8080
 ```
+
+**Using config.yaml** (already configured in example):
+
+The weaviate-local section in config.yaml.example is already set up for local
+development.
 
 ### 3. Verify Connection
 

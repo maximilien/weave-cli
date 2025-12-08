@@ -29,26 +29,32 @@ type Adapter struct {
 
 // NewAdapter creates a new Supabase adapter
 func NewAdapter(config *vectordb.Config) (*Adapter, error) {
-	// For Supabase, we need the HTTP URL (SUPABASE_PROJECT_URL) not the database URL
-	// Try to extract project URL from database URL if not provided separately
-	projectURL := config.URL
-	if projectURL == "" {
-		// Extract from database URL: postgresql://...@db.PROJECT.supabase.co -> https://PROJECT.supabase.co
-		if strings.Contains(config.DatabaseURL, "supabase.co") {
-			parts := strings.Split(config.DatabaseURL, "@")
-			if len(parts) >= 2 {
-				hostPart := strings.Split(parts[1], ":")[0]
-				hostPart = strings.Replace(hostPart, "db.", "", 1)
-				hostPart = strings.Split(hostPart, "/")[0]
-				projectURL = "https://" + hostPart
+	var client *supabase.Client
+	var err error
+
+	// For supabase-local, we don't need the HTTP client - just use direct PostgreSQL
+	if config.Type != vectordb.VectorDBTypeSupabaseLocal {
+		// For Supabase Cloud, we need the HTTP URL (SUPABASE_PROJECT_URL) not the database URL
+		// Try to extract project URL from database URL if not provided separately
+		projectURL := config.URL
+		if projectURL == "" {
+			// Extract from database URL: postgresql://...@db.PROJECT.supabase.co -> https://PROJECT.supabase.co
+			if strings.Contains(config.DatabaseURL, "supabase.co") {
+				parts := strings.Split(config.DatabaseURL, "@")
+				if len(parts) >= 2 {
+					hostPart := strings.Split(parts[1], ":")[0]
+					hostPart = strings.Replace(hostPart, "db.", "", 1)
+					hostPart = strings.Split(hostPart, "/")[0]
+					projectURL = "https://" + hostPart
+				}
 			}
 		}
-	}
 
-	// Create Supabase HTTP client
-	client, err := supabase.NewClient(projectURL, config.DatabaseKey, nil)
-	if err != nil {
-		return nil, vectordb.ErrConnectionFailed("failed to create Supabase client", err)
+		// Create Supabase HTTP client (only for cloud)
+		client, err = supabase.NewClient(projectURL, config.DatabaseKey, nil)
+		if err != nil {
+			return nil, vectordb.ErrConnectionFailed("failed to create Supabase client", err)
+		}
 	}
 
 	// Try to create direct database connection (optional - falls back to REST API)

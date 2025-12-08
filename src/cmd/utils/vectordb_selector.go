@@ -422,7 +422,7 @@ func getSupabaseConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 func getSupabaseLocalConfig(cfg *config.Config) (*config.VectorDBConfig, error) {
 	// Check all configured databases for Supabase local type
 	for _, dbConfig := range cfg.Databases.VectorDatabases {
-		if dbConfig.Type == config.VectorDBTypeSupabase {
+		if dbConfig.Type == config.VectorDBTypeSupabaseLocal {
 			return &dbConfig, nil
 		}
 	}

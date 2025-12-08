@@ -12,7 +12,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 CONTAINER_RUN="${SCRIPT_DIR}/../container/run.sh"
-STORAGE_DIR="${PROJECT_ROOT}/qdrant_storage"
+STORAGE_DIR="${PROJECT_ROOT}/local/storage/qdrant_storage"
 
 # Qdrant container configuration
 QDRANT_CONTAINER_NAME="qdrant"

@@ -18,6 +18,7 @@ const (
 	VectorDBTypeMock          VectorDBType = "mock"
 	VectorDBTypeSupabase      VectorDBType = "supabase" // Legacy
 	VectorDBTypeSupabaseCloud VectorDBType = "supabase-cloud"
+	VectorDBTypeSupabaseLocal VectorDBType = "supabase-local"
 	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
 	VectorDBTypeMilvusCloud   VectorDBType = "milvus-cloud"
 	VectorDBTypeMongoDB       VectorDBType = "mongodb" // Legacy

@@ -24,6 +24,7 @@ const (
 	VectorDBTypeMock          VectorDBType = "mock"
 	VectorDBTypeSupabase      VectorDBType = "supabase" // Legacy
 	VectorDBTypeSupabaseCloud VectorDBType = "supabase-cloud"
+	VectorDBTypeSupabaseLocal VectorDBType = "supabase-local"
 	VectorDBTypeMongoDB       VectorDBType = "mongodb" // Legacy
 	VectorDBTypeMongoDBCloud  VectorDBType = "mongodb-cloud"
 	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
@@ -361,13 +362,30 @@ func createDefaultConfigFromEnv() map[string]interface{} {
 		})
 	} else if vectorDBType == "weaviate-local" {
 		// Local Weaviate
-		vectorDatabases = append(vectorDatabases, map[string]interface{}{
+		weaviateLocalConfig := map[string]interface{}{
 			"name":        "weaviate-local",
 			"type":        "weaviate-local",
 			"url":         "http://localhost:8080",
 			"timeout":     timeout,
 			"collections": validCollections,
-		})
+		}
+		if openaiAPIKey != "" {
+			weaviateLocalConfig["openai_api_key"] = openaiAPIKey
+		}
+		vectorDatabases = append(vectorDatabases, weaviateLocalConfig)
+	} else if vectorDBType == "supabase-local" {
+		// Local Supabase (PostgreSQL + pgvector)
+		supabaseLocalConfig := map[string]interface{}{
+			"name":         "supabase-local",
+			"type":         "supabase-local",
+			"database_url": "postgresql://postgres:postgres@localhost:5432/weave",
+			"timeout":      timeout,
+			"collections":  validCollections,
+		}
+		if openaiAPIKey != "" {
+			supabaseLocalConfig["openai_api_key"] = openaiAPIKey
+		}
+		vectorDatabases = append(vectorDatabases, supabaseLocalConfig)
 	} else if vectorDBType == "supabase" {
 		// Supabase
 		supabaseConfig := map[string]interface{}{

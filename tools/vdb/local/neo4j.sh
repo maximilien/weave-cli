@@ -12,7 +12,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
 CONTAINER_RUN="${SCRIPT_DIR}/../container/run.sh"
-STORAGE_DIR="${PROJECT_ROOT}/local/neo4j"
+STORAGE_DIR="${PROJECT_ROOT}/local/storage/neo4j_storage"
 
 # Neo4j container configuration
 NEO4J_CONTAINER_NAME="neo4j"
