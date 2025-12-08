@@ -19,22 +19,24 @@ import (
 type VectorDBType string
 
 const (
-	VectorDBTypeCloud         VectorDBType = "weaviate-cloud"
-	VectorDBTypeLocal         VectorDBType = "weaviate-local"
-	VectorDBTypeMock          VectorDBType = "mock"
-	VectorDBTypeSupabase      VectorDBType = "supabase" // Legacy
-	VectorDBTypeSupabaseCloud VectorDBType = "supabase-cloud"
-	VectorDBTypeSupabaseLocal VectorDBType = "supabase-local"
-	VectorDBTypeMongoDB       VectorDBType = "mongodb" // Legacy
-	VectorDBTypeMongoDBCloud  VectorDBType = "mongodb-cloud"
-	VectorDBTypeMilvusLocal   VectorDBType = "milvus-local"
-	VectorDBTypeMilvusCloud   VectorDBType = "milvus-cloud"
-	VectorDBTypeChromaLocal   VectorDBType = "chroma-local"
-	VectorDBTypeChromaCloud   VectorDBType = "chroma-cloud"
-	VectorDBTypeQdrantLocal   VectorDBType = "qdrant-local"
-	VectorDBTypeQdrantCloud   VectorDBType = "qdrant-cloud"
-	VectorDBTypeNeo4jLocal    VectorDBType = "neo4j-local"
-	VectorDBTypeNeo4jCloud    VectorDBType = "neo4j-cloud"
+	VectorDBTypeCloud           VectorDBType = "weaviate-cloud"
+	VectorDBTypeLocal           VectorDBType = "weaviate-local"
+	VectorDBTypeMock            VectorDBType = "mock"
+	VectorDBTypeSupabase        VectorDBType = "supabase" // Legacy
+	VectorDBTypeSupabaseCloud   VectorDBType = "supabase-cloud"
+	VectorDBTypeSupabaseLocal   VectorDBType = "supabase-local"
+	VectorDBTypeMongoDB         VectorDBType = "mongodb" // Legacy
+	VectorDBTypeMongoDBCloud    VectorDBType = "mongodb-cloud"
+	VectorDBTypeMilvusLocal     VectorDBType = "milvus-local"
+	VectorDBTypeMilvusCloud     VectorDBType = "milvus-cloud"
+	VectorDBTypeChromaLocal     VectorDBType = "chroma-local"
+	VectorDBTypeChromaCloud     VectorDBType = "chroma-cloud"
+	VectorDBTypeQdrantLocal     VectorDBType = "qdrant-local"
+	VectorDBTypeQdrantCloud     VectorDBType = "qdrant-cloud"
+	VectorDBTypeNeo4jLocal      VectorDBType = "neo4j-local"
+	VectorDBTypeNeo4jCloud      VectorDBType = "neo4j-cloud"
+	VectorDBTypeOpenSearchLocal VectorDBType = "opensearch-local"
+	VectorDBTypeOpenSearchCloud VectorDBType = "opensearch-cloud"
 )
 
 // Default configuration values
