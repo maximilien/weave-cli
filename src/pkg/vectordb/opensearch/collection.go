@@ -50,7 +50,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 					"method": map[string]interface{}{
 						"name":       "hnsw",
 						"space_type": distanceMetric,
-						"engine":     "nmslib",
+						"engine":     "lucene",
 						"parameters": map[string]interface{}{
 							"ef_construction": 128,
 							"m":               16,

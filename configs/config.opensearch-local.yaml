@@ -1,0 +1,34 @@
+---
+# OpenSearch Local Configuration
+# For local development using Docker/Podman
+
+databases:
+  # Set OpenSearch Local as the default database
+  default: opensearch
+
+  vector_databases:
+    - name: opensearch
+      type: opensearch-local
+
+      # Connection settings
+      url: ${OPENSEARCH_LOCAL_ADDRESS:-http://localhost:9200}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: l2  # Options: l2, cosinesimil, innerproduct, l1, linf
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example usage:
+# 1. Start OpenSearch:
+#    ./tools/vdb/local/opensearch.sh start
+# 2. Set API key: export OPENAI_API_KEY="sk-..."
+# 3. Run weave:
+#    weave --config configs/config.opensearch-local.yaml \
+#      --opensearch-local cols ls

@@ -46,19 +46,18 @@ func getOpenSearchCloudConfig(cfg *config.Config) (*config.VectorDBConfig, error
 
 // tryCreateOpenSearchLocalConfigFromEnv attempts to create an OpenSearch Local config from environment variables
 func tryCreateOpenSearchLocalConfigFromEnv() *config.VectorDBConfig {
-	address := os.Getenv("OPENSEARCH_LOCAL_ADDRESS")
+	url := os.Getenv("OPENSEARCH_LOCAL_ADDRESS")
 
-	// Require address at minimum
-	if address == "" {
-		return nil
+	// Set default
+	if url == "" {
+		url = "http://localhost:9200"
 	}
 
 	return &config.VectorDBConfig{
 		Name:             "opensearch-local",
 		Type:             config.VectorDBTypeOpenSearchLocal,
-		Address:          address,
-		URL:              address,
-		VectorDimensions: 384,
+		URL:              url,
+		VectorDimensions: 1536,
 		SimilarityMetric: "l2",
 		Timeout:          30,
 	}
@@ -66,33 +65,28 @@ func tryCreateOpenSearchLocalConfigFromEnv() *config.VectorDBConfig {
 
 // tryCreateOpenSearchCloudConfigFromEnv attempts to create an OpenSearch Cloud config from environment variables
 func tryCreateOpenSearchCloudConfigFromEnv() *config.VectorDBConfig {
-	address := os.Getenv("OPENSEARCH_CLOUD_ADDRESS")
+	url := os.Getenv("OPENSEARCH_CLOUD_ADDRESS")
 	username := os.Getenv("OPENSEARCH_CLOUD_USERNAME")
 	password := os.Getenv("OPENSEARCH_CLOUD_PASSWORD")
 	apiKey := os.Getenv("OPENSEARCH_CLOUD_API_KEY")
 
-	// Require address and either credentials or API key
-	if address == "" || (username == "" && password == "" && apiKey == "") {
+	// Require URL and either username/password or API key
+	if url == "" {
+		return nil
+	}
+	if (username == "" || password == "") && apiKey == "" {
 		return nil
 	}
 
-	cfg := &config.VectorDBConfig{
+	return &config.VectorDBConfig{
 		Name:             "opensearch-cloud",
 		Type:             config.VectorDBTypeOpenSearchCloud,
-		Address:          address,
-		URL:              address,
-		VectorDimensions: 384,
-		SimilarityMetric: "l2",
+		URL:              url,
+		Username:         username,
+		Password:         password,
+		APIKey:           apiKey,
+		VectorDimensions: 1536,
+		SimilarityMetric: "cosinesimil",
 		Timeout:          60,
 	}
-
-	// Prefer API key if available
-	if apiKey != "" {
-		cfg.APIKey = apiKey
-	} else {
-		cfg.Username = username
-		cfg.Password = password
-	}
-
-	return cfg
 }

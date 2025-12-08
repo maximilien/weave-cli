@@ -130,14 +130,17 @@ func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schem
 
 // GetDefaultSchema returns a default schema for the given type
 func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionName string) *vectordb.CollectionSchema {
-	// TODO: Implement default schema generation
-	return nil
+	return &vectordb.CollectionSchema{
+		Class: collectionName,
+	}
 }
 
 // ValidateSchema validates if a schema is compatible
 func (a *Adapter) ValidateSchema(schema *vectordb.CollectionSchema) error {
-	// TODO: Implement schema validation
-	return fmt.Errorf("OpenSearch adapter not yet fully implemented")
+	if schema.Class == "" {
+		return fmt.Errorf("collection name is required")
+	}
+	return nil
 }
 
 // Close closes the OpenSearch client connection

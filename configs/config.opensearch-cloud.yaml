@@ -1,0 +1,57 @@
+---
+# OpenSearch Cloud Configuration
+# For AWS OpenSearch Service or managed OpenSearch
+
+databases:
+  # Set OpenSearch Cloud as the default database
+  default: opensearch
+
+  vector_databases:
+    - name: opensearch
+      type: opensearch-cloud
+
+      # Connection settings
+      # e.g., https://your-domain.us-east-1.es.amazonaws.com
+      url: ${OPENSEARCH_CLOUD_ADDRESS}
+
+      # Authentication (choose one method)
+      # Method 1: Basic authentication (username/password)
+      username: ${OPENSEARCH_CLOUD_USERNAME}
+      password: ${OPENSEARCH_CLOUD_PASSWORD}
+
+      # Method 2: API key authentication (alternative to username/password)
+      # api_key: ${OPENSEARCH_CLOUD_API_KEY}
+
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      # Options: l2, cosinesimil, innerproduct, l1, linf
+      similarity_metric: cosinesimil
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Environment variables required:
+# - OPENSEARCH_CLOUD_ADDRESS: Your OpenSearch endpoint URL
+# - OPENSEARCH_CLOUD_USERNAME: Username (or use API key)
+# - OPENSEARCH_CLOUD_PASSWORD: Password (or use API key)
+# - OPENAI_API_KEY: Your OpenAI API key for embeddings
+# Alternative authentication:
+# - OPENSEARCH_CLOUD_API_KEY: API key (instead of user/pass)
+
+# Example usage with AWS OpenSearch Service:
+# 1. Create OpenSearch domain in AWS Console
+# 2. Set environment variables:
+#    export OPENSEARCH_CLOUD_ADDRESS=\
+#      "https://search-mydomain.us-east-1.es.amazonaws.com"
+#    export OPENSEARCH_CLOUD_USERNAME="admin"
+#    export OPENSEARCH_CLOUD_PASSWORD="your-password"
+#    export OPENAI_API_KEY="sk-..."
+# 3. Run weave:
+#    weave --config configs/config.opensearch-cloud.yaml \
+#      --opensearch-cloud cols ls

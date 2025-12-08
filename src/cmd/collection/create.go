@@ -309,6 +309,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
 		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+	case config.VectorDBTypeOpenSearchLocal, config.VectorDBTypeOpenSearchCloud:
+		err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
 	case config.VectorDBTypeMock:
 		err = utils.CreateMockCollection(ctx, dbConfig, collectionName, embeddingModel, customFields)
 	default:
