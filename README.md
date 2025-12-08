@@ -29,6 +29,7 @@ your needs:
 | **[Chroma](docs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup |
 | **[Qdrant](docs/qdrant/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Rust performance |
 | **[Neo4j](docs/neo4j/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Graph + vector search |
+| **[OpenSearch](docs/opensearch/README.md)** | 🧪 Experimental | ✅ | ✅ | AWS OpenSearch, k-NN search |
 
 📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md) for
 detailed feature comparison**
@@ -64,12 +65,14 @@ weave cols ls --milvus-local  # Milvus local only
 weave cols ls --milvus-cloud  # Milvus cloud (Zilliz) only
 weave cols ls --chroma-local  # Chroma local only
 weave cols ls --chroma-cloud  # Chroma cloud only
-weave cols ls --qdrant-local  # Qdrant local only
-weave cols ls --qdrant-cloud  # Qdrant cloud only
-weave cols ls --neo4j-local   # Neo4j local only
-weave cols ls --neo4j-cloud   # Neo4j cloud (Aura) only
-weave cols ls --mock          # Mock database only
-weave cols ls --all           # All configured databases
+weave cols ls --qdrant-local     # Qdrant local only
+weave cols ls --qdrant-cloud     # Qdrant cloud only
+weave cols ls --neo4j-local      # Neo4j local only
+weave cols ls --neo4j-cloud      # Neo4j cloud (Aura) only
+weave cols ls --opensearch-local # OpenSearch local only
+weave cols ls --opensearch-cloud # OpenSearch cloud (AWS) only
+weave cols ls --mock             # Mock database only
+weave cols ls --all              # All configured databases
 
 # Create a collection
 weave cols create MyCollection --text
@@ -107,7 +110,8 @@ weave cols create MyCollection -e text-embedding-ada-002
   (AI Agent mode) with real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
-  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant, Neo4j)
+  backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant,
+  Neo4j, OpenSearch)
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
@@ -141,6 +145,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 - **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
 - **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
 - **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Experimental)
+- **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration
+  guide (Experimental)
 - **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Experimental)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
@@ -329,6 +335,10 @@ allows seamless switching between different vector database backends.
 | **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
 | **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API | [Guide](docs/chroma/) |
 | **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration (API key required) | [Guide](docs/chroma/) |
+| **Qdrant Local** | `qdrant-local` | ✅ Functional | **Experimental** - k-NN vector search | [Guide](docs/qdrant/) |
+| **Neo4j Local** | `neo4j-local` | ✅ Functional | **Experimental** - Graph + vector search | [Guide](docs/neo4j/) |
+| **OpenSearch Local** | `opensearch-local` | ✅ Functional | **Experimental** - k-NN with HNSW algorithm | [Guide](docs/opensearch/) |
+| **OpenSearch Cloud** | `opensearch-cloud` | ✅ Functional | **Experimental** - AWS OpenSearch Service | [Guide](docs/opensearch/) |
 | **Mock** | `mock` | ✅ Testing Only | **Stable** | - |
 
 ### Maturity Levels
