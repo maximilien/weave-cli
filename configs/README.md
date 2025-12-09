@@ -108,6 +108,30 @@ Configuration for Neo4j Cloud (Aura).
 - Requires Neo4j Aura account
 - Set `NEO4J_CLOUD_URL`, `NEO4J_CLOUD_USERNAME`, and `NEO4J_CLOUD_PASSWORD`
 
+### config.opensearch-local.yaml
+
+Configuration for OpenSearch running locally.
+
+- Default URL: `http://localhost:9200`
+- No authentication required for local setup
+- Requires Docker/Podman: `podman run -d -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" opensearchproject/opensearch:latest`
+
+### config.opensearch-cloud.yaml
+
+Configuration for OpenSearch Cloud (AWS OpenSearch Service).
+
+- Requires AWS OpenSearch Service domain
+- Set `OPENSEARCH_CLOUD_ADDRESS`, `OPENSEARCH_CLOUD_USERNAME`, and `OPENSEARCH_CLOUD_PASSWORD`
+- Alternative: Use `OPENSEARCH_CLOUD_API_KEY` instead of username/password
+
+### config.pinecone.yaml
+
+Configuration for Pinecone (cloud-only serverless).
+
+- Requires Pinecone account at https://app.pinecone.io
+- Set `PINECONE_API_KEY`
+- Note: No local deployment option - Pinecone is cloud-only
+
 ## Environment Variables
 
 Most sensitive values (API keys, passwords) should be set via environment
@@ -157,6 +181,18 @@ NEO4J_PASSWORD="yourpassword"
 NEO4J_CLOUD_URL="neo4j+s://xxxxx.databases.neo4j.io"
 NEO4J_CLOUD_USERNAME="neo4j"
 NEO4J_CLOUD_PASSWORD="your-password"
+
+# OpenSearch Local
+OPENSEARCH_LOCAL_ADDRESS="http://localhost:9200"
+
+# OpenSearch Cloud (AWS OpenSearch Service)
+OPENSEARCH_CLOUD_ADDRESS="https://search-mydomain.us-east-1.es.amazonaws.com"
+OPENSEARCH_CLOUD_USERNAME="admin"
+OPENSEARCH_CLOUD_PASSWORD="your-password"
+# Alternative: OPENSEARCH_CLOUD_API_KEY="your-api-key"
+
+# Pinecone (cloud-only)
+PINECONE_API_KEY="your-pinecone-api-key"
 
 # OpenAI (required for embeddings)
 OPENAI_API_KEY="sk-..."
@@ -214,12 +250,14 @@ databases:
 Then use flags to select which database to use:
 
 ```bash
-weave cols ls --weaviate      # Use Weaviate only
-weave cols ls --milvus-local  # Use Milvus local only
-weave cols ls --chroma-local  # Use Chroma local only
-weave cols ls --qdrant-local  # Use Qdrant local only
-weave cols ls --neo4j-local   # Use Neo4j local only
-weave cols ls --all           # Use all configured databases
+weave cols ls --weaviate         # Use Weaviate only
+weave cols ls --milvus-local     # Use Milvus local only
+weave cols ls --chroma-local     # Use Chroma local only
+weave cols ls --qdrant-local     # Use Qdrant local only
+weave cols ls --neo4j-local      # Use Neo4j local only
+weave cols ls --opensearch-local # Use OpenSearch local only
+weave cols ls --pinecone         # Use Pinecone only
+weave cols ls --all              # Use all configured databases
 ```
 
 ## See Also

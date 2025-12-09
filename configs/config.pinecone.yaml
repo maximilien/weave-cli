@@ -1,0 +1,54 @@
+---
+# Pinecone Configuration
+# Serverless vector database - cloud-only (no local deployment)
+
+databases:
+  # Set Pinecone as the default database
+  default: pinecone
+
+  vector_databases:
+    - name: pinecone
+      type: pinecone
+
+      # Connection settings
+      # API key is required - get from https://app.pinecone.io
+      api_key: ${PINECONE_API_KEY}
+
+      # Host/URL is optional for serverless Pinecone
+      # It's determined automatically per-index
+      # For pod-based deployments, specify:
+      # url: ${PINECONE_HOST}
+
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      # Options: cosine, euclidean, dotproduct
+      similarity_metric: cosine
+
+      # OpenAI configuration for automatic embeddings
+      openai_api_key: ${OPENAI_API_KEY}
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Environment variables required:
+# - PINECONE_API_KEY: Your Pinecone API key
+# - OPENAI_API_KEY: Your OpenAI API key for embeddings (optional)
+
+# Example usage with Pinecone:
+# 1. Create account at https://app.pinecone.io
+# 2. Get API key from console
+# 3. Set environment variables:
+#    export PINECONE_API_KEY="your-api-key"
+#    export OPENAI_API_KEY="sk-..."
+# 4. Run weave:
+#    weave --config configs/config.pinecone.yaml \
+#      --pinecone cols ls
+#
+# Note: Pinecone is cloud-only. There is no local deployment option.
+# Indexes are created on-demand with serverless architecture.
