@@ -31,6 +31,7 @@ const (
 	VectorDBTypeNeo4jCloud      VectorDBType = "neo4j-cloud"
 	VectorDBTypeOpenSearchLocal VectorDBType = "opensearch-local"
 	VectorDBTypeOpenSearchCloud VectorDBType = "opensearch-cloud"
+	VectorDBTypePinecone        VectorDBType = "pinecone"
 )
 
 // Config represents the configuration for a vector database client
