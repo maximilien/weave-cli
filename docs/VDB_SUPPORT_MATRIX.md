@@ -14,6 +14,7 @@ and features.
 | **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
 | **Qdrant** | 🧪 Experimental | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
 | **Neo4j** | 🧪 Experimental | ✅ | ✅ | All | [README.md](neo4j/README.md) |
+| **OpenSearch** | 🧪 Experimental | ✅ | ✅ | All | [README.md](opensearch/README.md) |
 
 ## Status Legend
 
@@ -24,15 +25,15 @@ and features.
 
 ## Feature Comparison
 
-| Feature | Weaviate | Supabase | MongoDB | Milvus | Chroma | Qdrant | Neo4j |
-|---------|----------|----------|---------|--------|--------|--------|-------|
-| **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Hybrid Search** | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ |
-| **Image Vectors** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Feature | Weaviate | Supabase | MongoDB | Milvus | Chroma | Qdrant | Neo4j | OpenSearch |
+|---------|----------|----------|---------|--------|--------|--------|-------|------------|
+| **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Hybrid Search** | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ |
+| **Image Vectors** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Quick Start
 
