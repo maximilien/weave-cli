@@ -114,7 +114,9 @@ Configuration for OpenSearch running locally.
 
 - Default URL: `http://localhost:9200`
 - No authentication required for local setup
-- Requires Docker/Podman: `podman run -d -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" opensearchproject/opensearch:latest`
+- Requires Docker/Podman:
+  `podman run -d -p 9200:9200 -p 9600:9600 -e
+  "discovery.type=single-node" opensearchproject/opensearch:latest`
 
 ### config.opensearch-cloud.yaml
 
@@ -128,7 +130,7 @@ Configuration for OpenSearch Cloud (AWS OpenSearch Service).
 
 Configuration for Pinecone (cloud-only serverless).
 
-- Requires Pinecone account at https://app.pinecone.io
+- Requires Pinecone account at <https://app.pinecone.io>
 - Set `PINECONE_API_KEY`
 - Note: No local deployment option - Pinecone is cloud-only
 
