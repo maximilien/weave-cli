@@ -20,45 +20,45 @@ This document tracks feature support and compatibility across different vector d
 | OpenSearch Cloud (AWS) | Cloud | 🧪 Experimental | `opensearch-cloud` | v0.7.3+ |
 | Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
 | MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
+| Pinecone | Cloud | 🧪 Beta | `pinecone` | v0.7.6+ |
 | Mock | Testing | ✅ Production | `mock` | v0.3.x |
 | **Redis** | **Cloud/Self-hosted** | **📋 Planned** | **`redis`** | **v0.6.0** |
-| **Pinecone** | **Cloud** | **📋 Planned** | **`pinecone`** | **v0.8.0** |
 
 ## Feature Support Matrix
 
 ### Core Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|------|-------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | MongoDB: Vector index requires Atlas UI; Neo4j: Creates VECTOR INDEX; OpenSearch: kNN index |
-| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: Explicit schema; MongoDB: Schema-less; Neo4j: Flexible properties; OpenSearch: Dynamic mapping |
-| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: Schema immutable after creation; Neo4j: Validates dimensions; OpenSearch: Validates dimensions |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Pinecone | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|----------|------|-------|
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Pinecone: Lists indexes |
+| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | MongoDB: Vector index requires Atlas UI; Neo4j: Creates VECTOR INDEX; OpenSearch: kNN index; Pinecone: Serverless index |
+| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus: Explicit schema; MongoDB: Schema-less; Neo4j/Pinecone: Flexible properties; OpenSearch: Dynamic mapping |
+| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus: Schema immutable after creation; Neo4j/Pinecone: Validates dimensions; OpenSearch: Validates dimensions |
 
 ### Document Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|------|-------|
-| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j/OpenSearch: Auto-embedding with OpenAI |
-| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant/OpenSearch: Delete + insert; Neo4j: Native MERGE |
-| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Pinecone | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|----------|------|-------|
+| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/Neo4j/OpenSearch/Pinecone: Auto-embedding with OpenAI |
+| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/OpenSearch/Pinecone: Upsert operation; Neo4j: Native MERGE |
+| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
+| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Pinecone: Metadata filter delete |
 
 ### Search Operations
 
-| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Mock | Notes |
-|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|------|-------|
-| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus: IVF_FLAT; Qdrant/Neo4j/OpenSearch: HNSW |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/OpenSearch: Native BM25; Chroma/Qdrant/Neo4j: Not supported |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/OpenSearch: RRF fusion; Chroma/Qdrant: Falls back to vector search; Neo4j: Not supported |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j/OpenSearch: JSON field filtering |
+| Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Pinecone | Mock | Notes |
+|---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|----------|------|-------|
+| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus: IVF_FLAT; Qdrant/Neo4j/OpenSearch: HNSW; Pinecone: Proprietary serverless |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ❌ | ✅ | Milvus/OpenSearch: Native BM25; Chroma/Qdrant/Neo4j/Pinecone: Not supported |
+| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ⚠️ | ✅ | Milvus/OpenSearch: RRF fusion; Chroma/Qdrant/Pinecone: Falls back to vector search; Neo4j: Not supported |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/Neo4j/OpenSearch/Pinecone: JSON field filtering |
 
 ### Embedding Support
 

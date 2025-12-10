@@ -181,9 +181,10 @@ func isCloudDeployment(dbType config.VectorDBType) bool {
 		}
 	}
 
-	// Legacy support: MongoDB Atlas and Supabase are cloud services
+	// Cloud-only services (no local deployment option)
+	// MongoDB Atlas, Supabase, and Pinecone are cloud-only services
 	// Old configs may still use "mongodb" and "supabase" without -cloud suffix
-	if dbType == "mongodb" || dbType == "supabase" {
+	if dbType == "mongodb" || dbType == "supabase" || dbType == "pinecone" {
 		return true
 	}
 
