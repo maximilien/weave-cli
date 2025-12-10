@@ -8,72 +8,195 @@ import (
 	"fmt"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
+	"github.com/pinecone-io/go-pinecone/pinecone"
 )
 
 // CreateCollection creates a new Pinecone index
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	// TODO: Implement collection creation using Pinecone SDK
-	// Pinecone uses "indexes" instead of collections
-	// Index creation requires:
-	// - name: index name
-	// - dimension: vector dimension (from schema)
-	// - metric: similarity metric (cosine, euclidean, dotproduct)
-	// - spec: serverless or pod-based
-	return fmt.Errorf("CreateCollection not yet implemented for Pinecone")
+	if a.client == nil {
+		return fmt.Errorf("pinecone client not initialized")
+	}
+
+	// Validate schema
+	if err := a.ValidateSchema(schema); err != nil {
+		return fmt.Errorf("invalid schema: %w", err)
+	}
+
+	// Use default dimension for OpenAI embeddings
+	dimension := int32(1536)
+
+	// Use cosine metric by default
+	metric := pinecone.Cosine
+
+	// Create serverless index (default for Pinecone)
+	_, err := a.client.CreateServerlessIndex(ctx, &pinecone.CreateServerlessIndexRequest{
+		Name:      name,
+		Dimension: dimension,
+		Metric:    metric,
+		Region:    "us-east-1", // Default region
+		Cloud:     "aws",       // Default cloud
+	})
+
+	if err != nil {
+		return fmt.Errorf("failed to create index: %w", err)
+	}
+
+	return nil
 }
 
 // DeleteCollection deletes a Pinecone index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
-	// TODO: Implement collection deletion using Pinecone SDK
-	return fmt.Errorf("DeleteCollection not yet implemented for Pinecone")
+	if a.client == nil {
+		return fmt.Errorf("pinecone client not initialized")
+	}
+
+	err := a.client.DeleteIndex(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to delete index: %w", err)
+	}
+
+	return nil
 }
 
 // CollectionExists checks if a Pinecone index exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
-	// TODO: Implement collection existence check using Pinecone SDK
-	return false, fmt.Errorf("CollectionExists not yet implemented for Pinecone")
+	if a.client == nil {
+		return false, fmt.Errorf("pinecone client not initialized")
+	}
+
+	// Try to describe the index - if it exists, this will succeed
+	_, err := a.client.DescribeIndex(ctx, name)
+	if err != nil {
+		// If error contains "not found", index doesn't exist
+		if fmt.Sprint(err) != "" && (fmt.Sprint(err) == "index not found" || fmt.Sprint(err) == "Index not found") {
+			return false, nil
+		}
+		// Other errors are actual failures
+		return false, fmt.Errorf("failed to check index existence: %w", err)
+	}
+
+	return true, nil
 }
 
 // ListCollections lists all Pinecone indexes
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
-	// TODO: Implement collection listing using Pinecone SDK
-	// Pinecone list_indexes() returns index names and metadata
-	return nil, fmt.Errorf("ListCollections not yet implemented for Pinecone")
+	if a.client == nil {
+		return nil, fmt.Errorf("pinecone client not initialized")
+	}
+
+	// List all indexes
+	indexes, err := a.client.ListIndexes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list indexes: %w", err)
+	}
+
+	// Convert Pinecone indexes to CollectionInfo
+	collections := make([]vectordb.CollectionInfo, 0, len(indexes))
+	for _, idx := range indexes {
+		collections = append(collections, vectordb.CollectionInfo{
+			Name: idx.Name,
+			// Note: vectordb.CollectionInfo doesn't have VectorDimension or Metric fields
+			// These are Pinecone-specific and would need to be added if needed
+		})
+	}
+
+	return collections, nil
 }
 
 // GetCollectionCount returns the number of documents in a Pinecone index
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
-	// TODO: Implement document count for specific index
-	// Pinecone describe_index_stats() returns vector counts
-	return 0, fmt.Errorf("GetCollectionCount not yet implemented for Pinecone")
+	if a.client == nil {
+		return 0, fmt.Errorf("pinecone client not initialized")
+	}
+
+	// Describe the index to get its host
+	idx, err := a.client.DescribeIndex(ctx, name)
+	if err != nil {
+		return 0, fmt.Errorf("failed to describe index: %w", err)
+	}
+
+	// Connect to the index
+	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	if err != nil {
+		return 0, fmt.Errorf("failed to connect to index: %w", err)
+	}
+	defer idxConn.Close()
+
+	// Get index stats
+	stats, err := idxConn.DescribeIndexStats(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get index stats: %w", err)
+	}
+
+	return int64(stats.TotalVectorCount), nil
 }
 
 // GetCollectionInfo returns information about a specific Pinecone index
 func (a *Adapter) GetCollectionInfo(ctx context.Context, name string) (*vectordb.CollectionInfo, error) {
-	// TODO: Implement collection info retrieval using Pinecone SDK
-	// Pinecone indexes have stats like:
-	// - dimension
-	// - total_vector_count
-	// - namespaces (with vector counts)
-	return nil, fmt.Errorf("GetCollectionInfo not yet implemented for Pinecone")
+	if a.client == nil {
+		return nil, fmt.Errorf("pinecone client not initialized")
+	}
+
+	// Describe the index
+	idx, err := a.client.DescribeIndex(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to describe index: %w", err)
+	}
+
+	// Get vector count
+	count, err := a.GetCollectionCount(ctx, name)
+	if err != nil {
+		// Don't fail if we can't get count, just set to 0
+		count = 0
+	}
+
+	return &vectordb.CollectionInfo{
+		Name:  idx.Name,
+		Count: count,
+	}, nil
 }
 
 // GetSchema returns the schema for a Pinecone index
 func (a *Adapter) GetSchema(ctx context.Context, name string) (*vectordb.CollectionSchema, error) {
-	// TODO: Implement schema retrieval
-	// Pinecone doesn't have explicit schemas like traditional databases
-	// We'll need to infer/store schema metadata
-	return nil, fmt.Errorf("GetSchema not yet implemented for Pinecone")
+	if a.client == nil {
+		return nil, fmt.Errorf("pinecone client not initialized")
+	}
+
+	// Pinecone doesn't have explicit schemas, return minimal schema with vector info
+	// We don't need to describe the index here since we're just returning a generic schema
+	return &vectordb.CollectionSchema{
+		Class:      name,
+		Vectorizer: "none", // Pinecone expects pre-computed vectors
+		Properties: []vectordb.SchemaProperty{
+			{
+				Name:     "vector",
+				DataType: []string{"number[]"},
+			},
+			{
+				Name:     "metadata",
+				DataType: []string{"object"},
+			},
+		},
+		// Note: vectordb.CollectionSchema doesn't have VectorIndexConfig
+		// Pinecone-specific config (dimension, metric) is managed internally
+	}, nil
 }
 
 // GetDefaultSchema returns a default schema for Pinecone
 func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionName string) *vectordb.CollectionSchema {
-	// TODO: Implement default schema generation for Pinecone
-	// For now, return a minimal schema
 	return &vectordb.CollectionSchema{
 		Class:      collectionName,
-		Vectorizer: "none", // Pinecone handles vectors directly
-		Properties: []vectordb.SchemaProperty{},
+		Vectorizer: "none", // Pinecone expects pre-computed vectors
+		Properties: []vectordb.SchemaProperty{
+			{
+				Name:     "vector",
+				DataType: []string{"number[]"},
+			},
+			{
+				Name:     "metadata",
+				DataType: []string{"object"},
+			},
+		},
 	}
 }
 

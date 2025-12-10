@@ -10,12 +10,12 @@ import (
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
+	"github.com/pinecone-io/go-pinecone/pinecone"
 )
 
 // Adapter wraps the Pinecone client to implement the vectordb.VectorDBClient interface
 type Adapter struct {
-	// TODO: Add Pinecone client once SDK is added
-	// client    *pinecone.Client
+	client    *pinecone.Client
 	config    *vectordb.Config
 	llmClient *llm.OpenAIClient
 	apiKey    string
@@ -50,14 +50,16 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		}
 	}
 
-	// TODO: Initialize Pinecone client once SDK is added
-	// client, err := pinecone.NewClient(apiKey)
-	// if err != nil {
-	//     return nil, fmt.Errorf("failed to create Pinecone client: %w", err)
-	// }
+	// Initialize Pinecone client
+	pc, err := pinecone.NewClient(pinecone.NewClientParams{
+		ApiKey: apiKey,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create Pinecone client: %w", err)
+	}
 
 	return &Adapter{
-		// client:    client,
+		client:    pc,
 		config:    config,
 		llmClient: llmClient,
 		apiKey:    apiKey,
@@ -67,11 +69,16 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 // Health checks the health of the Pinecone connection
 func (a *Adapter) Health(ctx context.Context) error {
-	// TODO: Implement health check using Pinecone SDK
-	// For now, just check if we have API key
-	if a.apiKey == "" {
-		return fmt.Errorf("no API key configured")
+	if a.client == nil {
+		return fmt.Errorf("pinecone client not initialized")
 	}
+
+	// Try to list indexes as a health check
+	_, err := a.client.ListIndexes(ctx)
+	if err != nil {
+		return fmt.Errorf("pinecone health check failed: %w", err)
+	}
+
 	return nil
 }
 
