@@ -17,9 +17,13 @@ import (
 // TestWeaviateIntegration runs fast integration tests with Weaviate
 func TestWeaviateIntegration(t *testing.T) {
 	// Skip if no Weaviate configuration
-	if os.Getenv("WEAVIATE_URL") == "" || os.Getenv("WEAVIATE_API_KEY") == "" {
-		t.Skip("Skipping Weaviate integration tests - missing WEAVIATE_URL or WEAVIATE_API_KEY")
+	weaviateURL := os.Getenv("WEAVIATE_URL")
+	if weaviateURL == "" {
+		t.Skip("Skipping Weaviate integration tests - missing WEAVIATE_URL")
 	}
+
+	// API key is optional for local Weaviate (anonymous access enabled)
+	weaviateAPIKey := os.Getenv("WEAVIATE_API_KEY")
 
 	// Skip if URL is invalid (contains double protocol)
 	if strings.Contains(os.Getenv("WEAVIATE_URL"), "https://https") || strings.Contains(os.Getenv("WEAVIATE_URL"), "http://http") {
@@ -28,10 +32,10 @@ func TestWeaviateIntegration(t *testing.T) {
 
 	// Create test configuration
 	cfg := &config.VectorDBConfig{
-		Name:   "test-cloud",
+		Name:   "test-weaviate",
 		Type:   config.VectorDBTypeCloud,
-		URL:    os.Getenv("WEAVIATE_URL"),
-		APIKey: os.Getenv("WEAVIATE_API_KEY"),
+		URL:    weaviateURL,
+		APIKey: weaviateAPIKey,
 		Collections: []config.Collection{
 			{Name: os.Getenv("WEAVIATE_COLLECTION_TEST"), Type: "text"},
 		},
