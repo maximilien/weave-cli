@@ -147,7 +147,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 - **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
 - **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
 - **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Beta)
-- **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration guide (Experimental)
+- **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration
+  guide (Experimental)
 - **[Pinecone Documentation](docs/pinecone/)** - Pinecone integration guide (Beta)
 - **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Experimental)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)

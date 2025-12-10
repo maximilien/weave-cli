@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.6] - 2025-12-10
 
 ### Added
+
 - **Pinecone Support** - Full integration with Pinecone serverless vector database
   - Automatic embedding generation using OpenAI
   - All CRUD operations (create, read, update, delete) for collections and documents
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Complete documentation in VDB_SUPPORT.md
 
 ### Changed
+
 - **PRESENTATION.md** - Updated and moved from archive to main docs
   - Now reflects v0.7.x features with all 9 vector databases
   - Updated database support section with complete list
@@ -27,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated examples and feature lists
 
 ### Technical Details
+
 - Added Pinecone Go SDK v1.1.1 dependency
 - Implemented structpb.Struct for Pinecone metadata handling
 - Serverless index creation with sensible defaults (1536 dims, cosine metric)
@@ -36,9 +39,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.5] - 2024-12-05
 
 ### Summary
+
 Thursday Demo Release - 8 Working Vector Databases
 
 ### Added
+
 - **Neo4j Integration** - Core client and collection operations
   - Vector index creation and management
   - Document CRUD operations with embeddings
@@ -46,11 +51,13 @@ Thursday Demo Release - 8 Working Vector Databases
   - Graph-based relationships with vector search
 
 ### Fixed
+
 - Removed deprecated +build tags from Chroma files
 - Disabled CGO for Linux/Windows release builds for better portability
 - Added skip_qdrant usage to test.sh script
 
 ### Testing
+
 - All integration tests passing for 8 vector databases
 - 7/8 VDBs fully operational (Chroma quota limits expected)
 - Comprehensive test coverage for Neo4j operations
@@ -58,13 +65,16 @@ Thursday Demo Release - 8 Working Vector Databases
 ## [0.7.4] - Earlier Releases
 
 ### Added
-- Support for 8 vector databases (Weaviate, Qdrant, Chroma, Milvus, Neo4j, Supabase, MongoDB, Mock)
+
+- Support for 8 vector databases (Weaviate, Qdrant, Chroma, Milvus,
+  Neo4j, Supabase, MongoDB, Mock)
 - Unified VectorDBClient interface across all databases
 - Database factory pattern for easy switching
 - Environment-based configuration
 - Comprehensive integration test suite
 
 ### Features
+
 - Collection management (create, list, delete, count)
 - Document operations (CRUD, batch, metadata filtering)
 - Search capabilities (semantic, BM25, hybrid, metadata)
@@ -111,6 +121,7 @@ Thursday Demo Release - 8 Working Vector Databases
 ### Upgrading to v0.7.6
 
 **New Pinecone Support:**
+
 ```bash
 # Set environment variables
 export VECTOR_DB_TYPE=pinecone
@@ -124,6 +135,7 @@ weave collection query MyCollection "search query"
 ```
 
 **Updated Documentation:**
+
 - `docs/PRESENTATION.md` - Now in main docs (moved from archive)
 - `docs/VDB_SUPPORT.md` - Added Pinecone feature matrix
 - See [VDB_SUPPORT.md](docs/VDB_SUPPORT.md) for complete feature comparison
@@ -132,8 +144,10 @@ weave collection query MyCollection "search query"
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct
+and the process for submitting pull requests.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the
+[LICENSE](LICENSE) file for details.
