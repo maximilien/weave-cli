@@ -23,6 +23,7 @@ your needs:
 | VDB | Status | Local | Cloud | Best For |
 |-----|--------|-------|-------|----------|
 | **[Weaviate](docs/weaviate/SETUP.md)** | ✅ Stable | ✅ | ✅ | Production, all features, easiest setup |
+| **[Pinecone](docs/pinecone/SETUP.md)** | 🧪 Beta | ❌ | ✅ | Serverless, auto-scaling, managed service |
 | **[Supabase](docs/supabase/SETUP.md)** | 🟡 Alpha | ✅ | ✅ | PostgreSQL users, cost-effective |
 | **[MongoDB](docs/mongodb/SETUP.md)** | 🧪 Experimental | ❌ | ✅ | Existing MongoDB users |
 | **[Milvus](docs/milvus/SETUP.md)** | 🟢 Beta | ✅ | ✅ | High performance, scale |
@@ -58,13 +59,14 @@ For other databases, see their setup guides linked in the table above.
 weave cols ls
 
 # List collections from specific database types
-weave cols ls --weaviate      # Weaviate only
-weave cols ls --supabase      # Supabase only
-weave cols ls --mongodb       # MongoDB Atlas only
-weave cols ls --milvus-local  # Milvus local only
-weave cols ls --milvus-cloud  # Milvus cloud (Zilliz) only
-weave cols ls --chroma-local  # Chroma local only
-weave cols ls --chroma-cloud  # Chroma cloud only
+weave cols ls --weaviate         # Weaviate only
+weave cols ls --pinecone         # Pinecone only
+weave cols ls --supabase         # Supabase only
+weave cols ls --mongodb          # MongoDB Atlas only
+weave cols ls --milvus-local     # Milvus local only
+weave cols ls --milvus-cloud     # Milvus cloud (Zilliz) only
+weave cols ls --chroma-local     # Chroma local only
+weave cols ls --chroma-cloud     # Chroma cloud only
 weave cols ls --qdrant-local     # Qdrant local only
 weave cols ls --qdrant-cloud     # Qdrant cloud only
 weave cols ls --neo4j-local      # Neo4j local only
@@ -141,12 +143,12 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 ### Database-Specific
 
-- **[Chroma Documentation](docs/chroma/)** - Chroma integration guide (Beta)
+- **[Chroma Documentation](docs/chroma/)** - Chroma integration guide (Stable)
 - **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
 - **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
-- **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Experimental)
-- **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration
-  guide (Experimental)
+- **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Beta)
+- **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration guide (Experimental)
+- **[Pinecone Documentation](docs/pinecone/)** - Pinecone integration guide (Beta)
 - **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Experimental)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
