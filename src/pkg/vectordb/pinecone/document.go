@@ -112,7 +112,7 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, id string) (*
 	}
 
 	// Check if vector exists
-	if resp.Vectors == nil || len(resp.Vectors) == 0 {
+	if len(resp.Vectors) == 0 {
 		return nil, fmt.Errorf("document not found")
 	}
 
@@ -204,7 +204,7 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 		return nil, fmt.Errorf("failed to list vectors: %w", err)
 	}
 
-	if listResp.VectorIds == nil || len(listResp.VectorIds) == 0 {
+	if len(listResp.VectorIds) == 0 {
 		return []*vectordb.Document{}, nil
 	}
 
