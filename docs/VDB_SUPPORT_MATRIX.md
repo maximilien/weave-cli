@@ -15,6 +15,7 @@ and features.
 | **Qdrant** | 🧪 Experimental | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
 | **Neo4j** | 🧪 Experimental | ✅ | ✅ | All | [README.md](neo4j/README.md) |
 | **OpenSearch** | 🧪 Experimental | ✅ | ✅ | All | [README.md](opensearch/README.md) |
+| **Pinecone** | 🧪 Beta | ❌ | ✅ | All | _Setup guide pending_ |
 
 ## Status Legend
 
@@ -25,15 +26,15 @@ and features.
 
 ## Feature Comparison
 
-| Feature | Weaviate | Supabase | MongoDB | Milvus | Chroma | Qdrant | Neo4j | OpenSearch |
-|---------|----------|----------|---------|--------|--------|--------|-------|------------|
-| **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Hybrid Search** | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ |
-| **Image Vectors** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Feature | Weaviate | Supabase | MongoDB | Milvus | Chroma | Qdrant | Neo4j | OpenSearch | Pinecone |
+|---------|----------|----------|---------|--------|--------|--------|-------|------------|----------|
+| **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Hybrid Search** | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ⚠️ |
+| **Image Vectors** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ## Quick Start
 

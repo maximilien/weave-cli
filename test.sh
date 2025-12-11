@@ -64,8 +64,9 @@ print_help() {
     echo "  --chroma    Run only Chroma integration tests"
     echo "  --qdrant    Run only Qdrant integration tests"
     echo "  --neo4j     Run only Neo4j integration tests"
+    echo "  --pinecone  Run only Pinecone integration tests"
     echo "  --mcp       Run only MCP integration tests"
-    echo "  --skip      Skip specified tests (e.g., --skip mcp,weaviate,neo4j)"
+    echo "  --skip      Skip specified tests (e.g., --skip mcp,weaviate,neo4j,pinecone)"
     echo ""
     echo "Examples:"
     echo "  ./test.sh unit                    # Run only unit tests"
@@ -77,8 +78,9 @@ print_help() {
     echo "  ./test.sh integration --chroma    # Run only Chroma integration tests"
     echo "  ./test.sh integration --qdrant    # Run only Qdrant integration tests"
     echo "  ./test.sh integration --neo4j     # Run only Neo4j integration tests"
+    echo "  ./test.sh integration --pinecone  # Run only Pinecone integration tests"
     echo "  ./test.sh integration --mcp       # Run only MCP integration tests"
-    echo "  ./test.sh integration --skip mcp,weaviate,neo4j  # Skip MCP, Weaviate, and Neo4j tests"
+    echo "  ./test.sh integration --skip mcp,weaviate,neo4j,pinecone  # Skip MCP, Weaviate, Neo4j, and Pinecone tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all                     # Run all tests"
     echo "  ./test.sh coverage                # Run tests with coverage report"
@@ -98,6 +100,7 @@ print_help() {
     echo "    - Chroma client testing (requires Chroma running locally at localhost:8000)"
     echo "    - Qdrant client testing (requires Qdrant running locally at localhost:6333)"
     echo "    - Neo4j client testing (requires Neo4j running locally at localhost:7687, NEO4J_PASSWORD)"
+    echo "    - Pinecone client testing (requires PINECONE_API_KEY, OPENAI_API_KEY)"
     echo "    - MCP server testing (requires OPENAI_API_KEY, WEAVE_MCP_STDIO_PATH)"
     echo "    - CLI command testing"
     echo "    - End-to-end workflow testing"
@@ -208,6 +211,7 @@ run_integration_tests() {
     local run_chroma=false
     local run_qdrant=false
     local run_neo4j=false
+    local run_pinecone=false
     local run_mcp=false
     local run_all=true
 
@@ -219,6 +223,7 @@ run_integration_tests() {
     local skip_chroma=false
     local skip_qdrant=false
     local skip_neo4j=false
+    local skip_pinecone=false
     local skip_mcp=false
     local in_skip_mode=false
 
@@ -250,6 +255,9 @@ run_integration_tests() {
                         ;;
                     neo4j)
                         skip_neo4j=true
+                        ;;
+                    pinecone)
+                        skip_pinecone=true
                         ;;
                     mcp)
                         skip_mcp=true
@@ -295,6 +303,10 @@ run_integration_tests() {
                 run_neo4j=true
                 run_all=false
                 ;;
+            --pinecone)
+                run_pinecone=true
+                run_all=false
+                ;;
             --mcp)
                 run_mcp=true
                 run_all=false
@@ -314,6 +326,7 @@ run_integration_tests() {
         run_chroma=true
         run_qdrant=true
         run_neo4j=true
+        run_pinecone=true
         run_mcp=true
 
         # Run fast integration tests (mock only)
@@ -356,6 +369,10 @@ run_integration_tests() {
     if [ "$skip_neo4j" = true ]; then
         run_neo4j=false
         print_status "Skipping Neo4j tests (--skip)"
+    fi
+    if [ "$skip_pinecone" = true ]; then
+        run_pinecone=false
+        print_status "Skipping Pinecone tests (--skip)"
     fi
     if [ "$skip_mcp" = true ]; then
         run_mcp=false
@@ -697,6 +714,45 @@ run_integration_tests() {
             print_status "Start Neo4j with: ./tools/vdb/local/neo4j.sh start"
             print_status "Set NEO4J_PASSWORD environment variable"
             vdb_names+=("Neo4j")
+            vdb_status+=("SKIP")
+            vdb_passed+=("0")
+            vdb_failed+=("0")
+            skipped_suites=$((skipped_suites + 1))
+        fi
+    fi
+
+    # Run Pinecone integration tests if requested
+    if [ "$run_pinecone" = true ]; then
+        if [ -n "$PINECONE_API_KEY" ] && [ -n "$OPENAI_API_KEY" ]; then
+            print_status "Running Pinecone integration tests (cloud)..."
+            total_suites=$((total_suites + 1))
+            vdb_names+=("Pinecone")
+            # Run tests with live output
+            go test -v -timeout=5m -count=1 -tags=integration ./tests -run="TestPinecone" 2>&1 | tee /tmp/pinecone_test_output.txt
+            exit_code=${PIPESTATUS[0]}
+            output=$(cat /tmp/pinecone_test_output.txt)
+            pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+            fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+            [ -z "$pass_count" ] && pass_count=0
+            [ -z "$fail_count" ] && fail_count=0
+
+            if [ $exit_code -eq 0 ]; then
+                print_success "Pinecone integration tests passed!"
+                passed_suites=$((passed_suites + 1))
+                vdb_status+=("PASS")
+            else
+                print_warning "Pinecone integration tests failed"
+                failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
+            fi
+            vdb_passed+=("$pass_count")
+            vdb_failed+=("$fail_count")
+            # Clean up temp file
+            rm -f /tmp/pinecone_test_output.txt
+        else
+            print_warning "Skipping Pinecone integration tests - credentials not configured"
+            print_status "Set PINECONE_API_KEY and OPENAI_API_KEY to run Pinecone tests"
+            vdb_names+=("Pinecone")
             vdb_status+=("SKIP")
             vdb_passed+=("0")
             vdb_failed+=("0")
