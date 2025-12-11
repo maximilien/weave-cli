@@ -47,6 +47,7 @@ func init() {
 	ShowCmd.Flags().StringP("filename", "", "", "Show document by filename/name (alias for --name)")
 	ShowCmd.Flags().Bool("schema", false, "Show document schema including metadata structure")
 	ShowCmd.Flags().Bool("expand-metadata", false, "Show expanded metadata information")
+	ShowCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runDocumentShow(cmd *cobra.Command, args []string) {

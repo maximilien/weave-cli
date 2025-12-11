@@ -148,8 +148,21 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 
 	// Handle named schema from config.yaml or schemas_dir
 	if schemaName != "" {
-		// For non-Weaviate databases, we don't need config.yaml schemas - use simple collection creation
+		// For non-Weaviate databases (and Weaviate with --text/--image), use simple collection creation
 		switch dbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			// For Weaviate with --text or --image, use simple collection creation (no config.yaml schema needed)
+			if useTextSchema || useImageSchema {
+				err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+				if err != nil {
+					utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
+					os.Exit(1)
+				}
+				utils.PrintSuccess(fmt.Sprintf("Successfully created collection: %s", collectionName))
+				utils.PrintInfo(fmt.Sprintf("ℹ️  Embedding model: %s", embeddingModel))
+				return
+			}
+			// Otherwise fall through to config.yaml schema validation below
 		case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 			// Supabase doesn't use Weaviate schemas - create simple collection with standard fields
 			err = utils.CreateSupabaseCollection(ctx, dbConfig, collectionName, embeddingModel)

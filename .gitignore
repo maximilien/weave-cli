@@ -66,6 +66,7 @@ TODOs-*.md
 NEXT_STEPS*.md
 WORK_PLAN*.md
 SESSION_SUMMARY_*.md
+BUG_FIX_PLAN.md
 
 # Test artifacts
 test-results/
