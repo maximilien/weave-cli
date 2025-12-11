@@ -336,8 +336,8 @@ allows seamless switching between different vector database backends.
 | **Milvus Cloud** | `milvus-cloud` | ✅ Functional | **Beta** - Zilliz cloud integration ready | [Guide](docs/milvus/) |
 | **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/supabase/) |
 | **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
-| **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API | [Guide](docs/chroma/) |
-| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration (API key required) | [Guide](docs/chroma/) |
+| **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API ⚠️ **macOS only** | [Guide](docs/chroma/) |
+| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration ⚠️ **macOS only** | [Guide](docs/chroma/) |
 | **Qdrant Local** | `qdrant-local` | ✅ Functional | **Experimental** - k-NN vector search | [Guide](docs/qdrant/) |
 | **Neo4j Local** | `neo4j-local` | ✅ Functional | **Experimental** - Graph + vector search | [Guide](docs/neo4j/) |
 | **OpenSearch Local** | `opensearch-local` | ✅ Functional | **Experimental** - k-NN with HNSW algorithm | [Guide](docs/opensearch/) |
@@ -352,6 +352,17 @@ allows seamless switching between different vector database backends.
   development/testing
 - **Experimental**: Basic functionality working, may require manual setup,
   use with caution
+
+### Platform Compatibility
+
+⚠️ **Important Platform Limitations:**
+
+- **Chroma**: macOS only (CGO dependency on `libtokenizers`)
+  - Linux/Windows users: Use Weaviate, Milvus, Qdrant, or Supabase instead
+  - CI/CD on Linux: Skip Chroma tests with `--skip chroma`
+- **MongoDB**: Cloud (Atlas) only - no local/self-hosted support
+  - Offline deployments: Use Weaviate, Milvus, Qdrant, or Neo4j instead
+- **All other VDBs**: Cross-platform (Linux, macOS, Windows)
 
 ### Additional Resources
 
