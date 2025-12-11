@@ -190,6 +190,15 @@ The local OpenSearch server runs in Docker/Podman with:
 - **Discovery**: Single-node mode
 - **Storage**: Persistent at `./local/storage/opensearch_storage`
 
+### System Requirements
+
+⚠️ **Memory Requirements**: OpenSearch requires significant memory to run reliably:
+- **Minimum**: 2GB total system RAM (1.5GB for OpenSearch + 512MB for OS/other processes)
+- **Recommended**: 4GB+ total system RAM for stable operation
+- **Production**: 8GB+ total system RAM
+
+**Known Limitation**: On systems with < 2GB RAM, OpenSearch may exit with code 137 (OOM killed) even with reduced JVM heap settings. For such systems, consider using cloud OpenSearch or alternative VDBs (Weaviate, Qdrant, Milvus, Chroma).
+
 ## Troubleshooting
 
 ### Connection Issues
@@ -225,6 +234,16 @@ The local OpenSearch server runs in Docker/Podman with:
 - Verify k-NN plugin is enabled
 - Check index mapping configuration
 - Ensure sufficient disk space
+
+#### Container exits with code 137 (OOM killed)
+- **Cause**: System has insufficient memory (< 2GB total RAM)
+- **Check system memory**: `docker info | grep "Total Memory"`
+- **Solutions**:
+  1. Use cloud OpenSearch instead of local (recommended)
+  2. Increase system memory to at least 2GB
+  3. Use alternative VDB (Weaviate, Qdrant, Milvus) with lower memory requirements
+  4. Close other Docker containers: `docker stop $(docker ps -q)`
+- **Note**: OpenSearch requires ~1.5GB RAM minimum; systems with < 2GB total RAM cannot run it reliably
 
 ## AWS OpenSearch Service
 
