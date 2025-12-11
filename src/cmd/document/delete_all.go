@@ -39,6 +39,7 @@ func init() {
 	DocumentCmd.AddCommand(DeleteAllCmd)
 
 	DeleteAllCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	DeleteAllCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runDocumentDeleteAll(cmd *cobra.Command, args []string) {

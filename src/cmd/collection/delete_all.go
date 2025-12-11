@@ -40,6 +40,7 @@ func init() {
 	CollectionCmd.AddCommand(DeleteAllCmd)
 
 	DeleteAllCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	DeleteAllCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runCollectionDeleteAll(cmd *cobra.Command, args []string) {

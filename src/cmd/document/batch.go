@@ -104,6 +104,7 @@ func init() {
 	// Reporting options
 	BatchCmd.Flags().String("create-report", "", "Create a new CSV report of processing results (default: batch-report.csv)")
 	BatchCmd.Flags().Bool("force-reprocess", false, "Force reprocess all files, ignore .processed files (default: false)")
+	BatchCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runBatchCreate(cmd *cobra.Command, args []string) {

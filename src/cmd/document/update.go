@@ -55,6 +55,7 @@ func init() {
 	UpdateCmd.Flags().StringSliceP("metadata", "m", []string{}, "Metadata fields to update (key=value format)")
 	UpdateCmd.Flags().StringP("name", "n", "", "Document name (alternative to ID)")
 	UpdateCmd.Flags().StringSlice("metadata-filter", []string{}, "Filter documents by metadata (key=value)")
+	UpdateCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runDocumentUpdate(cmd *cobra.Command, args []string) {

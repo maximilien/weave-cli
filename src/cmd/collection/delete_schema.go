@@ -58,6 +58,7 @@ func init() {
 
 	DeleteSchemaCmd.Flags().StringP("pattern", "p", "", "Delete schemas of collections matching pattern (auto-detects shell glob vs regex)")
 	DeleteSchemaCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	DeleteSchemaCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runCollectionDeleteSchema(cmd *cobra.Command, args []string) {

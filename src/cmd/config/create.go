@@ -80,6 +80,7 @@ func init() {
 	createCmd.Flags().BoolVar(&createEnv, "env", false, "Create .env file")
 	createCmd.Flags().BoolVar(&createConfigYAML, "config-yaml", false, "Create config.yaml file")
 	createCmd.Flags().BoolVar(&createGlobal, "global", false, "Create config files in ~/.weave-cli directory (default: current directory)")
+	createCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runConfigCreate(cmd *cobra.Command, args []string) {

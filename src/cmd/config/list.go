@@ -38,6 +38,7 @@ func init() {
 	listCmd.Flags().Bool("cloud", false, "Show only cloud databases")
 	listCmd.Flags().Bool("local", false, "Show only local databases")
 	listCmd.Flags().String("sort-by", "name", "Sort by: name, type, or deployment")
+	listCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runList(cobraCmd *cobra.Command, args []string) {
