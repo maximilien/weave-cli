@@ -329,7 +329,7 @@ allows seamless switching between different vector database backends.
 ### Support Matrix
 
 | Database | Type | Status | Maturity | Docs |
-|----------|------|--------|----------|------|
+| -------- | ---- | ------ | -------- | ---- |
 | **Weaviate Cloud** | `weaviate-cloud` | ✅ Production Ready | **Stable** | [Guide](docs/) |
 | **Weaviate Local** | `weaviate-local` | ✅ Production Ready | **Stable** | [Guide](docs/) |
 | **Milvus Local** | `milvus-local` | ✅ Functional | **Beta** - Feature complete, local testing ready | [Guide](docs/milvus/) |
