@@ -12,7 +12,7 @@ and features.
 | **MongoDB Atlas** | 🧪 Experimental | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
 | **Milvus** | 🟢 Beta | ✅ | ✅ | All | [LOCAL_SETUP.md](milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](milvus/CLOUD_SETUP.md) |
 | **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
-| **Qdrant** | 🧪 Experimental | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
+| **Qdrant** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
 | **Neo4j** | 🧪 Experimental | ✅ | ✅ | All | [README.md](neo4j/README.md) |
 | **OpenSearch** | 🧪 Experimental | ✅ | ✅ | All | [README.md](opensearch/README.md) |
 | **Pinecone** | 🧪 Beta | ❌ | ✅ | All | _Setup guide pending_ |

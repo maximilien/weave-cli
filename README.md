@@ -338,7 +338,7 @@ allows seamless switching between different vector database backends.
 | **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
 | **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API ⚠️ **macOS only** | [Guide](docs/chroma/) |
 | **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration ⚠️ **macOS only** | [Guide](docs/chroma/) |
-| **Qdrant Local** | `qdrant-local` | ✅ Functional | **Experimental** - k-NN vector search | [Guide](docs/qdrant/) |
+| **Qdrant Local** | `qdrant-local` | ✅ Production Ready | **Stable** - HNSW vector search, full CRUD | [Guide](docs/qdrant/) |
 | **Neo4j Local** | `neo4j-local` | ✅ Functional | **Experimental** - Graph + vector search | [Guide](docs/neo4j/) |
 | **OpenSearch Local** | `opensearch-local` | ✅ Functional | **Experimental** - k-NN with HNSW algorithm | [Guide](docs/opensearch/) |
 | **OpenSearch Cloud** | `opensearch-cloud` | ✅ Functional | **Experimental** - AWS OpenSearch Service | [Guide](docs/opensearch/) |
