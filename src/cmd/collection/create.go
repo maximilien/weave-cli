@@ -69,6 +69,7 @@ func init() {
 	CreateCmd.Flags().Bool("image", false, "Create image collection using WeaveImages schema (same as --schema WeaveImages)")
 	CreateCmd.Flags().Bool("flat-metadata", false, "Flatten metadata fields into individual properties (requires --text or --image)")
 	CreateCmd.Flags().Bool("json-metadata", false, "Keep metadata as a single JSON field (requires --text or --image)")
+	CreateCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runCollectionCreate(cmd *cobra.Command, args []string) {

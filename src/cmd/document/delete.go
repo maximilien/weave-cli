@@ -61,6 +61,7 @@ func init() {
 	DeleteCmd.Flags().StringP("name", "n", "", "Delete document by filename/name")
 	DeleteCmd.Flags().StringP("filename", "", "", "Delete document by filename/name (alias for --name)")
 	DeleteCmd.Flags().BoolP("force", "", false, "Skip confirmation prompt")
+	DeleteCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runDocumentDelete(cmd *cobra.Command, args []string) {

@@ -64,6 +64,7 @@ func init() {
 	CreateCmd.Flags().String("create-report", "", "Create a new CSV report of processing results (default: <filename>.csv in current directory)")
 	CreateCmd.Flags().String("append-report", "", "Append to an existing CSV report")
 	CreateCmd.Flags().StringP("embedding", "e", "", "Embedding model to use for this document (e.g., text-embedding-3-small, text-embedding-ada-002)")
+	CreateCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {

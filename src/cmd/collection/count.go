@@ -30,6 +30,8 @@ Example:
 
 func init() {
 	CollectionCmd.AddCommand(CountCmd)
+
+	CountCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runCollectionCount(cmd *cobra.Command, args []string) {

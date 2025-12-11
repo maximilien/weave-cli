@@ -52,6 +52,7 @@ func init() {
 
 	DeleteCmd.Flags().StringP("pattern", "p", "", "Delete collections matching pattern (auto-detects shell glob vs regex)")
 	DeleteCmd.Flags().BoolP("force", "f", false, "Skip confirmation prompt")
+	DeleteCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
 func runCollectionDelete(cmd *cobra.Command, args []string) {
