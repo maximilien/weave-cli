@@ -198,8 +198,17 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 		}
 	}
 
-	// Add custom fields if provided
+	// Add custom fields if provided (skip fields that already exist in default schema)
+	existingProps := make(map[string]bool)
+	for _, prop := range classSchema["properties"].([]map[string]interface{}) {
+		existingProps[prop["name"].(string)] = true
+	}
+
 	for _, field := range customFields {
+		// Skip if property already exists in the default schema
+		if existingProps[field.Name] {
+			continue
+		}
 		property := map[string]interface{}{
 			"name":     field.Name,
 			"dataType": []string{mapWeaviateDataType(field.Type)},

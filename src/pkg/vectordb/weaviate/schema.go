@@ -30,10 +30,6 @@ func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionNam
 	vectorizer := "text2vec-openai"
 	properties := []vectordb.SchemaProperty{
 		{
-			Name:     "content",
-			DataType: []string{"text"},
-		},
-		{
 			Name:     "text",
 			DataType: []string{"text"},
 		},
