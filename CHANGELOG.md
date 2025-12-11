@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.7] - 2025-12-11
+
+### Summary
+
+VDB Audit & Stability Release - Post-Pinecone cleanup and production readiness improvements.
+
+### Changed
+
+- **Qdrant** - Promoted from 🧪 Experimental to ✅ Stable
+  - All 14 integration tests passing
+  - Validated HNSW vector search, full CRUD operations
+  - Updated status in README.md and VDB_SUPPORT_MATRIX.md
+
+### Added
+
+- **Pinecone** - Added to VDB Support Matrix and test suite
+  - Added Pinecone to VDB_SUPPORT_MATRIX.md with feature comparison
+  - Added `--pinecone` flag to test.sh for selective testing
+  - Documented status as 🧪 Beta, Cloud only
+
+### Fixed
+
+- **Markdown Linting** - Fixed MD060 table formatting in README.md
+  - Corrected table separator spacing (compact style)
+  - All markdown linting now passing
+
+### Documentation
+
+- **Chroma Platform Limitation** - Emphasized macOS-only constraint
+  - Added ⚠️ warnings to Chroma entries in README.md
+  - Created Platform Compatibility section
+  - Documented alternatives (Weaviate, Milvus, Qdrant, Supabase)
+  - Provided CI skip workaround (`--skip chroma`)
+
+- **OpenSearch Memory Requirements** - Documented OOM issue
+  - Added system requirements section (2GB min, 4GB recommended, 8GB production)
+  - Documented exit code 137 (OOM killed) troubleshooting
+  - Provided workarounds for systems with < 2GB RAM
+  - Recommended cloud OpenSearch or alternative VDBs for constrained systems
+
+### Technical Details
+
+- Completed comprehensive audit of 9 vector databases
+- Addressed all P0 (critical) issues blocking users
+- Improved documentation clarity and completeness
+- Enhanced platform compatibility documentation
+
 ## [0.7.6] - 2025-12-10
 
 ### Added
@@ -86,6 +133,7 @@ Thursday Demo Release - 8 Working Vector Databases
 
 ## Version History
 
+- **v0.7.7** - VDB Audit & Stability Release (2025-12-11)
 - **v0.7.6** - Pinecone Support + Documentation Updates (2025-12-10)
 - **v0.7.5** - Thursday Demo Release - 8 Working VDBs (2024-12-05)
 - **v0.7.4** - Multi-VDB Support Foundation
