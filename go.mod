@@ -7,6 +7,7 @@ toolchain go1.24.1
 require (
 	github.com/amikos-tech/chroma-go v0.2.5
 	github.com/chzyer/readline v1.5.1
+	github.com/elastic/go-elasticsearch/v9 v9.2.1
 	github.com/fatih/color v1.16.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
@@ -44,6 +45,7 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.8.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/getsentry/sentry-go v0.12.0 // indirect

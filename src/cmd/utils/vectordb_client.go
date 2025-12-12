@@ -11,6 +11,7 @@ import (
 
 	// Import adapters to register their factories
 	// Note: Chroma is excluded on Windows due to CGO dependencies
+	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/elasticsearch"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/milvus"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/mock"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/mongodb"
