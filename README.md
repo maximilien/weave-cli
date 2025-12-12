@@ -25,10 +25,10 @@ your needs:
 | **[Weaviate](docs/weaviate/SETUP.md)** | ✅ Stable | ✅ | ✅ | Production, all features, easiest setup |
 | **[Pinecone](docs/pinecone/SETUP.md)** | 🧪 Beta | ❌ | ✅ | Serverless, auto-scaling, managed service |
 | **[Supabase](docs/supabase/SETUP.md)** | 🟡 Alpha | ✅ | ✅ | PostgreSQL users, cost-effective |
-| **[MongoDB](docs/mongodb/SETUP.md)** | 🧪 Experimental | ❌ | ✅ | Existing MongoDB users |
+| **[MongoDB](docs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Existing MongoDB users, full Atlas integration |
 | **[Milvus](docs/milvus/SETUP.md)** | 🟢 Beta | ✅ | ✅ | High performance, scale |
 | **[Chroma](docs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup |
-| **[Qdrant](docs/qdrant/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Rust performance |
+| **[Qdrant](docs/qdrant/SETUP.md)** | ✅ Stable | ✅ | ✅ | Rust performance, HNSW index |
 | **[Neo4j](docs/neo4j/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Graph + vector search |
 | **[OpenSearch](docs/opensearch/README.md)** | 🧪 Experimental | ✅ | ✅ | AWS OpenSearch, k-NN search |
 
@@ -145,12 +145,12 @@ weave cols create MyCollection -e text-embedding-ada-002
 
 - **[Chroma Documentation](docs/chroma/)** - Chroma integration guide (Stable)
 - **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
-- **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Experimental)
-- **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Beta)
+- **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Stable)
+- **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Experimental)
 - **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration
   guide (Experimental)
 - **[Pinecone Documentation](docs/pinecone/)** - Pinecone integration guide (Beta)
-- **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Experimental)
+- **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Stable)
 - **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
 

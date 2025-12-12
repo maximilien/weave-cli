@@ -9,7 +9,7 @@ and features.
 |-----|--------|-------|-------|-----------|-------------|
 | **Weaviate** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](weaviate/SETUP.md) |
 | **Supabase** | 🟡 Alpha | ✅ | ✅ | All | [README.md](supabase/README.md) |
-| **MongoDB Atlas** | 🧪 Experimental | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
+| **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
 | **Milvus** | 🟢 Beta | ✅ | ✅ | All | [LOCAL_SETUP.md](milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](milvus/CLOUD_SETUP.md) |
 | **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
 | **Qdrant** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
