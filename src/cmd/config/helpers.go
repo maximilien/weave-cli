@@ -272,6 +272,48 @@ func getEnvVariables(vdbFilter string) []envVariable {
 			Required:    false,
 			VDBTypes:    []string{"opensearch-cloud"},
 		},
+		// Elasticsearch Local Configuration
+		{
+			Key:         "ELASTICSEARCH_LOCAL_ADDRESS",
+			Description: "Elasticsearch local server address",
+			Example:     "http://localhost:9200",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"elasticsearch-local"},
+		},
+		// Elasticsearch Cloud Configuration
+		{
+			Key:         "ELASTICSEARCH_CLOUD_ID",
+			Description: "Elasticsearch Cloud ID (from Elastic Cloud deployment)",
+			Example:     "deployment:dXMtZWFzdC0xLmF3cy5mb3VuZC5pbyQxMjM0NTY=",
+			IsSecret:    false,
+			Required:    true,
+			VDBTypes:    []string{"elasticsearch-cloud"},
+		},
+		{
+			Key:         "ELASTICSEARCH_CLOUD_API_KEY",
+			Description: "Elasticsearch Cloud API key",
+			Example:     "your-base64-encoded-api-key",
+			IsSecret:    true,
+			Required:    true,
+			VDBTypes:    []string{"elasticsearch-cloud"},
+		},
+		{
+			Key:         "ELASTICSEARCH_CLOUD_USERNAME",
+			Description: "Elasticsearch Cloud username (alternative to API key)",
+			Example:     "elastic",
+			IsSecret:    false,
+			Required:    false,
+			VDBTypes:    []string{"elasticsearch-cloud"},
+		},
+		{
+			Key:         "ELASTICSEARCH_CLOUD_PASSWORD",
+			Description: "Elasticsearch Cloud password (alternative to API key)",
+			Example:     "your-secure-password",
+			IsSecret:    true,
+			Required:    false,
+			VDBTypes:    []string{"elasticsearch-cloud"},
+		},
 		// OpenAI Configuration (common to all)
 		{
 			Key:         "OPENAI_API_KEY",

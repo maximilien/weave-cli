@@ -1,0 +1,57 @@
+---
+# Elasticsearch Cloud Configuration
+# For Elastic Cloud managed service
+
+databases:
+  # Set Elasticsearch Cloud as the default database
+  default: elasticsearch
+
+  vector_databases:
+    - name: elasticsearch
+      type: elasticsearch-cloud
+
+      # Connection settings
+      # Use Cloud ID from Elastic Cloud deployment
+      cloud_id: ${ELASTICSEARCH_CLOUD_ID}
+
+      # Authentication (choose one method)
+      # Method 1: API key authentication (recommended)
+      api_key: ${ELASTICSEARCH_CLOUD_API_KEY}
+
+      # Method 2: Basic authentication (alternative to API key)
+      # username: ${ELASTICSEARCH_CLOUD_USERNAME:-elastic}
+      # password: ${ELASTICSEARCH_CLOUD_PASSWORD}
+
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, dot_product, l2_norm
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Environment variables required:
+# - ELASTICSEARCH_CLOUD_ID: Your Elastic Cloud deployment ID
+# - ELASTICSEARCH_CLOUD_API_KEY: Your Elasticsearch API key (or use user/pass)
+# - OPENAI_API_KEY: Your OpenAI API key for embeddings
+# Alternative authentication:
+# - ELASTICSEARCH_CLOUD_USERNAME: Username (instead of API key)
+# - ELASTICSEARCH_CLOUD_PASSWORD: Password (instead of API key)
+
+# Example usage with Elastic Cloud:
+# 1. Create Elasticsearch deployment in Elastic Cloud
+# 2. Copy Cloud ID from deployment overview
+# 3. Create API key in Stack Management > Security > API keys
+# 4. Set environment variables:
+#    export ELASTICSEARCH_CLOUD_ID=\
+#      "deployment:dXMtZWFzdC0xLmF3cy5mb3VuZC5pbyQxMjM0NTY="
+#    export ELASTICSEARCH_CLOUD_API_KEY="your-base64-api-key"
+#    export OPENAI_API_KEY="sk-..."
+# 5. Run weave:
+#    weave --config configs/config.elasticsearch-cloud.yaml \
+#      --elasticsearch-cloud cols ls

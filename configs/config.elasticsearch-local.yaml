@@ -1,0 +1,36 @@
+---
+# Elasticsearch Local Configuration
+# For local development using Docker/Podman
+
+databases:
+  # Set Elasticsearch Local as the default database
+  default: elasticsearch
+
+  vector_databases:
+    - name: elasticsearch
+      type: elasticsearch-local
+
+      # Connection settings
+      address: ${ELASTICSEARCH_LOCAL_ADDRESS:-http://localhost:9200}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, dot_product, l2_norm
+
+# OpenAI configuration for automatic embeddings
+# Set via environment variable: export OPENAI_API_KEY="sk-..."
+# Or uncomment below (not recommended - use environment variables instead)
+# openai:
+#   api_key: ${OPENAI_API_KEY}
+#   embedding_model: text-embedding-3-small
+
+# Example usage:
+# 1. Start Elasticsearch:
+#    docker run -p 9200:9200 -e "discovery.type=single-node" \
+#      -e "xpack.security.enabled=false" \
+#      docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+# 2. Set API key: export OPENAI_API_KEY="sk-..."
+# 3. Run weave:
+#    weave --config configs/config.elasticsearch-local.yaml \
+#      --elasticsearch-local cols ls

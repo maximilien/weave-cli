@@ -62,6 +62,12 @@ Examples:
   # Create .env for OpenSearch local only
   weave config create --env --opensearch-local
 
+  # Create .env for Elasticsearch Cloud only
+  weave config create --env --elasticsearch-cloud
+
+  # Create .env for Elasticsearch local only
+  weave config create --env --elasticsearch-local
+
   # Create config.yaml file
   weave config create --config-yaml
 
@@ -430,6 +436,12 @@ func determineVDBFilter() string {
 	}
 	if viper.GetBool("opensearch-local") {
 		return "opensearch-local"
+	}
+	if viper.GetBool("elasticsearch-cloud") {
+		return "elasticsearch-cloud"
+	}
+	if viper.GetBool("elasticsearch-local") {
+		return "elasticsearch-local"
 	}
 	if viper.GetBool("mock") {
 		return "mock"
