@@ -32,7 +32,8 @@ Weave CLI supports **10 vector databases**. Choose the one that best fits your n
 | **[OpenSearch](docs/opensearch/README.md)** | 🟢 Beta | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
 | **[Elasticsearch](docs/elasticsearch/)** | 🚧 In Progress | ✅ | ✅ | Elastic Cloud, dense vector + BM25 |
 
-📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md) for detailed feature comparison**
+📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md)
+for detailed feature comparison**
 
 ### Quick Setup (Weaviate - Recommended)
 

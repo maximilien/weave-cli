@@ -47,11 +47,11 @@ func TestNeo4jIntegration(t *testing.T) {
 		SimilarityMetric: "cosine",
 	}
 
-	client, err := neo4j.NewAdapter(config)
+	factory := neo4j.NewFactory()
+	client, err := factory.CreateClient(config)
 	if err != nil {
 		t.Skipf("Skipping Neo4j integration test: failed to create client: %v", err)
 	}
-	defer client.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
@@ -216,8 +216,11 @@ func TestNeo4jIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("SearchByContent", func(t *testing.T) {
-		results, err := client.SearchByContent(ctx, collectionName, "test document", 5, nil)
+	t.Run("SearchSemantic", func(t *testing.T) {
+		options := &vectordb.QueryOptions{
+			TopK: 5,
+		}
+		results, err := client.SearchSemantic(ctx, collectionName, "test document", options)
 		if err != nil {
 			t.Errorf("Failed to search by content: %v", err)
 		}
@@ -230,7 +233,10 @@ func TestNeo4jIntegration(t *testing.T) {
 		metadata := map[string]interface{}{
 			"category": "test",
 		}
-		results, err := client.SearchByMetadata(ctx, collectionName, metadata, 10)
+		options := &vectordb.QueryOptions{
+			TopK: 10,
+		}
+		results, err := client.SearchByMetadata(ctx, collectionName, metadata, options)
 		if err != nil {
 			t.Errorf("Failed to search by metadata: %v", err)
 		}
@@ -272,14 +278,6 @@ func TestNeo4jIntegration(t *testing.T) {
 		}
 		if exists {
 			t.Error("Collection should not exist after deletion")
-		}
-	})
-
-	// Close the client
-	t.Run("Close", func(t *testing.T) {
-		err := client.Close()
-		if err != nil {
-			t.Errorf("Failed to close client: %v", err)
 		}
 	})
 }
