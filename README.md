@@ -17,23 +17,22 @@ cd weave-cli
 
 ### Choose Your Vector Database
 
-Weave CLI supports multiple vector databases. Choose the one that best fits
-your needs:
+Weave CLI supports **10 vector databases**. Choose the one that best fits your needs:
 
 | VDB | Status | Local | Cloud | Best For |
 |-----|--------|-------|-------|----------|
 | **[Weaviate](docs/weaviate/SETUP.md)** | ✅ Stable | ✅ | ✅ | Production, all features, easiest setup |
-| **[Pinecone](docs/pinecone/SETUP.md)** | 🧪 Beta | ❌ | ✅ | Serverless, auto-scaling, managed service |
-| **[Supabase](docs/supabase/SETUP.md)** | 🟡 Alpha | ✅ | ✅ | PostgreSQL users, cost-effective |
-| **[MongoDB](docs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Existing MongoDB users, full Atlas integration |
-| **[Milvus](docs/milvus/SETUP.md)** | 🟢 Beta | ✅ | ✅ | High performance, scale |
-| **[Chroma](docs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup |
-| **[Qdrant](docs/qdrant/SETUP.md)** | ✅ Stable | ✅ | ✅ | Rust performance, HNSW index |
-| **[Neo4j](docs/neo4j/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Graph + vector search |
-| **[OpenSearch](docs/opensearch/README.md)** | 🧪 Experimental | ✅ | ✅ | AWS OpenSearch, k-NN search |
+| **[Qdrant](docs/qdrant/SETUP.md)** | ✅ Stable | ✅ | ✅ | Rust performance, HNSW index, filtering |
+| **[Milvus](docs/milvus/SETUP.md)** | ✅ Stable | ✅ | ✅ | High performance, horizontal scaling |
+| **[Chroma](docs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup, embeddings |
+| **[Supabase](docs/supabase/SETUP.md)** | ✅ Stable | ✅ | ✅ | PostgreSQL + pgvector, cost-effective |
+| **[Neo4j](docs/neo4j/README.md)** | ✅ Stable | ✅ | ⚠️ Untested | Graph + vector search, Cypher queries |
+| **[MongoDB](docs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Atlas Vector Search, existing MongoDB users |
+| **[Pinecone](docs/pinecone/SETUP.md)** | 🟢 Beta | ❌ | ✅ | Serverless, auto-scaling, managed only |
+| **[OpenSearch](docs/opensearch/README.md)** | 🟢 Beta | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
+| **[Elasticsearch](docs/elasticsearch/)** | 🚧 In Progress | ✅ | ✅ | Elastic Cloud, dense vector + BM25 |
 
-📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md) for
-detailed feature comparison**
+📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md) for detailed feature comparison**
 
 ### Quick Setup (Weaviate - Recommended)
 
@@ -59,22 +58,24 @@ For other databases, see their setup guides linked in the table above.
 weave cols ls
 
 # List collections from specific database types
-weave cols ls --weaviate         # Weaviate only
-weave cols ls --pinecone         # Pinecone only
-weave cols ls --supabase         # Supabase only
-weave cols ls --mongodb          # MongoDB Atlas only
-weave cols ls --milvus-local     # Milvus local only
-weave cols ls --milvus-cloud     # Milvus cloud (Zilliz) only
-weave cols ls --chroma-local     # Chroma local only
-weave cols ls --chroma-cloud     # Chroma cloud only
-weave cols ls --qdrant-local     # Qdrant local only
-weave cols ls --qdrant-cloud     # Qdrant cloud only
-weave cols ls --neo4j-local      # Neo4j local only
-weave cols ls --neo4j-cloud      # Neo4j cloud (Aura) only
-weave cols ls --opensearch-local # OpenSearch local only
-weave cols ls --opensearch-cloud # OpenSearch cloud (AWS) only
-weave cols ls --mock             # Mock database only
-weave cols ls --all              # All configured databases
+weave cols ls --weaviate            # Weaviate only
+weave cols ls --qdrant-local        # Qdrant local only
+weave cols ls --qdrant-cloud        # Qdrant cloud only
+weave cols ls --milvus-local        # Milvus local only
+weave cols ls --milvus-cloud        # Milvus cloud (Zilliz) only
+weave cols ls --chroma-local        # Chroma local only
+weave cols ls --chroma-cloud        # Chroma cloud only
+weave cols ls --supabase            # Supabase only
+weave cols ls --neo4j-local         # Neo4j local only
+weave cols ls --neo4j-cloud         # Neo4j cloud (Aura) only
+weave cols ls --mongodb             # MongoDB Atlas only
+weave cols ls --pinecone            # Pinecone only
+weave cols ls --opensearch-local    # OpenSearch local only
+weave cols ls --opensearch-cloud    # OpenSearch cloud (AWS) only
+weave cols ls --elasticsearch-local # Elasticsearch local only
+weave cols ls --elasticsearch-cloud # Elasticsearch cloud (Elastic) only
+weave cols ls --mock                # Mock database only
+weave cols ls --all                 # All configured databases
 
 # Create a collection
 weave cols create MyCollection --text
