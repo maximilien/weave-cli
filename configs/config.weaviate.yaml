@@ -35,7 +35,7 @@ databases:
       openai_api_key: ${OPENAI_API_KEY}
 
       # Timeout in seconds for database operations
-      timeout: 10
+      timeout: 60  # seconds (longer for cloud connections)
 
       # Collections to create/use
       collections:

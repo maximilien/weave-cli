@@ -806,8 +806,6 @@ func (c *Client) DeleteDocumentsBulk(ctx context.Context, collectionName string,
 	successCount := 0
 	errorCount := 0
 
-	fmt.Printf("Deleting %d documents in batches of %d...\n", len(documentIDs), batchSize)
-
 	for i := 0; i < len(documentIDs); i += batchSize {
 		end := i + batchSize
 		if end > len(documentIDs) {
@@ -824,14 +822,8 @@ func (c *Client) DeleteDocumentsBulk(ctx context.Context, collectionName string,
 
 			if err != nil {
 				errorCount++
-				fmt.Printf("Warning: Failed to delete document %s: %v\n", docID, err)
 			} else {
 				successCount++
-			}
-
-			// Show progress every 5 deletions
-			if (successCount+errorCount)%5 == 0 || (successCount+errorCount) == len(documentIDs) {
-				fmt.Printf("Progress: %d/%d deleted (%d failed)\n", successCount, len(documentIDs), errorCount)
 			}
 		}
 
@@ -873,8 +865,7 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	deletedCount := 0
 	for _, doc := range documents {
 		if err := c.DeleteDocument(ctx, collectionName, doc.ID); err != nil {
-			// Log error but continue with other documents
-			fmt.Printf("Warning: Failed to delete document %s: %v\n", doc.ID, err)
+			// Skip failed deletes but continue with other documents
 			continue
 		}
 		deletedCount++
@@ -1036,8 +1027,7 @@ func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName stri
 	for _, doc := range documents {
 		fullDoc, err := c.GetDocument(ctx, collectionName, doc.ID)
 		if err != nil {
-			// Log error but continue with other documents
-			fmt.Printf("Warning: Failed to get document %s: %v\n", doc.ID, err)
+			// Skip failed gets but continue with other documents
 			continue
 		}
 		fullDocuments = append(fullDocuments, *fullDoc)

@@ -8,33 +8,40 @@ and features.
 | VDB | Status | Local | Cloud | Platforms | Setup Guide |
 |-----|--------|-------|-------|-----------|-------------|
 | **Weaviate** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](weaviate/SETUP.md) |
-| **Supabase** | 🟡 Alpha | ✅ | ✅ | All | [README.md](supabase/README.md) |
-| **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
-| **Milvus** | 🟢 Beta | ✅ | ✅ | All | [LOCAL_SETUP.md](milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](milvus/CLOUD_SETUP.md) |
-| **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
 | **Qdrant** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
-| **Neo4j** | 🧪 Experimental | ✅ | ✅ | All | [README.md](neo4j/README.md) |
-| **OpenSearch** | 🧪 Experimental | ✅ | ✅ | All | [README.md](opensearch/README.md) |
-| **Pinecone** | 🧪 Beta | ❌ | ✅ | All | _Setup guide pending_ |
+| **Milvus** | ✅ Stable | ✅ | ✅ | All | [LOCAL_SETUP.md](milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](milvus/CLOUD_SETUP.md) |
+| **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
+| **Supabase** | ✅ Stable | ✅ | ✅ | All | [README.md](supabase/README.md) |
+| **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](neo4j/README.md) |
+| **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
+| **Pinecone** | 🟢 Beta | ❌ | ✅ | All | _Setup guide pending_ |
+| **OpenSearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |
+| **Elasticsearch** | 🚧 In Progress | ✅ | ✅ | All | _Documentation pending_ |
 
 ## Status Legend
 
 - ✅ **Stable**: Production-ready, fully tested, recommended for all use cases
 - 🟢 **Beta**: Feature complete, tested, recommended for development and testing
-- 🟡 **Alpha**: Functional, some features may be incomplete, use with caution
-- 🧪 **Experimental**: New, limited testing, may have breaking changes
+- 🚧 **In Progress**: Active development, core features working, documentation incomplete
+- ⚠️ **Untested**: Implementation complete but cloud deployment not verified
 
 ## Feature Comparison
 
-| Feature | Weaviate | Supabase | MongoDB | Milvus | Chroma | Qdrant | Neo4j | OpenSearch | Pinecone |
-|---------|----------|----------|---------|--------|--------|--------|-------|------------|----------|
-| **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Hybrid Search** | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ⚠️ |
-| **Image Vectors** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Feature | Weaviate | Qdrant | Milvus | Chroma | Supabase | Neo4j | MongoDB | Pinecone | OpenSearch | Elasticsearch |
+|---------|----------|--------|--------|--------|----------|-------|---------|----------|------------|---------------|
+| **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **BM25 Full-Text** | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| **Hybrid Search** | ✅ | ⚠️ | ✅ | ❌ | ✅ | ❌ | ✅ | ⚠️ | ✅ | ✅ |
+| **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Schema Management** | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ✅ |
+| **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**Legend:**
+- ✅ Supported
+- ⚠️ Partial support or workaround available
+- ❌ Not supported
 
 ## Quick Start
 

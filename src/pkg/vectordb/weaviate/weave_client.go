@@ -165,8 +165,7 @@ func (wc *WeaveClient) DeleteDocumentsByMetadata(ctx context.Context, collection
 	deletedCount := 0
 	for _, doc := range documents {
 		if err := wc.DeleteDocument(ctx, collectionName, doc.ID); err != nil {
-			// Log error but continue with other documents
-			fmt.Printf("Warning: Failed to delete document %s: %v\n", doc.ID, err)
+			// Skip failed deletes but continue with other documents
 			continue
 		}
 		deletedCount++
@@ -354,8 +353,7 @@ func (wc *WeaveClient) GetDocumentsByMetadata(ctx context.Context, collectionNam
 	for _, doc := range documents {
 		fullDoc, err := wc.GetDocument(ctx, collectionName, doc.ID)
 		if err != nil {
-			// Log error but continue with other documents
-			fmt.Printf("Warning: Failed to get document %s: %v\n", doc.ID, err)
+			// Skip failed gets but continue with other documents
 			continue
 		}
 		fullDocuments = append(fullDocuments, *fullDoc)
@@ -539,8 +537,7 @@ func (wc *WeaveClient) deleteCollectionViaREST(ctx context.Context, collectionNa
 	deletedCount := 0
 	for _, obj := range objects {
 		if err := wc.deleteObjectViaREST(ctx, obj.ID); err != nil {
-			// Log error but continue with other objects
-			fmt.Printf("Warning: Failed to delete object %s: %v\n", obj.ID, err)
+			// Skip failed deletes but continue with other objects
 			continue
 		}
 		deletedCount++

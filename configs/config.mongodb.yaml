@@ -41,7 +41,7 @@ databases:
       similarity_metric: cosine
 
       # Timeout in seconds for database operations
-      timeout: 10
+      timeout: 60  # seconds (longer for cloud connections)
 
       # Collections to create/use
       collections:

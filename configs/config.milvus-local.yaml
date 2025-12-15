@@ -13,7 +13,7 @@ databases:
       # Connection settings
       address: localhost:19530
       database: default
-      timeout: 10  # seconds
+      timeout: 30  # seconds
 
       # Vector configuration
       vector_dimensions: 1536  # OpenAI text-embedding-3-small

@@ -13,7 +13,7 @@ databases:
       # Connection settings
       url: ${QDRANT_URL}  # e.g., https://xyz.cloud.qdrant.io:6334
       api_key: ${QDRANT_API_KEY}
-      timeout: 30  # seconds
+      timeout: 60  # seconds (longer for cloud connections)
 
       # Vector configuration
       vector_dimensions: 1536  # OpenAI text-embedding-3-small

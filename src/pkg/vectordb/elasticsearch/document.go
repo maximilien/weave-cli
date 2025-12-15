@@ -128,13 +128,6 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 			Action:     "index",
 			DocumentID: doc.ID,
 			Body:       strings.NewReader(string(data)),
-			OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
-				if err != nil {
-					fmt.Printf("ERROR: Failed to index document %s: %v\n", item.DocumentID, err)
-				} else {
-					fmt.Printf("ERROR: Failed to index document %s: %s\n", item.DocumentID, res.Error.Reason)
-				}
-			},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to add document %s to bulk: %w", doc.ID, err)
@@ -273,11 +266,6 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 		err = bi.Add(ctx, esutil.BulkIndexerItem{
 			Action:     "delete",
 			DocumentID: docID,
-			OnFailure: func(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
-				if err != nil {
-					fmt.Printf("ERROR: Failed to delete document %s: %v\n", item.DocumentID, err)
-				}
-			},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to add delete operation for %s: %w", docID, err)
