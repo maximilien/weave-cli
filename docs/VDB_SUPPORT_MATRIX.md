@@ -16,7 +16,7 @@ and features.
 | **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
 | **Pinecone** | 🟢 Beta | ❌ | ✅ | All | _Setup guide pending_ |
 | **OpenSearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |
-| **Elasticsearch** | 🚧 In Progress | ✅ | ✅ | All | _Documentation pending_ |
+| **Elasticsearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](elasticsearch/README.md), [SETUP.md](elasticsearch/SETUP.md) |
 
 ## Status Legend
 
