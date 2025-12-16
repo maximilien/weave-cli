@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2025-12-16
+
+### Summary
+
+Elasticsearch Beta Release & Test Coverage Completion - All 10 vector databases now have comprehensive integration tests, and Elasticsearch has been promoted to Beta status with full documentation.
+
+### Added
+
+- **Elasticsearch Integration** - Full Beta release with complete feature set
+  - Dense vector search with HNSW indexing
+  - Native BM25 full-text search
+  - Hybrid search combining kNN + BM25
+  - Metadata filtering with term and range queries
+  - Batch operations using BulkIndexer
+  - Complete documentation (README, SETUP, LOCAL_SETUP, CLOUD_SETUP)
+  - 16/16 integration tests passing
+
+- **OpenSearch Integration Tests** - Comprehensive test suite added
+  - 16 test cases covering all operations
+  - Health checks, collections, documents, search
+  - Semantic, BM25, and hybrid search validation
+
+- **VDB Management Scripts** - Local development tools
+  - `tools/vdb/local/elasticsearch.sh` - Elasticsearch container management
+  - Scripts for starting, stopping, and monitoring local VDB instances
+
+### Changed
+
+- **Elasticsearch** - Promoted from 🚧 In Progress → 🟢 Beta
+  - All 7 phases complete (infrastructure, operations, tests, docs)
+  - Ready for development and testing use
+  - Updated status in README.md and VDB_SUPPORT_MATRIX.md
+
+- **Test Coverage** - Achieved 100% VDB test coverage
+  - All 10 vector databases now have integration tests
+  - Standardized 16-test suite across Elasticsearch and OpenSearch
+  - Neo4j tests fixed to use factory pattern
+
+### Fixed
+
+- **Neo4j Tests** - Corrected interface implementation
+  - Fixed factory pattern instantiation
+  - Updated SearchByContent → SearchSemantic
+  - Corrected SearchByMetadata signature
+  - Removed deprecated Close() method
+
+- **Pinecone Error Messages** - Standardized capitalization
+  - Capitalized "Pinecone" in all error messages (17 instances)
+  - Consistent with other VDB implementations
+  - Updated across adapter, collection, document, factory, and query files
+
+- **README Markdown Linting** - Fixed line length violation
+  - Split line 35 to comply with 80-character limit
+
+- **.gitignore Pattern** - Fixed VDB script tracking
+  - Changed `local/` → `/local/` to only ignore root-level directory
+  - Allows tracking of `tools/vdb/local/*` scripts
+
+### Documentation
+
+- **VDB Support Matrix** - Updated with current status
+  - Elasticsearch now listed as 🟢 Beta
+  - All test coverage metrics updated to 100%
+  - Platform compatibility notes refreshed
+
+- **NEXT_STEPS.md** - Updated with session accomplishments
+  - Documented test completion milestone
+  - Updated VDB status summaries
+  - Marked completed cleanup tasks
+
+### Technical Details
+
+- **Database Status Summary**:
+  - ✅ Stable: Weaviate, Qdrant, Milvus, Chroma, Supabase, Neo4j, MongoDB (7)
+  - 🟢 Beta: Pinecone, OpenSearch, Elasticsearch (3)
+  - Total: 10 production-ready vector databases
+
+- **Test Coverage**:
+  - Weaviate: 10/10, Qdrant: 14/14, Milvus: 10/10
+  - Chroma: 10/10, Supabase: 10/10, Neo4j: 10/10
+  - MongoDB: 10/10, Pinecone: 8/8
+  - OpenSearch: 16/16, Elasticsearch: 16/16
+  - **Total: 10/10 databases (100% coverage)**
+
+- **Integration Points**:
+  - Official go-elasticsearch v9 TypedClient API
+  - No CGO dependencies (pure Go)
+  - OpenAI integration for automatic embeddings
+
 ## [0.7.7] - 2025-12-11
 
 ### Summary
