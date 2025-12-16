@@ -100,8 +100,3 @@ func (c *Client) Close(ctx context.Context) error {
 func (c *Client) getTimeout() time.Duration {
 	return time.Duration(c.config.Timeout) * time.Second
 }
-
-// getClient returns the underlying TypedClient for advanced operations
-func (c *Client) getClient() *elasticsearch.TypedClient {
-	return c.client
-}

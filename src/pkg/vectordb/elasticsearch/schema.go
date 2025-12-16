@@ -55,7 +55,7 @@ func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vector
 
 // UpdateSchema updates the index mappings
 func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	_, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
 	// Validate schema first
