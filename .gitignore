@@ -52,8 +52,8 @@ logs/
 tmp/
 temp/
 
-# Local VDB storage
-local/
+# Local VDB storage (only ignore in root directory)
+/local/
 qdrant_storage/
 milvus_storage/
 chroma_data/
