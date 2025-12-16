@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Summary
 
-Elasticsearch Beta Release & Test Coverage Completion - All 10 vector databases now have comprehensive integration tests, and Elasticsearch has been promoted to Beta status with full documentation.
+Elasticsearch Beta Release & Test Coverage Completion - All 10 vector
+databases now have comprehensive integration tests, and Elasticsearch has
+been promoted to Beta status with full documentation.
 
 ### Added
 
