@@ -15,7 +15,7 @@ import (
 // CreateDocument creates a new document (vector) in Pinecone
 func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc *vectordb.Document) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
@@ -90,7 +90,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 // GetDocument retrieves a document by ID from Pinecone
 func (a *Adapter) GetDocument(ctx context.Context, collectionName, id string) (*vectordb.Document, error) {
 	if a.client == nil {
-		return nil, fmt.Errorf("pinecone client not initialized")
+		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
@@ -153,7 +153,7 @@ func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, doc
 // DeleteDocument deletes a document by ID from Pinecone
 func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, id string) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
@@ -180,7 +180,7 @@ func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, id string)
 // ListDocuments lists documents in a Pinecone index
 func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limit int, offset int) ([]*vectordb.Document, error) {
 	if a.client == nil {
-		return nil, fmt.Errorf("pinecone client not initialized")
+		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
@@ -256,7 +256,7 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 // CreateDocuments batch creates multiple documents in Pinecone
 func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, docs []*vectordb.Document) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	if len(docs) == 0 {
@@ -337,7 +337,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 // DeleteDocuments batch deletes multiple documents from Pinecone
 func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, ids []string) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	if len(ids) == 0 {
@@ -368,7 +368,7 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, id
 // DeleteDocumentsByMetadata deletes documents by metadata filter
 func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection

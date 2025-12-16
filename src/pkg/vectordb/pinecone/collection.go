@@ -14,7 +14,7 @@ import (
 // CreateCollection creates a new Pinecone index
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Validate schema
@@ -47,7 +47,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 // DeleteCollection deletes a Pinecone index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	err := a.client.DeleteIndex(ctx, name)

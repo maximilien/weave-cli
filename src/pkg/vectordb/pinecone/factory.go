@@ -45,7 +45,7 @@ func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 	}
 
 	if config.Type != vectordb.VectorDBTypePinecone {
-		return fmt.Errorf("invalid config type: expected pinecone, got %s", config.Type)
+		return fmt.Errorf("invalid config type: expected Pinecone, got %s", config.Type)
 	}
 
 	// API key is required

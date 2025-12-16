@@ -14,7 +14,7 @@ import (
 // SearchSemantic performs a semantic search in Pinecone
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
 	if a.client == nil {
-		return nil, fmt.Errorf("pinecone client not initialized")
+		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
 	if a.llmClient == nil {

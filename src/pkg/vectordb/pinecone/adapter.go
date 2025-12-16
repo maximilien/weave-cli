@@ -70,13 +70,13 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 // Health checks the health of the Pinecone connection
 func (a *Adapter) Health(ctx context.Context) error {
 	if a.client == nil {
-		return fmt.Errorf("pinecone client not initialized")
+		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Try to list indexes as a health check
 	_, err := a.client.ListIndexes(ctx)
 	if err != nil {
-		return fmt.Errorf("pinecone health check failed: %w", err)
+		return fmt.Errorf("Pinecone health check failed: %w", err)
 	}
 
 	return nil
