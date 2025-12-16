@@ -79,7 +79,7 @@ if command_exists go; then
     # Run golangci-lint if available
     if command_exists golangci-lint; then
         print_status "Running golangci-lint..."
-        if golangci-lint run ./src/...; then
+        if golangci-lint run --timeout=5m ./src/...; then
             print_success "Go linting passed!"
         else
             print_error "Go linting failed!"
