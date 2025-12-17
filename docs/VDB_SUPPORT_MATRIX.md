@@ -14,7 +14,7 @@ and features.
 | **Supabase** | ✅ Stable | ✅ | ✅ | All | [README.md](supabase/README.md) |
 | **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](neo4j/README.md) |
 | **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
-| **Pinecone** | 🟢 Beta | ❌ | ✅ | All | _Setup guide pending_ |
+| **Pinecone** | 🟢 Beta | ❌ | ✅ | All | [SETUP.md](pinecone/SETUP.md) |
 | **OpenSearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |
 | **Elasticsearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](elasticsearch/README.md), [SETUP.md](elasticsearch/SETUP.md) |
 
