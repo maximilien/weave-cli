@@ -103,6 +103,9 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 // Health checks the health of the OpenSearch cluster
 func (a *Adapter) Health(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	resp, err := a.client.Cluster.Health(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("health check failed: %w", err)
@@ -114,6 +117,14 @@ func (a *Adapter) Health(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// getTimeout returns the configured timeout as a time.Duration
+func (a *Adapter) getTimeout() time.Duration {
+	if a.config.Timeout > 0 {
+		return time.Duration(a.config.Timeout) * time.Second
+	}
+	return 30 * time.Second // Default timeout
 }
 
 // GetSchema returns the schema for a collection

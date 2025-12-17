@@ -16,6 +16,9 @@ import (
 
 // CreateCollection creates a new index with k-NN settings
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	// Default vector dimensions
 	vectorDims := a.config.VectorDimensions
 	if vectorDims == 0 {
