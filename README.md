@@ -29,7 +29,7 @@ Weave CLI supports **10 vector databases**. Choose the one that best fits your n
 | **[Neo4j](docs/neo4j/README.md)** | ✅ Stable | ✅ | ⚠️ Untested | Graph + vector search, Cypher queries |
 | **[MongoDB](docs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Atlas Vector Search, existing MongoDB users |
 | **[Pinecone](docs/pinecone/SETUP.md)** | 🟢 Beta | ❌ | ✅ | Serverless, auto-scaling, managed only |
-| **[OpenSearch](docs/opensearch/README.md)** | 🟢 Beta | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
+| **[OpenSearch](docs/opensearch/README.md)** | ✅ Stable | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
 | **[Elasticsearch](docs/elasticsearch/)** | 🟢 Beta | ✅ | ✅ | Elastic Cloud, HNSW vector + BM25 hybrid |
 
 📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md)

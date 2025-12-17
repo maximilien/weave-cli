@@ -15,7 +15,7 @@ and features.
 | **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](neo4j/README.md) |
 | **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
 | **Pinecone** | 🟢 Beta | ❌ | ✅ | All | [SETUP.md](pinecone/SETUP.md) |
-| **OpenSearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |
+| **OpenSearch** | ✅ Stable | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |
 | **Elasticsearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](elasticsearch/README.md), [SETUP.md](elasticsearch/SETUP.md) |
 
 ## Status Legend
@@ -31,7 +31,7 @@ and features.
 |---------|----------|--------|--------|--------|----------|-------|---------|----------|------------|---------------|
 | **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **BM25 Full-Text** | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| **Hybrid Search** | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ✅ | ⚠️ | ⚠️ | ✅ |
+| **Hybrid Search** | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ✅ | ⚠️ | ✅ | ✅ |
 | **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
 | **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -45,10 +45,11 @@ and features.
 
 **Feature Notes:**
 - **Chroma Hybrid**: Falls back to semantic search (no error)
-- **OpenSearch Hybrid**: Not yet implemented (Beta limitation)
 - **Qdrant Schema**: Immutable after collection creation
 - **Milvus Schema**: Immutable after collection creation
 - **Neo4j Schema**: Not supported - delete and recreate collection instead
+- **OpenSearch Batch**: Sequential operations (no native bulk API yet)
+- **Pinecone Hybrid**: Falls back to semantic search (vector-only database)
 
 ## Quick Start
 
