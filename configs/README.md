@@ -115,7 +115,13 @@ Configuration for Elasticsearch running locally.
 - Default URL: `http://localhost:9200`
 - No authentication required for local setup
 - Requires Docker/Podman:
-  `docker run -d -p 9200:9200 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.11.0`
+
+  ```bash
+  docker run -d -p 9200:9200 \
+    -e "discovery.type=single-node" \
+    -e "xpack.security.enabled=false" \
+    docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+  ```
 
 ### config.elasticsearch-cloud.yaml
 
