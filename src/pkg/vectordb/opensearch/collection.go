@@ -126,8 +126,35 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // ListCollections returns a list of all indices
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
-	// TODO: Implement proper Cat API parsing
-	return nil, fmt.Errorf("ListCollections not yet fully implemented")
+	// Use Cat Indices API to list all indices
+	resp, err := a.client.Cat.Indices(
+		ctx,
+		&opensearchapi.CatIndicesReq{},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list indices: %w", err)
+	}
+
+	var collections []vectordb.CollectionInfo
+	for _, index := range resp.Indices {
+		// Skip system indices (starting with .)
+		if strings.HasPrefix(index.Index, ".") {
+			continue
+		}
+
+		// Handle DocsCount pointer
+		count := int64(0)
+		if index.DocsCount != nil {
+			count = int64(*index.DocsCount)
+		}
+
+		collections = append(collections, vectordb.CollectionInfo{
+			Name:  index.Index,
+			Count: count,
+		})
+	}
+
+	return collections, nil
 }
 
 // GetCollectionInfo returns information about an index
