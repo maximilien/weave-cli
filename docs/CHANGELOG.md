@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Timeout Protection**: Added `context.WithTimeout` to all VDB operations
+  - **Qdrant**: 18 operations protected (Health, Collection ops, Document ops, Query ops)
+  - **Pinecone**: 15 operations protected (Health, Collection ops, Document ops, Query ops)
+  - **Neo4j**: All operations protected via centralized `executeQuery` method
+  - **Supabase**: 8 key operations protected (Health, Collection ops, Document ops)
+  - **OpenSearch**: 2 foundational operations protected (Health, CreateCollection)
+  - Default timeout: 30s (configurable per deployment)
+  - Pattern: `ctx, cancel := context.WithTimeout(ctx, adapter.getTimeout())`
+  - Prevents indefinite hangs on slow/unavailable VDB endpoints
+  - Commits: a995a26 (Qdrant), c0a4887 (Pinecone), e81b848 (Neo4j), d36dad5 (Supabase), ff910b8 (OpenSearch)
+
 ## [0.7.3] - 2025-12-03
 
 ### Added
