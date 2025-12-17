@@ -108,6 +108,23 @@ Configuration for Neo4j Cloud (Aura).
 - Requires Neo4j Aura account
 - Set `NEO4J_CLOUD_URL`, `NEO4J_CLOUD_USERNAME`, and `NEO4J_CLOUD_PASSWORD`
 
+### config.elasticsearch-local.yaml
+
+Configuration for Elasticsearch running locally.
+
+- Default URL: `http://localhost:9200`
+- No authentication required for local setup
+- Requires Docker/Podman:
+  `docker run -d -p 9200:9200 -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.11.0`
+
+### config.elasticsearch-cloud.yaml
+
+Configuration for Elasticsearch Cloud (Elastic Cloud).
+
+- Requires Elastic Cloud account
+- Set `ELASTICSEARCH_CLOUD_ADDRESS`, `ELASTICSEARCH_CLOUD_API_KEY`
+- Alternative: Use `ELASTICSEARCH_CLOUD_USERNAME` and `ELASTICSEARCH_CLOUD_PASSWORD`
+
 ### config.opensearch-local.yaml
 
 Configuration for OpenSearch running locally.
@@ -184,6 +201,14 @@ NEO4J_CLOUD_URL="neo4j+s://xxxxx.databases.neo4j.io"
 NEO4J_CLOUD_USERNAME="neo4j"
 NEO4J_CLOUD_PASSWORD="your-password"
 
+# Elasticsearch Local
+ELASTICSEARCH_LOCAL_ADDRESS="http://localhost:9200"
+
+# Elasticsearch Cloud (Elastic Cloud)
+ELASTICSEARCH_CLOUD_ADDRESS="https://my-deployment.es.us-central1.gcp.cloud.es.io:9243"
+ELASTICSEARCH_CLOUD_API_KEY="your-api-key"
+# Alternative: ELASTICSEARCH_CLOUD_USERNAME="elastic" and ELASTICSEARCH_CLOUD_PASSWORD="your-password"
+
 # OpenSearch Local
 OPENSEARCH_LOCAL_ADDRESS="http://localhost:9200"
 
@@ -252,14 +277,15 @@ databases:
 Then use flags to select which database to use:
 
 ```bash
-weave cols ls --weaviate         # Use Weaviate only
-weave cols ls --milvus-local     # Use Milvus local only
-weave cols ls --chroma-local     # Use Chroma local only
-weave cols ls --qdrant-local     # Use Qdrant local only
-weave cols ls --neo4j-local      # Use Neo4j local only
-weave cols ls --opensearch-local # Use OpenSearch local only
-weave cols ls --pinecone         # Use Pinecone only
-weave cols ls --all              # Use all configured databases
+weave cols ls --weaviate            # Use Weaviate only
+weave cols ls --milvus-local        # Use Milvus local only
+weave cols ls --chroma-local        # Use Chroma local only
+weave cols ls --qdrant-local        # Use Qdrant local only
+weave cols ls --neo4j-local         # Use Neo4j local only
+weave cols ls --elasticsearch-local # Use Elasticsearch local only
+weave cols ls --opensearch-local    # Use OpenSearch local only
+weave cols ls --pinecone            # Use Pinecone only
+weave cols ls --all                 # Use all configured databases
 ```
 
 ## See Also

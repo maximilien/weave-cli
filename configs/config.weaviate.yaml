@@ -52,7 +52,7 @@ databases:
     #   type: weaviate-local
     #   url: http://localhost:8080
     #   openai_api_key: ${OPENAI_API_KEY}
-    #   timeout: 10
+    #   timeout: 30
     #   collections:
     #     - name: WeaveDocs
     #       type: text
