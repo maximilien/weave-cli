@@ -94,6 +94,14 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 	}, nil
 }
 
+// Close closes the Supabase adapter and cleans up resources
+func (a *Adapter) Close() error {
+	if a.db != nil {
+		return a.db.Close()
+	}
+	return nil
+}
+
 // prepareConnectionString prepares the connection string with IPv4 resolution
 func prepareConnectionString(dbURL string) (string, error) {
 	// Parse the database URL

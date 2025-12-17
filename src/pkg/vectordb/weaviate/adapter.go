@@ -54,6 +54,14 @@ func (a *Adapter) Health(ctx context.Context) error {
 	return nil
 }
 
+// Close closes the Weaviate adapter and cleans up resources
+// Note: Weaviate Go SDK uses HTTP/REST client which doesn't require explicit cleanup
+// HTTP connections are managed by the Go HTTP transport and closed when no longer needed
+func (a *Adapter) Close() error {
+	// No cleanup required for HTTP client
+	return nil
+}
+
 // convertDocument converts between vectordb.Document and weaviate.Document
 func (a *Adapter) convertDocument(doc *vectordb.Document) *Document {
 	if doc == nil {
