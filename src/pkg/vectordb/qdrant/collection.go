@@ -12,6 +12,9 @@ import (
 
 // CreateCollection creates a new collection in Qdrant with the specified vector configuration
 func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimensions int, similarityMetric string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	// Map similarity metric to Qdrant's distance type
 	distance, err := mapDistanceMetric(similarityMetric)
 	if err != nil {
@@ -42,6 +45,9 @@ func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimens
 
 // DeleteCollection deletes a collection and all its data
 func (c *Client) DeleteCollection(ctx context.Context, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	req := &qdrant.DeleteCollection{
 		CollectionName: name,
 	}
@@ -56,6 +62,9 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collection names
 func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	req := &qdrant.ListCollectionsRequest{}
 
 	resp, err := c.collectionsClient.List(ctx, req)
@@ -73,6 +82,9 @@ func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
 
 // CollectionExists checks if a collection exists
 func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	req := &qdrant.CollectionExistsRequest{
 		CollectionName: name,
 	}
@@ -87,6 +99,9 @@ func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error
 
 // GetCollectionInfo retrieves information about a collection
 func (c *Client) GetCollectionInfo(ctx context.Context, name string) (*qdrant.GetCollectionInfoResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	req := &qdrant.GetCollectionInfoRequest{
 		CollectionName: name,
 	}

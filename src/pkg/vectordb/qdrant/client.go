@@ -6,6 +6,7 @@ package qdrant
 import (
 	"context"
 	"fmt"
+	"time"
 
 	qdrant "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc"
@@ -100,6 +101,9 @@ func (c *Client) Close() error {
 
 // Health checks if the Qdrant server is healthy and accessible
 func (c *Client) Health(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	// Use the HealthCheck gRPC method
 	req := &qdrant.HealthCheckRequest{}
 	_, err := c.qdrantClient.HealthCheck(ctx, req)
@@ -117,4 +121,9 @@ func (c *Client) SetCollection(name string) {
 // GetCollection returns the current default collection name
 func (c *Client) GetCollection() string {
 	return c.collection
+}
+
+// getTimeout returns the configured timeout as a time.Duration
+func (c *Client) getTimeout() time.Duration {
+	return time.Duration(c.config.Timeout) * time.Second
 }

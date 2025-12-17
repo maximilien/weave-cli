@@ -21,6 +21,9 @@ type Document struct {
 
 // CreateDocument inserts a single document (point) into a collection
 func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc *Document) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if doc.ID == "" {
 		doc.ID = uuid.New().String()
 	}
@@ -47,6 +50,9 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 
 // CreateDocuments inserts multiple documents (points) into a collection in batch
 func (c *Client) CreateDocuments(ctx context.Context, collectionName string, docs []*Document) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if len(docs) == 0 {
 		return nil
 	}
@@ -81,6 +87,9 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 
 // GetDocument retrieves a document by ID
 func (c *Client) GetDocument(ctx context.Context, collectionName string, id string) (*Document, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	// Convert string ID to UUID
 	uuidStr, err := stringToUUID(id)
 	if err != nil {
@@ -126,6 +135,9 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, doc 
 
 // DeleteDocument deletes a document by ID
 func (c *Client) DeleteDocument(ctx context.Context, collectionName string, id string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	// Convert string ID to UUID
 	uuidStr, err := stringToUUID(id)
 	if err != nil {
@@ -160,6 +172,9 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName string, id s
 
 // DeleteDocuments deletes multiple documents by IDs
 func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, ids []string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if len(ids) == 0 {
 		return nil
 	}
@@ -199,6 +214,9 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, ids
 
 // ListDocuments retrieves all documents in a collection using scroll
 func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit int) ([]*Document, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if limit <= 0 {
 		limit = 100 // Default limit
 	}
@@ -414,6 +432,9 @@ func stringToUUID(id string) (string, error) {
 
 // DeleteAllDocuments deletes all documents from a collection
 func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	// Create delete request with empty filter to match all points
 	_, err := c.pointsClient.Delete(ctx, &qdrant.DeletePoints{
 		CollectionName: collectionName,

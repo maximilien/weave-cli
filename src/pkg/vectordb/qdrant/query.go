@@ -18,6 +18,9 @@ type SearchResult struct {
 
 // SearchSemantic performs a vector similarity search
 func (c *Client) SearchSemantic(ctx context.Context, collectionName string, vector []float32, topK int) ([]*SearchResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if topK <= 0 {
 		topK = 10 // Default limit
 	}
@@ -53,6 +56,9 @@ func (c *Client) SearchSemantic(ctx context.Context, collectionName string, vect
 
 // SearchByMetadata searches using metadata filters only
 func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, filter *qdrant.Filter, limit int) ([]*Document, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if limit <= 0 {
 		limit = 100 // Default limit
 	}
@@ -86,6 +92,9 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, fi
 
 // SearchHybrid performs a hybrid search combining vector similarity and metadata filtering
 func (c *Client) SearchHybrid(ctx context.Context, collectionName string, vector []float32, filter *qdrant.Filter, topK int) ([]*SearchResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	if topK <= 0 {
 		topK = 10 // Default limit
 	}
