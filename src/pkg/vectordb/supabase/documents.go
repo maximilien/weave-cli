@@ -15,6 +15,9 @@ import (
 
 // CreateDocument creates a new document in the specified collection
 func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return err
@@ -109,6 +112,9 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 
 // CreateDocuments creates multiple documents in batch
 func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if len(documents) == 0 {
 		return nil
 	}
@@ -180,6 +186,9 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 
 // GetDocument retrieves a document by ID
 func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID string) (*vectordb.Document, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return nil, err

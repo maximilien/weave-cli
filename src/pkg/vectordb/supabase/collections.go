@@ -13,6 +13,9 @@ import (
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if err := a.ensureVectorExtension(ctx); err != nil {
 		return err
 	}
@@ -77,6 +80,9 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	tableName := a.getTableName(name)
 	quotedTable := quoteIdentifier(tableName)
 	query := fmt.Sprintf("DROP TABLE IF EXISTS %s", quotedTable)
@@ -91,6 +97,9 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if err := a.requireDBConnection("ListCollections"); err != nil {
 		return nil, err
 	}
@@ -145,6 +154,9 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	tableName := a.getTableName(name)
 
 	// Use COUNT instead of EXISTS for better compatibility with Supabase pooling
@@ -165,6 +177,9 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // GetCollectionCount returns the number of documents in a collection
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, name)
 	if err != nil {
 		return 0, err

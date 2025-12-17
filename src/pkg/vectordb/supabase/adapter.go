@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/lib/pq" // PostgreSQL driver
 	"github.com/maximilien/weave-cli/src/pkg/llm"
@@ -155,6 +156,9 @@ func prepareConnectionString(dbURL string) (string, error) {
 
 // Health checks the health of the Supabase instance
 func (a *Adapter) Health(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.db == nil {
 		// No direct database connection, but HTTP client should work
 		// We can't do a full health check without SQL access
@@ -165,6 +169,14 @@ func (a *Adapter) Health(ctx context.Context) error {
 		return vectordb.ErrConnectionFailed("Supabase health check failed", err)
 	}
 	return nil
+}
+
+// getTimeout returns the configured timeout as a time.Duration
+func (a *Adapter) getTimeout() time.Duration {
+	if a.config.Timeout > 0 {
+		return time.Duration(a.config.Timeout) * time.Second
+	}
+	return 30 * time.Second // Default timeout
 }
 
 // hasDBConnection returns true if direct database connection is available
