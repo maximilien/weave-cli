@@ -6,6 +6,7 @@ package neo4j
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	config2 "github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
@@ -65,6 +66,9 @@ func (c *Client) Close(ctx context.Context) error {
 
 // Health checks the connection to Neo4j
 func (c *Client) Health(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	// Verify connectivity
 	err := c.driver.VerifyConnectivity(ctx)
 	if err != nil {
@@ -75,6 +79,9 @@ func (c *Client) Health(ctx context.Context) error {
 
 // executeQuery is a helper to execute Cypher queries
 func (c *Client) executeQuery(ctx context.Context, query string, params map[string]interface{}) (*neo4j.EagerResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
 	result, err := neo4j.ExecuteQuery(ctx, c.driver, query, params,
 		neo4j.EagerResultTransformer,
 		neo4j.ExecuteQueryWithDatabase(c.config.Database),
@@ -83,4 +90,9 @@ func (c *Client) executeQuery(ctx context.Context, query string, params map[stri
 		return nil, err
 	}
 	return result, nil
+}
+
+// getTimeout returns the configured timeout
+func (c *Client) getTimeout() time.Duration {
+	return c.config.Timeout
 }
