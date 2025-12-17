@@ -31,17 +31,24 @@ and features.
 |---------|----------|--------|--------|--------|----------|-------|---------|----------|------------|---------------|
 | **Vector Search** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **BM25 Full-Text** | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ | ✅ |
-| **Hybrid Search** | ✅ | ⚠️ | ✅ | ❌ | ✅ | ❌ | ✅ | ⚠️ | ✅ | ✅ |
+| **Hybrid Search** | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | ❌ | ✅ | ⚠️ | ⚠️ | ✅ |
 | **Metadata Filtering** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Batch Operations** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
 | **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **Schema Management** | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ✅ |
+| **Schema Management** | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ❌ | ✅ | ⚠️ | ⚠️ | ✅ |
 | **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Legend:**
-- ✅ Supported
-- ⚠️ Partial support or workaround available
+- ✅ Fully supported
+- ⚠️ Partial support, workaround, or special behavior
 - ❌ Not supported
+
+**Feature Notes:**
+- **Chroma Hybrid**: Falls back to semantic search (no error)
+- **OpenSearch Hybrid**: Not yet implemented (Beta limitation)
+- **Qdrant Schema**: Immutable after collection creation
+- **Milvus Schema**: Immutable after collection creation
+- **Neo4j Schema**: Not supported - delete and recreate collection instead
 
 ## Quick Start
 
