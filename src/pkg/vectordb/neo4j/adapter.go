@@ -420,3 +420,11 @@ func (a *Adapter) ValidateSchema(schema *vectordb.CollectionSchema) error {
 	}
 	return nil
 }
+
+// Close closes the Neo4j adapter and cleans up resources
+func (a *Adapter) Close(ctx context.Context) error {
+	if a.client != nil {
+		return a.client.Close(ctx)
+	}
+	return nil
+}

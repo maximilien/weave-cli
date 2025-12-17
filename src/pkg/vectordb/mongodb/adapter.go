@@ -4,6 +4,7 @@
 package mongodb
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -47,4 +48,12 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		Client:    client,
 		llmClient: llmClient,
 	}, nil
+}
+
+// Close closes the MongoDB adapter and cleans up resources
+func (a *Adapter) Close(ctx context.Context) error {
+	if a.Client != nil {
+		return a.Client.Close(ctx)
+	}
+	return nil
 }

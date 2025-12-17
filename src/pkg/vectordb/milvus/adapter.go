@@ -74,3 +74,11 @@ func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schem
 	// Schema is defined at collection creation time
 	return fmt.Errorf("Milvus does not support schema updates after collection creation")
 }
+
+// Close closes the Milvus adapter and cleans up resources
+func (a *Adapter) Close() error {
+	if a.Client != nil {
+		return a.Client.Close()
+	}
+	return nil
+}

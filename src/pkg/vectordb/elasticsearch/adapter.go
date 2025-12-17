@@ -4,6 +4,7 @@
 package elasticsearch
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -93,4 +94,12 @@ func extractAddresses(config *vectordb.Config) []string {
 	}
 
 	return addresses
+}
+
+// Close closes the Elasticsearch adapter and cleans up resources
+func (a *Adapter) Close(ctx context.Context) error {
+	if a.Client != nil {
+		return a.Client.Close(ctx)
+	}
+	return nil
 }
