@@ -56,6 +56,10 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 
 // CreateDocuments bulk indexes multiple documents
 func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
+	// Use extended timeout for bulk operations
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
+	defer cancel()
+
 	// For now, implement as sequential creates
 	// TODO: Implement proper bulk API usage
 	for _, doc := range documents {
@@ -120,6 +124,10 @@ func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, documentID
 
 // DeleteDocuments deletes multiple documents
 func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, documentIDs []string) error {
+	// Use extended timeout for bulk operations
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
+	defer cancel()
+
 	// For now, implement as sequential deletes
 	// TODO: Implement proper bulk delete
 	for _, docID := range documentIDs {

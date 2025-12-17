@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pattern: `ctx, cancel := context.WithTimeout(ctx, adapter.getTimeout())`
   - Prevents indefinite hangs on slow/unavailable VDB endpoints
   - Commits: a995a26 (Qdrant), c0a4887 (Pinecone), e81b848 (Neo4j), d36dad5 (Supabase), ff910b8 (OpenSearch)
+- **Operation-Specific Timeout Strategy**: Intelligent timeout optimization based on operation type and deployment
+  - **Health Checks**: 10s local, 20s cloud (faster failure feedback)
+  - **Bulk Operations**: 120s local, 300s cloud (no false timeouts on large batches)
+  - **Other Operations**: Optimized per operation type (Document, Collection, Query, Schema)
+  - **Deployment-Aware**: Automatically adjusts for local vs cloud network latency
+  - **User Override**: Custom timeouts still respected via config
+  - **Reference Implementation**: OpenSearch (Health + Bulk operations)
+  - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
+  - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 
 ### Fixed
 - **Connection Handling Audit**: Completed comprehensive audit of Health() and Close() implementations
