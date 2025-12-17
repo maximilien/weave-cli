@@ -13,6 +13,9 @@ import (
 
 // CreateCollection creates a new Pinecone index
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
@@ -46,6 +49,9 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a Pinecone index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
@@ -60,6 +66,9 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 
 // CollectionExists checks if a Pinecone index exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return false, fmt.Errorf("pinecone client not initialized")
 	}
@@ -80,6 +89,9 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // ListCollections lists all Pinecone indexes
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return nil, fmt.Errorf("pinecone client not initialized")
 	}
@@ -105,6 +117,9 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // GetCollectionCount returns the number of documents in a Pinecone index
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return 0, fmt.Errorf("pinecone client not initialized")
 	}
@@ -133,6 +148,9 @@ func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, e
 
 // GetCollectionInfo returns information about a specific Pinecone index
 func (a *Adapter) GetCollectionInfo(ctx context.Context, name string) (*vectordb.CollectionInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return nil, fmt.Errorf("pinecone client not initialized")
 	}

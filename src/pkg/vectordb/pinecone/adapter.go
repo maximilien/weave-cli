@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -69,6 +70,9 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 // Health checks the health of the Pinecone connection
 func (a *Adapter) Health(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	defer cancel()
+
 	if a.client == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
@@ -86,4 +90,12 @@ func (a *Adapter) Health(ctx context.Context) error {
 func (a *Adapter) Close() error {
 	// Pinecone client typically doesn't need explicit closing
 	return nil
+}
+
+// getTimeout returns the configured timeout as a time.Duration
+func (a *Adapter) getTimeout() time.Duration {
+	if a.config.Timeout > 0 {
+		return time.Duration(a.config.Timeout) * time.Second
+	}
+	return 30 * time.Second // Default timeout
 }
