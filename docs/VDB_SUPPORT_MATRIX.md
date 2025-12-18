@@ -12,7 +12,7 @@ and features.
 | **Milvus** | ✅ Stable | ✅ | ✅ | All | [LOCAL_SETUP.md](milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](milvus/CLOUD_SETUP.md) |
 | **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
 | **Supabase** | ✅ Stable | ✅ | ✅ | All | [README.md](supabase/README.md) |
-| **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](neo4j/README.md) |
+| **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](neo4j/README.md), [AURA_SETUP.md](neo4j/AURA_SETUP.md) |
 | **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
 | **Pinecone** | 🟢 Beta | ❌ | ✅ | All | [SETUP.md](pinecone/SETUP.md) |
 | **OpenSearch** | ✅ Stable | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |

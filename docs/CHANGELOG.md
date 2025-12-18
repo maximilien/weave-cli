@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2025-12-18
+
 ### Added
 - **Timeout Protection**: Added `context.WithTimeout` to all VDB operations
   - **Qdrant**: 18 operations protected (Health, Collection ops, Document ops, Query ops)
