@@ -49,7 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Impact**: Consistent VDB naming across all error messages
   - **Pattern**: Batch replacement using perl regex (`fmt.Errorf("` → `fmt.Errorf("VDB: `)
   - Completes Priority 1 from error handling audit (Task 2.1)
-  - Commit: 1262cd3
+  - Commit: 8ddf84c
 - **Connection Handling Audit**: Completed comprehensive audit of Health() and Close() implementations
   - **Health() - Perfect (100%)**: All 10 VDBs now have proper timeout protection
   - **Close() - Fixed Critical Gaps**: Added missing resource cleanup methods
