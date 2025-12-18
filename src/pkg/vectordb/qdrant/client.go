@@ -6,6 +6,7 @@ package qdrant
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -109,6 +110,28 @@ func (c *Client) Health(ctx context.Context) error {
 	req := &qdrant.HealthCheckRequest{}
 	_, err := c.qdrantClient.HealthCheck(ctx, req)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Qdrant health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Qdrant server not running (start with: docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant)\n"+
+				"  2. Wrong host or port in configuration\n"+
+				"  3. For Qdrant Cloud: check API endpoint and API key\n"+
+				"  → Verify connection details in config", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Qdrant health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Qdrant server not responding (check logs: docker logs <container>)\n"+
+				"  2. Network/firewall issues\n"+
+				"  3. For Qdrant Cloud: verify cluster is running\n"+
+				"  → Check Qdrant status and network connectivity", err)
+		}
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
+			return fmt.Errorf("Qdrant health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid or missing API key for Qdrant Cloud\n"+
+				"  2. API key not configured in environment\n"+
+				"  → Set QDRANT_API_KEY for cloud deployments", err)
+		}
 		return fmt.Errorf("Qdrant health check failed: %w", err)
 	}
 	return nil

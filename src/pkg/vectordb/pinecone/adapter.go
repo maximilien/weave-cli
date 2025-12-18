@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
@@ -80,6 +81,22 @@ func (a *Adapter) Health(ctx context.Context) error {
 	// Try to list indexes as a health check
 	_, err := a.client.ListIndexes(ctx)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "Unauthorized") || strings.Contains(errMsg, "authentication") {
+			return fmt.Errorf("Pinecone health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid or missing PINECONE_API_KEY\n"+
+				"  2. API key not active in Pinecone console\n"+
+				"  3. Wrong environment specified\n"+
+				"  → Verify API key at https://app.pinecone.io", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Pinecone health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Network connectivity issues\n"+
+				"  2. Firewall blocking outbound HTTPS\n"+
+				"  3. Pinecone service temporarily unavailable\n"+
+				"  → Check status at https://status.pinecone.io", err)
+		}
 		return fmt.Errorf("Pinecone health check failed: %w", err)
 	}
 
