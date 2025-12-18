@@ -27,17 +27,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Schema Operations**: 15s local, 30s cloud (schema introspection)
   - **Deployment-Aware**: Automatically adjusts for local vs cloud network latency
   - **User Override**: Custom timeouts still respected via config
-  - **Implementations**:
+  - **Implementations** (All 10 VDBs - 100% Coverage):
     - **OpenSearch**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
     - **Elasticsearch**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
     - **Qdrant**: Health + Collection + Query + Bulk (comprehensive coverage)
     - **Milvus**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
     - **Chroma**: Health + Collection + Query + Bulk (comprehensive coverage)
     - **Pinecone**: Health + Collection + Query + Bulk (comprehensive coverage)
-    - **Neo4j**: Health + Bulk (BatchCreateDocuments, DeleteDocuments)
-    - **Supabase**: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - **Weaviate**: Health check
-    - **MongoDB**: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - **Neo4j**: Health + Collection + Query + Bulk (comprehensive coverage)
+    - **Supabase**: Health + Collection + Query + Bulk (comprehensive coverage)
+    - **Weaviate**: Health + Collection + Query + Bulk (comprehensive coverage)
+    - **MongoDB**: Health + Collection + Query + Bulk (comprehensive coverage)
   - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 
