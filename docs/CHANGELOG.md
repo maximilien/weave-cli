@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - OpenSearch: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Qdrant: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Pinecone: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - Neo4j: Health check
+    - Neo4j: Health + Bulk (BatchCreateDocuments, DeleteDocuments)
     - Supabase: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Elasticsearch: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Chroma: Health + Bulk (CreateDocuments, DeleteDocuments)

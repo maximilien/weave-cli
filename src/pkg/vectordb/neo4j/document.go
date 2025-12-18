@@ -6,6 +6,8 @@ package neo4j
 import (
 	"context"
 	"fmt"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // Document represents a document node in Neo4j
@@ -237,6 +239,9 @@ func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) 
 
 // BatchCreateDocuments creates multiple documents in a single transaction
 func (c *Client) BatchCreateDocuments(ctx context.Context, collectionName string, docs []*Document) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
+	defer cancel()
+
 	if len(docs) == 0 {
 		return nil
 	}
@@ -277,6 +282,9 @@ func (c *Client) BatchCreateDocuments(ctx context.Context, collectionName string
 
 // DeleteDocuments deletes multiple documents by ID
 func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, ids []string) error {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
+	defer cancel()
+
 	if len(ids) == 0 {
 		return nil
 	}
