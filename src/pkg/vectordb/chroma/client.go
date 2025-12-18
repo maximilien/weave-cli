@@ -149,6 +149,13 @@ func (c *Client) getTimeout() time.Duration {
 	return time.Duration(timeout) * time.Second
 }
 
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	// Detect cloud: APIKey indicates Chroma Cloud deployment
+	isCloud := c.config.APIKey != ""
+	return vectordb.GetTimeoutForOperation(opType, isCloud, c.config.Timeout)
+}
+
 // getCollection retrieves a collection by name with the required embedding function
 func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collection, error) {
 	// Chroma v2 requires an embedding function for GetCollection
@@ -159,7 +166,7 @@ func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collect
 
 // Health checks the health of the Chroma instance
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	// Use heartbeat to check health

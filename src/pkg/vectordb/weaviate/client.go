@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate"
 	"github.com/weaviate/weaviate-go-client/v4/weaviate/auth"
 )
@@ -122,9 +123,16 @@ func (c *Client) getTimeout() time.Duration {
 	return time.Duration(timeout) * time.Second
 }
 
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	// Detect cloud: APIKey indicates Weaviate Cloud deployment
+	isCloud := c.config.APIKey != ""
+	return vectordb.GetTimeoutForOperation(opType, isCloud, c.config.Timeout)
+}
+
 // Health checks the health of the Weaviate instance
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	// Try to get the meta information

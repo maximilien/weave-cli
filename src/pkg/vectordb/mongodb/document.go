@@ -49,7 +49,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 
 // CreateDocuments creates multiple documents in batch
 func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	if len(documents) == 0 {
@@ -148,7 +148,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 
 // DeleteDocuments deletes multiple documents by IDs
 func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, documentIDs []string) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	if len(documentIDs) == 0 {

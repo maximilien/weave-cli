@@ -131,9 +131,16 @@ func (c *Client) getTimeout() time.Duration {
 	return time.Duration(timeout) * time.Second
 }
 
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	// Detect cloud: mongodb+srv or mongodb.net indicates Atlas cloud deployment
+	isCloud := strings.Contains(c.config.URI, "+srv") || strings.Contains(c.config.URI, "mongodb.net")
+	return vectordb.GetTimeoutForOperation(opType, isCloud, c.config.Timeout)
+}
+
 // Health checks the health of the MongoDB instance
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	// Ping the database

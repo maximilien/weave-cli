@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Neo4j: Health check
     - Supabase: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Elasticsearch: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - Chroma: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - Weaviate: Health check
+    - Milvus: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - MongoDB: Health + Bulk (CreateDocuments, DeleteDocuments)
   - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 

@@ -285,7 +285,7 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	// Get collection
@@ -345,7 +345,7 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, doc
 		return nil
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	// Get collection

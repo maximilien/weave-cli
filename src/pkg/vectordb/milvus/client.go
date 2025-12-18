@@ -130,9 +130,16 @@ func (c *Client) getTimeout() time.Duration {
 	return time.Duration(timeout) * time.Second
 }
 
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	// Detect cloud: check if address contains cloud/zilliz domains
+	isCloud := isCloudEndpoint(c.config.Address)
+	return vectordb.GetTimeoutForOperation(opType, isCloud, c.config.Timeout)
+}
+
 // Health checks the health of the Milvus instance
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	// Check if client is alive by listing databases
