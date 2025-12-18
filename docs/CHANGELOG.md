@@ -29,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Qdrant: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Pinecone: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Neo4j: Health check
+    - Supabase: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - Elasticsearch: Health + Bulk (CreateDocuments, DeleteDocuments)
   - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v9"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // Client wraps the Elasticsearch TypedClient with vector database functionality
@@ -77,8 +78,7 @@ func NewClient(config *Config) (*Client, error) {
 
 // Health checks the health of the Elasticsearch cluster
 func (c *Client) Health(ctx context.Context) error {
-	timeout := time.Duration(c.config.Timeout) * time.Second
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	_, err := c.client.Ping().Do(ctx)
@@ -99,4 +99,11 @@ func (c *Client) Close(ctx context.Context) error {
 // getTimeout returns the timeout duration for operations
 func (c *Client) getTimeout() time.Duration {
 	return time.Duration(c.config.Timeout) * time.Second
+}
+
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	// Detect cloud: CloudID indicates Elastic Cloud deployment
+	isCloud := c.config.CloudID != ""
+	return vectordb.GetTimeoutForOperation(opType, isCloud, c.config.Timeout)
 }

@@ -78,6 +78,9 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 
 // CreateDocuments creates multiple documents in batch using BulkIndexer
 func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
+	defer cancel()
+
 	if len(documents) == 0 {
 		return nil
 	}
@@ -248,6 +251,9 @@ func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, documentID
 
 // DeleteDocuments deletes multiple documents by IDs
 func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, documentIDs []string) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
+	defer cancel()
+
 	if len(documentIDs) == 0 {
 		return nil
 	}
