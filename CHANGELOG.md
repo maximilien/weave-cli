@@ -7,6 +7,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.2] - 2025-12-18
+
+### Summary
+
+UX & Test Quality Improvements - Enhanced error messages with troubleshooting
+hints for all 10 VDBs (100% coverage) and strengthened batch document creation
+test verification critical for production pipelining workflows.
+
+### Added
+
+- **Troubleshooting Hints** - Extended to 5 additional VDBs (100% coverage)
+  - **Milvus**: Connection refused, timeout, and authentication errors
+  - **Neo4j**: Bolt protocol errors, Aura cloud issues, credential problems
+  - **MongoDB**: Atlas IP whitelist, TLS errors, authentication guidance
+  - **Supabase**: PostgreSQL connection issues, password vs API key confusion
+  - **OpenSearch**: Resource requirements (2GB+ RAM), AWS-specific guidance
+  - Pattern: MongoDB-style error messages with "Common causes:" and action items
+  - All 10 VDBs now provide helpful troubleshooting for connection/auth failures
+
+### Changed
+
+- **Batch Create Tests** - Enhanced verification for 3 VDBs
+  - **Pinecone**: Added document retrieval verification after 5s indexing wait
+  - **Supabase**: Added GetDocument verification for batch-doc-1
+  - **Weaviate**: Added GetDocument verification for batch-doc-1
+  - Impact: All 10 VDBs now verify batch operations work correctly
+  - Critical for pipelining projects requiring batch document ingestion
+
+### Fixed
+
+- **VDB_SUPPORT.md** - Synced database statuses with VDB_SUPPORT_MATRIX.md
+  - Updated 7 database statuses to reflect production readiness
+  - Qdrant: 🧪 Experimental → ✅ Stable
+  - OpenSearch: 🧪 Experimental → ✅ Stable
+  - Supabase: 🧪 Alpha → ✅ Stable
+  - Milvus: 🧪 Beta → ✅ Stable
+  - Added Elasticsearch entries (Beta status)
+  - Standardized terminology (Production → Stable)
+
+### Documentation
+
+- **Error Handling** - 100% VDB coverage for troubleshooting hints
+  - 10/10 VDBs now have helpful error messages with actionable guidance
+  - Docker startup commands included for local deployments
+  - Cloud console links for Zilliz, Aura, Atlas, Supabase, AWS
+  - Network/firewall troubleshooting steps for common scenarios
+
+- **Test Quality** - Complete batch create verification audit
+  - Documented test patterns in NEXT_STEPS.md (Task 4.4)
+  - Tier 1 (thorough): Qdrant, MongoDB with individual retrieval
+  - Tier 2 (enhanced): All remaining VDBs with count or retrieval checks
+  - 100% batch operation test coverage ensures production readiness
+
+### Technical Details
+
+- **Troubleshooting Coverage**:
+  - Previously: 5/10 VDBs (Pinecone, Qdrant, Weaviate, Elasticsearch, Chroma)
+  - Now: 10/10 VDBs (100% coverage)
+  - Pattern: Connection refused, timeout, authentication errors
+  - Helpfulness: Docker commands, cloud console links, common fixes
+
+- **Batch Create Test Verification**:
+  - 7 VDBs: Already had count-based or retrieval verification
+  - 3 VDBs: Enhanced with inline document retrieval (Pinecone, Supabase, Weaviate)
+  - All tests verify documents actually created, not just error-free operation
+  - Fast inline verification (single retrieval, no loops)
+
+- **Database Status Updates**:
+  - ✅ Stable: 7 VDBs (Qdrant, OpenSearch, Supabase, Milvus promoted)
+  - 🟢 Beta: 3 VDBs (Pinecone, Elasticsearch, OpenSearch demoted from Experimental)
+  - VDB_SUPPORT.md now matches VDB_SUPPORT_MATRIX.md (authoritative source)
+
 ## [0.8.0] - 2025-12-16
 
 ### Summary
