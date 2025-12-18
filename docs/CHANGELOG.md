@@ -42,6 +42,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 
 ### Fixed
+- **Error Message Quality**: Added VDB names to 174 error messages for better troubleshooting
+  - **Weaviate**: 136 error messages updated ("failed to X" → "Weaviate: failed to X")
+  - **Milvus**: 36 error messages updated ("failed to X" → "Milvus: failed to X")
+  - **Supabase**: 2 error messages updated (most already use wrapError pattern)
+  - **Impact**: Consistent VDB naming across all error messages
+  - **Pattern**: Batch replacement using perl regex (`fmt.Errorf("` → `fmt.Errorf("VDB: `)
+  - Completes Priority 1 from error handling audit (Task 2.1)
+  - Commit: 1262cd3
 - **Connection Handling Audit**: Completed comprehensive audit of Health() and Close() implementations
   - **Health() - Perfect (100%)**: All 10 VDBs now have proper timeout protection
   - **Close() - Fixed Critical Gaps**: Added missing resource cleanup methods
