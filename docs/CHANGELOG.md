@@ -29,15 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **User Override**: Custom timeouts still respected via config
   - **Implementations**:
     - **OpenSearch**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
-    - **Qdrant**: Health + Collection + Query + Bulk
-    - Pinecone: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - Neo4j: Health + Bulk (BatchCreateDocuments, DeleteDocuments)
-    - Supabase: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - Elasticsearch: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - Chroma: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - Weaviate: Health check
-    - Milvus: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - MongoDB: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - **Elasticsearch**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
+    - **Qdrant**: Health + Collection + Query + Bulk (comprehensive coverage)
+    - **Milvus**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
+    - **Chroma**: Health + Collection + Query + Bulk (comprehensive coverage)
+    - **Pinecone**: Health + Collection + Query + Bulk (comprehensive coverage)
+    - **Neo4j**: Health + Bulk (BatchCreateDocuments, DeleteDocuments)
+    - **Supabase**: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - **Weaviate**: Health check
+    - **MongoDB**: Health + Bulk (CreateDocuments, DeleteDocuments)
   - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 
