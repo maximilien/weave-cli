@@ -48,6 +48,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Supabase**: 2 error messages updated (most already use wrapError pattern)
   - **Impact**: Consistent VDB naming across all error messages
   - **Pattern**: Batch replacement using perl regex (`fmt.Errorf("` → `fmt.Errorf("VDB: `)
+  - **Commit**: 8ddf84c
+- **Troubleshooting Hints**: Added MongoDB-style error guidance to health checks
+  - **Pinecone**: Authentication (401), timeout, network errors with actionable hints
+  - **Qdrant**: Connection refused, timeout, authentication errors with troubleshooting steps
+  - **Pattern**: "Common causes:" with numbered list + "→" action items
+  - **Examples**: Docker startup commands, cloud console links, status page URLs
+  - **Commit**: b5c9872
+- **OpenSearch Lint**: Removed ineffectual ctx assignment in UpdateSchema method
+  - Fixed golangci-lint error that was causing CI failures
+  - **Commit**: 59572e8
   - Completes Priority 1 from error handling audit (Task 2.1)
   - Commit: 8ddf84c
 - **Connection Handling Audit**: Completed comprehensive audit of Health() and Close() implementations
