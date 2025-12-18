@@ -6,8 +6,10 @@ package neo4j
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/neo4j/neo4j-go-driver/v5/neo4j"
 	config2 "github.com/neo4j/neo4j-go-driver/v5/neo4j/config"
 )
@@ -66,7 +68,7 @@ func (c *Client) Close(ctx context.Context) error {
 
 // Health checks the connection to Neo4j
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	// Verify connectivity
@@ -95,4 +97,13 @@ func (c *Client) executeQuery(ctx context.Context, query string, params map[stri
 // getTimeout returns the configured timeout
 func (c *Client) getTimeout() time.Duration {
 	return c.config.Timeout
+}
+
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	// Detect cloud by URI (Aura uses neo4j+s:// or neo4j+ssc://)
+	isCloud := strings.Contains(c.config.URI, "neo4j+s") || strings.Contains(c.config.URI, "aura")
+	// Convert time.Duration to seconds for GetTimeoutForOperation
+	timeoutSecs := int(c.config.Timeout.Seconds())
+	return vectordb.GetTimeoutForOperation(opType, isCloud, timeoutSecs)
 }

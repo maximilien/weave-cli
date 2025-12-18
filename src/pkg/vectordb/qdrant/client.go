@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	qdrant "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -101,7 +102,7 @@ func (c *Client) Close() error {
 
 // Health checks if the Qdrant server is healthy and accessible
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	// Use the HealthCheck gRPC method
@@ -126,4 +127,10 @@ func (c *Client) GetCollection() string {
 // getTimeout returns the configured timeout as a time.Duration
 func (c *Client) getTimeout() time.Duration {
 	return time.Duration(c.config.Timeout) * time.Second
+}
+
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	isCloud := c.config.UseTLS // UseTLS indicates cloud deployment
+	return vectordb.GetTimeoutForOperation(opType, isCloud, c.config.Timeout)
 }

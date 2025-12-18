@@ -70,7 +70,7 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 // Health checks the health of the Pinecone connection
 func (a *Adapter) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeHealth))
 	defer cancel()
 
 	if a.client == nil {
@@ -98,4 +98,10 @@ func (a *Adapter) getTimeout() time.Duration {
 		return time.Duration(a.config.Timeout) * time.Second
 	}
 	return 30 * time.Second // Default timeout
+}
+
+// getTimeoutFor returns an operation-specific timeout based on deployment type
+func (a *Adapter) getTimeoutFor(opType vectordb.OperationType) time.Duration {
+	isCloud := true // Pinecone is cloud-only
+	return vectordb.GetTimeoutForOperation(opType, isCloud, a.config.Timeout)
 }

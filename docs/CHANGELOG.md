@@ -24,7 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Other Operations**: Optimized per operation type (Document, Collection, Query, Schema)
   - **Deployment-Aware**: Automatically adjusts for local vs cloud network latency
   - **User Override**: Custom timeouts still respected via config
-  - **Reference Implementation**: OpenSearch (Health + Bulk operations)
+  - **Implementations**:
+    - OpenSearch: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - Qdrant: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - Pinecone: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - Neo4j: Health check
   - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
 

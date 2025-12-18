@@ -267,7 +267,7 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 
 // CreateDocuments batch creates multiple documents in Pinecone
 func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, docs []*vectordb.Document) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	if a.client == nil {
@@ -351,7 +351,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 
 // DeleteDocuments batch deletes multiple documents from Pinecone
 func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, ids []string) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	if a.client == nil {

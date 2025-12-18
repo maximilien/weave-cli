@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	qdrant "github.com/qdrant/go-client/qdrant"
 )
 
@@ -50,7 +51,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 
 // CreateDocuments inserts multiple documents (points) into a collection in batch
 func (c *Client) CreateDocuments(ctx context.Context, collectionName string, docs []*Document) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	if len(docs) == 0 {
@@ -172,7 +173,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName string, id s
 
 // DeleteDocuments deletes multiple documents by IDs
 func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, ids []string) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
 	if len(ids) == 0 {
