@@ -319,6 +319,15 @@ func TestWeaviateComprehensiveIntegration(t *testing.T) {
 		if err != nil {
 			t.Errorf("Failed to create batch documents: %v", err)
 		}
+
+		// Verify batch creation worked
+		retrieved, err := client.GetDocument(ctx, collectionName, "batch-doc-1")
+		if err != nil {
+			t.Errorf("Failed to retrieve batch document: %v", err)
+		}
+		if retrieved.ID != "batch-doc-1" {
+			t.Errorf("Expected batch-doc-1, got %s", retrieved.ID)
+		}
 	})
 
 	t.Run("DeleteDocumentsByMetadata", func(t *testing.T) {

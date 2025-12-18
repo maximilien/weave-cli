@@ -139,6 +139,16 @@ func TestPineconeIntegration(t *testing.T) {
 
 		// Wait for vectors to be indexed
 		time.Sleep(5 * time.Second)
+
+		// Verify batch creation worked
+		retrieved, err := adapter.GetDocument(ctx, collectionName, "test-doc-2")
+		if err != nil {
+			t.Errorf("Failed to retrieve batch document: %v", err)
+			return
+		}
+		if retrieved.ID != "test-doc-2" {
+			t.Errorf("Expected test-doc-2, got %s", retrieved.ID)
+		}
 	})
 
 	t.Run("GetDocument", func(t *testing.T) {
