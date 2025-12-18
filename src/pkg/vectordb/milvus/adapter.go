@@ -72,7 +72,7 @@ func (a *Adapter) ValidateSchema(schema *vectordb.CollectionSchema) error {
 func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
 	// Milvus doesn't support dynamic schema updates
 	// Schema is defined at collection creation time
-	return fmt.Errorf("Milvus does not support schema updates after collection creation")
+	return fmt.Errorf("Milvus: Milvus does not support schema updates after collection creation")
 }
 
 // Close closes the Milvus adapter and cleans up resources

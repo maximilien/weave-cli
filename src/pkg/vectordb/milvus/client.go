@@ -56,7 +56,7 @@ type Config struct {
 // NewClient creates a new Milvus client
 func NewClient(config *Config) (*Client, error) {
 	if config.Address == "" {
-		return nil, fmt.Errorf("Milvus address is required")
+		return nil, fmt.Errorf("Milvus: Milvus address is required")
 	}
 
 	// Set defaults
@@ -112,7 +112,7 @@ func NewClient(config *Config) (*Client, error) {
 	// Connect to Milvus
 	c, err := client.NewClient(ctx, connConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to Milvus: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to connect to Milvus: %w", err)
 	}
 
 	return &Client{
@@ -145,7 +145,7 @@ func (c *Client) Health(ctx context.Context) error {
 	// Check if client is alive by listing databases
 	_, err := c.client.ListDatabases(ctx)
 	if err != nil {
-		return fmt.Errorf("Milvus health check failed: %w", err)
+		return fmt.Errorf("Milvus: Milvus health check failed: %w", err)
 	}
 
 	return nil

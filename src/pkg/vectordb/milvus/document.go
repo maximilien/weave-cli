@@ -59,13 +59,13 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	// Insert data
 	_, err := a.client.Insert(ctx, collectionName, "", columns...)
 	if err != nil {
-		return fmt.Errorf("failed to create document: %w", err)
+		return fmt.Errorf("Milvus: failed to create document: %w", err)
 	}
 
 	// Flush to make data available for search
 	err = a.client.Flush(ctx, collectionName, false)
 	if err != nil {
-		return fmt.Errorf("failed to flush collection: %w", err)
+		return fmt.Errorf("Milvus: failed to flush collection: %w", err)
 	}
 
 	return nil
@@ -144,13 +144,13 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	// Insert data
 	_, err := a.client.Insert(ctx, collectionName, "", columns...)
 	if err != nil {
-		return fmt.Errorf("failed to create documents: %w", err)
+		return fmt.Errorf("Milvus: failed to create documents: %w", err)
 	}
 
 	// Flush to make data available for search
 	err = a.client.Flush(ctx, collectionName, false)
 	if err != nil {
-		return fmt.Errorf("failed to flush collection: %w", err)
+		return fmt.Errorf("Milvus: failed to flush collection: %w", err)
 	}
 
 	return nil
@@ -170,11 +170,11 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 
 	result, err := c.client.Query(ctx, collectionName, nil, expr, outputFields)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get document: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to get document: %w", err)
 	}
 
 	if result.Len() == 0 {
-		return nil, fmt.Errorf("document not found: %s", documentID)
+		return nil, fmt.Errorf("Milvus: document not found: %s", documentID)
 	}
 
 	// Extract fields from result
@@ -214,13 +214,13 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 
 	err := c.client.DeleteByPks(ctx, collectionName, "", entity.NewColumnVarChar(FieldDocumentID, []string{documentID}))
 	if err != nil {
-		return fmt.Errorf("failed to delete document: %w", err)
+		return fmt.Errorf("Milvus: failed to delete document: %w", err)
 	}
 
 	// Flush to ensure deletion is applied
 	err = c.client.Flush(ctx, collectionName, false)
 	if err != nil {
-		return fmt.Errorf("failed to flush after deletion: %w", err)
+		return fmt.Errorf("Milvus: failed to flush after deletion: %w", err)
 	}
 
 	return nil
@@ -238,13 +238,13 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, doc
 	// Delete by primary keys
 	err := c.client.DeleteByPks(ctx, collectionName, "", entity.NewColumnVarChar(FieldDocumentID, documentIDs))
 	if err != nil {
-		return fmt.Errorf("failed to delete documents: %w", err)
+		return fmt.Errorf("Milvus: failed to delete documents: %w", err)
 	}
 
 	// Flush to ensure deletions are applied
 	err = c.client.Flush(ctx, collectionName, false)
 	if err != nil {
-		return fmt.Errorf("failed to flush after deletion: %w", err)
+		return fmt.Errorf("Milvus: failed to flush after deletion: %w", err)
 	}
 
 	return nil
@@ -268,14 +268,14 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	}
 
 	if expr == "" {
-		return fmt.Errorf("no metadata criteria specified")
+		return fmt.Errorf("Milvus: no metadata criteria specified")
 	}
 
 	// Query to find matching documents
 	outputFields := []string{FieldDocumentID}
 	result, err := c.client.Query(ctx, collectionName, nil, expr, outputFields)
 	if err != nil {
-		return fmt.Errorf("failed to query documents by metadata: %w", err)
+		return fmt.Errorf("Milvus: failed to query documents by metadata: %w", err)
 	}
 
 	if result.Len() == 0 {
@@ -291,13 +291,13 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	// Delete by primary keys
 	err = c.client.DeleteByPks(ctx, collectionName, "", entity.NewColumnVarChar(FieldDocumentID, documentIDs))
 	if err != nil {
-		return fmt.Errorf("failed to delete documents: %w", err)
+		return fmt.Errorf("Milvus: failed to delete documents: %w", err)
 	}
 
 	// Flush to ensure deletions are applied
 	err = c.client.Flush(ctx, collectionName, false)
 	if err != nil {
-		return fmt.Errorf("failed to flush after deletion: %w", err)
+		return fmt.Errorf("Milvus: failed to flush after deletion: %w", err)
 	}
 
 	return nil
@@ -333,7 +333,7 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 		client.WithOffset(int64(offset)),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list documents: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to list documents: %w", err)
 	}
 
 	if result.Len() == 0 {

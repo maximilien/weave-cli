@@ -20,7 +20,7 @@ func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
 
 	collections, err := c.client.Schema().Getter().Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collections: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get collections: %w", err)
 	}
 
 	var collectionNames []string
@@ -39,7 +39,7 @@ func (c *Client) DeleteCollection(ctx context.Context, collectionName string) er
 	// Use the WeaveClient which has better REST API support
 	weaveClient, err := NewWeaveClient(c.config)
 	if err != nil {
-		return fmt.Errorf("failed to create weave client: %w", err)
+		return fmt.Errorf("Weaviate: failed to create weave client: %w", err)
 	}
 
 	return weaveClient.DeleteCollection(ctx, collectionName)
@@ -53,7 +53,7 @@ func (c *Client) DeleteCollectionSchema(ctx context.Context, collectionName stri
 	// Use the WeaveClient which has better REST API support
 	weaveClient, err := NewWeaveClient(c.config)
 	if err != nil {
-		return fmt.Errorf("failed to create weave client: %w", err)
+		return fmt.Errorf("Weaviate: failed to create weave client: %w", err)
 	}
 
 	return weaveClient.DeleteCollectionSchema(ctx, collectionName)
@@ -72,19 +72,19 @@ func (c *Client) CreateCollectionWithSchema(ctx context.Context, collectionName,
 	// Check if collection already exists
 	collections, err := c.ListCollections(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check existing collections: %w", err)
+		return fmt.Errorf("Weaviate: failed to check existing collections: %w", err)
 	}
 
 	for _, existingCollection := range collections {
 		if existingCollection == collectionName {
-			return fmt.Errorf("collection '%s' already exists", collectionName)
+			return fmt.Errorf("Weaviate: collection '%s' already exists", collectionName)
 		}
 	}
 
 	// Create the collection using Weaviate's REST API
 	err = c.createCollectionViaREST(ctx, collectionName, embeddingModel, customFields, schemaType)
 	if err != nil {
-		return fmt.Errorf("failed to create collection '%s': %w", collectionName, err)
+		return fmt.Errorf("Weaviate: failed to create collection '%s': %w", collectionName, err)
 	}
 
 	return nil
@@ -219,14 +219,14 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	// Convert to JSON
 	jsonData, err := json.Marshal(classSchema)
 	if err != nil {
-		return fmt.Errorf("failed to marshal class schema: %w", err)
+		return fmt.Errorf("Weaviate: failed to marshal class schema: %w", err)
 	}
 
 	// Create HTTP request
 	url := c.config.URL + "/v1/schema"
 	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(jsonData)))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create request: %w", err)
 	}
 
 	// Add headers
@@ -239,19 +239,19 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make request: %w", err)
+		return fmt.Errorf("Weaviate: failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
+		return fmt.Errorf("Weaviate: failed to read response: %w", err)
 	}
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("failed to create collection: HTTP %d - %s", resp.StatusCode, string(body))
+		return fmt.Errorf("Weaviate: failed to create collection: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
 	return nil

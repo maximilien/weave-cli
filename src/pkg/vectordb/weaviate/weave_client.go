@@ -26,7 +26,7 @@ func NewWeaveClient(config *Config) (*WeaveClient, error) {
 	// Create the official client first
 	officialClient, err := NewClient(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create official client: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to create official client: %w", err)
 	}
 
 	// Create HTTP client for direct REST API calls
@@ -82,7 +82,7 @@ func (wc *WeaveClient) DeleteDocument(ctx context.Context, collectionName, docum
 	// First check if the document exists in this collection
 	_, err := wc.Client.GetDocument(ctx, collectionName, documentID)
 	if err != nil {
-		return fmt.Errorf("failed to delete document %s from collection %s: document not found", documentID, collectionName)
+		return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: document not found", documentID, collectionName)
 	}
 
 	// Construct the REST API URL
@@ -96,7 +96,7 @@ func (wc *WeaveClient) DeleteDocument(ctx context.Context, collectionName, docum
 	// Create the DELETE request
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create delete request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create delete request: %w", err)
 	}
 
 	// Add authorization header
@@ -108,14 +108,14 @@ func (wc *WeaveClient) DeleteDocument(ctx context.Context, collectionName, docum
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to delete document %s from collection %s: %w", documentID, collectionName, err)
+		return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: %w", documentID, collectionName, err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return fmt.Errorf("Weaviate: failed to read response body: %w", err)
 	}
 
 	// Check response status
@@ -125,10 +125,10 @@ func (wc *WeaveClient) DeleteDocument(ctx context.Context, collectionName, docum
 
 	// If we get a 404, it means the document was not found
 	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("failed to delete document %s from collection %s: document not found", documentID, collectionName)
+		return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: document not found", documentID, collectionName)
 	}
 
-	return fmt.Errorf("failed to delete document %s from collection %s: HTTP %d - %s", documentID, collectionName, resp.StatusCode, string(body))
+	return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: HTTP %d - %s", documentID, collectionName, resp.StatusCode, string(body))
 }
 
 // DeleteDocumentsBulk deletes multiple documents in a single batch operation
@@ -146,7 +146,7 @@ func (wc *WeaveClient) DeleteDocumentsByMetadata(ctx context.Context, collection
 	for _, filter := range metadataFilters {
 		parts := strings.SplitN(filter, "=", 2)
 		if len(parts) != 2 {
-			return 0, fmt.Errorf("invalid metadata filter format: %s (expected key=value)", filter)
+			return 0, fmt.Errorf("Weaviate: invalid metadata filter format: %s (expected key=value)", filter)
 		}
 		filters[parts[0]] = parts[1]
 	}
@@ -154,7 +154,7 @@ func (wc *WeaveClient) DeleteDocumentsByMetadata(ctx context.Context, collection
 	// First, query for documents matching the metadata filters
 	documents, err := wc.queryDocumentsByMetadata(ctx, collectionName, filters)
 	if err != nil {
-		return 0, fmt.Errorf("failed to query documents by metadata: %w", err)
+		return 0, fmt.Errorf("Weaviate: failed to query documents by metadata: %w", err)
 	}
 
 	if len(documents) == 0 {
@@ -243,7 +243,7 @@ func (wc *WeaveClient) queryDocumentsByMetadata(ctx context.Context, collectionN
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal GraphQL payload: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to marshal GraphQL payload: %w", err)
 	}
 
 	// Construct the GraphQL endpoint URL
@@ -257,7 +257,7 @@ func (wc *WeaveClient) queryDocumentsByMetadata(ctx context.Context, collectionN
 	// Create the POST request
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GraphQL request: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to create GraphQL request: %w", err)
 	}
 
 	// Add headers
@@ -269,19 +269,19 @@ func (wc *WeaveClient) queryDocumentsByMetadata(ctx context.Context, collectionN
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query documents by metadata from collection %s: %w", collectionName, err)
+		return nil, fmt.Errorf("Weaviate: failed to query documents by metadata from collection %s: %w", collectionName, err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read GraphQL response: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to read GraphQL response: %w", err)
 	}
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to query documents by metadata from collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
+		return nil, fmt.Errorf("Weaviate: failed to query documents by metadata from collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
 	}
 
 	// Parse GraphQL response
@@ -293,12 +293,12 @@ func (wc *WeaveClient) queryDocumentsByMetadata(ctx context.Context, collectionN
 	}
 
 	if err := json.Unmarshal(body, &graphqlResp); err != nil {
-		return nil, fmt.Errorf("failed to parse GraphQL response: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse GraphQL response: %w", err)
 	}
 
 	// Check for GraphQL errors
 	if len(graphqlResp.Errors) > 0 {
-		return nil, fmt.Errorf("GraphQL errors: %v", graphqlResp.Errors)
+		return nil, fmt.Errorf("Weaviate: GraphQL errors: %v", graphqlResp.Errors)
 	}
 
 	// Extract documents
@@ -337,7 +337,7 @@ func (wc *WeaveClient) GetDocumentsByMetadata(ctx context.Context, collectionNam
 	for _, filter := range metadataFilters {
 		parts := strings.SplitN(filter, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid metadata filter format: %s (expected key=value)", filter)
+			return nil, fmt.Errorf("Weaviate: invalid metadata filter format: %s (expected key=value)", filter)
 		}
 		filters[parts[0]] = parts[1]
 	}
@@ -345,7 +345,7 @@ func (wc *WeaveClient) GetDocumentsByMetadata(ctx context.Context, collectionNam
 	// Query for documents matching the metadata filters
 	documents, err := wc.queryDocumentsByMetadata(ctx, collectionName, filters)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query documents by metadata: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to query documents by metadata: %w", err)
 	}
 
 	// Get full document details for each document
@@ -396,7 +396,7 @@ func (wc *WeaveClient) DeleteCollectionSchema(ctx context.Context, collectionNam
 	// Create the DELETE request
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create delete schema request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create delete schema request: %w", err)
 	}
 
 	// Add headers
@@ -408,14 +408,14 @@ func (wc *WeaveClient) DeleteCollectionSchema(ctx context.Context, collectionNam
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to delete collection schema %s: %w", collectionName, err)
+		return fmt.Errorf("Weaviate: failed to delete collection schema %s: %w", collectionName, err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return fmt.Errorf("Weaviate: failed to read response body: %w", err)
 	}
 
 	// Check response status
@@ -423,7 +423,7 @@ func (wc *WeaveClient) DeleteCollectionSchema(ctx context.Context, collectionNam
 		return nil
 	}
 
-	return fmt.Errorf("failed to delete collection schema %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
+	return fmt.Errorf("Weaviate: failed to delete collection schema %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
 }
 
 // deleteCollectionViaGraphQL deletes all objects using GraphQL
@@ -451,7 +451,7 @@ func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectio
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal GraphQL payload: %w", err)
+		return fmt.Errorf("Weaviate: failed to marshal GraphQL payload: %w", err)
 	}
 
 	// Construct the GraphQL endpoint URL
@@ -465,7 +465,7 @@ func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectio
 	// Create the POST request
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return fmt.Errorf("failed to create GraphQL request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create GraphQL request: %w", err)
 	}
 
 	// Add headers
@@ -477,19 +477,19 @@ func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectio
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to delete collection %s: %w", collectionName, err)
+		return fmt.Errorf("Weaviate: failed to delete collection %s: %w", collectionName, err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read GraphQL response: %w", err)
+		return fmt.Errorf("Weaviate: failed to read GraphQL response: %w", err)
 	}
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to delete collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
+		return fmt.Errorf("Weaviate: failed to delete collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
 	}
 
 	// Parse GraphQL response
@@ -501,12 +501,12 @@ func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectio
 	}
 
 	if err := json.Unmarshal(body, &graphqlResp); err != nil {
-		return fmt.Errorf("failed to parse GraphQL response: %w", err)
+		return fmt.Errorf("Weaviate: failed to parse GraphQL response: %w", err)
 	}
 
 	// Check for GraphQL errors
 	if len(graphqlResp.Errors) > 0 {
-		return fmt.Errorf("GraphQL errors: %v", graphqlResp.Errors)
+		return fmt.Errorf("Weaviate: GraphQL errors: %v", graphqlResp.Errors)
 	}
 
 	// Check if deletion was successful
@@ -518,7 +518,7 @@ func (wc *WeaveClient) deleteCollectionViaGraphQL(ctx context.Context, collectio
 		}
 	}
 
-	return fmt.Errorf("failed to delete collection %s: no objects deleted", collectionName)
+	return fmt.Errorf("Weaviate: failed to delete collection %s: no objects deleted", collectionName)
 }
 
 // deleteCollectionViaREST deletes all objects using REST API
@@ -526,7 +526,7 @@ func (wc *WeaveClient) deleteCollectionViaREST(ctx context.Context, collectionNa
 	// First, get all objects in the collection using GraphQL query (queries are usually allowed)
 	objects, err := wc.getAllObjectsInCollection(ctx, collectionName)
 	if err != nil {
-		return fmt.Errorf("failed to get objects in collection %s: %w", collectionName, err)
+		return fmt.Errorf("Weaviate: failed to get objects in collection %s: %w", collectionName, err)
 	}
 
 	if len(objects) == 0 {
@@ -544,7 +544,7 @@ func (wc *WeaveClient) deleteCollectionViaREST(ctx context.Context, collectionNa
 	}
 
 	if deletedCount == 0 {
-		return fmt.Errorf("failed to delete any objects from collection %s", collectionName)
+		return fmt.Errorf("Weaviate: failed to delete any objects from collection %s", collectionName)
 	}
 
 	return nil
@@ -571,7 +571,7 @@ func (wc *WeaveClient) getAllObjectsInCollection(ctx context.Context, collection
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal GraphQL payload: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to marshal GraphQL payload: %w", err)
 	}
 
 	// Construct the GraphQL endpoint URL
@@ -584,7 +584,7 @@ func (wc *WeaveClient) getAllObjectsInCollection(ctx context.Context, collection
 	// Create the POST request
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create GraphQL request: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to create GraphQL request: %w", err)
 	}
 
 	// Add headers
@@ -596,19 +596,19 @@ func (wc *WeaveClient) getAllObjectsInCollection(ctx context.Context, collection
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query collection %s: %w", collectionName, err)
+		return nil, fmt.Errorf("Weaviate: failed to query collection %s: %w", collectionName, err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read GraphQL response: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to read GraphQL response: %w", err)
 	}
 
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to query collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
+		return nil, fmt.Errorf("Weaviate: failed to query collection %s: HTTP %d - %s", collectionName, resp.StatusCode, string(body))
 	}
 
 	// Parse GraphQL response
@@ -620,12 +620,12 @@ func (wc *WeaveClient) getAllObjectsInCollection(ctx context.Context, collection
 	}
 
 	if err := json.Unmarshal(body, &graphqlResp); err != nil {
-		return nil, fmt.Errorf("failed to parse GraphQL response: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse GraphQL response: %w", err)
 	}
 
 	// Check for GraphQL errors
 	if len(graphqlResp.Errors) > 0 {
-		return nil, fmt.Errorf("GraphQL errors: %v", graphqlResp.Errors)
+		return nil, fmt.Errorf("Weaviate: GraphQL errors: %v", graphqlResp.Errors)
 	}
 
 	// Extract objects from result
@@ -663,7 +663,7 @@ func (wc *WeaveClient) deleteObjectViaREST(ctx context.Context, objectID string)
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create request: %w", err)
 	}
 
 	// Add headers
@@ -674,14 +674,14 @@ func (wc *WeaveClient) deleteObjectViaREST(ctx context.Context, objectID string)
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to make request: %w", err)
+		return fmt.Errorf("Weaviate: failed to make request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Check response status
 	if resp.StatusCode != http.StatusNoContent && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to delete object: HTTP %d - %s", resp.StatusCode, string(body))
+		return fmt.Errorf("Weaviate: failed to delete object: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
 	return nil
@@ -722,13 +722,13 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 
 	jsonPayload, err := json.Marshal(payload)
 	if err != nil {
-		return fmt.Errorf("failed to marshal document payload: %w", err)
+		return fmt.Errorf("Weaviate: failed to marshal document payload: %w", err)
 	}
 
 	// Create the POST request
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(jsonPayload))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create request: %w", err)
 	}
 
 	// Add headers
@@ -743,19 +743,19 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 	// Make the request
 	resp, err := wc.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to create document: %w", err)
+		return fmt.Errorf("Weaviate: failed to create document: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
+		return fmt.Errorf("Weaviate: failed to read response: %w", err)
 	}
 
 	// Check response status
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to create document: HTTP %d - %s", resp.StatusCode, string(body))
+		return fmt.Errorf("Weaviate: failed to create document: HTTP %d - %s", resp.StatusCode, string(body))
 	}
 
 	return nil

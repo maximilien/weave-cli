@@ -107,7 +107,7 @@ func prepareConnectionString(dbURL string) (string, error) {
 	// Parse the database URL
 	parsedURL, err := url.Parse(dbURL)
 	if err != nil {
-		return "", fmt.Errorf("invalid database URL: %w", err)
+		return "", fmt.Errorf("Supabase: invalid database URL: %w", err)
 	}
 
 	// Extract hostname
@@ -171,7 +171,7 @@ func (a *Adapter) Health(ctx context.Context) error {
 		// No direct database connection, but HTTP client should work
 		// We can't do a full health check without SQL access
 		return vectordb.ErrConnectionFailed("Supabase database connection not available (IPv6 only or connection failed)",
-			fmt.Errorf("direct PostgreSQL connection failed - only REST API available (limited functionality)"))
+			fmt.Errorf("Supabase: direct PostgreSQL connection failed - only REST API available (limited functionality)"))
 	}
 	if err := a.db.PingContext(ctx); err != nil {
 		return vectordb.ErrConnectionFailed("Supabase health check failed", err)

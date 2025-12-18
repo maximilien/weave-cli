@@ -120,9 +120,9 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 	if err != nil {
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			return 0, fmt.Errorf("collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
+			return 0, fmt.Errorf("Weaviate: collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
 		}
-		return 0, fmt.Errorf("failed to count documents in collection %s: %w", collectionName, err)
+		return 0, fmt.Errorf("Weaviate: failed to count documents in collection %s: %w", collectionName, err)
 	}
 
 	// Extract count from the result
@@ -132,10 +132,10 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 			if err.Message != "" {
 				// Check for common error patterns and provide better messages
 				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
-					return 0, fmt.Errorf("collection %s does not exist", collectionName)
+					return 0, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 				if strings.Contains(err.Message, "Unknown class") {
-					return 0, fmt.Errorf("collection %s does not exist", collectionName)
+					return 0, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 				// Check for "Did you mean" suggestions and extract them
 				if strings.Contains(err.Message, "Did you mean") {
@@ -145,13 +145,13 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 						suggestion := strings.TrimSpace(parts[1])
 						// Remove trailing question mark and clean up
 						suggestion = strings.TrimSuffix(suggestion, "?")
-						return 0, fmt.Errorf("collection %s does not exist. Did you mean %s?", collectionName, suggestion)
+						return 0, fmt.Errorf("Weaviate: collection %s does not exist. Did you mean %s?", collectionName, suggestion)
 					}
 				}
-				return 0, fmt.Errorf("graphql error: %s", err.Message)
+				return 0, fmt.Errorf("Weaviate: graphql error: %s", err.Message)
 			}
 		}
-		return 0, fmt.Errorf("graphql errors: %v", result.Errors)
+		return 0, fmt.Errorf("Weaviate: graphql errors: %v", result.Errors)
 	}
 
 	// Parse the aggregation result
@@ -169,7 +169,7 @@ func (c *Client) CountDocuments(ctx context.Context, collectionName string) (int
 		}
 	}
 
-	return 0, fmt.Errorf("failed to parse count result for collection %s", collectionName)
+	return 0, fmt.Errorf("Weaviate: failed to parse count result for collection %s", collectionName)
 }
 
 // listDocumentsBasic fetches documents with actual properties (excluding large fields)
@@ -232,7 +232,7 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 		}
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			return nil, fmt.Errorf("collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
+			return nil, fmt.Errorf("Weaviate: collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
 		}
 		// If the schema-based query fails, fall back to simple query
 		return c.listDocumentsSimple(ctx, collectionName, limit)
@@ -245,10 +245,10 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 			if err.Message != "" {
 				// Check for common error patterns and provide better messages
 				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
-					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+					return nil, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 				if strings.Contains(err.Message, "Unknown class") {
-					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+					return nil, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 				// Check for "Did you mean" suggestions and extract them
 				if strings.Contains(err.Message, "Did you mean") {
@@ -258,13 +258,13 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 						suggestion := strings.TrimSpace(parts[1])
 						// Remove trailing question mark and clean up
 						suggestion = strings.TrimSuffix(suggestion, "?")
-						return nil, fmt.Errorf("collection %s does not exist. Did you mean %s?", collectionName, suggestion)
+						return nil, fmt.Errorf("Weaviate: collection %s does not exist. Did you mean %s?", collectionName, suggestion)
 					}
 				}
-				return nil, fmt.Errorf("graphql error: %s", err.Message)
+				return nil, fmt.Errorf("Weaviate: graphql error: %s", err.Message)
 			}
 		}
-		return nil, fmt.Errorf("graphql errors: %v", result.Errors)
+		return nil, fmt.Errorf("Weaviate: graphql errors: %v", result.Errors)
 	}
 
 	var documents []Document
@@ -451,11 +451,11 @@ func (c *Client) listDocumentsWithSimpleMetadata(ctx context.Context, collection
 			if err.Message != "" {
 				// Check for common error patterns and provide better messages
 				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
-					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+					return nil, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 			}
 		}
-		return nil, fmt.Errorf("graphql error: %s", result.Errors[0].Message)
+		return nil, fmt.Errorf("Weaviate: graphql error: %s", result.Errors[0].Message)
 	}
 
 	var documents []Document
@@ -511,9 +511,9 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 	if err != nil {
 		// Check for common connection errors and provide better messages
 		if strings.Contains(err.Error(), "connection reset") || strings.Contains(err.Error(), "status code: -1") {
-			return nil, fmt.Errorf("collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
+			return nil, fmt.Errorf("Weaviate: collection %s not found - this may indicate a database configuration issue. Run 'weave config show' to verify your setup", collectionName)
 		}
-		return nil, fmt.Errorf("failed to query documents: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to query documents: %w", err)
 	}
 
 	// Check for GraphQL errors
@@ -523,10 +523,10 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 			if err.Message != "" {
 				// Check for common error patterns and provide better messages
 				if strings.Contains(err.Message, "class") && strings.Contains(err.Message, "not found") {
-					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+					return nil, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 				if strings.Contains(err.Message, "Unknown class") {
-					return nil, fmt.Errorf("collection %s does not exist", collectionName)
+					return nil, fmt.Errorf("Weaviate: collection %s does not exist", collectionName)
 				}
 				// Check for "Did you mean" suggestions and extract them
 				if strings.Contains(err.Message, "Did you mean") {
@@ -536,13 +536,13 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 						suggestion := strings.TrimSpace(parts[1])
 						// Remove trailing question mark and clean up
 						suggestion = strings.TrimSuffix(suggestion, "?")
-						return nil, fmt.Errorf("collection %s does not exist. Did you mean %s?", collectionName, suggestion)
+						return nil, fmt.Errorf("Weaviate: collection %s does not exist. Did you mean %s?", collectionName, suggestion)
 					}
 				}
-				return nil, fmt.Errorf("graphql error: %s", err.Message)
+				return nil, fmt.Errorf("Weaviate: graphql error: %s", err.Message)
 			}
 		}
-		return nil, fmt.Errorf("graphql errors: %v", result.Errors)
+		return nil, fmt.Errorf("Weaviate: graphql errors: %v", result.Errors)
 	}
 
 	var documents []Document
@@ -677,7 +677,7 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 	}
 
 	if document == nil {
-		return nil, fmt.Errorf("document with ID %s not found in collection %s", documentID, collectionName)
+		return nil, fmt.Errorf("Weaviate: document with ID %s not found in collection %s", documentID, collectionName)
 	}
 
 	return document, nil
@@ -703,7 +703,7 @@ func (c *Client) getDocumentSimple(ctx context.Context, collectionName, document
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query document: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to query document: %w", err)
 	}
 
 	var document *Document
@@ -732,7 +732,7 @@ func (c *Client) getDocumentSimple(ctx context.Context, collectionName, document
 	}
 
 	if document == nil {
-		return nil, fmt.Errorf("document with ID %s not found in collection %s", documentID, collectionName)
+		return nil, fmt.Errorf("Weaviate: document with ID %s not found in collection %s", documentID, collectionName)
 	}
 
 	return document, nil
@@ -750,7 +750,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 
 	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
 	if err != nil {
-		return fmt.Errorf("failed to create delete request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create delete request: %w", err)
 	}
 
 	// Add authorization header
@@ -763,14 +763,14 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to delete document %s from collection %s: %w", documentID, collectionName, err)
+		return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: %w", documentID, collectionName, err)
 	}
 	defer resp.Body.Close()
 
 	// Read response body to check for errors
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
+		return fmt.Errorf("Weaviate: failed to read response body: %w", err)
 	}
 
 	// Check response status
@@ -780,10 +780,10 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 
 	// If we get a 404, it means the document was not found
 	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("failed to delete document %s from collection %s: document not found", documentID, collectionName)
+		return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: document not found", documentID, collectionName)
 	}
 
-	return fmt.Errorf("failed to delete document %s from collection %s: HTTP %d - %s", documentID, collectionName, resp.StatusCode, string(body))
+	return fmt.Errorf("Weaviate: failed to delete document %s from collection %s: HTTP %d - %s", documentID, collectionName, resp.StatusCode, string(body))
 }
 
 // DeleteDocumentsBulk deletes multiple documents using concurrent individual requests for better performance
@@ -846,7 +846,7 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	for _, filter := range metadataFilters {
 		parts := strings.SplitN(filter, "=", 2)
 		if len(parts) != 2 {
-			return 0, fmt.Errorf("invalid metadata filter format: %s (expected key=value)", filter)
+			return 0, fmt.Errorf("Weaviate: invalid metadata filter format: %s (expected key=value)", filter)
 		}
 		filters[parts[0]] = parts[1]
 	}
@@ -854,7 +854,7 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	// First, query for documents matching the metadata filters
 	documents, err := c.queryDocumentsByMetadata(ctx, collectionName, filters)
 	if err != nil {
-		return 0, fmt.Errorf("failed to query documents by metadata: %w", err)
+		return 0, fmt.Errorf("Weaviate: failed to query documents by metadata: %w", err)
 	}
 
 	if len(documents) == 0 {
@@ -882,7 +882,7 @@ func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) 
 	// First, get all document IDs in the collection
 	documents, err := c.ListDocuments(ctx, collectionName, 10000) // Large limit to get all documents
 	if err != nil {
-		return fmt.Errorf("failed to list documents in collection %s: %w", collectionName, err)
+		return fmt.Errorf("Weaviate: failed to list documents in collection %s: %w", collectionName, err)
 	}
 
 	if len(documents) == 0 {
@@ -898,11 +898,11 @@ func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) 
 	// Delete all documents using bulk deletion
 	deletedCount, err := c.DeleteDocumentsBulk(ctx, collectionName, documentIDs)
 	if err != nil {
-		return fmt.Errorf("failed to delete documents from collection %s: %w", collectionName, err)
+		return fmt.Errorf("Weaviate: failed to delete documents from collection %s: %w", collectionName, err)
 	}
 
 	if deletedCount != len(documentIDs) {
-		return fmt.Errorf("failed to delete all documents: deleted %d of %d", deletedCount, len(documentIDs))
+		return fmt.Errorf("Weaviate: failed to delete all documents: deleted %d of %d", deletedCount, len(documentIDs))
 	}
 
 	return nil
@@ -972,7 +972,7 @@ func (c *Client) queryDocumentsByMetadata(ctx context.Context, collectionName st
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query documents by metadata: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to query documents by metadata: %w", err)
 	}
 
 	// Extract documents
@@ -1011,7 +1011,7 @@ func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName stri
 	for _, filter := range metadataFilters {
 		parts := strings.SplitN(filter, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid metadata filter format: %s (expected key=value)", filter)
+			return nil, fmt.Errorf("Weaviate: invalid metadata filter format: %s (expected key=value)", filter)
 		}
 		filters[parts[0]] = parts[1]
 	}
@@ -1019,7 +1019,7 @@ func (c *Client) GetDocumentsByMetadata(ctx context.Context, collectionName stri
 	// Query for documents matching the metadata filters
 	documents, err := c.queryDocumentsByMetadata(ctx, collectionName, filters)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query documents by metadata: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to query documents by metadata: %w", err)
 	}
 
 	// Get full document details for each document
@@ -1047,7 +1047,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 	if doc.Metadata != nil {
 		metadataBytes, err := json.Marshal(doc.Metadata)
 		if err != nil {
-			return fmt.Errorf("failed to marshal metadata: %w", err)
+			return fmt.Errorf("Weaviate: failed to marshal metadata: %w", err)
 		}
 		metadataJSON = string(metadataBytes)
 	}
@@ -1194,7 +1194,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 		Do(ctx)
 
 	if err != nil {
-		return fmt.Errorf("failed to create document: %w", err)
+		return fmt.Errorf("Weaviate: failed to create document: %w", err)
 	}
 
 	return nil
@@ -1205,7 +1205,7 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName, documentID,
 	// Get the current document to merge updates
 	currentDoc, err := c.GetDocument(ctx, collectionName, documentID)
 	if err != nil {
-		return fmt.Errorf("failed to get current document: %w", err)
+		return fmt.Errorf("Weaviate: failed to get current document: %w", err)
 	}
 
 	// Prepare properties for update
@@ -1276,7 +1276,7 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName, documentID,
 		Do(ctx)
 
 	if err != nil {
-		return fmt.Errorf("failed to update document: %w", err)
+		return fmt.Errorf("Weaviate: failed to update document: %w", err)
 	}
 
 	return nil

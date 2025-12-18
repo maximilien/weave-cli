@@ -105,7 +105,7 @@ func NewClient(config *Config) (*Client, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Weaviate client: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to create Weaviate client: %w", err)
 	}
 
 	return &Client{
@@ -138,11 +138,11 @@ func (c *Client) Health(ctx context.Context) error {
 	// Try to get the meta information
 	meta, err := c.client.Misc().MetaGetter().Do(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get Weaviate meta: %w", err)
+		return fmt.Errorf("Weaviate: failed to get Weaviate meta: %w", err)
 	}
 
 	if meta == nil {
-		return fmt.Errorf("received nil meta from Weaviate")
+		return fmt.Errorf("Weaviate: received nil meta from Weaviate")
 	}
 
 	return nil

@@ -66,7 +66,7 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	// Get the collection schema to determine the content field
 	schema, err := c.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collection schema: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get collection schema: %w", err)
 	}
 
 	// Determine the content field name - prefer content, fallback to text
@@ -119,7 +119,7 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute semantic search query: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to execute semantic search query: %w", err)
 	}
 
 	// Check for GraphQL errors
@@ -131,7 +131,7 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	// Parse the results
 	results, err := c.parseQueryResults(result, contentField)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query results: %v", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse query results: %v", err)
 	}
 
 	return results, nil
@@ -142,7 +142,7 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 	// Get schema to check available fields
 	schema, err := c.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collection schema for BM25: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get collection schema for BM25: %w", err)
 	}
 
 	// Check available fields
@@ -174,7 +174,7 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 	}
 
 	if len(queryFields) == 0 {
-		return nil, fmt.Errorf("no searchable fields found in collection")
+		return nil, fmt.Errorf("Weaviate: no searchable fields found in collection")
 	}
 
 	// Escape query text for GraphQL
@@ -215,7 +215,7 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute BM25 search query: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to execute BM25 search query: %w", err)
 	}
 
 	// Check for GraphQL errors
@@ -227,7 +227,7 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 	// Parse results
 	results, err := c.parseQueryResults(result, contentField)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse BM25 query results: %v", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse BM25 query results: %v", err)
 	}
 
 	// BM25 provides real similarity scores, so we don't need to modify them
@@ -247,7 +247,7 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 	// Get the collection schema to determine the content field
 	schema, err := c.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collection schema: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get collection schema: %w", err)
 	}
 
 	// Determine the content field name - prefer content, fallback to text
@@ -309,13 +309,13 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute semantic search query with filters: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to execute semantic search query with filters: %w", err)
 	}
 
 	// Parse the results
 	results, err := c.parseQueryResults(result, contentField)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse query results: %v", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse query results: %v", err)
 	}
 
 	return results, nil
@@ -324,7 +324,7 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 // parseQueryResults parses the GraphQL response into QueryResult objects
 func (c *Client) parseQueryResults(result interface{}, contentField string) ([]QueryResult, error) {
 	if result == nil {
-		return nil, fmt.Errorf("received nil result from GraphQL query")
+		return nil, fmt.Errorf("Weaviate: received nil result from GraphQL query")
 	}
 
 	// Access the Data field directly (same as existing code)
@@ -340,7 +340,7 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 
 		dataField := v.FieldByName("Data")
 		if !dataField.IsValid() || dataField.IsNil() {
-			return nil, fmt.Errorf("invalid result format: %T", result)
+			return nil, fmt.Errorf("Weaviate: invalid result format: %T", result)
 		}
 
 		if dataMap, ok := dataField.Interface().(map[string]interface{}); ok {
@@ -359,7 +359,7 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 	// Extract the Get data
 	getData, ok := data["Get"].(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("invalid response format: missing Get data")
+		return nil, fmt.Errorf("Weaviate: invalid response format: missing Get data")
 	}
 
 	// Get the collection results (the key is the collection name)
@@ -372,7 +372,7 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 	}
 
 	if collectionResults == nil {
-		return nil, fmt.Errorf("no results found in response")
+		return nil, fmt.Errorf("Weaviate: no results found in response")
 	}
 
 	// Parse each result
@@ -467,7 +467,7 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 	// Get schema to check available fields
 	schema, err := c.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collection schema for fallback: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get collection schema for fallback: %w", err)
 	}
 
 	// Check available fields
@@ -499,7 +499,7 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 	}
 
 	if len(queryFields) == 0 {
-		return nil, fmt.Errorf("no searchable fields found in collection")
+		return nil, fmt.Errorf("Weaviate: no searchable fields found in collection")
 	}
 
 	// Escape query text for GraphQL
@@ -530,7 +530,7 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute hybrid fallback query: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to execute hybrid fallback query: %w", err)
 	}
 
 	// Check for GraphQL errors
@@ -542,7 +542,7 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 	// Parse results
 	results, err := c.parseQueryResults(result, contentField)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse hybrid fallback query results: %v", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse hybrid fallback query results: %v", err)
 	}
 
 	// Hybrid search provides real similarity scores, so we don't need to modify them
@@ -554,7 +554,7 @@ func (c *Client) queryWithSimpleFallback(ctx context.Context, collectionName, qu
 	// Get schema to check available fields
 	schema, err := c.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collection schema for simple fallback: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get collection schema for simple fallback: %w", err)
 	}
 
 	// Check available fields
@@ -629,7 +629,7 @@ func (c *Client) queryWithSimpleFallback(ctx context.Context, collectionName, qu
 						]
 					}`, operandsStr)
 	} else {
-		return nil, fmt.Errorf("no searchable fields found in collection")
+		return nil, fmt.Errorf("Weaviate: no searchable fields found in collection")
 	}
 
 	// Build the complete query
@@ -650,18 +650,18 @@ func (c *Client) queryWithSimpleFallback(ctx context.Context, collectionName, qu
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute simple fallback query: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to execute simple fallback query: %w", err)
 	}
 
 	// Check for GraphQL errors
 	if hasGraphQLErrors(result) {
-		return nil, fmt.Errorf("simple fallback query also returned errors")
+		return nil, fmt.Errorf("Weaviate: simple fallback query also returned errors")
 	}
 
 	// Parse the results
 	results, err := c.parseQueryResults(result, contentField)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse simple fallback query results: %v", err)
+		return nil, fmt.Errorf("Weaviate: failed to parse simple fallback query results: %v", err)
 	}
 
 	// Since this is a simple text search, set all scores to 1.0

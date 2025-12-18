@@ -34,10 +34,10 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 	// Check if collection already exists
 	exists, err := c.client.HasCollection(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to check collection existence: %w", err)
+		return fmt.Errorf("Milvus: failed to check collection existence: %w", err)
 	}
 	if exists {
-		return fmt.Errorf("collection already exists: %s", name)
+		return fmt.Errorf("Milvus: collection already exists: %s", name)
 	}
 
 	// Build Milvus schema with explicit fields using builder pattern
@@ -97,23 +97,23 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 	// Create collection
 	err = c.client.CreateCollection(ctx, milvusSchema, 1) // shardNum=1 for simplicity
 	if err != nil {
-		return fmt.Errorf("failed to create collection: %w", err)
+		return fmt.Errorf("Milvus: failed to create collection: %w", err)
 	}
 
 	// Create IVF_FLAT index on vector field for semantic search
 	index, err := entity.NewIndexIvfFlat(c.getMetricType(), 128) // nlist=128
 	if err != nil {
-		return fmt.Errorf("failed to create index: %w", err)
+		return fmt.Errorf("Milvus: failed to create index: %w", err)
 	}
 	err = c.client.CreateIndex(ctx, name, FieldEmbedding, index, false)
 	if err != nil {
-		return fmt.Errorf("failed to create vector index: %w", err)
+		return fmt.Errorf("Milvus: failed to create vector index: %w", err)
 	}
 
 	// Load collection into memory for searching
 	err = c.client.LoadCollection(ctx, name, false)
 	if err != nil {
-		return fmt.Errorf("failed to load collection: %w", err)
+		return fmt.Errorf("Milvus: failed to load collection: %w", err)
 	}
 
 	return nil
@@ -127,16 +127,16 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 	// Check if collection exists
 	exists, err := c.client.HasCollection(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to check collection existence: %w", err)
+		return fmt.Errorf("Milvus: failed to check collection existence: %w", err)
 	}
 	if !exists {
-		return fmt.Errorf("collection does not exist: %s", name)
+		return fmt.Errorf("Milvus: collection does not exist: %s", name)
 	}
 
 	// Drop collection
 	err = c.client.DropCollection(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to delete collection: %w", err)
+		return fmt.Errorf("Milvus: failed to delete collection: %w", err)
 	}
 
 	return nil
@@ -150,7 +150,7 @@ func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo
 	// List all collections
 	collections, err := c.client.ListCollections(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list collections: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to list collections: %w", err)
 	}
 
 	result := make([]vectordb.CollectionInfo, 0, len(collections))
@@ -188,7 +188,7 @@ func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error
 
 	exists, err := c.client.HasCollection(ctx, name)
 	if err != nil {
-		return false, fmt.Errorf("failed to check collection existence: %w", err)
+		return false, fmt.Errorf("Milvus: failed to check collection existence: %w", err)
 	}
 
 	return exists, nil
@@ -202,7 +202,7 @@ func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, er
 	// Get collection statistics
 	stats, err := c.client.GetCollectionStatistics(ctx, name)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get collection statistics: %w", err)
+		return 0, fmt.Errorf("Milvus: failed to get collection statistics: %w", err)
 	}
 
 	// Parse row count from stats
@@ -222,7 +222,7 @@ func (c *Client) GetSchema(ctx context.Context, name string) (*vectordb.Collecti
 	// Get collection schema
 	coll, err := c.client.DescribeCollection(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collection schema: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to get collection schema: %w", err)
 	}
 
 	// Find embedding field to get vectorizer info

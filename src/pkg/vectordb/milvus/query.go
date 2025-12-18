@@ -17,7 +17,7 @@ import (
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
 	// Check if LLM client is available for embedding generation
 	if a.llmClient == nil {
-		return nil, fmt.Errorf("SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
+		return nil, fmt.Errorf("Milvus: SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
@@ -26,7 +26,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 	// Generate embedding for query using LLM client
 	queryEmbedding64, err := a.llmClient.GenerateEmbedding(ctx, query, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to generate query embedding: %w", err)
 	}
 
 	// Convert float64 to float32 for Milvus
@@ -63,7 +63,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		sp,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("vector search failed: %w", err)
+		return nil, fmt.Errorf("Milvus: vector search failed: %w", err)
 	}
 
 	// Parse results
@@ -103,7 +103,7 @@ func (c *Client) SearchBM25(ctx context.Context, collectionName, query string, o
 		client.WithLimit(int64(opts.TopK)),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("BM25 search failed: %w", err)
+		return nil, fmt.Errorf("Milvus: BM25 search failed: %w", err)
 	}
 
 	return c.parseQueryResults(result, 1.0) // Use constant score for BM25
@@ -174,7 +174,7 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, me
 		client.WithLimit(int64(opts.TopK)),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("metadata search failed: %w", err)
+		return nil, fmt.Errorf("Milvus: metadata search failed: %w", err)
 	}
 
 	return c.parseQueryResults(result, 1.0) // No score for metadata search

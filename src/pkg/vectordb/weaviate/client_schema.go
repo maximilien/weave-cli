@@ -21,7 +21,7 @@ func (c *Client) GetCollectionSchema(ctx context.Context, collectionName string)
 	// Get the schema using the REST API
 	schema, err := c.client.Schema().Getter().Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get schema: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get schema: %w", err)
 	}
 
 	var properties []string
@@ -45,7 +45,7 @@ func (c *Client) GetFullCollectionSchema(ctx context.Context, collectionName str
 	// Get the schema using the REST API
 	schema, err := c.client.Schema().Getter().Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get schema: %w", err)
+		return nil, fmt.Errorf("Weaviate: failed to get schema: %w", err)
 	}
 
 	for _, class := range schema.Classes {
@@ -80,7 +80,7 @@ func (c *Client) GetFullCollectionSchema(ctx context.Context, collectionName str
 		}
 	}
 
-	return nil, fmt.Errorf("collection '%s' not found in schema", collectionName)
+	return nil, fmt.Errorf("Weaviate: collection '%s' not found in schema", collectionName)
 }
 
 // CreateCollectionFromSchema creates a collection from a CollectionSchema object
@@ -91,12 +91,12 @@ func (c *Client) CreateCollectionFromSchema(ctx context.Context, schema *Collect
 	// Check if collection already exists
 	collections, err := c.ListCollections(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to check existing collections: %w", err)
+		return fmt.Errorf("Weaviate: failed to check existing collections: %w", err)
 	}
 
 	for _, existingCollection := range collections {
 		if existingCollection == schema.Class {
-			return fmt.Errorf("collection '%s' already exists", schema.Class)
+			return fmt.Errorf("Weaviate: collection '%s' already exists", schema.Class)
 		}
 	}
 
@@ -146,7 +146,7 @@ func (c *Client) CreateCollectionFromSchema(ctx context.Context, schema *Collect
 	// Marshal to JSON
 	schemaJSON, err := json.Marshal(classSchema)
 	if err != nil {
-		return fmt.Errorf("failed to marshal schema: %w", err)
+		return fmt.Errorf("Weaviate: failed to marshal schema: %w", err)
 	}
 
 	// Parse URL to extract host and scheme
@@ -164,7 +164,7 @@ func (c *Client) CreateCollectionFromSchema(ctx context.Context, schema *Collect
 	url := fmt.Sprintf("%s://%s/v1/schema", scheme, host)
 	req, err := http.NewRequestWithContext(ctx, "POST", url, strings.NewReader(string(schemaJSON)))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("Weaviate: failed to create request: %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -175,13 +175,13 @@ func (c *Client) CreateCollectionFromSchema(ctx context.Context, schema *Collect
 	httpClient := &http.Client{}
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
+		return fmt.Errorf("Weaviate: failed to send request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to create collection: status %d, body: %s", resp.StatusCode, string(body))
+		return fmt.Errorf("Weaviate: failed to create collection: status %d, body: %s", resp.StatusCode, string(body))
 	}
 
 	return nil
