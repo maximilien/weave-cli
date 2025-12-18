@@ -6,22 +6,24 @@ This document tracks feature support and compatibility across different vector d
 
 | Database | Type | Status | Config Type | Target Version |
 |----------|------|--------|-------------|----------------|
-| Weaviate Cloud | Cloud | ✅ Production | `weaviate-cloud` | v0.3.x |
-| Weaviate Local | Self-hosted | ✅ Production | `weaviate-local` | v0.3.x |
-| Milvus Local | Self-hosted | 🧪 Beta | `milvus-local` | v0.3.16+ |
-| Milvus Cloud (Zilliz) | Cloud | 🧪 Beta | `milvus-cloud` | v0.3.16+ |
-| Chroma Local | Self-hosted | ✅ Production | `chroma-local` | v0.6.0+ (macOS only) |
-| Chroma Cloud | Cloud | ✅ Production | `chroma-cloud` | v0.6.0+ (macOS only) |
-| Qdrant Local | Self-hosted | 🧪 Experimental | `qdrant-local` | v0.7.0+ |
-| Qdrant Cloud | Cloud | 🧪 Experimental | `qdrant-cloud` | v0.7.0+ |
-| Neo4j Local | Self-hosted | ✅ Production | `neo4j-local` | v0.7.1+ |
+| Weaviate Cloud | Cloud | ✅ Stable | `weaviate-cloud` | v0.3.x |
+| Weaviate Local | Self-hosted | ✅ Stable | `weaviate-local` | v0.3.x |
+| Milvus Local | Self-hosted | ✅ Stable | `milvus-local` | v0.3.16+ |
+| Milvus Cloud (Zilliz) | Cloud | ✅ Stable | `milvus-cloud` | v0.3.16+ |
+| Chroma Local | Self-hosted | ✅ Stable | `chroma-local` | v0.6.0+ (macOS only) |
+| Chroma Cloud | Cloud | ✅ Stable | `chroma-cloud` | v0.6.0+ (macOS only) |
+| Qdrant Local | Self-hosted | ✅ Stable | `qdrant-local` | v0.7.0+ |
+| Qdrant Cloud | Cloud | ✅ Stable | `qdrant-cloud` | v0.7.0+ |
+| Neo4j Local | Self-hosted | ✅ Stable | `neo4j-local` | v0.7.1+ |
 | Neo4j Cloud (Aura) | Cloud | ⚠️ Untested | `neo4j-cloud` | v0.7.1+ |
-| OpenSearch Local | Self-hosted | 🧪 Experimental | `opensearch-local` | v0.7.3+ |
-| OpenSearch Cloud (AWS) | Cloud | 🧪 Experimental | `opensearch-cloud` | v0.7.3+ |
-| Supabase | Cloud/Self-hosted | 🧪 Alpha | `supabase` | v0.3.x |
-| MongoDB Atlas | Cloud | ✅ Functional | `mongodb` | v0.3.15+ |
-| Pinecone | Cloud | 🧪 Beta | `pinecone` | v0.7.6+ |
-| Mock | Testing | ✅ Production | `mock` | v0.3.x |
+| OpenSearch Local | Self-hosted | ✅ Stable | `opensearch-local` | v0.7.3+ |
+| OpenSearch Cloud (AWS) | Cloud | ✅ Stable | `opensearch-cloud` | v0.7.3+ |
+| Elasticsearch Local | Self-hosted | 🟢 Beta | `elasticsearch-local` | v0.8.0+ |
+| Elasticsearch Cloud | Cloud | 🟢 Beta | `elasticsearch-cloud` | v0.8.0+ |
+| Supabase | Cloud/Self-hosted | ✅ Stable | `supabase` | v0.3.x |
+| MongoDB Atlas | Cloud | ✅ Stable | `mongodb` | v0.3.15+ |
+| Pinecone | Cloud | 🟢 Beta | `pinecone` | v0.7.6+ |
+| Mock | Testing | ✅ Stable | `mock` | v0.3.x |
 | **Redis** | **Cloud/Self-hosted** | **📋 Planned** | **`redis`** | **v0.6.0** |
 
 ## Feature Support Matrix
