@@ -6,6 +6,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/elastic/go-elasticsearch/v9"
@@ -83,6 +84,29 @@ func (c *Client) Health(ctx context.Context) error {
 
 	_, err := c.client.Ping().Do(ctx)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Elasticsearch health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Elasticsearch not running (start with: docker run -p 9200:9200 -e \"discovery.type=single-node\" docker.elastic.co/elasticsearch/elasticsearch:8.11.0)\n"+
+				"  2. Wrong URL/port in configuration (default: http://localhost:9200)\n"+
+				"  3. For Elastic Cloud: verify cloud ID and API key\n"+
+				"  → Check Elasticsearch is running and verify connection details", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Elasticsearch health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Elasticsearch starting up (can take 30-60s, check logs: docker logs <container>)\n"+
+				"  2. Insufficient resources (needs 2GB+ RAM)\n"+
+				"  3. Network/firewall blocking port 9200\n"+
+				"  → Wait for startup or check system resources", err)
+		}
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
+			return fmt.Errorf("Elasticsearch health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Missing or invalid credentials for secured cluster\n"+
+				"  2. For Elastic Cloud: check API key or cloud credentials\n"+
+				"  3. Security enabled but credentials not provided\n"+
+				"  → Verify username/password or API key configuration", err)
+		}
 		return fmt.Errorf("Elasticsearch health check failed: %w", err)
 	}
 

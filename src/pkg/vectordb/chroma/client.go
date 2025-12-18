@@ -8,6 +8,7 @@ package chroma
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	chroma "github.com/amikos-tech/chroma-go/pkg/api/v2"
@@ -172,6 +173,29 @@ func (c *Client) Health(ctx context.Context) error {
 	// Use heartbeat to check health
 	err := c.client.Heartbeat(ctx)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Chroma health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Chroma server not running (start with: docker run -p 8000:8000 chromadb/chroma)\n"+
+				"  2. Wrong URL/port in configuration (default: http://localhost:8000)\n"+
+				"  3. For Chroma Cloud: verify tenant and API key\n"+
+				"  → Check Chroma is running and verify connection details", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Chroma health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Chroma server not responding (check logs: docker logs <container>)\n"+
+				"  2. Network/firewall blocking port 8000\n"+
+				"  3. For Chroma Cloud: verify cluster is running\n"+
+				"  → Check Chroma status and network connectivity", err)
+		}
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
+			return fmt.Errorf("Chroma health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid or missing API key for Chroma Cloud\n"+
+				"  2. API key not set in CHROMA_API_KEY environment variable\n"+
+				"  3. Wrong tenant or database configuration\n"+
+				"  → Verify API key and tenant settings", err)
+		}
 		return fmt.Errorf("Chroma health check failed: %w", err)
 	}
 

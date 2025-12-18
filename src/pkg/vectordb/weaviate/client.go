@@ -138,6 +138,29 @@ func (c *Client) Health(ctx context.Context) error {
 	// Try to get the meta information
 	meta, err := c.client.Misc().MetaGetter().Do(ctx)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Weaviate: health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Weaviate server not running (start with: docker run -p 8080:8080 -p 50051:50051 semitechnologies/weaviate:latest)\n"+
+				"  2. Wrong URL in configuration (check host and port)\n"+
+				"  3. For Weaviate Cloud: verify cluster URL and API key\n"+
+				"  → Verify connection details in config", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Weaviate: health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Weaviate server not responding (check logs: docker logs <container>)\n"+
+				"  2. Network/firewall issues blocking port 8080\n"+
+				"  3. For Weaviate Cloud: verify cluster is running\n"+
+				"  → Check Weaviate status and network connectivity", err)
+		}
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
+			return fmt.Errorf("Weaviate: health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid or missing API key for Weaviate Cloud\n"+
+				"  2. API key not set in WEAVIATE_API_KEY environment variable\n"+
+				"  3. Wrong authentication scheme (API key vs OIDC)\n"+
+				"  → Verify API key at https://console.weaviate.cloud", err)
+		}
 		return fmt.Errorf("Weaviate: failed to get Weaviate meta: %w", err)
 	}
 
