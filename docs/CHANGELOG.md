@@ -40,6 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **MongoDB**: Health + Collection + Query + Bulk (comprehensive coverage)
   - New module: `src/pkg/vectordb/timeout.go` with `OperationType` enum
   - Documentation: `src/pkg/vectordb/TIMEOUT_GUIDE.md`
+- **Cloud Setup Documentation**: Created comprehensive setup guide for Neo4j Aura
+  - **docs/neo4j/AURA_SETUP.md** (415 lines) covering:
+    - Quick start with Aura instance creation (Free/Professional/Enterprise tiers)
+    - Secure credential management
+    - Vector index creation with Cypher queries
+    - Configuration options (.env, config.yaml, interactive)
+    - Troubleshooting connection and vector index issues
+    - Advanced topics: hybrid search, metadata filtering, instance management
+  - **MongoDB ATLAS_SETUP.md**: Already exists (verified, 296 lines)
+  - **Pattern**: Comprehensive cloud setup guides for VDBs with managed services
+  - **Commit**: 08db9b6
 
 ### Fixed
 - **Error Message Quality**: Added VDB names to 174 error messages for better troubleshooting
@@ -49,12 +60,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Impact**: Consistent VDB naming across all error messages
   - **Pattern**: Batch replacement using perl regex (`fmt.Errorf("` → `fmt.Errorf("VDB: `)
   - **Commit**: 8ddf84c
-- **Troubleshooting Hints**: Added MongoDB-style error guidance to health checks
+- **Troubleshooting Hints**: Added MongoDB-style error guidance to health checks (5 VDBs)
   - **Pinecone**: Authentication (401), timeout, network errors with actionable hints
   - **Qdrant**: Connection refused, timeout, authentication errors with troubleshooting steps
+  - **Weaviate**: Connection refused (Docker command), timeout, auth errors (Cloud console link)
+  - **Elasticsearch**: Connection refused (resource requirements), timeout (startup time), auth errors
+  - **Chroma**: Connection refused (Docker command), timeout, auth errors (Cloud tenant)
   - **Pattern**: "Common causes:" with numbered list + "→" action items
-  - **Examples**: Docker startup commands, cloud console links, status page URLs
-  - **Commit**: b5c9872
+  - **Examples**: Docker startup commands, cloud console links, status page URLs, resource requirements
+  - **Coverage**: 5/10 VDBs now have comprehensive troubleshooting hints
+  - **Commits**: b5c9872, 1145801
 - **OpenSearch Lint**: Removed ineffectual ctx assignment in UpdateSchema method
   - Fixed golangci-lint error that was causing CI failures
   - **Commit**: 59572e8
