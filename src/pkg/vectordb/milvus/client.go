@@ -145,6 +145,29 @@ func (c *Client) Health(ctx context.Context) error {
 	// Check if client is alive by listing databases
 	_, err := c.client.ListDatabases(ctx)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Milvus: health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Milvus server not running (start with: docker run -p 19530:19530 -p 9091:9091 milvusdb/milvus:latest)\n"+
+				"  2. Wrong host or port in configuration (default gRPC: 19530)\n"+
+				"  3. For Zilliz Cloud: verify cluster endpoint and API key\n"+
+				"  → Check Milvus is running and verify connection details", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Milvus: health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Milvus starting up (can take 30-60s, check logs: docker logs <container>)\n"+
+				"  2. Network/firewall blocking port 19530\n"+
+				"  3. For Zilliz Cloud: verify cluster is running and not paused\n"+
+				"  → Wait for startup or check network connectivity", err)
+		}
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") || strings.Contains(errMsg, "authentication") {
+			return fmt.Errorf("Milvus: health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid or missing credentials for Zilliz Cloud\n"+
+				"  2. API key not configured (set MILVUS_API_KEY)\n"+
+				"  3. For Zilliz Cloud: verify API key and cluster ID\n"+
+				"  → Check credentials at https://cloud.zilliz.com", err)
+		}
 		return fmt.Errorf("Milvus: Milvus health check failed: %w", err)
 	}
 

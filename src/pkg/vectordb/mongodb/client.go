@@ -145,6 +145,29 @@ func (c *Client) Health(ctx context.Context) error {
 
 	// Ping the database
 	if err := c.client.Ping(ctx, nil); err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if containsAny(errMsg, "tls:", "x509:", "certificate") {
+			return fmt.Errorf("MongoDB health check failed: %w\n\nTLS connection error. Common causes:\n"+
+				"  1. IP address not whitelisted in MongoDB Atlas Network Access\n"+
+				"  2. Invalid credentials in connection string\n"+
+				"  3. Using old MongoDB driver version\n"+
+				"  → Check MongoDB Atlas dashboard: Network Access and Database Access", err)
+		}
+		if containsAny(errMsg, "timeout", "deadline") {
+			return fmt.Errorf("MongoDB health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. IP address not whitelisted in MongoDB Atlas (most common)\n"+
+				"  2. Firewall blocking outbound connections\n"+
+				"  3. Incorrect connection string or cluster paused\n"+
+				"  → Add your IP to Network Access in MongoDB Atlas dashboard", err)
+		}
+		if containsAny(errMsg, "authentication", "credentials", "unauthorized") {
+			return fmt.Errorf("MongoDB health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid username or password in connection string\n"+
+				"  2. User not created in MongoDB Atlas Database Access\n"+
+				"  3. User lacks permissions for specified database\n"+
+				"  → Verify credentials in MongoDB Atlas: Database Access", err)
+		}
 		return fmt.Errorf("MongoDB health check failed: %w", err)
 	}
 

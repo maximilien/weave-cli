@@ -74,6 +74,29 @@ func (c *Client) Health(ctx context.Context) error {
 	// Verify connectivity
 	err := c.driver.VerifyConnectivity(ctx)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Neo4j health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Neo4j server not running (start with: docker run -p 7474:7474 -p 7687:7687 neo4j:latest)\n"+
+				"  2. Wrong URI or port in configuration (Bolt: 7687, HTTP: 7474)\n"+
+				"  3. For Neo4j Aura: verify cluster URI and credentials\n"+
+				"  → Check Neo4j is running and verify connection details", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Neo4j health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Neo4j starting up (check logs: docker logs <container>)\n"+
+				"  2. Network/firewall blocking port 7687\n"+
+				"  3. For Neo4j Aura: verify cluster is running and not paused\n"+
+				"  → Wait for startup or check network connectivity", err)
+		}
+		if strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "credentials") || strings.Contains(errMsg, "Unauthorized") {
+			return fmt.Errorf("Neo4j health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid username or password\n"+
+				"  2. Default credentials not changed (neo4j/neo4j requires password change)\n"+
+				"  3. For Neo4j Aura: verify generated password from console\n"+
+				"  → Check credentials at https://console.neo4j.io", err)
+		}
 		return fmt.Errorf("Neo4j health check failed: %w", err)
 	}
 	return nil

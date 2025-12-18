@@ -108,12 +108,35 @@ func (a *Adapter) Health(ctx context.Context) error {
 
 	resp, err := a.client.Cluster.Health(ctx, nil)
 	if err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("OpenSearch health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. OpenSearch not running (start with: docker run -p 9200:9200 -p 9600:9600 opensearchproject/opensearch:latest)\n"+
+				"  2. Wrong URL/port in configuration (default: http://localhost:9200)\n"+
+				"  3. For AWS OpenSearch: verify domain endpoint and VPC settings\n"+
+				"  → Check OpenSearch is running and verify connection details", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("OpenSearch health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. OpenSearch starting up (can take 30-60s, needs 2GB+ RAM)\n"+
+				"  2. Insufficient system resources (check logs: docker logs <container>)\n"+
+				"  3. Network/firewall blocking port 9200\n"+
+				"  → Wait for startup or check system resources", err)
+		}
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
+			return fmt.Errorf("OpenSearch health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid username or password (default: admin/admin for local)\n"+
+				"  2. For AWS OpenSearch: check IAM credentials or fine-grained access control\n"+
+				"  3. Security plugin enabled but credentials not provided\n"+
+				"  → Verify credentials in configuration", err)
+		}
 		return fmt.Errorf("health check failed: %w", err)
 	}
 
 	// Check cluster status
 	if resp.Status == "red" {
-		return fmt.Errorf("cluster status is red")
+		return fmt.Errorf("cluster status is red - check cluster health and shard allocation")
 	}
 
 	return nil

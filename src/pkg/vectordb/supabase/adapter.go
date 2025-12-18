@@ -174,6 +174,29 @@ func (a *Adapter) Health(ctx context.Context) error {
 			fmt.Errorf("Supabase: direct PostgreSQL connection failed - only REST API available (limited functionality)"))
 	}
 	if err := a.db.PingContext(ctx); err != nil {
+		errMsg := err.Error()
+		// Provide helpful troubleshooting hints for common errors
+		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
+			return fmt.Errorf("Supabase health check failed: %w\n\nConnection refused. Common causes:\n"+
+				"  1. Incorrect database URL (should be db.[project-ref].supabase.co)\n"+
+				"  2. Database not started or paused (check Supabase dashboard)\n"+
+				"  3. For local Supabase: verify docker containers running\n"+
+				"  → Verify connection URL at https://supabase.com/dashboard/project/[project]/settings/database", err)
+		}
+		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
+			return fmt.Errorf("Supabase health check failed: %w\n\nConnection timeout. Common causes:\n"+
+				"  1. Firewall blocking PostgreSQL port 5432 or 6543 (pooler)\n"+
+				"  2. Project paused due to inactivity (free tier)\n"+
+				"  3. Network connectivity issues\n"+
+				"  → Check project status in Supabase dashboard", err)
+		}
+		if strings.Contains(errMsg, "authentication") || strings.Contains(errMsg, "password") || strings.Contains(errMsg, "pq: password") {
+			return fmt.Errorf("Supabase health check failed: %w\n\nAuthentication error. Common causes:\n"+
+				"  1. Invalid database password (not the API key)\n"+
+				"  2. Using service_role key instead of database password\n"+
+				"  3. Password reset required\n"+
+				"  → Get correct password from Settings > Database in Supabase dashboard", err)
+		}
 		return vectordb.ErrConnectionFailed("Supabase health check failed", err)
 	}
 	return nil
