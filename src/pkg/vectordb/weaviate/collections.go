@@ -12,6 +12,9 @@ import (
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	// Convert schema to field definitions
 	var fields []FieldDefinition
 	for _, prop := range schema.Properties {
@@ -34,6 +37,9 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	if err := a.client.DeleteCollection(ctx, name); err != nil {
 		return a.wrapError(err, "delete collection")
 	}
@@ -42,6 +48,9 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	collections, err := a.client.ListCollections(ctx)
 	if err != nil {
 		return nil, a.wrapError(err, "list collections")
@@ -71,6 +80,9 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	collections, err := a.client.ListCollections(ctx)
 	if err != nil {
 		return false, a.wrapError(err, "check collection exists")
@@ -87,6 +99,9 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // GetCollectionCount returns the number of documents in a collection
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	// Use the WeaveClient to count documents
 	docs, err := a.weaveClient.ListDocuments(ctx, name, 1000000) // Large limit to get all
 	if err != nil {

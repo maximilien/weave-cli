@@ -14,6 +14,9 @@ import (
 
 // SearchSemantic performs semantic search using vector embeddings
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return nil, err
@@ -42,6 +45,9 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 // SearchBM25 performs keyword-based search using BM25
 func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return nil, err
@@ -56,6 +62,9 @@ func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, 
 
 // SearchHybrid performs hybrid search combining vector and keyword search
 func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return nil, err
@@ -82,6 +91,9 @@ func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string
 
 // SearchByMetadata searches documents by metadata fields
 func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return nil, err

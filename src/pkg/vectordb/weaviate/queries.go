@@ -11,6 +11,9 @@ import (
 
 // SearchSemantic performs semantic search using vector embeddings
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	weaviateOptions := a.convertQueryOptions(options)
 
 	// Use the main Query method which defaults to semantic search
@@ -24,6 +27,9 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 // SearchBM25 performs keyword-based search using BM25
 func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	weaviateOptions := a.convertQueryOptions(options)
 	weaviateOptions.UseBM25 = true
 
@@ -37,6 +43,9 @@ func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, 
 
 // SearchHybrid performs hybrid search combining vector and keyword search
 func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	// For hybrid search, we'll try semantic first, then BM25 if semantic fails or returns few results
 	semanticResults, semanticErr := a.SearchSemantic(ctx, collectionName, query, options)
 
@@ -60,6 +69,9 @@ func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string
 
 // SearchByMetadata searches documents by metadata fields
 func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	weaviateOptions := a.convertQueryOptions(options)
 
 	// Use QueryWithFilters for metadata search

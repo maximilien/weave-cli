@@ -20,7 +20,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	collection := a.getCollection(collectionName)
@@ -93,7 +93,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 // SearchBM25 performs keyword-based search using MongoDB text search
 func (c *Client) SearchBM25(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	collection := c.getCollection(collectionName)
@@ -195,7 +195,7 @@ func (c *Client) SearchHybrid(ctx context.Context, collectionName, query string,
 
 // SearchByMetadata searches documents by metadata fields
 func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	collection := c.getCollection(collectionName)

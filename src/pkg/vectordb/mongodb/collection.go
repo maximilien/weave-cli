@@ -17,7 +17,7 @@ import (
 
 // CreateCollection creates a new collection with Atlas Vector Search index
 func (c *Client) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Create the collection if it doesn't exist
@@ -61,7 +61,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 
 // DeleteCollection deletes a collection and all its documents
 func (c *Client) DeleteCollection(ctx context.Context, name string) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	err := c.getCollection(name).Drop(ctx)
@@ -74,7 +74,7 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	names, err := c.database.ListCollectionNames(ctx, bson.D{})
@@ -108,7 +108,7 @@ func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo
 
 // CollectionExists checks if a collection exists
 func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	names, err := c.database.ListCollectionNames(ctx, bson.D{{Key: "name", Value: name}})
@@ -121,7 +121,7 @@ func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error
 
 // GetCollectionCount returns the number of documents in a collection
 func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	count, err := c.getCollection(name).CountDocuments(ctx, bson.D{})

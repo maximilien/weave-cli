@@ -13,7 +13,7 @@ import (
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	if err := a.ensureVectorExtension(ctx); err != nil {
@@ -80,7 +80,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	tableName := a.getTableName(name)
@@ -97,7 +97,7 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	if err := a.requireDBConnection("ListCollections"); err != nil {
@@ -154,7 +154,7 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	tableName := a.getTableName(name)
@@ -177,7 +177,7 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // GetCollectionCount returns the number of documents in a collection
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	exists, err := a.CollectionExists(ctx, name)

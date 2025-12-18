@@ -24,6 +24,9 @@ func (a *Adapter) Health(ctx context.Context) error {
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	// Use config defaults or schema settings
 	vectorDims := a.client.config.VectorDimensions
 	similarityMetric := a.client.config.SimilarityMetric
@@ -33,11 +36,17 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	return a.client.DeleteCollection(ctx, name, true)
 }
 
 // ListCollections returns a list of all collections
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	names, err := a.client.ListCollections(ctx)
 	if err != nil {
 		return nil, err
@@ -62,11 +71,17 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	return a.client.CollectionExists(ctx, name)
 }
 
 // GetCollectionCount returns the number of documents in a collection
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	return a.client.GetCollectionCount(ctx, name)
 }
 
@@ -264,6 +279,9 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 
 // SearchSemantic performs semantic search using vector embeddings
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	// Generate embedding for the query
 	if a.llmClient == nil {
 		return nil, fmt.Errorf("LLM client not available for generating query embeddings")
@@ -319,6 +337,9 @@ func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string
 
 // SearchByMetadata searches documents by metadata fields
 func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	// Build WHERE clause
 	whereClause := "WHERE "
 	conditions := []string{}
