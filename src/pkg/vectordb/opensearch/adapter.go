@@ -135,6 +135,9 @@ func (a *Adapter) getTimeoutFor(opType vectordb.OperationType) time.Duration {
 
 // GetSchema returns the schema for a collection
 func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vectordb.CollectionSchema, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeSchema))
+	defer cancel()
+
 	// Check if collection exists first
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
@@ -175,6 +178,9 @@ func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vector
 
 // UpdateSchema updates the schema for a collection
 func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeSchema))
+	defer cancel()
+
 	// OpenSearch allows adding new fields via Put Mapping API
 	// However, existing fields cannot be modified (similar to Elasticsearch)
 	// For simplicity, return error suggesting recreation

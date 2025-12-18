@@ -16,7 +16,7 @@ import (
 
 // CreateCollection creates a new index with k-NN settings
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Default vector dimensions
@@ -88,6 +88,9 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes an index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	resp, err := a.client.Indices.Delete(
 		ctx,
 		opensearchapi.IndicesDeleteReq{
@@ -126,6 +129,9 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // ListCollections returns a list of all indices
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
+	defer cancel()
+
 	// Use Cat Indices API to list all indices
 	resp, err := a.client.Cat.Indices(
 		ctx,

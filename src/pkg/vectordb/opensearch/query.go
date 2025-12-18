@@ -27,7 +27,7 @@ type opensearchDocument struct {
 
 // SearchSemantic performs k-NN vector search
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Generate embedding for the query
@@ -82,7 +82,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 // SearchBM25 performs BM25 text search
 func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Default TopK
@@ -119,7 +119,7 @@ func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, 
 
 // SearchHybrid performs hybrid search (vector + BM25)
 func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Generate embedding for the query

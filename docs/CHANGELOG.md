@@ -20,13 +20,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Commits: a995a26 (Qdrant), c0a4887 (Pinecone), e81b848 (Neo4j), d36dad5 (Supabase), ff910b8 (OpenSearch)
 - **Operation-Specific Timeout Strategy**: Intelligent timeout optimization based on operation type and deployment
   - **Health Checks**: 10s local, 20s cloud (faster failure feedback)
+  - **Document Operations**: 15s local, 30s cloud (single document CRUD)
+  - **Collection Operations**: 20s local, 40s cloud (index management)
+  - **Query Operations**: 20s local, 40s cloud (search and retrieval)
   - **Bulk Operations**: 120s local, 300s cloud (no false timeouts on large batches)
-  - **Other Operations**: Optimized per operation type (Document, Collection, Query, Schema)
+  - **Schema Operations**: 15s local, 30s cloud (schema introspection)
   - **Deployment-Aware**: Automatically adjusts for local vs cloud network latency
   - **User Override**: Custom timeouts still respected via config
   - **Implementations**:
-    - OpenSearch: Health + Bulk (CreateDocuments, DeleteDocuments)
-    - Qdrant: Health + Bulk (CreateDocuments, DeleteDocuments)
+    - **OpenSearch**: Health + Collection + Query + Schema + Bulk (comprehensive coverage)
+    - **Qdrant**: Health + Collection + Query + Bulk
     - Pinecone: Health + Bulk (CreateDocuments, DeleteDocuments)
     - Neo4j: Health + Bulk (BatchCreateDocuments, DeleteDocuments)
     - Supabase: Health + Bulk (CreateDocuments, DeleteDocuments)

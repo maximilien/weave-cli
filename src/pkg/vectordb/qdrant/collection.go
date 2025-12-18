@@ -7,12 +7,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	qdrant "github.com/qdrant/go-client/qdrant"
 )
 
 // CreateCollection creates a new collection in Qdrant with the specified vector configuration
 func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimensions int, similarityMetric string) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Map similarity metric to Qdrant's distance type
@@ -45,7 +46,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimens
 
 // DeleteCollection deletes a collection and all its data
 func (c *Client) DeleteCollection(ctx context.Context, name string) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	req := &qdrant.DeleteCollection{
@@ -62,7 +63,7 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collection names
 func (c *Client) ListCollections(ctx context.Context) ([]string, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	req := &qdrant.ListCollectionsRequest{}
