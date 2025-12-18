@@ -17,7 +17,7 @@ import (
 // SearchSemantic performs semantic search using vector embeddings
 // Note: Chroma requires embeddings to be provided or uses its embedding function
 func (c *Client) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Get collection
@@ -100,7 +100,7 @@ func (c *Client) SearchHybrid(ctx context.Context, collectionName, query string,
 
 // SearchByMetadata searches documents by metadata fields
 func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Get collection

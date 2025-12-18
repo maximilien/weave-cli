@@ -12,7 +12,7 @@ import (
 
 // GetSchema retrieves the index mappings and converts to CollectionSchema
 func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vectordb.CollectionSchema, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeSchema))
 	defer cancel()
 
 	// Check if index exists
@@ -55,7 +55,7 @@ func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vector
 
 // UpdateSchema updates the index mappings
 func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
-	_, cancel := context.WithTimeout(ctx, a.getTimeout())
+	_, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeSchema))
 	defer cancel()
 
 	// Validate schema first

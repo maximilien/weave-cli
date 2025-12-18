@@ -20,7 +20,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Generate embedding for query using LLM client
@@ -72,7 +72,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 // SearchBM25 performs keyword-based search using Milvus BM25 (Milvus 2.4+)
 func (c *Client) SearchBM25(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// NOTE: Milvus native BM25 support requires:
@@ -111,7 +111,7 @@ func (c *Client) SearchBM25(ctx context.Context, collectionName, query string, o
 
 // SearchHybrid performs hybrid search combining vector and keyword search
 func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Hybrid search implementation:
@@ -140,7 +140,7 @@ func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string
 
 // SearchByMetadata searches documents by metadata fields
 func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	// Build expression filter for metadata

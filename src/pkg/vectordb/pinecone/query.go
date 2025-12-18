@@ -13,7 +13,7 @@ import (
 
 // SearchSemantic performs a semantic search in Pinecone
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
 	if a.client == nil {
@@ -107,6 +107,9 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 // SearchByMetadata searches documents by metadata filters
 func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
+	defer cancel()
+
 	// Pinecone requires a query vector for search
 	// For metadata-only search, we convert GetDocumentsByMetadata results to QueryResults
 	limit := 10

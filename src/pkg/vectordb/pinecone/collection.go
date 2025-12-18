@@ -13,7 +13,7 @@ import (
 
 // CreateCollection creates a new Pinecone index
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	if a.client == nil {
@@ -49,7 +49,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a Pinecone index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	if a.client == nil {

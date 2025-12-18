@@ -28,7 +28,7 @@ const (
 
 // CreateCollection creates a new Milvus collection with explicit schema
 func (c *Client) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Check if collection already exists
@@ -121,7 +121,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 
 // DeleteCollection deletes a collection and all its documents
 func (c *Client) DeleteCollection(ctx context.Context, name string) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Check if collection exists
@@ -144,7 +144,7 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// List all collections
@@ -183,7 +183,7 @@ func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo
 
 // CollectionExists checks if a collection exists
 func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	exists, err := c.client.HasCollection(ctx, name)
@@ -196,7 +196,7 @@ func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error
 
 // GetCollectionCount returns the number of documents in a collection
 func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Get collection statistics
@@ -216,7 +216,7 @@ func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, er
 
 // GetSchema returns the schema information for a collection
 func (c *Client) GetSchema(ctx context.Context, name string) (*vectordb.CollectionSchema, error) {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeSchema))
 	defer cancel()
 
 	// Get collection schema

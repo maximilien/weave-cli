@@ -32,7 +32,7 @@ func getSimilarityMetric(metric string) *densevectorsimilarity.DenseVectorSimila
 
 // CreateCollection creates a new Elasticsearch index with vector field mappings
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Build index mappings with dense_vector field for embeddings
@@ -92,7 +92,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes an Elasticsearch index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	res, err := a.client.Indices.Delete(name).Do(ctx)
@@ -109,7 +109,7 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all Elasticsearch indices
 func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
-	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
+	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// Get all indices (excluding system indices that start with .)
