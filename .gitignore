@@ -63,10 +63,10 @@ neo4j_storage/
 TODO*
 TODOs.md
 TODOs-*.md
-NEXT_STEPS*.md
 WORK_PLAN*.md
 SESSION_SUMMARY_*.md
 BUG_FIX_PLAN.md
+docs/archive/planning/NEXT_STEPS*.md
 
 # Test artifacts
 test-results/
