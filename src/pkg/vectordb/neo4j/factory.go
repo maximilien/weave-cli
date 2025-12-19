@@ -90,13 +90,13 @@ func (f *Factory) GetSupportedTypes() []vectordb.VectorDBType {
 // ValidateConfig validates the configuration
 func (f *Factory) ValidateConfig(config *vectordb.Config) error {
 	if config.Type != vectordb.VectorDBTypeNeo4jLocal && config.Type != vectordb.VectorDBTypeNeo4jCloud {
-		return fmt.Errorf("invalid type: expected neo4j-local or neo4j-cloud, got %s", config.Type)
+		return fmt.Errorf("Neo4j: invalid type: expected neo4j-local or neo4j-cloud, got %s", config.Type)
 	}
 
 	// Validate similarity metric if provided
 	if config.SimilarityMetric != "" {
 		if config.SimilarityMetric != "cosine" && config.SimilarityMetric != "euclidean" {
-			return fmt.Errorf("invalid similarity metric: %s (must be 'cosine' or 'euclidean')", config.SimilarityMetric)
+			return fmt.Errorf("Neo4j: invalid similarity metric: %s (must be 'cosine' or 'euclidean')", config.SimilarityMetric)
 		}
 	}
 

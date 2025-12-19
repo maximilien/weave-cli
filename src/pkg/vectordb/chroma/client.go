@@ -246,7 +246,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 	// Create collection
 	_, err := c.client.GetOrCreateCollection(ctx, name, opts...)
 	if err != nil {
-		return fmt.Errorf("failed to create collection %s: %w", name, err)
+		return fmt.Errorf("Chroma: failed to create collection %s: %w", name, err)
 	}
 
 	return nil
@@ -269,7 +269,7 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 	// Delete the collection
 	err = c.client.DeleteCollection(ctx, name)
 	if err != nil {
-		return fmt.Errorf("failed to delete collection %s: %w", name, err)
+		return fmt.Errorf("Chroma: failed to delete collection %s: %w", name, err)
 	}
 
 	return nil

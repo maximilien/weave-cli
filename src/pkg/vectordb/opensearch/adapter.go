@@ -81,7 +81,7 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		Client: osConfig,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OpenSearch client: %w", err)
+		return nil, fmt.Errorf("OpenSearch: failed to create OpenSearch client: %w", err)
 	}
 
 	// Create LLM client for embeddings (optional)
@@ -131,12 +131,12 @@ func (a *Adapter) Health(ctx context.Context) error {
 				"  3. Security plugin enabled but credentials not provided\n"+
 				"  → Verify credentials in configuration", err)
 		}
-		return fmt.Errorf("health check failed: %w", err)
+		return fmt.Errorf("OpenSearch: health check failed: %w", err)
 	}
 
 	// Check cluster status
 	if resp.Status == "red" {
-		return fmt.Errorf("cluster status is red - check cluster health and shard allocation")
+		return fmt.Errorf("OpenSearch: cluster status is red - check cluster health and shard allocation")
 	}
 
 	return nil
@@ -164,10 +164,10 @@ func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vector
 	// Check if collection exists first
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to check collection existence: %w", err)
+		return nil, fmt.Errorf("OpenSearch: failed to check collection existence: %w", err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("collection not found: %s", collectionName)
+		return nil, fmt.Errorf("OpenSearch: collection not found: %s", collectionName)
 	}
 
 	// Return basic schema
@@ -217,7 +217,7 @@ func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionNam
 // ValidateSchema validates if a schema is compatible
 func (a *Adapter) ValidateSchema(schema *vectordb.CollectionSchema) error {
 	if schema.Class == "" {
-		return fmt.Errorf("collection name is required")
+		return fmt.Errorf("OpenSearch: collection name is required")
 	}
 	return nil
 }

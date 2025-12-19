@@ -43,7 +43,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, dimensions i
 
 	_, err := c.executeQuery(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to create vector index for collection '%s': %w", name, err)
+		return fmt.Errorf("Neo4j: failed to create vector index for collection '%s': %w", name, err)
 	}
 
 	return nil
@@ -103,7 +103,7 @@ func (c *Client) DeleteCollection(ctx context.Context, name string, deleteNodes 
 	query := fmt.Sprintf("DROP INDEX %s IF EXISTS", indexName)
 	_, err := c.executeQuery(ctx, query, nil)
 	if err != nil {
-		return fmt.Errorf("failed to delete vector index: %w", err)
+		return fmt.Errorf("Neo4j: failed to delete vector index: %w", err)
 	}
 
 	// Optionally delete all nodes with this label
@@ -111,7 +111,7 @@ func (c *Client) DeleteCollection(ctx context.Context, name string, deleteNodes 
 		deleteQuery := fmt.Sprintf("MATCH (n:%s) DETACH DELETE n", name)
 		_, err = c.executeQuery(ctx, deleteQuery, nil)
 		if err != nil {
-			return fmt.Errorf("failed to delete nodes: %w", err)
+			return fmt.Errorf("Neo4j: failed to delete nodes: %w", err)
 		}
 	}
 

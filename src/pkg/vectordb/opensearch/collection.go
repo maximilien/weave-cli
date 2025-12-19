@@ -76,11 +76,11 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create index: %w", err)
+		return fmt.Errorf("OpenSearch: failed to create index: %w", err)
 	}
 
 	if !resp.Acknowledged {
-		return fmt.Errorf("index creation not acknowledged")
+		return fmt.Errorf("OpenSearch: index creation not acknowledged")
 	}
 
 	return nil
@@ -98,11 +98,11 @@ func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to delete index: %w", err)
+		return fmt.Errorf("OpenSearch: failed to delete index: %w", err)
 	}
 
 	if !resp.Acknowledged {
-		return fmt.Errorf("index deletion not acknowledged")
+		return fmt.Errorf("OpenSearch: index deletion not acknowledged")
 	}
 
 	return nil
@@ -121,7 +121,7 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 		if strings.Contains(err.Error(), "404") {
 			return false, nil
 		}
-		return false, fmt.Errorf("failed to check index existence: %w", err)
+		return false, fmt.Errorf("OpenSearch: failed to check index existence: %w", err)
 	}
 
 	return true, nil
@@ -138,7 +138,7 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 		&opensearchapi.CatIndicesReq{},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list indices: %w", err)
+		return nil, fmt.Errorf("OpenSearch: failed to list indices: %w", err)
 	}
 
 	var collections []vectordb.CollectionInfo

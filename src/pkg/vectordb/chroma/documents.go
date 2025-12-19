@@ -22,7 +22,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 	// Get collection
 	collection, err := c.getCollection(ctx, collectionName)
 	if err != nil {
-		return fmt.Errorf("failed to get collection '%s': %w", collectionName, err)
+		return fmt.Errorf("Chroma: failed to get collection '%s': %w", collectionName, err)
 	}
 
 	// Prepare content - use Content or Text
@@ -55,7 +55,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 	// Prepare metadata - ALWAYS provide it (even if empty) to keep array lengths consistent
 	metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
 	if err != nil {
-		return fmt.Errorf("failed to create metadata: %w", err)
+		return fmt.Errorf("Chroma: failed to create metadata: %w", err)
 	}
 
 	// Add document to collection - wrap single values in slices and spread them
@@ -65,7 +65,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 		chroma.WithMetadatas([]chroma.DocumentMetadata{metadata}...),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create document %s: %w", document.ID, err)
+		return fmt.Errorf("Chroma: failed to create document %s: %w", document.ID, err)
 	}
 
 	return nil
@@ -164,7 +164,7 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, docu
 	// Prepare metadata - ALWAYS provide it (even if empty) to keep array lengths consistent
 	metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
 	if err != nil {
-		return fmt.Errorf("failed to create metadata: %w", err)
+		return fmt.Errorf("Chroma: failed to create metadata: %w", err)
 	}
 
 	// Update document - wrap single values in slices and spread them
@@ -174,7 +174,7 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, docu
 		chroma.WithMetadatasUpdate([]chroma.DocumentMetadata{metadata}...),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to update document %s: %w", document.ID, err)
+		return fmt.Errorf("Chroma: failed to update document %s: %w", document.ID, err)
 	}
 
 	return nil
@@ -194,7 +194,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, documentID 
 	// Delete document by ID - Chroma expects variadic argument
 	err = collection.Delete(ctx, chroma.WithIDsDelete(chroma.DocumentID(documentID)))
 	if err != nil {
-		return fmt.Errorf("failed to delete document %s: %w", documentID, err)
+		return fmt.Errorf("Chroma: failed to delete document %s: %w", documentID, err)
 	}
 
 	return nil
@@ -333,7 +333,7 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 		chroma.WithMetadatas(metadatas...),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create documents: %w", err)
+		return fmt.Errorf("Chroma: failed to create documents: %w", err)
 	}
 
 	return nil
@@ -363,7 +363,7 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, doc
 	// Delete documents by IDs
 	err = collection.Delete(ctx, chroma.WithIDsDelete(ids...))
 	if err != nil {
-		return fmt.Errorf("failed to delete documents: %w", err)
+		return fmt.Errorf("Chroma: failed to delete documents: %w", err)
 	}
 
 	return nil
@@ -406,7 +406,7 @@ func (c *Client) DeleteDocumentsByMetadata(ctx context.Context, collectionName s
 	// Delete documents matching metadata filter
 	err = collection.Delete(ctx, deleteOpts...)
 	if err != nil {
-		return fmt.Errorf("failed to delete documents by metadata: %w", err)
+		return fmt.Errorf("Chroma: failed to delete documents by metadata: %w", err)
 	}
 
 	return nil

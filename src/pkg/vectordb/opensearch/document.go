@@ -43,7 +43,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create document: %w", err)
+		return fmt.Errorf("OpenSearch: failed to create document: %w", err)
 	}
 
 	// Update document ID if it was generated
@@ -64,7 +64,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	// TODO: Implement proper bulk API usage
 	for _, doc := range documents {
 		if err := a.CreateDocument(ctx, collectionName, doc); err != nil {
-			return fmt.Errorf("failed to create document %s: %w", doc.ID, err)
+			return fmt.Errorf("OpenSearch: failed to create document %s: %w", doc.ID, err)
 		}
 	}
 	return nil
@@ -80,11 +80,11 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get document: %w", err)
+		return nil, fmt.Errorf("OpenSearch: failed to get document: %w", err)
 	}
 
 	if !resp.Found {
-		return nil, fmt.Errorf("document not found: %s", documentID)
+		return nil, fmt.Errorf("OpenSearch: document not found: %s", documentID)
 	}
 
 	// TODO: Parse source properly (resp.Source is RawMessage, needs unmarshaling)
@@ -99,7 +99,7 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
 	// TODO: UpdateDocument API needs investigation
 	// Will need to prepare doc with text, content, metadata and use proper update API
-	return fmt.Errorf("UpdateDocument not yet fully implemented")
+	return fmt.Errorf("OpenSearch: UpdateDocument not yet fully implemented")
 }
 
 // DeleteDocument deletes a document by ID
@@ -112,11 +112,11 @@ func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, documentID
 		},
 	)
 	if err != nil {
-		return fmt.Errorf("failed to delete document: %w", err)
+		return fmt.Errorf("OpenSearch: failed to delete document: %w", err)
 	}
 
 	if resp.Result != "deleted" && resp.Result != "not_found" {
-		return fmt.Errorf("unexpected delete result: %s", resp.Result)
+		return fmt.Errorf("OpenSearch: unexpected delete result: %s", resp.Result)
 	}
 
 	return nil
@@ -132,7 +132,7 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 	// TODO: Implement proper bulk delete
 	for _, docID := range documentIDs {
 		if err := a.DeleteDocument(ctx, collectionName, docID); err != nil {
-			return fmt.Errorf("failed to delete document %s: %w", docID, err)
+			return fmt.Errorf("OpenSearch: failed to delete document %s: %w", docID, err)
 		}
 	}
 	return nil
@@ -141,11 +141,11 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 // DeleteDocumentsByMetadata deletes documents matching metadata filters
 func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}) error {
 	// TODO: Implement delete by query with metadata filters
-	return fmt.Errorf("DeleteDocumentsByMetadata not yet fully implemented")
+	return fmt.Errorf("OpenSearch: DeleteDocumentsByMetadata not yet fully implemented")
 }
 
 // ListDocuments lists all documents in a collection
 func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limit int, offset int) ([]*vectordb.Document, error) {
 	// TODO: Implement proper search with pagination
-	return nil, fmt.Errorf("ListDocuments not yet fully implemented")
+	return nil, fmt.Errorf("OpenSearch: ListDocuments not yet fully implemented")
 }

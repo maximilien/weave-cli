@@ -98,7 +98,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	if doc.Vector == nil && a.llmClient != nil && doc.Content != "" {
 		embedding, err := a.llmClient.GenerateEmbedding(ctx, doc.Content, "text-embedding-3-small")
 		if err != nil {
-			return fmt.Errorf("failed to generate embedding: %w", err)
+			return fmt.Errorf("Neo4j: failed to generate embedding: %w", err)
 		}
 		// Convert []float64 to []float32
 		doc.Vector = make([]float32, len(embedding))
@@ -125,7 +125,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		if doc.Vector == nil && a.llmClient != nil && doc.Content != "" {
 			embedding, err := a.llmClient.GenerateEmbedding(ctx, doc.Content, "text-embedding-3-small")
 			if err != nil {
-				return fmt.Errorf("failed to generate embedding for document %d: %w", i, err)
+				return fmt.Errorf("Neo4j: failed to generate embedding for document %d: %w", i, err)
 			}
 			// Convert []float64 to []float32
 			doc.Vector = make([]float32, len(embedding))
@@ -166,7 +166,7 @@ func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, doc
 	if doc.Vector == nil && a.llmClient != nil && doc.Content != "" {
 		embedding, err := a.llmClient.GenerateEmbedding(ctx, doc.Content, "text-embedding-3-small")
 		if err != nil {
-			return fmt.Errorf("failed to generate embedding: %w", err)
+			return fmt.Errorf("Neo4j: failed to generate embedding: %w", err)
 		}
 		// Convert []float64 to []float32
 		doc.Vector = make([]float32, len(embedding))
@@ -424,7 +424,7 @@ func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vector
 
 // UpdateSchema updates the schema for a collection (not fully supported)
 func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
-	return fmt.Errorf("schema updates are not supported by Neo4j - delete and recreate the collection instead")
+	return fmt.Errorf("Neo4j: schema updates are not supported by Neo4j - delete and recreate the collection instead")
 }
 
 // GetDefaultSchema returns a default schema for the given type
@@ -437,7 +437,7 @@ func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionNam
 // ValidateSchema validates a schema definition
 func (a *Adapter) ValidateSchema(schema *vectordb.CollectionSchema) error {
 	if schema.Class == "" {
-		return fmt.Errorf("collection name is required")
+		return fmt.Errorf("Neo4j: collection name is required")
 	}
 	return nil
 }

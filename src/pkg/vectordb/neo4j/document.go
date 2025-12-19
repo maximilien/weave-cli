@@ -21,7 +21,7 @@ type Document struct {
 // CreateDocument creates a new document node with vector embedding
 func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc *Document) error {
 	if doc.ID == "" {
-		return fmt.Errorf("document ID is required")
+		return fmt.Errorf("Neo4j: document ID is required")
 	}
 
 	// Build Cypher query to create node with label and properties
@@ -44,7 +44,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 
 	_, err := c.executeQuery(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to create document: %w", err)
+		return fmt.Errorf("Neo4j: failed to create document: %w", err)
 	}
 
 	return nil
@@ -110,7 +110,7 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, id string) (*D
 // UpdateDocument updates an existing document
 func (c *Client) UpdateDocument(ctx context.Context, collectionName string, doc *Document) error {
 	if doc.ID == "" {
-		return fmt.Errorf("document ID is required")
+		return fmt.Errorf("Neo4j: document ID is required")
 	}
 
 	query := fmt.Sprintf(`
@@ -130,11 +130,11 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, doc 
 
 	result, err := c.executeQuery(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to update document: %w", err)
+		return fmt.Errorf("Neo4j: failed to update document: %w", err)
 	}
 
 	if len(result.Records) == 0 {
-		return fmt.Errorf("document not found: %s", doc.ID)
+		return fmt.Errorf("Neo4j: document not found: %s", doc.ID)
 	}
 
 	return nil
@@ -153,7 +153,7 @@ func (c *Client) DeleteDocument(ctx context.Context, collectionName, id string) 
 
 	_, err := c.executeQuery(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to delete document: %w", err)
+		return fmt.Errorf("Neo4j: failed to delete document: %w", err)
 	}
 
 	return nil
@@ -231,7 +231,7 @@ func (c *Client) DeleteAllDocuments(ctx context.Context, collectionName string) 
 
 	_, err := c.executeQuery(ctx, query, nil)
 	if err != nil {
-		return fmt.Errorf("failed to delete all documents: %w", err)
+		return fmt.Errorf("Neo4j: failed to delete all documents: %w", err)
 	}
 
 	return nil
@@ -274,7 +274,7 @@ func (c *Client) BatchCreateDocuments(ctx context.Context, collectionName string
 
 	_, err := c.executeQuery(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to batch create documents: %w", err)
+		return fmt.Errorf("Neo4j: failed to batch create documents: %w", err)
 	}
 
 	return nil
@@ -301,7 +301,7 @@ func (c *Client) DeleteDocuments(ctx context.Context, collectionName string, ids
 
 	_, err := c.executeQuery(ctx, query, params)
 	if err != nil {
-		return fmt.Errorf("failed to delete documents: %w", err)
+		return fmt.Errorf("Neo4j: failed to delete documents: %w", err)
 	}
 
 	return nil

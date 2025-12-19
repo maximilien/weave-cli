@@ -32,12 +32,12 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 	// Generate embedding for the query
 	if a.llmClient == nil {
-		return nil, fmt.Errorf("LLM client required for semantic search")
+		return nil, fmt.Errorf("OpenSearch: LLM client required for semantic search")
 	}
 
 	embedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate embedding for query: %w", err)
+		return nil, fmt.Errorf("OpenSearch: failed to generate embedding for query: %w", err)
 	}
 
 	// Default TopK
@@ -74,7 +74,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("semantic search failed: %w", err)
+		return nil, fmt.Errorf("OpenSearch: semantic search failed: %w", err)
 	}
 
 	return a.convertSearchResults(resp)
@@ -111,7 +111,7 @@ func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, 
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("BM25 search failed: %w", err)
+		return nil, fmt.Errorf("OpenSearch: BM25 search failed: %w", err)
 	}
 
 	return a.convertSearchResults(resp)
@@ -124,12 +124,12 @@ func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string
 
 	// Generate embedding for the query
 	if a.llmClient == nil {
-		return nil, fmt.Errorf("LLM client required for hybrid search")
+		return nil, fmt.Errorf("OpenSearch: LLM client required for hybrid search")
 	}
 
 	embedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate embedding for query: %w", err)
+		return nil, fmt.Errorf("OpenSearch: failed to generate embedding for query: %w", err)
 	}
 
 	// Default TopK
@@ -178,7 +178,7 @@ func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("hybrid search failed: %w", err)
+		return nil, fmt.Errorf("OpenSearch: hybrid search failed: %w", err)
 	}
 
 	return a.convertSearchResults(resp)
@@ -226,7 +226,7 @@ func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, m
 		},
 	)
 	if err != nil {
-		return nil, fmt.Errorf("metadata search failed: %w", err)
+		return nil, fmt.Errorf("OpenSearch: metadata search failed: %w", err)
 	}
 
 	return a.convertSearchResults(resp)

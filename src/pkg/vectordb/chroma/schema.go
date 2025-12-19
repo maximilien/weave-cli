@@ -135,15 +135,15 @@ func (c *Client) GetDefaultSchema(schemaType vectordb.SchemaType, collectionName
 // ValidateSchema validates a schema definition
 func (c *Client) ValidateSchema(schema *vectordb.CollectionSchema) error {
 	if schema == nil {
-		return fmt.Errorf("schema cannot be nil")
+		return fmt.Errorf("Chroma: schema cannot be nil")
 	}
 
 	if schema.Class == "" {
-		return fmt.Errorf("schema class name is required")
+		return fmt.Errorf("Chroma: schema class name is required")
 	}
 
 	if len(schema.Properties) == 0 {
-		return fmt.Errorf("schema must have at least one property")
+		return fmt.Errorf("Chroma: schema must have at least one property")
 	}
 
 	// Chroma schemas are flexible
