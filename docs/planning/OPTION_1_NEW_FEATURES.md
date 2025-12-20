@@ -2050,6 +2050,692 @@ weave> schema apply
 
 ---
 
+## Feature 1.8: AI Chunking Strategy Suggestion
+
+### Goal
+Enable users to determine optimal document chunking strategies by analyzing sample documents using an AI agent. The agent examines document structure, content patterns, and use case requirements to suggest chunk size, overlap, and chunking method.
+
+### User Stories
+- As a RAG developer, I want to know the optimal chunk size for my documents without trial-and-error
+- As a data engineer, I want AI to recommend chunking strategies that balance context and precision
+- As a new user, I want to understand the trade-offs between different chunking approaches
+
+### The Chunking Problem
+
+**Too Small Chunks (e.g., 100 tokens):**
+- ❌ Loss of context and coherence
+- ❌ Too many embeddings → high cost
+- ❌ Poor retrieval quality
+- ✅ Fine-grained search
+
+**Too Large Chunks (e.g., 2000 tokens):**
+- ❌ Less precise retrieval
+- ❌ Context window overflow
+- ❌ Slower processing
+- ✅ Better context preservation
+
+**Optimal Chunking:**
+- ✅ Balances context and precision
+- ✅ Matches document structure
+- ✅ Optimizes for use case
+- ✅ Minimizes cost while maximizing quality
+
+### CLI Interface
+
+```bash
+# Analyze and suggest chunking strategy
+weave chunk suggest ./samples \
+  --collection documents \
+  --output chunking-config.yaml
+
+# With specific use case
+weave chunk suggest ./samples \
+  --use-case "semantic search on technical documentation" \
+  --output chunking-config.yaml
+
+# Interactive mode with visual examples
+weave chunk suggest ./samples \
+  --interactive \
+  --show-examples
+
+# Test different strategies
+weave chunk suggest ./samples \
+  --test \
+  --strategies "fixed,semantic,recursive"
+
+# Compare chunk sizes
+weave chunk suggest ./samples \
+  --compare "256,512,1024" \
+  --output comparison-report.json
+
+# Apply to pipeline immediately
+weave chunk suggest ./samples \
+  --collection docs \
+  --apply-to-pipeline
+```
+
+### Technical Architecture
+
+**Package Structure:**
+```
+src/pkg/agents/
+├── chunking_agent.go      # AI chunking analysis agent
+
+src/pkg/chunking/
+├── strategies.go          # Chunking strategy implementations
+├── analyzer.go            # Document structure analysis
+├── evaluator.go           # Chunk quality evaluation
+└── types.go               # Chunking types and configs
+
+src/cmd/chunk/
+├── chunk.go               # Chunk command group
+├── suggest.go             # Suggest subcommand
+└── test.go                # Test subcommand
+```
+
+**Core Types:**
+
+```go
+// ChunkingAnalysisInput represents input for chunking analysis
+type ChunkingAnalysisInput struct {
+    SampleFiles      []string          // Paths to sample documents
+    UseCase          string            // User's use case (optional)
+    MaxSamples       int               // Max files to analyze (default: 30)
+    TestStrategies   []string          // Strategies to test
+}
+
+// ChunkingAnalysisOutput represents AI-generated chunking suggestion
+type ChunkingAnalysisOutput struct {
+    Recommendation   ChunkingConfig    // Recommended configuration
+    Reasoning        string            // Why this strategy was chosen
+    Confidence       float64           // Confidence score (0-1)
+    Alternatives     []ChunkingConfig  // Alternative configurations
+    Analysis         DocumentAnalysis  // Detailed analysis
+    Examples         []ChunkExample    // Example chunks
+    Performance      PerformanceEst    // Performance estimates
+    Warnings         []string          // Potential issues
+}
+
+// ChunkingConfig represents a chunking configuration
+type ChunkingConfig struct {
+    Strategy      string  `yaml:"strategy"`       // fixed, semantic, recursive, paragraph
+    ChunkSize     int     `yaml:"chunk_size"`     // Tokens per chunk
+    OverlapSize   int     `yaml:"overlap_size"`   // Token overlap
+    OverlapPct    float64 `yaml:"overlap_pct"`    // Percentage overlap
+    MinChunkSize  int     `yaml:"min_chunk_size"` // Minimum chunk size
+    MaxChunkSize  int     `yaml:"max_chunk_size"` // Maximum chunk size
+    Separators    []string `yaml:"separators,omitempty"` // For recursive
+    Description   string  `yaml:"description"`
+}
+
+// ChunkingStrategy defines different chunking approaches
+type ChunkingStrategy string
+
+const (
+    StrategyFixed      ChunkingStrategy = "fixed"      // Fixed-size chunks
+    StrategySemantic   ChunkingStrategy = "semantic"   // Semantic boundaries
+    StrategyRecursive  ChunkingStrategy = "recursive"  // Recursive splitting
+    StrategyParagraph  ChunkingStrategy = "paragraph"  // Paragraph-based
+    StrategySentence   ChunkingStrategy = "sentence"   // Sentence-based
+)
+
+// DocumentAnalysis represents document structure analysis
+type DocumentAnalysis struct {
+    AverageParagraphLength int              `json:"avg_paragraph_length"`
+    AverageSentenceLength  int              `json:"avg_sentence_length"`
+    ParagraphCount         int              `json:"paragraph_count"`
+    SentenceCount          int              `json:"sentence_count"`
+    HasSections            bool             `json:"has_sections"`
+    SectionDepth           int              `json:"section_depth"`
+    CodePercentage         float64          `json:"code_percentage"`
+    ContentType            string           `json:"content_type"` // prose, technical, code, mixed
+    StructureComplexity    string           `json:"structure_complexity"` // simple, moderate, complex
+}
+
+// ChunkExample shows an example chunk
+type ChunkExample struct {
+    Text         string  `json:"text"`
+    TokenCount   int     `json:"token_count"`
+    ChunkIndex   int     `json:"chunk_index"`
+    SourceFile   string  `json:"source_file"`
+    Quality      string  `json:"quality"` // good, acceptable, poor
+    Explanation  string  `json:"explanation"`
+}
+
+// PerformanceEst estimates performance metrics
+type PerformanceEst struct {
+    EstimatedChunks     int     `json:"estimated_chunks"`
+    EstimatedTokens     int     `json:"estimated_tokens"`
+    EstimatedCost       float64 `json:"estimated_cost_usd"`
+    RetrievalQuality    string  `json:"retrieval_quality"`  // excellent, good, fair, poor
+    ContextPreservation string  `json:"context_preservation"` // excellent, good, fair, poor
+}
+```
+
+### Implementation
+
+**Chunking Analysis Agent:**
+
+```go
+// ChunkingAgent analyzes documents and suggests chunking strategies
+type ChunkingAgent struct {
+    llmClient *llm.OpenAIClient
+}
+
+func NewChunkingAgent(llmClient *llm.OpenAIClient) *ChunkingAgent {
+    return &ChunkingAgent{llmClient: llmClient}
+}
+
+func (a *ChunkingAgent) Name() string {
+    return "chunking-agent"
+}
+
+func (a *ChunkingAgent) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+    analysisInput := input.(*ChunkingAnalysisInput)
+
+    // Step 1: Sample and analyze documents
+    samples := a.extractSamples(analysisInput.SampleFiles, analysisInput.MaxSamples)
+
+    // Step 2: Analyze document structure
+    analysis := a.analyzeDocumentStructure(samples)
+
+    // Step 3: Test different chunking strategies
+    strategyResults := a.testStrategies(samples, analysis)
+
+    // Step 4: Use LLM to recommend optimal strategy
+    prompt := a.buildAnalysisPrompt(analysis, strategyResults, analysisInput)
+
+    response, err := a.llmClient.CompleteStructured(ctx, prompt, &ChunkingAnalysisOutput{})
+    if err != nil {
+        return nil, fmt.Errorf("failed to analyze chunking strategy: %w", err)
+    }
+
+    output := response.(*ChunkingAnalysisOutput)
+    output.Analysis = analysis
+
+    // Step 5: Generate examples
+    output.Examples = a.generateExamples(samples[0], output.Recommendation, 3)
+
+    return output, nil
+}
+
+func (a *ChunkingAgent) buildAnalysisPrompt(analysis DocumentAnalysis, results map[string]StrategyResult, input *ChunkingAnalysisInput) string {
+    return fmt.Sprintf(`Analyze the following document characteristics and recommend an optimal chunking strategy.
+
+Use Case: %s
+
+Document Analysis:
+- Content Type: %s
+- Average Paragraph Length: %d tokens
+- Average Sentence Length: %d tokens
+- Has Sections: %v
+- Section Depth: %d
+- Code Percentage: %.1f%%
+- Structure Complexity: %s
+
+Strategy Test Results:
+%s
+
+Please recommend:
+1. Optimal chunking strategy (fixed, semantic, recursive, paragraph, sentence)
+2. Specific chunk size in tokens
+3. Overlap size/percentage
+4. Reasoning for the choice
+5. Confidence score (0-1)
+6. Alternative configurations
+7. Performance estimates (cost, quality)
+8. Any warnings or considerations
+
+Consider:
+- Context preservation vs precision
+- Token/cost efficiency
+- Retrieval quality
+- Document structure alignment
+- Use case requirements
+
+Return the response in JSON format following the ChunkingAnalysisOutput structure.`,
+        input.UseCase,
+        analysis.ContentType,
+        analysis.AverageParagraphLength,
+        analysis.AverageSentenceLength,
+        analysis.HasSections,
+        analysis.SectionDepth,
+        analysis.CodePercentage,
+        analysis.StructureComplexity,
+        formatStrategyResults(results),
+    )
+}
+```
+
+**Document Structure Analysis:**
+
+```go
+func (a *ChunkingAgent) analyzeDocumentStructure(samples []string) DocumentAnalysis {
+    var totalParagraphs, totalSentences int
+    var totalParagraphTokens, totalSentenceTokens int
+    var hasSections bool
+    var maxSectionDepth int
+    var codeLines, totalLines int
+
+    for _, content := range samples {
+        // Count paragraphs
+        paragraphs := strings.Split(content, "\n\n")
+        totalParagraphs += len(paragraphs)
+        for _, p := range paragraphs {
+            totalParagraphTokens += estimateTokens(p)
+        }
+
+        // Count sentences
+        sentences := splitSentences(content)
+        totalSentences += len(sentences)
+        for _, s := range sentences {
+            totalSentenceTokens += estimateTokens(s)
+        }
+
+        // Detect sections (markdown headers, etc.)
+        if strings.Contains(content, "#") || strings.Contains(content, "==") {
+            hasSections = true
+            depth := detectSectionDepth(content)
+            if depth > maxSectionDepth {
+                maxSectionDepth = depth
+            }
+        }
+
+        // Detect code blocks
+        lines := strings.Split(content, "\n")
+        totalLines += len(lines)
+        for _, line := range lines {
+            if isCodeLine(line) {
+                codeLines++
+            }
+        }
+    }
+
+    avgParagraphLength := 0
+    if totalParagraphs > 0 {
+        avgParagraphLength = totalParagraphTokens / totalParagraphs
+    }
+
+    avgSentenceLength := 0
+    if totalSentences > 0 {
+        avgSentenceLength = totalSentenceTokens / totalSentences
+    }
+
+    codePercentage := 0.0
+    if totalLines > 0 {
+        codePercentage = float64(codeLines) / float64(totalLines) * 100
+    }
+
+    // Determine content type
+    contentType := determineContentType(codePercentage, hasSections, avgParagraphLength)
+
+    // Determine structure complexity
+    complexity := determineComplexity(hasSections, maxSectionDepth, avgParagraphLength)
+
+    return DocumentAnalysis{
+        AverageParagraphLength: avgParagraphLength,
+        AverageSentenceLength:  avgSentenceLength,
+        ParagraphCount:         totalParagraphs,
+        SentenceCount:          totalSentences,
+        HasSections:            hasSections,
+        SectionDepth:           maxSectionDepth,
+        CodePercentage:         codePercentage,
+        ContentType:            contentType,
+        StructureComplexity:    complexity,
+    }
+}
+
+func determineContentType(codePct float64, hasSections bool, avgParagraph int) string {
+    if codePct > 50 {
+        return "code"
+    }
+    if codePct > 20 {
+        return "mixed"
+    }
+    if hasSections && avgParagraph > 300 {
+        return "technical"
+    }
+    return "prose"
+}
+
+func determineComplexity(hasSections bool, depth int, avgParagraph int) string {
+    if !hasSections && avgParagraph < 200 {
+        return "simple"
+    }
+    if depth > 3 || avgParagraph > 500 {
+        return "complex"
+    }
+    return "moderate"
+}
+```
+
+**Strategy Testing:**
+
+```go
+type StrategyResult struct {
+    Strategy        ChunkingStrategy
+    AverageChunks   int
+    AverageTokens   int
+    ContextQuality  float64 // 0-1
+    Examples        []string
+}
+
+func (a *ChunkingAgent) testStrategies(samples []string, analysis DocumentAnalysis) map[string]StrategyResult {
+    strategies := []ChunkingStrategy{
+        StrategyFixed,
+        StrategySemantic,
+        StrategyParagraph,
+    }
+
+    results := make(map[string]StrategyResult)
+
+    for _, strategy := range strategies {
+        result := a.testStrategy(samples[0], strategy, analysis)
+        results[string(strategy)] = result
+    }
+
+    return results
+}
+
+func (a *ChunkingAgent) testStrategy(content string, strategy ChunkingStrategy, analysis DocumentAnalysis) StrategyResult {
+    var chunks []string
+    var avgTokens int
+
+    switch strategy {
+    case StrategyFixed:
+        // Test with recommended size based on analysis
+        size := a.recommendFixedSize(analysis)
+        chunks = chunkFixed(content, size, size/10) // 10% overlap
+    case StrategySemantic:
+        chunks = chunkSemantic(content)
+    case StrategyParagraph:
+        chunks = chunkByParagraph(content)
+    }
+
+    totalTokens := 0
+    for _, chunk := range chunks {
+        totalTokens += estimateTokens(chunk)
+    }
+    if len(chunks) > 0 {
+        avgTokens = totalTokens / len(chunks)
+    }
+
+    // Evaluate context quality
+    quality := a.evaluateContextQuality(chunks, analysis)
+
+    return StrategyResult{
+        Strategy:       strategy,
+        AverageChunks:  len(chunks),
+        AverageTokens:  avgTokens,
+        ContextQuality: quality,
+        Examples:       chunks[:min(3, len(chunks))],
+    }
+}
+
+func (a *ChunkingAgent) recommendFixedSize(analysis DocumentAnalysis) int {
+    // Start with paragraph-based recommendation
+    baseSize := analysis.AverageParagraphLength
+
+    // Adjust based on content type
+    switch analysis.ContentType {
+    case "code":
+        return clamp(baseSize*2, 256, 1024) // Code needs more context
+    case "technical":
+        return clamp(baseSize, 512, 1024)   // Technical docs medium chunks
+    case "prose":
+        return clamp(baseSize, 256, 512)    // Prose smaller chunks
+    default:
+        return 512
+    }
+}
+
+func (a *ChunkingAgent) evaluateContextQuality(chunks []string, analysis DocumentAnalysis) float64 {
+    score := 1.0
+
+    // Penalize very small or very large chunks
+    for _, chunk := range chunks {
+        tokens := estimateTokens(chunk)
+        if tokens < 100 {
+            score -= 0.1
+        }
+        if tokens > 2000 {
+            score -= 0.1
+        }
+    }
+
+    // Reward chunks that align with structure
+    if analysis.HasSections {
+        sectionAligned := 0
+        for _, chunk := range chunks {
+            if strings.Contains(chunk, "#") || strings.Contains(chunk, "==") {
+                sectionAligned++
+            }
+        }
+        alignmentRatio := float64(sectionAligned) / float64(len(chunks))
+        score += alignmentRatio * 0.2
+    }
+
+    return clamp(score, 0.0, 1.0)
+}
+```
+
+**CLI Command:**
+
+```go
+var suggestCmd = &cobra.Command{
+    Use:   "suggest SOURCE",
+    Short: "Suggest optimal chunking strategy by analyzing sample documents",
+    Long: `Analyze sample documents and suggest an optimal chunking strategy using AI.
+
+The AI agent examines document structure, content patterns, and use case
+requirements to recommend chunk size, overlap, and chunking method.
+
+Examples:
+  # Analyze samples and output chunking config
+  weave chunk suggest ./samples --output chunking-config.yaml
+
+  # With specific use case
+  weave chunk suggest ./samples \
+    --use-case "semantic search on code documentation" \
+    --output config.yaml
+
+  # Interactive mode with visual examples
+  weave chunk suggest ./samples --interactive --show-examples
+
+  # Test and compare strategies
+  weave chunk suggest ./samples --test --compare "256,512,1024"
+
+  # Apply to pipeline
+  weave chunk suggest ./samples --apply-to-pipeline`,
+    Args: cobra.ExactArgs(1),
+    RunE: runChunkSuggest,
+}
+
+func runChunkSuggest(cmd *cobra.Command, args []string) error {
+    source := args[0]
+    ctx := context.Background()
+
+    // Create LLM client
+    apiKey := os.Getenv("OPENAI_API_KEY")
+    if apiKey == "" {
+        return fmt.Errorf("OPENAI_API_KEY required for AI chunking suggestion")
+    }
+
+    llmClient, err := llm.NewOpenAIClient(apiKey)
+    if err != nil {
+        return fmt.Errorf("failed to create LLM client: %w", err)
+    }
+
+    // Scan for sample files
+    scanner := pipeline.NewFileScanner(source, glob, exclude, true)
+    files, err := scanner.Scan(ctx)
+    if err != nil {
+        return fmt.Errorf("failed to scan files: %w", err)
+    }
+
+    fmt.Printf("🔍 Analyzing %d sample documents for chunking...\n", len(files))
+
+    // Extract file paths
+    var filePaths []string
+    for _, file := range files {
+        filePaths = append(filePaths, file.Path)
+    }
+
+    // Create chunking agent
+    agent := agents.NewChunkingAgent(llmClient)
+
+    // Analyze and suggest chunking strategy
+    input := &agents.ChunkingAnalysisInput{
+        SampleFiles:    filePaths,
+        UseCase:        useCase,
+        MaxSamples:     maxSamples,
+        TestStrategies: testStrategies,
+    }
+
+    result, err := agent.Execute(ctx, input)
+    if err != nil {
+        return fmt.Errorf("chunking analysis failed: %w", err)
+    }
+
+    output := result.(*agents.ChunkingAnalysisOutput)
+
+    // Display results
+    displayChunkingAnalysis(output, interactive, showExamples)
+
+    // Save to file if requested
+    if outputFile != "" {
+        if err := saveChunkingConfig(output.Recommendation, outputFile); err != nil {
+            return fmt.Errorf("failed to save config: %w", err)
+        }
+        fmt.Printf("✅ Chunking config saved to %s\n", outputFile)
+    }
+
+    return nil
+}
+
+func displayChunkingAnalysis(output *agents.ChunkingAnalysisOutput, interactive bool, showExamples bool) {
+    fmt.Printf("\n📋 Recommended Chunking Strategy\n")
+    fmt.Printf("   Confidence: %.1f%%\n\n", output.Confidence*100)
+
+    rec := output.Recommendation
+    fmt.Printf("🔧 Configuration:\n")
+    fmt.Printf("   Strategy: %s\n", rec.Strategy)
+    fmt.Printf("   Chunk Size: %d tokens\n", rec.ChunkSize)
+    fmt.Printf("   Overlap: %d tokens (%.0f%%)\n", rec.OverlapSize, rec.OverlapPct*100)
+    if rec.MinChunkSize > 0 {
+        fmt.Printf("   Min/Max Size: %d-%d tokens\n", rec.MinChunkSize, rec.MaxChunkSize)
+    }
+
+    fmt.Printf("\n📊 Document Analysis:\n")
+    fmt.Printf("   Content Type: %s\n", output.Analysis.ContentType)
+    fmt.Printf("   Avg Paragraph: %d tokens\n", output.Analysis.AverageParagraphLength)
+    fmt.Printf("   Structure: %s\n", output.Analysis.StructureComplexity)
+    if output.Analysis.CodePercentage > 0 {
+        fmt.Printf("   Code: %.1f%%\n", output.Analysis.CodePercentage)
+    }
+
+    fmt.Printf("\n💡 Reasoning:\n%s\n", output.Reasoning)
+
+    if showExamples && len(output.Examples) > 0 {
+        fmt.Println("\n📝 Example Chunks:")
+        for i, example := range output.Examples {
+            fmt.Printf("\n   Example %d (%d tokens, %s quality):\n", i+1, example.TokenCount, example.Quality)
+            preview := example.Text
+            if len(preview) > 200 {
+                preview = preview[:200] + "..."
+            }
+            fmt.Printf("   %s\n", preview)
+            if example.Explanation != "" {
+                fmt.Printf("   → %s\n", example.Explanation)
+            }
+        }
+    }
+
+    fmt.Printf("\n📈 Performance Estimates:\n")
+    perf := output.Performance
+    fmt.Printf("   Chunks per document: ~%d\n", perf.EstimatedChunks)
+    fmt.Printf("   Total tokens: ~%d\n", perf.EstimatedTokens)
+    fmt.Printf("   Embedding cost: ~$%.4f per document\n", perf.EstimatedCost)
+    fmt.Printf("   Retrieval quality: %s\n", perf.RetrievalQuality)
+    fmt.Printf("   Context preservation: %s\n", perf.ContextPreservation)
+
+    if len(output.Warnings) > 0 {
+        fmt.Println("\n⚠️  Warnings:")
+        for _, warning := range output.Warnings {
+            fmt.Printf("   • %s\n", warning)
+        }
+    }
+
+    if interactive && len(output.Alternatives) > 0 {
+        fmt.Println("\n🔀 Alternative Strategies:")
+        for i, alt := range output.Alternatives {
+            fmt.Printf("   %d. %s (%d tokens, %.0f%% overlap)\n",
+                i+1, alt.Strategy, alt.ChunkSize, alt.OverlapPct*100)
+        }
+    }
+}
+```
+
+### Integration with Existing Features
+
+**1. Pipeline Integration:**
+```bash
+# Suggest chunking, then ingest with optimal size
+weave chunk suggest ./docs --output chunking.yaml
+weave pipeline ingest ./docs \
+  --collection docs \
+  --chunking-config chunking.yaml \
+  --vdb qdrant-cloud
+```
+
+**2. Schema + Chunking Workflow:**
+```bash
+# Complete AI-assisted setup
+weave schema suggest ./samples --collection docs --output schema.yaml
+weave chunk suggest ./samples --output chunking.yaml
+weave cols create docs --schema schema.yaml --vdb qdrant-cloud
+weave pipeline ingest ./docs --chunking-config chunking.yaml --collection docs
+```
+
+**3. MCP Server Integration:**
+```json
+{
+  "tool": "suggest_chunking",
+  "arguments": {
+    "samples": "./docs",
+    "use_case": "technical documentation search"
+  }
+}
+```
+
+**4. REPL Integration:**
+```
+weave> chunk suggest ./samples
+🔍 Analyzing documents...
+📋 Recommended: 512 tokens, 10% overlap
+weave> chunk test --show-examples
+[displays chunked examples]
+weave> chunk apply
+✅ Chunking config saved
+```
+
+### Success Metrics
+
+- Recommendation accuracy: >85% user acceptance
+- Analysis time: <20 seconds for 30 samples
+- Performance improvement: 30%+ better retrieval quality vs random chunk size
+- Cost optimization: 20%+ token savings vs unoptimized chunking
+
+### Effort: 3-4 hours
+
+**Breakdown:**
+- Chunking agent implementation: 1.5 hours
+- Document structure analysis: 1 hour
+- Strategy testing framework: 0.75 hour
+- CLI command and display: 0.75 hour
+
+---
+
 ## Total Timeline
 
 **Week 1:**
@@ -2059,11 +2745,28 @@ weave> schema apply
 **Week 2:**
 - Day 1-2: REPL Mode (3-4h)
 - Day 3-4: MCP Server (5-6h)
-- Day 5: Schema Suggestion + Collection Stats (5-7h)
+- Day 5: Collection Stats (2-3h)
 
-**Week 3 (Optional):**
+**Week 3:**
+- Day 1-2: AI Schema Suggestion (3-4h)
+- Day 3: AI Chunking Suggestion (3-4h)
+
+**Week 4 (Optional):**
 - Day 1: CI/CD Integration (3-4h)
 
-**Total: 22-30 hours across 2-3 weeks**
+**Total: 28-37 hours across 3-4 weeks**
 
-**Progress: 3/7 features completed (43%)**
+**Progress: 3/8 features completed (38%)**
+
+**Completed Features:**
+- ✅ 1.1 Pipeline Commands
+- ✅ 1.4 Progress Bars
+- ✅ 1.5 JSON/YAML Output
+
+**Planned Features:**
+- 📝 1.2 Interactive REPL
+- 📝 1.3 MCP Server
+- 📝 1.6 Collection Statistics
+- 📝 1.7 AI Schema Suggestion (NEW!)
+- 📝 1.8 AI Chunking Suggestion (NEW!)
+- 📝 1.1a CI/CD Integration
