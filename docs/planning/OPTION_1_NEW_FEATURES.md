@@ -1545,15 +1545,525 @@ func GenerateCollectionStats(ctx context.Context, client vectordb.VectorDBClient
 
 ---
 
+## Feature 1.7: AI Schema Suggestion
+
+### Goal
+Enable users to generate optimized collection schemas by analyzing sample documents using an AI agent. The agent analyzes document structure, content patterns, and metadata to suggest an appropriate schema configuration.
+
+### User Stories
+- As a developer, I want to quickly create a schema without manually analyzing my documents
+- As a data engineer, I want AI to suggest optimal field types and indexes for my use case
+- As a new user, I want guidance on what schema works best for my document types
+
+### CLI Interface
+
+```bash
+# Analyze files and suggest schema
+weave schema suggest ./samples \
+  --collection documents \
+  --output schema.yaml
+
+# Interactive mode with refinement
+weave schema suggest ./samples \
+  --collection documents \
+  --interactive
+
+# Analyze specific file types
+weave schema suggest ./samples \
+  --glob "**/*.{pdf,md}" \
+  --collection documentation \
+  --output docs-schema.yaml
+
+# With custom requirements
+weave schema suggest ./samples \
+  --collection products \
+  --requirements "Include price filtering, support multi-language search" \
+  --output products-schema.yaml
+
+# Apply suggested schema immediately
+weave schema suggest ./samples \
+  --collection docs \
+  --vdb weaviate-cloud \
+  --apply
+```
+
+### Technical Architecture
+
+**Package Structure:**
+```
+src/pkg/agents/
+├── schema_agent.go         # AI schema analysis agent
+
+src/cmd/schema/
+├── schema.go              # Schema command group
+├── suggest.go             # Suggest subcommand
+└── analyze.go             # Schema analysis helpers
+```
+
+**Core Types:**
+
+```go
+// SchemaAnalysisInput represents input for schema analysis
+type SchemaAnalysisInput struct {
+    SampleFiles      []string          // Paths to sample documents
+    CollectionName   string            // Target collection name
+    Requirements     string            // User requirements (optional)
+    VDBType          string            // Target VDB type
+    MaxSamples       int               // Max files to analyze (default: 50)
+}
+
+// SchemaAnalysisOutput represents AI-generated schema suggestion
+type SchemaAnalysisOutput struct {
+    Schema           SchemaConfig      // Suggested schema
+    Reasoning        string            // Why this schema was chosen
+    FieldAnalysis    []FieldSuggestion // Per-field recommendations
+    Confidence       float64           // Confidence score (0-1)
+    Warnings         []string          // Potential issues
+    Alternatives     []SchemaConfig    // Alternative schemas
+}
+
+// FieldSuggestion represents analysis for a single field
+type FieldSuggestion struct {
+    Name         string   // Field name
+    Type         string   // Data type (text, number, boolean, etc.)
+    Indexed      bool     // Should be indexed
+    Filterable   bool     // Should support filtering
+    Required     bool     // Is required field
+    Examples     []string // Example values found
+    Frequency    float64  // How often field appears (0-1)
+    Cardinality  int      // Unique value count
+    Reasoning    string   // Why this configuration
+}
+
+// SchemaConfig represents a complete schema configuration
+type SchemaConfig struct {
+    CollectionName   string              `yaml:"collection_name"`
+    VectorDimensions int                 `yaml:"vector_dimensions"`
+    SimilarityMetric string              `yaml:"similarity_metric"`
+    Fields           []FieldConfig       `yaml:"fields"`
+    Indexes          []IndexConfig       `yaml:"indexes"`
+    Metadata         map[string]string   `yaml:"metadata,omitempty"`
+}
+
+// FieldConfig represents a field configuration
+type FieldConfig struct {
+    Name        string `yaml:"name"`
+    Type        string `yaml:"type"`
+    Description string `yaml:"description,omitempty"`
+    Indexed     bool   `yaml:"indexed"`
+    Filterable  bool   `yaml:"filterable"`
+    Required    bool   `yaml:"required"`
+}
+
+// IndexConfig represents an index configuration
+type IndexConfig struct {
+    Name   string   `yaml:"name"`
+    Fields []string `yaml:"fields"`
+    Type   string   `yaml:"type"` // "vector", "bm25", "composite"
+}
+```
+
+### Implementation
+
+**Schema Analysis Agent:**
+
+```go
+// SchemaAgent analyzes documents and suggests schemas
+type SchemaAgent struct {
+    llmClient *llm.OpenAIClient
+}
+
+func NewSchemaAgent(llmClient *llm.OpenAIClient) *SchemaAgent {
+    return &SchemaAgent{llmClient: llmClient}
+}
+
+func (a *SchemaAgent) Name() string {
+    return "schema-agent"
+}
+
+func (a *SchemaAgent) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+    analysisInput := input.(*SchemaAnalysisInput)
+
+    // Step 1: Sample and extract document content
+    samples := a.extractSamples(analysisInput.SampleFiles, analysisInput.MaxSamples)
+
+    // Step 2: Analyze document structure
+    structure := a.analyzeStructure(samples)
+
+    // Step 3: Use LLM to suggest schema
+    prompt := a.buildAnalysisPrompt(structure, analysisInput)
+
+    response, err := a.llmClient.CompleteStructured(ctx, prompt, &SchemaAnalysisOutput{})
+    if err != nil {
+        return nil, fmt.Errorf("failed to analyze schema: %w", err)
+    }
+
+    return response.(*SchemaAnalysisOutput), nil
+}
+
+func (a *SchemaAgent) buildAnalysisPrompt(structure DocumentStructure, input *SchemaAnalysisInput) string {
+    return fmt.Sprintf(`Analyze the following document samples and suggest an optimal schema for a %s vector database collection.
+
+Collection Name: %s
+Number of Samples: %d
+Requirements: %s
+
+Document Structure Analysis:
+- File Types: %v
+- Common Fields: %v
+- Field Types: %v
+- Sample Content Lengths: %v
+
+Please suggest a schema configuration that:
+1. Optimizes for search and retrieval
+2. Includes appropriate indexes
+3. Handles the observed field types efficiently
+4. Supports filtering on common metadata
+5. Uses appropriate vector dimensions for the content type
+
+Provide:
+- Complete schema configuration (fields, indexes, settings)
+- Reasoning for each field choice
+- Confidence score (0-1)
+- Any warnings or considerations
+- Alternative schema options if applicable
+
+Return the response in JSON format following the SchemaAnalysisOutput structure.`,
+        input.VDBType,
+        input.CollectionName,
+        len(structure.Samples),
+        input.Requirements,
+        structure.FileTypes,
+        structure.CommonFields,
+        structure.FieldTypes,
+        structure.ContentLengths,
+    )
+}
+```
+
+**Document Analysis:**
+
+```go
+type DocumentStructure struct {
+    Samples        []DocumentSample
+    FileTypes      []string
+    CommonFields   map[string]int  // field -> frequency
+    FieldTypes     map[string]string // field -> inferred type
+    ContentLengths []int
+    Languages      []string
+}
+
+type DocumentSample struct {
+    Path     string
+    Type     string
+    Size     int64
+    Fields   map[string]interface{}
+    Preview  string // First 1000 chars
+}
+
+func (a *SchemaAgent) extractSamples(files []string, maxSamples int) []DocumentSample {
+    var samples []DocumentSample
+    count := 0
+
+    for _, file := range files {
+        if count >= maxSamples {
+            break
+        }
+
+        sample := a.extractDocumentSample(file)
+        if sample != nil {
+            samples = append(samples, *sample)
+            count++
+        }
+    }
+
+    return samples
+}
+
+func (a *SchemaAgent) extractDocumentSample(filePath string) *DocumentSample {
+    fileType := detectFileType(filePath)
+
+    switch fileType {
+    case FileTypePDF:
+        return a.extractPDFSample(filePath)
+    case FileTypeJSON:
+        return a.extractJSONSample(filePath)
+    case FileTypeMD, FileTypeTXT:
+        return a.extractTextSample(filePath)
+    default:
+        return nil
+    }
+}
+
+func (a *SchemaAgent) analyzeStructure(samples []DocumentSample) DocumentStructure {
+    structure := DocumentStructure{
+        Samples:      samples,
+        CommonFields: make(map[string]int),
+        FieldTypes:   make(map[string]string),
+    }
+
+    // Analyze file types
+    typeMap := make(map[string]bool)
+    for _, sample := range samples {
+        typeMap[sample.Type] = true
+        structure.ContentLengths = append(structure.ContentLengths, int(sample.Size))
+
+        // Count field occurrences
+        for fieldName, fieldValue := range sample.Fields {
+            structure.CommonFields[fieldName]++
+
+            // Infer field type
+            if _, exists := structure.FieldTypes[fieldName]; !exists {
+                structure.FieldTypes[fieldName] = inferType(fieldValue)
+            }
+        }
+    }
+
+    for fileType := range typeMap {
+        structure.FileTypes = append(structure.FileTypes, fileType)
+    }
+
+    return structure
+}
+
+func inferType(value interface{}) string {
+    switch v := value.(type) {
+    case string:
+        // Check if it's a date, URL, etc.
+        if isDate(v) {
+            return "datetime"
+        }
+        if isURL(v) {
+            return "url"
+        }
+        return "text"
+    case int, int64, float64:
+        return "number"
+    case bool:
+        return "boolean"
+    case []interface{}:
+        return "array"
+    case map[string]interface{}:
+        return "object"
+    default:
+        return "unknown"
+    }
+}
+```
+
+**CLI Command:**
+
+```go
+var suggestCmd = &cobra.Command{
+    Use:   "suggest SOURCE",
+    Short: "Suggest collection schema by analyzing sample documents",
+    Long: `Analyze sample documents and suggest an optimal collection schema using AI.
+
+The AI agent examines document structure, field types, content patterns, and
+metadata to recommend a schema configuration tailored to your data.
+
+Examples:
+  # Analyze samples and output suggested schema
+  weave schema suggest ./samples --collection docs --output schema.yaml
+
+  # Interactive mode with AI explanations
+  weave schema suggest ./samples --collection products --interactive
+
+  # Include custom requirements
+  weave schema suggest ./samples --collection articles \
+    --requirements "Support multi-language search, enable date filtering" \
+    --output articles-schema.yaml
+
+  # Apply schema immediately
+  weave schema suggest ./samples --collection docs --vdb weaviate-cloud --apply`,
+    Args: cobra.ExactArgs(1),
+    RunE: runSchemaSuggest,
+}
+
+func runSchemaSuggest(cmd *cobra.Command, args []string) error {
+    source := args[0]
+    ctx := context.Background()
+
+    // Create LLM client
+    apiKey := os.Getenv("OPENAI_API_KEY")
+    if apiKey == "" {
+        return fmt.Errorf("OPENAI_API_KEY required for AI schema suggestion")
+    }
+
+    llmClient, err := llm.NewOpenAIClient(apiKey)
+    if err != nil {
+        return fmt.Errorf("failed to create LLM client: %w", err)
+    }
+
+    // Scan for sample files
+    scanner := pipeline.NewFileScanner(source, glob, exclude, true)
+    files, err := scanner.Scan(ctx)
+    if err != nil {
+        return fmt.Errorf("failed to scan files: %w", err)
+    }
+
+    fmt.Printf("🔍 Analyzing %d sample documents...\n", len(files))
+
+    // Extract file paths
+    var filePaths []string
+    for _, file := range files {
+        filePaths = append(filePaths, file.Path)
+    }
+
+    // Create schema agent
+    agent := agents.NewSchemaAgent(llmClient)
+
+    // Analyze and suggest schema
+    input := &agents.SchemaAnalysisInput{
+        SampleFiles:    filePaths,
+        CollectionName: collection,
+        Requirements:   requirements,
+        VDBType:        vdbType,
+        MaxSamples:     maxSamples,
+    }
+
+    result, err := agent.Execute(ctx, input)
+    if err != nil {
+        return fmt.Errorf("schema analysis failed: %w", err)
+    }
+
+    output := result.(*agents.SchemaAnalysisOutput)
+
+    // Display results
+    displaySchemaAnalysis(output, interactive)
+
+    // Save to file if requested
+    if outputFile != "" {
+        if err := saveSchema(output.Schema, outputFile); err != nil {
+            return fmt.Errorf("failed to save schema: %w", err)
+        }
+        fmt.Printf("✅ Schema saved to %s\n", outputFile)
+    }
+
+    // Apply schema if requested
+    if apply {
+        if err := applySchema(ctx, output.Schema, vdbType); err != nil {
+            return fmt.Errorf("failed to apply schema: %w", err)
+        }
+        fmt.Printf("✅ Schema applied to %s collection\n", collection)
+    }
+
+    return nil
+}
+
+func displaySchemaAnalysis(output *agents.SchemaAnalysisOutput, interactive bool) {
+    fmt.Printf("\n📋 Suggested Schema for '%s'\n", output.Schema.CollectionName)
+    fmt.Printf("   Confidence: %.1f%%\n\n", output.Confidence*100)
+
+    fmt.Println("🔧 Fields:")
+    for _, field := range output.Schema.Fields {
+        fmt.Printf("   • %s (%s)", field.Name, field.Type)
+        var attrs []string
+        if field.Indexed {
+            attrs = append(attrs, "indexed")
+        }
+        if field.Filterable {
+            attrs = append(attrs, "filterable")
+        }
+        if field.Required {
+            attrs = append(attrs, "required")
+        }
+        if len(attrs) > 0 {
+            fmt.Printf(" [%s]", strings.Join(attrs, ", "))
+        }
+        fmt.Println()
+    }
+
+    if len(output.Schema.Indexes) > 0 {
+        fmt.Println("\n📊 Indexes:")
+        for _, index := range output.Schema.Indexes {
+            fmt.Printf("   • %s: %s (%v)\n", index.Name, index.Type, index.Fields)
+        }
+    }
+
+    fmt.Printf("\n💡 Reasoning:\n%s\n", output.Reasoning)
+
+    if len(output.Warnings) > 0 {
+        fmt.Println("\n⚠️  Warnings:")
+        for _, warning := range output.Warnings {
+            fmt.Printf("   • %s\n", warning)
+        }
+    }
+
+    if interactive && len(output.Alternatives) > 0 {
+        fmt.Println("\n🔀 Alternative Schemas:")
+        for i, alt := range output.Alternatives {
+            fmt.Printf("   %d. %s (fields: %d, indexes: %d)\n",
+                i+1, alt.CollectionName, len(alt.Fields), len(alt.Indexes))
+        }
+    }
+}
+```
+
+### Integration with Existing Features
+
+**1. Pipeline Integration:**
+```bash
+# Suggest schema, then ingest
+weave schema suggest ./docs --collection documentation --output schema.yaml
+weave cols create documentation --schema schema.yaml --vdb qdrant-cloud
+weave pipeline ingest ./docs --collection documentation --vdb qdrant-cloud
+```
+
+**2. MCP Server Integration:**
+```json
+{
+  "tool": "suggest_schema",
+  "arguments": {
+    "samples": "./docs",
+    "collection": "knowledge-base",
+    "requirements": "Support semantic search on technical documentation"
+  }
+}
+```
+
+**3. REPL Integration:**
+```
+weave> schema suggest ./samples --collection products
+🔍 Analyzing 25 sample documents...
+📋 Suggested schema ready
+weave> schema show
+[displays schema]
+weave> schema apply
+✅ Schema applied to products collection
+```
+
+### Success Metrics
+
+- Schema suggestion accuracy: >85% user acceptance rate
+- Analysis time: <30 seconds for 50 samples
+- Field detection: >90% of common fields identified
+- User satisfaction: Reduces schema creation time by >70%
+
+### Effort: 3-4 hours
+
+**Breakdown:**
+- Schema agent implementation: 1.5 hours
+- Document analysis logic: 1 hour
+- CLI command and display: 1 hour
+- Testing with various document types: 0.5 hour
+
+---
+
 ## Total Timeline
 
 **Week 1:**
-- Day 1-2: Pipeline Commands (4-6h)
-- Day 3: CI/CD Integration (3-4h)
+- Day 1-2: Pipeline Commands (4-6h) ✅ DONE
+- Day 3: Progress Bars + JSON/YAML Output (3-5h) ✅ DONE
 
 **Week 2:**
 - Day 1-2: REPL Mode (3-4h)
 - Day 3-4: MCP Server (5-6h)
-- Day 5: Progress + Output + Stats (5-8h)
+- Day 5: Schema Suggestion + Collection Stats (5-7h)
 
-**Total: 19-26 hours across 2 weeks**
+**Week 3 (Optional):**
+- Day 1: CI/CD Integration (3-4h)
+
+**Total: 22-30 hours across 2-3 weeks**
+
+**Progress: 3/7 features completed (43%)**
