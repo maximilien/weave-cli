@@ -42,109 +42,1011 @@ With v0.8.2 in "done" state, here are potential directions for future work:
 
 ### Option 1: New Features (Recommended)
 **Focus**: Add value for users, expand capabilities
+**Estimated Total**: 12-20 hours for high-priority features
 
-**Ideas:**
-1. **CLI Enhancements**
-   - Interactive mode / REPL for weave-cli
-   - Progress bars for bulk operations
-   - JSON/YAML output format options
-   - Pipeline commands (batch document ingestion from files/dirs)
+#### 1.1 Pipeline Commands (High Priority - 4-6 hours)
+**Goal**: Batch document ingestion from files and directories
 
-2. **Vector DB Features**
-   - Additional search filters (date ranges, numeric ranges)
-   - Collection aliasing/renaming support
-   - Backup/restore functionality (where VDB supports it)
-   - Collection statistics and analytics
+**Implementation:**
+```bash
+# New commands
+weave pipeline ingest <directory> --collection <name> --vdb <type>
+weave pipeline ingest --file documents.json --collection <name>
+weave pipeline ingest --glob "docs/**/*.pdf" --collection <name>
+```
 
-3. **Developer Experience**
-   - MCP server implementation for weave-cli
-   - SDK/library mode (import weave-cli as Go package)
-   - Docker image for weave-cli
-   - Homebrew formula for easier installation
+**Technical Approach:**
+- New package: `src/pkg/pipeline/`
+  - `ingest.go` - Main ingestion logic
+  - `file_walker.go` - Directory traversal with glob patterns
+  - `batch_processor.go` - Batching documents for CreateDocuments()
+  - `progress.go` - Progress tracking and reporting
+- Use existing `src/pkg/pdf/` and `src/pkg/image/` for document processing
+- Leverage `CreateDocuments()` batch API (already tested in all 10 VDBs)
+- Support formats: PDF, TXT, MD, JSON, YAML, images (via OCR)
 
-4. **Agent Improvements**
-   - Enhanced query planning with multi-step workflows
-   - Support for custom LLM providers (beyond OpenAI/Claude)
-   - Observability integration (traces, metrics beyond Opik)
+**CLI Design:**
+```go
+// src/cmd/pipeline/ingest.go
+type IngestOptions struct {
+    Source        string   // File or directory path
+    Collection    string   // Target collection
+    VDBType       string   // Vector DB type
+    Glob          string   // Glob pattern (e.g., "**/*.pdf")
+    BatchSize     int      // Documents per batch (default: 100)
+    Recursive     bool     // Recursive directory scan
+    IncludeImages bool     // Extract images from PDFs
+    Metadata      []string // Additional metadata (key=value pairs)
+    Workers       int      // Concurrent workers (default: 4)
+}
+```
+
+**Features:**
+- Progress bar with stats (files processed, documents created, errors)
+- Dry-run mode (`--dry-run`) to preview what will be ingested
+- Resume capability (skip already ingested files via metadata tracking)
+- Parallel processing with worker pool
+- Error handling (log failures, continue processing)
+
+**Example Output:**
+```
+Scanning directory: ./docs (recursive)
+Found: 127 files (pdf: 45, txt: 82)
+Ingesting to collection 'documentation' (qdrant-cloud)
+
+[████████████████████████████--------] 70% (89/127 files)
+Processed: 89 files | Created: 312 documents | Errors: 2 | Rate: 15.3 files/s
+```
+
+**Value**: High - Users can ingest entire document repositories with one command
+
+**Effort**: 4-6 hours (core) + 3-4 hours (CI/CD integration)
+- Pipeline package implementation: 3 hours
+- CLI command integration: 1 hour
+- Testing and examples: 2 hours
+- CI/CD integration guides: 3-4 hours
+
+---
+
+#### 1.1a Pipeline CI/CD Integration (High Priority - 3-4 hours)
+**Goal**: Enable automated document ingestion in CI/CD pipelines
+
+**GitHub Actions Integration:**
+
+```yaml
+# .github/workflows/ingest-docs.yml
+name: Ingest Documentation to Vector DB
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'content/**'
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download weave-cli
+        run: |
+          curl -L https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 -o weave
+          chmod +x weave
+
+      - name: Ingest documents to Qdrant
+        env:
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./weave pipeline ingest docs/ \
+            --collection documentation \
+            --vdb qdrant-cloud \
+            --glob "**/*.md" \
+            --metadata "repo=${{ github.repository }}" \
+            --metadata "commit=${{ github.sha }}" \
+            --metadata "branch=${{ github.ref_name }}" \
+            --output json > ingest-report.json
+
+      - name: Upload ingest report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingest-report
+          path: ingest-report.json
+
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('ingest-report.json'));
+            const comment = `## 📊 Document Ingestion Report
+
+            - **Files processed**: ${report.files_processed}
+            - **Documents created**: ${report.documents_created}
+            - **Errors**: ${report.errors}
+            - **Collection**: ${report.collection}
+            - **VDB**: ${report.vdb_type}
+            `;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+```
+
+**Argo Workflows Integration:**
+
+```yaml
+# argo-ingest-docs.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: ingest-docs-
+spec:
+  entrypoint: ingest-pipeline
+
+  volumes:
+    - name: docs
+      persistentVolumeClaim:
+        claimName: docs-storage
+
+  templates:
+    - name: ingest-pipeline
+      steps:
+        - - name: clone-repo
+            template: git-clone
+
+        - - name: ingest-to-vector-db
+            template: weave-ingest
+
+        - - name: notify-completion
+            template: send-notification
+
+    - name: git-clone
+      container:
+        image: alpine/git:latest
+        command: [sh, -c]
+        args:
+          - |
+            git clone https://github.com/your-org/your-repo.git /workspace
+        volumeMounts:
+          - name: docs
+            mountPath: /workspace
+
+    - name: weave-ingest
+      container:
+        image: maximilien/weave-cli:latest
+        command: [weave]
+        args:
+          - pipeline
+          - ingest
+          - /workspace/docs
+          - --collection
+          - documentation
+          - --vdb
+          - qdrant-cloud
+          - --glob
+          - "**/*.{md,pdf,txt}"
+          - --workers
+          - "8"
+          - --output
+          - json
+        env:
+          - name: QDRANT_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: vector-db-secrets
+                key: qdrant-api-key
+          - name: QDRANT_URL
+            valueFrom:
+              configMapKeyRef:
+                name: vector-db-config
+                key: qdrant-url
+          - name: OPENAI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: llm-secrets
+                key: openai-api-key
+        volumeMounts:
+          - name: docs
+            mountPath: /workspace
+
+    - name: send-notification
+      container:
+        image: curlimages/curl:latest
+        command: [sh, -c]
+        args:
+          - |
+            curl -X POST https://hooks.slack.com/services/YOUR/WEBHOOK/URL \
+              -H 'Content-Type: application/json' \
+              -d '{"text":"Document ingestion completed successfully"}'
+```
+
+**Apache Airflow Integration:**
+
+```python
+# dags/ingest_docs_to_vectordb.py
+from airflow import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+from airflow.providers.http.operators.http import SimpleHttpOperator
+from datetime import datetime, timedelta
+import json
+
+default_args = {
+    'owner': 'data-team',
+    'depends_on_past': False,
+    'email_on_failure': True,
+    'email': ['alerts@company.com'],
+    'retries': 2,
+    'retry_delay': timedelta(minutes=5),
+}
+
+with DAG(
+    'ingest_docs_to_vectordb',
+    default_args=default_args,
+    description='Ingest documentation to vector database',
+    schedule_interval='0 2 * * *',  # Daily at 2 AM
+    start_date=datetime(2025, 1, 1),
+    catchup=False,
+    tags=['vectordb', 'documentation', 'ml'],
+) as dag:
+
+    # Task 1: Clone or update documentation repository
+    clone_docs = BashOperator(
+        task_id='clone_docs_repo',
+        bash_command="""
+        cd /tmp &&
+        rm -rf docs-repo &&
+        git clone https://github.com/your-org/docs-repo.git &&
+        cd docs-repo &&
+        git pull origin main
+        """,
+    )
+
+    # Task 2: Run weave-cli ingestion
+    ingest_to_qdrant = BashOperator(
+        task_id='ingest_to_qdrant',
+        bash_command="""
+        /usr/local/bin/weave pipeline ingest /tmp/docs-repo/content \
+          --collection documentation \
+          --vdb qdrant-cloud \
+          --glob "**/*.{md,rst,txt}" \
+          --batch-size 100 \
+          --workers 8 \
+          --metadata "ingestion_date={{ ds }}" \
+          --metadata "dag_run_id={{ run_id }}" \
+          --output json > /tmp/ingest-report-{{ ds }}.json
+        """,
+        env={
+            'QDRANT_API_KEY': '{{ var.value.qdrant_api_key }}',
+            'QDRANT_URL': '{{ var.value.qdrant_url }}',
+            'OPENAI_API_KEY': '{{ var.value.openai_api_key }}',
+        },
+    )
+
+    # Task 3: Parse and validate results
+    def validate_ingestion(**context):
+        with open(f"/tmp/ingest-report-{context['ds']}.json") as f:
+            report = json.load(f)
+
+        if report['errors'] > 0:
+            raise ValueError(f"Ingestion had {report['errors']} errors")
+
+        if report['documents_created'] == 0:
+            raise ValueError("No documents were created")
+
+        print(f"✓ Successfully ingested {report['documents_created']} documents")
+        context['ti'].xcom_push(key='documents_created', value=report['documents_created'])
+        context['ti'].xcom_push(key='files_processed', value=report['files_processed'])
+
+    validate_results = PythonOperator(
+        task_id='validate_ingestion',
+        python_callable=validate_ingestion,
+        provide_context=True,
+    )
+
+    # Task 4: Send notification to Slack
+    notify_slack = SimpleHttpOperator(
+        task_id='notify_slack',
+        http_conn_id='slack_webhook',
+        endpoint='',
+        method='POST',
+        data=json.dumps({
+            'text': f"✅ Documentation ingestion completed",
+            'blocks': [
+                {
+                    'type': 'section',
+                    'text': {
+                        'type': 'mrkdwn',
+                        'text': f"*Documentation Ingestion Report*\n"
+                                f"• Files: {{ ti.xcom_pull(task_ids='validate_ingestion', key='files_processed') }}\n"
+                                f"• Documents: {{ ti.xcom_pull(task_ids='validate_ingestion', key='documents_created') }}\n"
+                                f"• Collection: `documentation`\n"
+                                f"• Database: Qdrant Cloud"
+                    }
+                }
+            ]
+        }),
+        headers={'Content-Type': 'application/json'},
+    )
+
+    # Task 5: Clean up temporary files
+    cleanup = BashOperator(
+        task_id='cleanup_temp_files',
+        bash_command='rm -rf /tmp/docs-repo /tmp/ingest-report-{{ ds }}.json',
+    )
+
+    # Define task dependencies
+    clone_docs >> ingest_to_qdrant >> validate_results >> notify_slack >> cleanup
+```
+
+**Additional CI/CD Features to Implement:**
+
+1. **Exit Codes & Error Handling:**
+   - Exit 0: Success (all documents ingested)
+   - Exit 1: Partial failure (some errors, but majority succeeded)
+   - Exit 2: Complete failure (critical error, no documents ingested)
+
+2. **Machine-Readable Output:**
+   - JSON/YAML reports with structured data
+   - Metrics for monitoring (Prometheus format option)
+   - Logs formatted for aggregation (structured JSON logs)
+
+3. **Incremental Ingestion:**
+   - `--since` flag to ingest only files modified after a timestamp
+   - `--skip-existing` to avoid re-ingesting unchanged files
+   - Metadata tracking for deduplication
+
+4. **Dry Run & Validation:**
+   - `--dry-run` to preview changes without executing
+   - `--validate` to check file formats before ingestion
+   - Pre-ingestion hooks for custom validation
+
+**Implementation Files:**
+
+```
+docs/integrations/
+├── GITHUB_ACTIONS.md       - GH Actions integration guide
+├── ARGO_WORKFLOWS.md       - Argo Workflows guide
+├── AIRFLOW.md              - Apache Airflow guide
+└── JENKINS.md              - Jenkins pipeline (bonus)
+
+examples/ci-cd/
+├── github-actions/
+│   ├── basic-ingestion.yml
+│   ├── multi-env.yml       - Dev/staging/prod
+│   └── scheduled.yml       - Cron-based ingestion
+├── argo/
+│   ├── simple-workflow.yaml
+│   └── parallel-ingestion.yaml
+└── airflow/
+    ├── simple_dag.py
+    └── advanced_dag.py      - With validation, notifications
+```
+
+**Value**: Very High - Enables automated knowledge base updates, CI/CD integration is critical for production use
+
+**Effort**: 3-4 hours
+- Exit code standardization: 0.5 hour
+- JSON output format enhancement: 1 hour
+- Documentation for 3 platforms: 1.5 hours
+- Example workflows/DAGs: 1 hour
+
+---
+
+#### 1.2 Interactive REPL Mode (High Priority - 3-4 hours)
+**Goal**: Interactive exploration of collections and documents
+
+**Implementation:**
+```bash
+weave repl --vdb qdrant-cloud
+# or
+weave repl  # prompts for VDB selection
+```
+
+**REPL Commands:**
+```
+weave> connect qdrant-cloud
+Connected to Qdrant Cloud (https://xyz.qdrant.io)
+
+weave> list collections
+Collections:
+  - documents (count: 1,234)
+  - images (count: 567)
+
+weave> use documents
+Using collection: documents
+
+weave> search "machine learning best practices" --top 5
+Results: 5 matches
+1. [0.945] ML Best Practices Guide (id: doc-123)
+2. [0.912] Production ML Systems (id: doc-456)
+...
+
+weave> get doc-123
+Document: doc-123
+Text: Machine learning best practices include...
+Metadata: {author: "Alice", date: "2024-01-15"}
+
+weave> stats
+Collection: documents
+Documents: 1,234
+Vector dimensions: 1536
+Last updated: 2025-12-19 13:15:23
+
+weave> help
+Available commands:
+  connect <vdb-type>    - Connect to vector database
+  list collections      - List all collections
+  use <collection>      - Set active collection
+  search <query>        - Semantic search
+  get <doc-id>          - Get document by ID
+  create <text>         - Create new document
+  delete <doc-id>       - Delete document
+  stats                 - Show collection statistics
+  export <file>         - Export collection to JSON
+  clear                 - Clear screen
+  exit                  - Exit REPL
+```
+
+**Technical Approach:**
+- Use `github.com/chzyer/readline` for REPL with history/autocomplete
+- New package: `src/cmd/repl/`
+  - `repl.go` - Main REPL loop
+  - `commands.go` - Command parsing and execution
+  - `context.go` - Session state (active VDB, collection)
+  - `formatter.go` - Pretty output formatting
+- Leverage existing VectorDBClient interface
+- Session history saved to `~/.weave/history`
+
+**Features:**
+- Readline support (arrow keys, history, Ctrl+R search)
+- Tab completion for commands and collection names
+- Colored output (success: green, errors: red, info: blue)
+- Multi-line input for long queries
+- Command aliases (ls = list collections, use = select)
+
+**Example Session:**
+```
+$ weave repl
+Welcome to Weave CLI Interactive Mode
+Type 'help' for available commands
+
+weave> connect qdrant-cloud
+✓ Connected to Qdrant Cloud
+
+weave> ls
+Collections:
+  • documents (1.2K docs)
+  • images (567 docs)
+
+weave> use documents
+Active collection: documents
+
+weave> search "vector databases"
+Searching...
+✓ Found 3 results
+
+1. [0.923] Introduction to Vector Databases
+   ID: doc-001
+   Metadata: {category: "tutorial"}
+
+2. [0.891] Vector DB Performance Comparison
+   ID: doc-045
+   Metadata: {category: "analysis"}
+
+3. [0.867] Choosing the Right Vector Database
+   ID: doc-102
+   Metadata: {category: "guide"}
+
+weave> exit
+Goodbye!
+```
+
+**Value**: High - Developers can explore data interactively without writing code
+
+**Effort**: 3-4 hours
+- REPL framework setup: 1.5 hours
+- Command implementation: 1.5 hours
+- Output formatting and UX: 1 hour
+
+---
+
+#### 1.3 MCP Server (High Priority - 5-6 hours)
+**Goal**: Make weave-cli accessible to Claude Desktop and other MCP clients
+
+**Implementation:**
+Expose weave-cli functionality as MCP tools via stdio transport
+
+**MCP Tools to Implement:**
+```json
+{
+  "tools": [
+    {
+      "name": "weave_health_check",
+      "description": "Check vector database health and connectivity",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vdb_type": {"type": "string", "enum": ["qdrant-cloud", "weaviate-cloud", ...]}
+        },
+        "required": ["vdb_type"]
+      }
+    },
+    {
+      "name": "weave_list_collections",
+      "description": "List all collections in vector database",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vdb_type": {"type": "string"}
+        },
+        "required": ["vdb_type"]
+      }
+    },
+    {
+      "name": "weave_create_collection",
+      "description": "Create a new collection for vector storage",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vdb_type": {"type": "string"},
+          "collection_name": {"type": "string"},
+          "schema_type": {"type": "string", "enum": ["text", "image", "custom"]}
+        },
+        "required": ["vdb_type", "collection_name"]
+      }
+    },
+    {
+      "name": "weave_search_semantic",
+      "description": "Perform semantic search using vector similarity",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vdb_type": {"type": "string"},
+          "collection_name": {"type": "string"},
+          "query": {"type": "string"},
+          "top_k": {"type": "number", "default": 5}
+        },
+        "required": ["vdb_type", "collection_name", "query"]
+      }
+    },
+    {
+      "name": "weave_create_document",
+      "description": "Add a document to the vector database",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vdb_type": {"type": "string"},
+          "collection_name": {"type": "string"},
+          "text": {"type": "string"},
+          "metadata": {"type": "object"}
+        },
+        "required": ["vdb_type", "collection_name", "text"]
+      }
+    },
+    {
+      "name": "weave_get_document",
+      "description": "Retrieve a document by ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "vdb_type": {"type": "string"},
+          "collection_name": {"type": "string"},
+          "document_id": {"type": "string"}
+        },
+        "required": ["vdb_type", "collection_name", "document_id"]
+      }
+    }
+  ]
+}
+```
+
+**Technical Approach:**
+- New package: `src/pkg/mcp/server/`
+  - `server.go` - MCP server implementation
+  - `tools.go` - Tool definitions and handlers
+  - `transport.go` - Stdio transport
+- Reuse existing VectorDBClient interface for all operations
+- Use existing `src/pkg/mcp/` client code as reference
+
+**MCP Server Command:**
+```bash
+weave mcp serve
+# or for debugging
+weave mcp serve --debug
+```
+
+**Claude Desktop Configuration:**
+```json
+{
+  "mcpServers": {
+    "weave-cli": {
+      "command": "/path/to/weave",
+      "args": ["mcp", "serve"],
+      "env": {
+        "OPENAI_API_KEY": "sk-...",
+        "QDRANT_API_KEY": "...",
+        "WEAVIATE_API_KEY": "..."
+      }
+    }
+  }
+}
+```
+
+**Example Usage in Claude Desktop:**
+```
+User: "Create a collection called 'meeting_notes' in Qdrant"
+Claude: [Uses weave_create_collection tool]
+       ✓ Collection 'meeting_notes' created successfully
+
+User: "Add this meeting summary to the collection: [long text]"
+Claude: [Uses weave_create_document tool]
+       ✓ Document added with ID: doc-abc123
+
+User: "Search for discussions about Q4 planning"
+Claude: [Uses weave_search_semantic tool]
+       Found 3 relevant documents:
+       1. Q4 Planning Meeting - Dec 15
+       2. Q4 OKR Review - Dec 10
+       3. Product Roadmap Q4 - Dec 5
+```
+
+**Value**: Very High - Makes weave-cli accessible to Claude Desktop users, enables AI-powered data management
+
+**Effort**: 5-6 hours
+- MCP server framework: 2 hours
+- Tool implementations (6-8 tools): 2.5 hours
+- Testing with Claude Desktop: 1 hour
+- Documentation: 0.5 hour
+
+---
+
+#### 1.4 Progress Bars (Medium Priority - 1-2 hours)
+**Goal**: Visual feedback for long-running operations
+
+**Implementation:**
+- Library: `github.com/schollz/progressbar/v3`
+- Wrap bulk operations (CreateDocuments, pipeline ingestion)
+- Show: progress %, items processed, rate, ETA
+
+**Example:**
+```
+Creating 1,000 documents in batch...
+[████████████████████----] 80% | 800/1000 | 45.2 docs/s | ETA: 4s
+```
+
+**Effort**: 1-2 hours
+
+---
+
+#### 1.5 JSON/YAML Output Formats (Medium Priority - 2-3 hours)
+**Goal**: Machine-readable output for scripting/automation
+
+**Implementation:**
+```bash
+weave cols ls --output json
+weave search "query" --output yaml
+weave docs get doc-123 --format json
+```
+
+**Technical Approach:**
+- Add `--output` flag to all commands (json, yaml, table)
+- New package: `src/pkg/output/`
+  - `formatter.go` - Format selection and rendering
+  - `json.go` - JSON output
+  - `yaml.go` - YAML output
+  - `table.go` - Table output (existing default)
+
+**Example JSON Output:**
+```json
+{
+  "collections": [
+    {
+      "name": "documents",
+      "count": 1234,
+      "vector_dimensions": 1536,
+      "created_at": "2025-12-01T10:30:00Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Value**: Medium - Enables automation and integration with other tools
+
+**Effort**: 2-3 hours
+
+---
+
+#### 1.6 Collection Statistics (Medium Priority - 2-3 hours)
+**Goal**: Detailed analytics for collections
+
+**Implementation:**
+```bash
+weave stats <collection> --vdb qdrant-cloud
+```
+
+**Output:**
+```
+Collection: documents
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Documents:        1,234
+Vector Dimensions: 1536
+Similarity Metric: cosine
+
+Metadata Distribution:
+  category:
+    - tutorial: 456 (37%)
+    - guide: 389 (31%)
+    - reference: 234 (19%)
+    - other: 155 (13%)
+
+  language:
+    - en: 1,100 (89%)
+    - es: 89 (7%)
+    - fr: 45 (4%)
+
+Document Size:
+  Min: 128 chars
+  Max: 45,678 chars
+  Avg: 2,345 chars
+  Median: 1,890 chars
+
+Recent Activity:
+  Last insertion: 2025-12-19 13:15:23
+  Last search: 2025-12-19 13:20:45
+  Insertions (24h): 45
+```
+
+**Technical Approach:**
+- New command: `src/cmd/stats/`
+- Use ListDocuments + metadata analysis
+- Cache results for large collections
+- VDB-specific APIs where available (GetCollectionCount, etc.)
+
+**Value**: Medium - Helps users understand their data
+
+**Effort**: 2-3 hours
 
 ### Option 2: VDB Expansion
 **Focus**: Add more vector databases
+**Estimated Total**: 8-12 hours per VDB
 
-**Candidates:**
-- **LanceDB** - Blocked by CGO requirement (see docs/lancedb/RESEARCH.md)
-- **Vespa** - Full-text + vector search platform
-- **Marqo** - Tensor search engine
-- **Nuclia** - Vector + knowledge graph
+#### Candidate Vector Databases
 
-**Estimated effort**: 8-12 hours per VDB (implementation + tests + docs)
+**2.1 Vespa (Recommended - 10-12 hours)**
+**Why**: Full-featured search platform with vector + text + structured data
+
+**Features:**
+- Native vector search (HNSW, brute-force)
+- Full-text search with BM25
+- Hybrid search (built-in)
+- Structured data queries (SQL-like)
+- Real-time updates and deletions
+- Horizontal scalability
+
+**SDK:**
+- Go client: `github.com/vespa-engine/vespa/client/go` (official)
+- REST API: Well-documented HTTP API
+- No CGO required ✅
+
+**Implementation Effort:**
+- Adapter implementation: 4 hours
+- Integration tests (16 tests): 3 hours
+- Documentation (SETUP.md, README.md): 2 hours
+- Local setup guide (Docker): 1 hour
+- Cloud setup guide (Vespa Cloud): 2 hours
+
+**Value**: High - Enterprise-grade search, handles complex queries beyond vectors
+
+---
+
+**2.2 Marqo (Medium Priority - 8-10 hours)**
+**Why**: Tensor search with built-in model serving
+
+**Features:**
+- Multi-modal search (text, images)
+- Built-in embedding models (no separate LLM API needed)
+- Automatic batching and optimization
+- Simple API (REST + Python/TypeScript SDKs)
+
+**SDK:**
+- No official Go SDK ❌
+- REST API: Well-documented
+- Need to implement HTTP client wrapper
+
+**Implementation Effort:**
+- HTTP client wrapper: 2 hours
+- Adapter implementation: 3 hours
+- Integration tests: 2 hours
+- Documentation: 2 hours
+- Total: 9 hours
+
+**Value**: Medium - Simpler model management, but less mature than others
+
+---
+
+**2.3 Nuclia (Lower Priority - 10-12 hours)**
+**Why**: Knowledge graph + vector search hybrid
+
+**Features:**
+- Vector search
+- Knowledge graph relationships
+- Automatic content extraction (PDFs, images, audio)
+- Multi-language support
+- Cloud-only (no local deployment)
+
+**SDK:**
+- REST API only
+- Need custom HTTP client
+
+**Implementation Effort:**
+- Similar to Marqo: 10-12 hours
+- Cloud-only setup (simpler deployment docs)
+
+**Value**: Medium - Niche use case (knowledge management)
+
+---
+
+**2.4 LanceDB (Blocked - CGO Required)**
+**Status**: Blocked by CGO dependency
+**See**: `docs/lancedb/RESEARCH.md`
+**Decision**: Defer until CGO-free SDK available or accept CGO for specific platforms
+
+---
+
+#### VDB Expansion Strategy
+
+**Recommendation**: Start with **Vespa**
+- Most feature-complete (vector + text + structured)
+- Official Go SDK (no CGO)
+- Both local and cloud deployment
+- Strong documentation
+- Enterprise adoption
+
+**Next Priority**: Marqo (if multi-modal search is important)
+
+**Defer**: Nuclia, LanceDB until user demand emerges
 
 ### Option 3: Production Hardening
 **Focus**: Enterprise readiness, reliability
+**Estimated Total**: 20-30 hours (phased approach recommended)
 
-**Tasks:**
-1. **Observability**
-   - Structured logging (JSON output mode)
-   - Prometheus metrics endpoint
-   - Distributed tracing (OpenTelemetry)
-   - Health check endpoints for monitoring
+**Summary**: Make weave-cli production-ready with observability, performance, security, and operational improvements.
 
-2. **Performance**
-   - Connection pooling optimization
+**Key Areas:**
+1. **Observability** (5-7 hours)
+   - Structured JSON logging with levels
+   - Prometheus metrics endpoint (`/metrics`)
+   - OpenTelemetry tracing integration
+   - Health check endpoint for monitoring
+
+2. **Performance** (6-8 hours)
+   - Connection pooling optimization (reuse connections)
    - Request batching and pipelining
-   - Caching layer for embeddings
+   - Embedding cache layer (Redis/in-memory)
    - Concurrent query execution
 
-3. **Security**
-   - OAuth2/OIDC authentication
-   - API key rotation support
+3. **Security** (5-7 hours)
+   - OAuth2/OIDC authentication support
+   - API key rotation without downtime
    - TLS certificate pinning
-   - Secrets management integration (Vault, AWS Secrets Manager)
+   - Secrets management (Vault, AWS Secrets Manager)
 
-4. **Operations**
-   - Graceful shutdown handling
-   - Retry strategies with exponential backoff
-   - Circuit breaker patterns
-   - Rate limiting
+4. **Operations** (4-6 hours)
+   - Graceful shutdown (SIGTERM handling)
+   - Retry with exponential backoff + jitter
+   - Circuit breaker pattern (prevent cascade failures)
+   - Rate limiting (protect VDBs from overload)
+
+**Value**: Medium-High - Critical for enterprise deployment, less urgent for individual developers
+
+**Detailed Plan**: See `docs/planning/OPTION_3_PRODUCTION_HARDENING.md`
 
 ### Option 4: Testing & Quality
 **Focus**: Increase confidence, reduce bugs
+**Estimated Total**: 25-35 hours (large effort, high value)
 
-**Tasks:**
-1. **Unit Test Coverage**
-   - Add unit tests in package directories
-   - Mock VDB clients for isolated testing
-   - Aim for 70%+ coverage (currently ~50% integration only)
-   - Estimated: 20-30 hours total
+**Summary**: Increase test coverage from ~50% (integration only) to 70%+ with unit tests, E2E tests, and chaos engineering.
 
-2. **E2E Testing**
-   - End-to-end workflow tests
-   - Multi-VDB scenarios
-   - Performance benchmarks
+**Key Areas:**
+1. **Unit Test Coverage** (20-25 hours)
+   - Add unit tests in all `src/pkg/vectordb/*/` packages
+   - Mock VectorDBClient interface for isolated testing
+   - Test error paths, edge cases, timeout handling
+   - Target: 70%+ coverage (up from current ~50%)
+   - Estimated: 2-3 hours per VDB × 10 VDBs = 20-30 hours
 
-3. **Chaos Engineering**
-   - Network failure simulation
-   - Timeout scenarios
+2. **E2E Testing** (3-5 hours)
+   - End-to-end workflow tests (create → ingest → search → delete)
+   - Multi-VDB scenarios (replicate data across VDBs)
+   - Performance benchmarks (latency, throughput)
+   - Integration with real LLM APIs
+
+3. **Chaos Engineering** (2-3 hours)
+   - Network failure simulation (connection drops, timeouts)
+   - VDB unavailability scenarios
    - Data corruption handling
+   - Partial failure recovery
+
+**Current State:**
+- Integration tests: ✅ Excellent (10/10 VDBs, comprehensive scenarios)
+- Unit tests: ❌ None (all tests in `tests/`, not in packages)
+- E2E tests: ❌ None
+- Chaos tests: ❌ None
+
+**Value**: Medium - Improves confidence but integration tests already provide good coverage
+
+**Detailed Plan**: See `docs/planning/OPTION_4_TESTING_QUALITY.md`
 
 ### Option 5: Documentation & Community
 **Focus**: User adoption, contributions
+**Estimated Total**: 15-20 hours (ongoing, incremental)
 
-**Tasks:**
-1. **Tutorial Content**
-   - Getting started videos (asciinema)
-   - Blog posts / Medium articles
-   - Conference talk preparation
+**Summary**: Build community, create tutorials, and provide examples to drive adoption and contributions.
 
-2. **Community Building**
-   - CONTRIBUTING.md guidelines
-   - Issue templates
-   - PR review process
-   - Roadmap publication
+**Key Areas:**
+1. **Tutorial Content** (6-8 hours)
+   - Getting started video tutorials (asciinema recordings)
+   - Blog posts: "Building a RAG app with weave-cli" (Medium, dev.to)
+   - Conference talk: "10 Vector Databases, One CLI" (proposal + slides)
+   - YouTube demo videos (setup, basic usage, advanced features)
 
-3. **Examples & Use Cases**
-   - RAG application examples
-   - Semantic search demos
-   - Multi-VDB comparison scripts
+2. **Community Building** (4-6 hours)
+   - `CONTRIBUTING.md` - Guidelines for contributors
+   - GitHub issue templates (bug report, feature request)
+   - PR template with checklist
+   - CODE_OF_CONDUCT.md
+   - Public roadmap (GitHub Projects or issues)
+   - Discord/Slack community setup
+
+3. **Examples & Use Cases** (5-6 hours)
+   - RAG application example (Go + weave-cli)
+   - Semantic search demo (CLI + web UI)
+   - Multi-VDB comparison script (performance testing)
+   - CI/CD integration examples (covered in Option 1.1a)
+   - Jupyter notebooks for data science workflows
+
+**Deliverables:**
+- 3-5 tutorial videos
+- 2-3 blog posts
+- 10+ example scripts/applications
+- Complete contributor documentation
+
+**Value**: Medium - Increases visibility and contributions, but requires ongoing maintenance
+
+**Detailed Plan**: See `docs/planning/OPTION_5_COMMUNITY.md`
+
+---
+
+## 📁 Detailed Planning Documents
+
+For expanded implementation details, see:
+
+```
+docs/planning/
+├── OPTION_1_NEW_FEATURES.md       - Detailed specs for pipelines, REPL, MCP
+├── OPTION_2_VDB_EXPANSION.md      - VDB research, SDKs, implementation guides
+├── OPTION_3_PRODUCTION_HARDENING.md - Observability, perf, security, ops
+├── OPTION_4_TESTING_QUALITY.md    - Unit tests, E2E, chaos engineering
+└── OPTION_5_COMMUNITY.md          - Tutorials, examples, community building
+```
+
+**To create these**: Run `weave docs generate-planning` (future command) or manually create based on NEXT_STEPS.md summaries.
+
+**Note**: Detailed docs provide:
+- Complete technical specifications
+- Step-by-step implementation guides
+- Code examples and pseudocode
+- Testing strategies
+- Success criteria and acceptance tests
 
 ### Recommendation
 
