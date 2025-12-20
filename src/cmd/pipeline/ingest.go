@@ -162,10 +162,11 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		Quiet:        quiet,
 	}
 
+	// Create progress tracker
+	progress := pipeline.NewProgressTracker(!quiet, quiet)
+
 	// Phase 1: Scan files
-	if !quiet {
-		fmt.Printf("🔍 Scanning files in %s...\n", source)
-	}
+	progress.StartScanning()
 
 	scanner := pipeline.NewFileScanner(source, glob, exclude, recursive)
 	files, err := scanner.Scan(ctx)
@@ -173,9 +174,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to scan files: %w", err)
 	}
 
-	if !quiet {
-		fmt.Printf("✅ Found %d files\n", len(files))
-	}
+	progress.FinishScanning(len(files))
 
 	if len(files) == 0 {
 		fmt.Println("No files found matching criteria")
@@ -183,11 +182,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	}
 
 	// Phase 2: Process files
-	if !quiet {
-		fmt.Printf("⚙️  Processing files (batch_size=%d, workers=%d)...\n", batchSize, workers)
-	}
-
-	processor := pipeline.NewProcessor(vdbClient, llmClient, options)
+	processor := pipeline.NewProcessor(vdbClient, llmClient, options, progress)
 	report, err := processor.ProcessFiles(ctx, files)
 	if err != nil {
 		return fmt.Errorf("failed to process files: %w", err)

@@ -18,14 +18,16 @@ type Processor struct {
 	vdbClient vectordb.VectorDBClient
 	llmClient *llm.OpenAIClient
 	options   *IngestOptions
+	progress  *ProgressTracker
 }
 
 // NewProcessor creates a new document processor
-func NewProcessor(vdbClient vectordb.VectorDBClient, llmClient *llm.OpenAIClient, options *IngestOptions) *Processor {
+func NewProcessor(vdbClient vectordb.VectorDBClient, llmClient *llm.OpenAIClient, options *IngestOptions, progress *ProgressTracker) *Processor {
 	return &Processor{
 		vdbClient: vdbClient,
 		llmClient: llmClient,
 		options:   options,
+		progress:  progress,
 	}
 }
 
@@ -62,6 +64,9 @@ func (p *Processor) ProcessFiles(ctx context.Context, files []FileInfo) (*Ingest
 	}
 
 	report.FilesScanned = len(files)
+
+	// Start processing progress bar
+	p.progress.StartProcessing(len(filesToProcess), p.options.BatchSize, p.options.Workers)
 
 	// Create worker pool
 	resultsChan := make(chan *ProcessingResult, len(filesToProcess))
@@ -103,6 +108,9 @@ func (p *Processor) ProcessFiles(ctx context.Context, files []FileInfo) (*Ingest
 	// Collect results and batch documents
 	var allDocuments []*vectordb.Document
 	for result := range resultsChan {
+		// Update progress
+		p.progress.UpdateProgress(1)
+
 		if result.Error != nil {
 			report.FilesFailed++
 			report.Errors = append(report.Errors, ErrorDetail{
@@ -117,6 +125,9 @@ func (p *Processor) ProcessFiles(ctx context.Context, files []FileInfo) (*Ingest
 		report.DocumentsCreated += result.DocumentCount
 		allDocuments = append(allDocuments, result.Documents...)
 	}
+
+	// Finish processing progress
+	p.progress.FinishProcessing()
 
 	// Create documents in batches
 	if !p.options.DryRun && len(allDocuments) > 0 {
@@ -361,18 +372,26 @@ func (p *Processor) createDocumentsInBatches(ctx context.Context, documents []*v
 		batchSize = 100 // default
 	}
 
+	totalBatches := (len(documents) + batchSize - 1) / batchSize
+	p.progress.StartBatching(len(documents), batchSize)
+
+	batchNum := 0
 	for i := 0; i < len(documents); i += batchSize {
+		batchNum++
 		end := i + batchSize
 		if end > len(documents) {
 			end = len(documents)
 		}
 
 		batch := documents[i:end]
+		p.progress.UpdateBatch(batchNum, totalBatches, len(batch))
+
 		if err := p.vdbClient.CreateDocuments(ctx, p.options.Collection, batch); err != nil {
 			return fmt.Errorf("failed to create batch at index %d: %w", i, err)
 		}
 	}
 
+	p.progress.FinishBatching()
 	return nil
 }
 
