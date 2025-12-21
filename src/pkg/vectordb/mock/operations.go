@@ -6,7 +6,6 @@ package mock
 import (
 	"context"
 	"strconv"
-	"strings"
 
 	mockClient "github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -17,21 +16,8 @@ import (
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	// Convert schema to field definitions for mock client
-	var fields []weaviate.FieldDefinition
-	for _, prop := range schema.Properties {
-		fields = append(fields, weaviate.FieldDefinition{
-			Name: prop.Name,
-			Type: strings.Join(prop.DataType, ","),
-		})
-	}
-
-	embeddingModel := "text-embedding-ada-002" // Default model
-	if schema.Vectorizer != "" {
-		embeddingModel = schema.Vectorizer
-	}
-
-	return a.client.CreateCollection(ctx, name, embeddingModel, fields)
+	// Use the schema-based signature
+	return a.client.CreateCollectionWithSchema(ctx, name, schema)
 }
 
 // DeleteCollection deletes a collection and all its documents

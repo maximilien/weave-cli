@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
@@ -409,8 +410,24 @@ Proper data preprocessing can significantly improve model performance and reduce
 	}
 }
 
-// CreateCollection creates a new collection in the mock database
+// CreateCollection creates a new collection in the mock database (legacy signature for backward compat)
 func (c *Client) CreateCollection(ctx context.Context, collectionName, embeddingModel string, customFields []weaviate.FieldDefinition) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Check if collection already exists
+	if _, exists := c.collections[collectionName]; exists {
+		return fmt.Errorf("collection '%s' already exists", collectionName)
+	}
+
+	// Create empty collection
+	c.collections[collectionName] = []Document{}
+
+	return nil
+}
+
+// CreateCollectionWithSchema creates a new collection using the VectorDB schema interface
+func (c *Client) CreateCollectionWithSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -625,6 +642,59 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName, documentID,
 		c.collections[collectionName][docIndex].Metadata = make(map[string]interface{})
 	}
 	c.collections[collectionName][docIndex].Metadata["updated_at"] = time.Now().Format(time.RFC3339)
+
+	return nil
+}
+
+// CollectionExists checks if a collection exists in the mock database
+func (c *Client) CollectionExists(ctx context.Context, name string) (bool, error) {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
+
+	_, exists := c.collections[name]
+	return exists, nil
+}
+
+// CreateDocuments creates multiple documents in a collection (batch operation)
+func (c *Client) CreateDocuments(ctx context.Context, collectionName string, documents []*vectordb.Document) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// Check if collection exists
+	if _, exists := c.collections[collectionName]; !exists {
+		return fmt.Errorf("collection '%s' does not exist", collectionName)
+	}
+
+	// Convert and add each document
+	for _, doc := range documents {
+		if doc == nil {
+			continue
+		}
+
+		// Convert vectordb.Document to mock.Document
+		mockDoc := Document{
+			ID:        doc.ID,
+			Content:   doc.Content,
+			Image:     doc.Image,
+			ImageData: doc.ImageData,
+			URL:       doc.URL,
+			Metadata:  doc.Metadata,
+		}
+
+		// Prefer Content over Text
+		if mockDoc.Content == "" {
+			mockDoc.Content = doc.Text
+		}
+
+		// Check for duplicate IDs
+		for _, existingDoc := range c.collections[collectionName] {
+			if existingDoc.ID == mockDoc.ID {
+				return fmt.Errorf("document with ID '%s' already exists in collection '%s'", mockDoc.ID, collectionName)
+			}
+		}
+
+		c.collections[collectionName] = append(c.collections[collectionName], mockDoc)
+	}
 
 	return nil
 }
