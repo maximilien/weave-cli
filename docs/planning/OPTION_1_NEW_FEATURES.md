@@ -1456,6 +1456,431 @@ func (s *MCPServer) toolSearchSemantic(ctx context.Context, args map[string]inte
 
 ---
 
+
+---
+
+# Feature 1.2: MCP Client Integration
+
+## Overview
+Add MCP (Model Context Protocol) client capabilities to weave-cli, allowing it to call external MCP servers for document enrichment, metadata extraction, and enhanced query processing.
+
+## Goals
+1. Enable weave-cli to act as an MCP client (complement to weave-mcp server)
+2. Support MCP stdio and HTTP transport protocols
+3. Integrate MCP tools into pipeline and query workflows
+4. Provide configuration-driven MCP server connections
+
+## Use Cases
+
+### 1. Document Enrichment During Ingestion
+```bash
+# Enrich documents with MCP tools before ingestion
+weave pipeline ingest ./docs --collection knowledge \
+  --mcp-enrich \
+  --mcp-server localhost:8030 \
+  --mcp-tools extract_entities,summarize
+```
+
+**Flow:**
+- Scan documents
+- For each document, call MCP tools (extract_entities, summarize)
+- Add enriched metadata to document
+- Generate embeddings
+- Insert into VDB
+
+### 2. Query Enhancement
+```bash
+# Use MCP to enhance queries before search
+weave query --collection knowledge \
+  --query "What are the key features?" \
+  --mcp-enhance \
+  --mcp-server localhost:8030 \
+  --mcp-tool rewrite_query
+```
+
+**Flow:**
+- User provides query
+- Call MCP tool to enhance/rewrite query
+- Execute enhanced query against VDB
+- Optionally post-process results with MCP
+
+### 3. Interactive REPL with MCP
+```bash
+# REPL with MCP tool access
+weave repl --collection knowledge \
+  --mcp-server localhost:8030
+  
+> /mcp list  # List available MCP tools
+> /mcp call extract_entities --text "..."  # Call MCP tool
+> /enrich last 5  # Enrich last 5 results with MCP
+```
+
+## Architecture
+
+### Package Structure
+```
+src/pkg/mcp/
+├── client.go           # MCP client interface
+├── transport.go        # HTTP and stdio transports
+├── tools.go            # MCP tool invocation
+├── config.go           # MCP server configuration
+└── integration.go      # Integration with pipeline/query
+
+src/cmd/mcp/
+├── mcp.go              # MCP command group
+├── connect.go          # Connect to MCP server
+├── list.go             # List MCP tools
+├── call.go             # Call MCP tool
+└── test.go             # Test MCP connection
+```
+
+### Core Types
+
+```go
+// MCPClient provides MCP protocol client functionality
+type MCPClient interface {
+    // Connection management
+    Connect(ctx context.Context, config *MCPConfig) error
+    Disconnect() error
+    Ping(ctx context.Context) error
+    
+    // Tool discovery
+    ListTools(ctx context.Context) ([]*MCPTool, error)
+    GetTool(ctx context.Context, name string) (*MCPTool, error)
+    
+    // Tool invocation
+    CallTool(ctx context.Context, name string, args map[string]interface{}) (*MCPResult, error)
+    CallToolBatch(ctx context.Context, calls []*MCPToolCall) ([]*MCPResult, error)
+}
+
+// MCPConfig configures MCP server connection
+type MCPConfig struct {
+    ServerURL   string            // HTTP URL or stdio command
+    Transport   MCPTransport      // http or stdio
+    Auth        *MCPAuth          // Authentication config
+    Timeout     time.Duration     // Request timeout
+    MaxRetries  int               // Retry attempts
+    Headers     map[string]string // Custom headers (HTTP only)
+}
+
+type MCPTransport string
+const (
+    TransportHTTP  MCPTransport = "http"
+    TransportStdio MCPTransport = "stdio"
+)
+
+// MCPTool represents an available MCP tool
+type MCPTool struct {
+    Name        string                 `json:"name"`
+    Description string                 `json:"description"`
+    InputSchema map[string]interface{} `json:"inputSchema"`
+}
+
+// MCPToolCall represents a tool invocation
+type MCPToolCall struct {
+    Tool string                 `json:"tool"`
+    Args map[string]interface{} `json:"arguments"`
+}
+
+// MCPResult represents tool execution result
+type MCPResult struct {
+    Content interface{}            `json:"content"`
+    Metadata map[string]interface{} `json:"metadata,omitempty"`
+    Error   string                 `json:"error,omitempty"`
+}
+```
+
+## Implementation Details
+
+### 1. MCP Client (HTTP Transport)
+
+```go
+type HTTPMCPClient struct {
+    baseURL    string
+    httpClient *http.Client
+    auth       *MCPAuth
+}
+
+func (c *HTTPMCPClient) CallTool(ctx context.Context, name string, args map[string]interface{}) (*MCPResult, error) {
+    request := map[string]interface{}{
+        "method": "tools/call",
+        "params": map[string]interface{}{
+            "name":      name,
+            "arguments": args,
+        },
+    }
+    
+    resp, err := c.post(ctx, "/mcp/v1/rpc", request)
+    if err != nil {
+        return nil, err
+    }
+    
+    var result MCPResult
+    if err := json.Unmarshal(resp, &result); err != nil {
+        return nil, err
+    }
+    
+    return &result, nil
+}
+```
+
+### 2. MCP Client (stdio Transport)
+
+```go
+type StdioMCPClient struct {
+    cmd    *exec.Cmd
+    stdin  io.WriteCloser
+    stdout io.ReadCloser
+    stderr io.ReadCloser
+}
+
+func (c *StdioMCPClient) Connect(ctx context.Context, config *MCPConfig) error {
+    // Parse command from ServerURL
+    cmdParts := strings.Split(config.ServerURL, " ")
+    c.cmd = exec.CommandContext(ctx, cmdParts[0], cmdParts[1:]...)
+    
+    // Setup pipes
+    c.stdin, _ = c.cmd.StdinPipe()
+    c.stdout, _ = c.cmd.StdoutPipe()
+    c.stderr, _ = c.cmd.StderrPipe()
+    
+    // Start process
+    return c.cmd.Start()
+}
+
+func (c *StdioMCPClient) CallTool(ctx context.Context, name string, args map[string]interface{}) (*MCPResult, error) {
+    // Write JSON-RPC request to stdin
+    request := map[string]interface{}{
+        "jsonrpc": "2.0",
+        "id":      uuid.New().String(),
+        "method":  "tools/call",
+        "params": map[string]interface{}{
+            "name":      name,
+            "arguments": args,
+        },
+    }
+    
+    if err := json.NewEncoder(c.stdin).Encode(request); err != nil {
+        return nil, err
+    }
+    
+    // Read JSON-RPC response from stdout
+    var response struct {
+        Result *MCPResult `json:"result"`
+        Error  *struct {
+            Message string `json:"message"`
+        } `json:"error"`
+    }
+    
+    if err := json.NewDecoder(c.stdout).Decode(&response); err != nil {
+        return nil, err
+    }
+    
+    if response.Error != nil {
+        return nil, fmt.Errorf("MCP error: %s", response.Error.Message)
+    }
+    
+    return response.Result, nil
+}
+```
+
+### 3. Pipeline Integration
+
+```go
+type MCPEnricher struct {
+    client MCPClient
+    tools  []string  // Tool names to apply
+}
+
+func (e *MCPEnricher) EnrichDocument(ctx context.Context, doc *vectordb.Document) error {
+    for _, toolName := range e.tools {
+        result, err := e.client.CallTool(ctx, toolName, map[string]interface{}{
+            "text": doc.Text,
+        })
+        if err != nil {
+            return fmt.Errorf("MCP tool %s failed: %w", toolName, err)
+        }
+        
+        // Merge result metadata into document
+        if result.Metadata != nil {
+            if doc.Metadata == nil {
+                doc.Metadata = make(map[string]interface{})
+            }
+            for k, v := range result.Metadata {
+                doc.Metadata[fmt.Sprintf("mcp_%s_%s", toolName, k)] = v
+            }
+        }
+    }
+    
+    return nil
+}
+```
+
+## Configuration
+
+### config.yaml
+```yaml
+mcp:
+  servers:
+    - name: local-enrichment
+      url: http://localhost:8030
+      transport: http
+      enabled: true
+      tools:
+        - extract_entities
+        - summarize
+        - classify
+        
+    - name: weave-mcp-stdio
+      url: /Users/max/weave-mcp/bin/weave-mcp-stdio
+      transport: stdio
+      enabled: true
+      
+  # Default MCP server for commands
+  default_server: local-enrichment
+  
+  # Auto-enrichment settings
+  auto_enrich:
+    enabled: false
+    tools:
+      - extract_entities
+```
+
+## CLI Commands
+
+### mcp connect
+```bash
+# Test connection to MCP server
+weave mcp connect --server localhost:8030
+weave mcp connect --server stdio:./bin/weave-mcp-stdio
+```
+
+### mcp list
+```bash
+# List available tools
+weave mcp list --server localhost:8030
+
+# Output:
+# Available MCP Tools:
+#   extract_entities    - Extract named entities from text
+#   summarize           - Generate text summary
+#   classify            - Classify document into categories
+#   rewrite_query       - Enhance search queries
+```
+
+### mcp call
+```bash
+# Call MCP tool directly
+weave mcp call extract_entities \
+  --arg text="Apple Inc. was founded in Cupertino" \
+  --server localhost:8030
+
+# Output:
+# {
+#   "entities": [
+#     {"text": "Apple Inc.", "type": "ORGANIZATION"},
+#     {"text": "Cupertino", "type": "LOCATION"}
+#   ]
+# }
+```
+
+### pipeline ingest with MCP
+```bash
+# Enrich documents during ingestion
+weave pipeline ingest ./docs \
+  --collection knowledge \
+  --mcp-enrich \
+  --mcp-server localhost:8030 \
+  --mcp-tools extract_entities,summarize \
+  --output json
+```
+
+## Testing Strategy
+
+### Unit Tests
+```go
+func TestMCPClient_CallTool_HTTP(t *testing.T) {
+    // Mock HTTP MCP server
+    server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        // Respond with mock result
+    }))
+    defer server.Close()
+    
+    client := NewHTTPMCPClient(server.URL, nil)
+    result, err := client.CallTool(context.Background(), "test_tool", map[string]interface{}{
+        "arg1": "value1",
+    })
+    
+    // Assert result
+}
+
+func TestMCPClient_CallTool_Stdio(t *testing.T) {
+    // Test stdio transport with mock command
+}
+
+func TestMCPEnricher_EnrichDocument(t *testing.T) {
+    // Test document enrichment flow
+}
+```
+
+### Integration Tests
+```go
+func TestMCP_Integration_WithWeaveMCP(t *testing.T) {
+    // Start weave-mcp server
+    // Connect weave-cli as MCP client
+    // Call tools
+    // Verify results
+}
+```
+
+## Integration Points
+
+### 1. Pipeline Package
+- Add MCPEnricher to processor pipeline
+- Call MCP tools before/after document creation
+- Enrich metadata automatically
+
+### 2. Query Package  
+- Add MCPQueryEnhancer
+- Rewrite queries using MCP before search
+- Post-process results with MCP
+
+### 3. REPL Package
+- Add `/mcp` commands
+- Interactive MCP tool invocation
+- Enrich search results on-the-fly
+
+## Success Criteria
+- ✅ Connect to weave-mcp server (HTTP and stdio)
+- ✅ List available MCP tools
+- ✅ Call MCP tools with arguments
+- ✅ Integrate MCP into pipeline ingestion
+- ✅ Integrate MCP into query enhancement
+- ✅ Handle errors gracefully (timeout, connection issues)
+- ✅ Configuration-driven MCP server management
+- ✅ Tests cover HTTP and stdio transports
+
+## Effort Estimate
+- MCP client (HTTP transport): 1.5 hours
+- MCP client (stdio transport): 1 hour
+- Pipeline integration: 1 hour
+- Query integration: 0.5 hour
+- CLI commands: 1 hour
+- Configuration: 0.5 hour
+- Testing: 1.5 hours
+- **Total: 5-6 hours**
+
+## Dependencies
+- weave-mcp server (companion project)
+- JSON-RPC library for stdio transport
+- HTTP client for HTTP transport
+
+## Future Enhancements
+- MCP tool chaining (pipe output of one tool to another)
+- MCP result caching
+- Async tool invocation for better performance
+- MCP tool marketplace/discovery
+
 ## Feature 1.4: Progress Bars
 
 ### Implementation
