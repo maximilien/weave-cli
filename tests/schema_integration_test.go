@@ -241,7 +241,7 @@ func TestSchemaYAMLOutput(t *testing.T) {
 		}
 
 		for _, field := range expectedFields {
-			if !contains(yamlStr, field) {
+			if !stringContains(yamlStr, field) {
 				t.Errorf("YAML should contain '%s'", field)
 			}
 		}
@@ -275,7 +275,7 @@ func TestSchemaYAMLOutput(t *testing.T) {
 		}
 
 		// Verify header is present
-		if !contains(string(readData), "# Vector Database Schema Configuration") {
+		if !stringContains(string(readData), "# Vector Database Schema Configuration") {
 			t.Error("YAML file should contain header comment")
 		}
 	})
@@ -353,13 +353,6 @@ func TestSchemaDocumentSampling(t *testing.T) {
 }
 
 // Helper function to check if string contains substring
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) &&
-		(s[:len(substr)] == substr || s[len(s)-len(substr):] == substr ||
-		len(s) > len(substr) && s[1:len(substr)+1] == substr ||
-		stringContains(s, substr)))
-}
-
 func stringContains(s, substr string) bool {
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
