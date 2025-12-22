@@ -1,0 +1,429 @@
+// SPDX-License-Identifier: MIT
+// Copyright (c) 2025 dr.max
+
+package agents
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/maximilien/weave-cli/src/pkg/llm"
+	"github.com/maximilien/weave-cli/src/pkg/pdf"
+)
+
+// SchemaAgent analyzes documents and suggests collection schemas
+type SchemaAgent struct {
+	llmClient *llm.OpenAIClient
+}
+
+// SchemaAnalysisInput represents input for schema analysis
+type SchemaAnalysisInput struct {
+	SampleFiles    []string // Paths to sample documents
+	CollectionName string   // Target collection name
+	Requirements   string   // User requirements (optional)
+	VDBType        string   // Target VDB type
+	MaxSamples     int      // Max files to analyze (default: 50)
+}
+
+// SchemaAnalysisOutput represents AI-generated schema suggestion
+type SchemaAnalysisOutput struct {
+	Schema       SchemaConfig      `json:"schema"`
+	Reasoning    string            `json:"reasoning"`
+	FieldAnalysis []FieldSuggestion `json:"field_analysis"`
+	Confidence   float64           `json:"confidence"`
+	Warnings     []string          `json:"warnings"`
+	Alternatives []SchemaConfig    `json:"alternatives,omitempty"`
+}
+
+// FieldSuggestion represents analysis for a single field
+type FieldSuggestion struct {
+	Name        string        `json:"name"`
+	Type        string        `json:"type"`
+	Indexed     bool          `json:"indexed"`
+	Filterable  bool          `json:"filterable"`
+	Required    bool          `json:"required"`
+	Examples    []interface{} `json:"examples"`
+	Frequency   float64       `json:"frequency"`
+	Cardinality int           `json:"cardinality"`
+	Reasoning   string        `json:"reasoning"`
+}
+
+// SchemaConfig represents a complete schema configuration
+type SchemaConfig struct {
+	CollectionName   string            `yaml:"collection_name" json:"collection_name"`
+	VectorDimensions int               `yaml:"vector_dimensions" json:"vector_dimensions"`
+	SimilarityMetric string            `yaml:"similarity_metric" json:"similarity_metric"`
+	Fields           []FieldConfig     `yaml:"fields" json:"fields"`
+	Indexes          []IndexConfig     `yaml:"indexes" json:"indexes"`
+	Metadata         map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+}
+
+// FieldConfig represents a field configuration
+type FieldConfig struct {
+	Name        string `yaml:"name" json:"name"`
+	Type        string `yaml:"type" json:"type"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+	Indexed     bool   `yaml:"indexed" json:"indexed"`
+	Filterable  bool   `yaml:"filterable" json:"filterable"`
+	Required    bool   `yaml:"required" json:"required"`
+}
+
+// IndexConfig represents an index configuration
+type IndexConfig struct {
+	Name   string   `yaml:"name" json:"name"`
+	Fields []string `yaml:"fields" json:"fields"`
+	Type   string   `yaml:"type" json:"type"` // "vector", "bm25", "composite"
+}
+
+// DocumentStructure represents analyzed document structure
+type DocumentStructure struct {
+	Samples        []DocumentSample
+	FileTypes      []string
+	CommonFields   map[string]int    // field -> frequency
+	FieldTypes     map[string]string // field -> inferred type
+	ContentLengths []int
+	Languages      []string
+}
+
+// DocumentSample represents a sampled document
+type DocumentSample struct {
+	Path    string
+	Type    string
+	Size    int64
+	Fields  map[string]interface{}
+	Preview string // First 1000 chars
+}
+
+// NewSchemaAgent creates a new schema analysis agent
+func NewSchemaAgent(llmClient *llm.OpenAIClient) *SchemaAgent {
+	return &SchemaAgent{llmClient: llmClient}
+}
+
+// Name returns the agent name
+func (a *SchemaAgent) Name() string {
+	return "schema-agent"
+}
+
+// Execute analyzes documents and suggests a schema
+func (a *SchemaAgent) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	analysisInput, ok := input.(*SchemaAnalysisInput)
+	if !ok {
+		return nil, fmt.Errorf("invalid input type for SchemaAgent")
+	}
+
+	// Step 1: Sample and extract document content
+	samples := a.extractSamples(analysisInput.SampleFiles, analysisInput.MaxSamples)
+	if len(samples) == 0 {
+		return nil, fmt.Errorf("no valid samples found")
+	}
+
+	// Step 2: Analyze document structure
+	structure := a.analyzeStructure(samples)
+
+	// Step 3: Use LLM to suggest schema
+	prompt := a.buildAnalysisPrompt(structure, analysisInput)
+
+	// Call LLM with JSON mode for structured output
+	response, err := a.llmClient.Complete(ctx, prompt,
+		llm.WithModel("gpt-4o"),
+		llm.WithTemperature(0.3),
+		llm.WithMaxTokens(2000),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to analyze schema: %w", err)
+	}
+
+	// Parse JSON response
+	var output SchemaAnalysisOutput
+	if err := json.Unmarshal([]byte(response), &output); err != nil {
+		// If JSON parsing fails, try to extract JSON from response
+		jsonStart := strings.Index(response, "{")
+		jsonEnd := strings.LastIndex(response, "}")
+		if jsonStart >= 0 && jsonEnd > jsonStart {
+			jsonStr := response[jsonStart : jsonEnd+1]
+			if err := json.Unmarshal([]byte(jsonStr), &output); err != nil {
+				return nil, fmt.Errorf("failed to parse schema analysis output: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("failed to parse schema analysis output: %w", err)
+		}
+	}
+
+	return &output, nil
+}
+
+// extractSamples extracts samples from files
+func (a *SchemaAgent) extractSamples(files []string, maxSamples int) []DocumentSample {
+	var samples []DocumentSample
+	count := 0
+
+	for _, file := range files {
+		if count >= maxSamples {
+			break
+		}
+
+		sample := a.extractDocumentSample(file)
+		if sample != nil {
+			samples = append(samples, *sample)
+			count++
+		}
+	}
+
+	return samples
+}
+
+// extractDocumentSample extracts a sample from a single file
+func (a *SchemaAgent) extractDocumentSample(filePath string) *DocumentSample {
+	fileType := detectFileType(filePath)
+
+	switch fileType {
+	case "pdf":
+		return a.extractPDFSample(filePath)
+	case "json":
+		return a.extractJSONSample(filePath)
+	case "md", "txt":
+		return a.extractTextSample(filePath)
+	default:
+		return nil
+	}
+}
+
+// extractPDFSample extracts sample from PDF
+func (a *SchemaAgent) extractPDFSample(filePath string) *DocumentSample {
+	// Use existing PDF extractor
+	textData, _, err := pdf.ExtractPDFContent(filePath, 1000, false, 0, false)
+	if err != nil || len(textData) == 0 {
+		return nil
+	}
+
+	stat, _ := os.Stat(filePath)
+
+	preview := ""
+	if len(textData) > 0 {
+		preview = textData[0].Content
+		if len(preview) > 1000 {
+			preview = preview[:1000]
+		}
+	}
+
+	return &DocumentSample{
+		Path:    filePath,
+		Type:    "pdf",
+		Size:    stat.Size(),
+		Fields:  map[string]interface{}{"content": preview},
+		Preview: preview,
+	}
+}
+
+// extractJSONSample extracts sample from JSON
+func (a *SchemaAgent) extractJSONSample(filePath string) *DocumentSample {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil
+	}
+
+	var fields map[string]interface{}
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return nil
+	}
+
+	stat, _ := os.Stat(filePath)
+
+	preview := string(data)
+	if len(preview) > 1000 {
+		preview = preview[:1000]
+	}
+
+	return &DocumentSample{
+		Path:    filePath,
+		Type:    "json",
+		Size:    stat.Size(),
+		Fields:  fields,
+		Preview: preview,
+	}
+}
+
+// extractTextSample extracts sample from text file
+func (a *SchemaAgent) extractTextSample(filePath string) *DocumentSample {
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil
+	}
+
+	stat, _ := os.Stat(filePath)
+
+	preview := string(data)
+	if len(preview) > 1000 {
+		preview = preview[:1000]
+	}
+
+	fileType := "txt"
+	if strings.HasSuffix(filePath, ".md") {
+		fileType = "md"
+	}
+
+	return &DocumentSample{
+		Path:    filePath,
+		Type:    fileType,
+		Size:    stat.Size(),
+		Fields:  map[string]interface{}{"content": preview},
+		Preview: preview,
+	}
+}
+
+// analyzeStructure analyzes document structure
+func (a *SchemaAgent) analyzeStructure(samples []DocumentSample) DocumentStructure {
+	structure := DocumentStructure{
+		Samples:      samples,
+		CommonFields: make(map[string]int),
+		FieldTypes:   make(map[string]string),
+	}
+
+	// Analyze file types
+	typeMap := make(map[string]bool)
+	for _, sample := range samples {
+		typeMap[sample.Type] = true
+		structure.ContentLengths = append(structure.ContentLengths, int(sample.Size))
+
+		// Count field occurrences
+		for fieldName, fieldValue := range sample.Fields {
+			structure.CommonFields[fieldName]++
+
+			// Infer field type
+			if _, exists := structure.FieldTypes[fieldName]; !exists {
+				structure.FieldTypes[fieldName] = inferType(fieldValue)
+			}
+		}
+	}
+
+	for fileType := range typeMap {
+		structure.FileTypes = append(structure.FileTypes, fileType)
+	}
+
+	return structure
+}
+
+// buildAnalysisPrompt builds the LLM prompt for schema analysis
+func (a *SchemaAgent) buildAnalysisPrompt(structure DocumentStructure, input *SchemaAnalysisInput) string {
+	return fmt.Sprintf(`You are an expert at designing vector database schemas. Analyze the following document samples and suggest an optimal schema for a %s collection.
+
+Collection Name: %s
+Number of Samples: %d
+User Requirements: %s
+
+Document Structure Analysis:
+- File Types: %v
+- Common Fields: %v
+- Field Types: %v
+- Average Content Length: %d bytes
+
+Please suggest a schema configuration that:
+1. Optimizes for search and retrieval
+2. Includes appropriate indexes
+3. Handles the observed field types efficiently
+4. Supports filtering on common metadata
+5. Uses appropriate vector dimensions for the content type (1536 for OpenAI embeddings)
+
+Return ONLY a valid JSON object (no markdown, no explanations outside JSON) with this exact structure:
+{
+  "schema": {
+    "collection_name": "%s",
+    "vector_dimensions": 1536,
+    "similarity_metric": "cosine",
+    "fields": [
+      {"name": "field_name", "type": "text|number|boolean|datetime", "description": "...", "indexed": true, "filterable": false, "required": true}
+    ],
+    "indexes": [
+      {"name": "index_name", "fields": ["field1"], "type": "vector|bm25|composite"}
+    ],
+    "metadata": {"key": "value"}
+  },
+  "reasoning": "Explanation of schema choices...",
+  "field_analysis": [
+    {"name": "field_name", "type": "text", "indexed": true, "filterable": false, "required": true, "examples": ["ex1"], "frequency": 1.0, "cardinality": 10, "reasoning": "Why this config..."}
+  ],
+  "confidence": 0.85,
+  "warnings": ["Warning messages if any"],
+  "alternatives": []
+}`,
+		input.VDBType,
+		input.CollectionName,
+		len(structure.Samples),
+		input.Requirements,
+		structure.FileTypes,
+		structure.CommonFields,
+		structure.FieldTypes,
+		avgLength(structure.ContentLengths),
+		input.CollectionName,
+	)
+}
+
+// detectFileType detects file type from extension
+func detectFileType(filePath string) string {
+	ext := strings.ToLower(filepath.Ext(filePath))
+	switch ext {
+	case ".pdf":
+		return "pdf"
+	case ".json":
+		return "json"
+	case ".md":
+		return "md"
+	case ".txt":
+		return "txt"
+	case ".yaml", ".yml":
+		return "yaml"
+	default:
+		return "unknown"
+	}
+}
+
+// inferType infers field type from value
+func inferType(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		if isDate(v) {
+			return "datetime"
+		}
+		if isURL(v) {
+			return "url"
+		}
+		return "text"
+	case int, int64, float64:
+		return "number"
+	case bool:
+		return "boolean"
+	case []interface{}:
+		return "array"
+	case map[string]interface{}:
+		return "object"
+	default:
+		return "unknown"
+	}
+}
+
+// isDate checks if string is a date
+func isDate(s string) bool {
+	// Simple date pattern check
+	return strings.Contains(s, "-") && (len(s) == 10 || len(s) == 19 || len(s) == 20)
+}
+
+// isURL checks if string is a URL
+func isURL(s string) bool {
+	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+// avgLength calculates average length
+func avgLength(lengths []int) int {
+	if len(lengths) == 0 {
+		return 0
+	}
+	sum := 0
+	for _, l := range lengths {
+		sum += l
+	}
+	return sum / len(lengths)
+}
