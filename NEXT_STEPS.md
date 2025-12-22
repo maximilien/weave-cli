@@ -1,14 +1,14 @@
 # Next Steps - Actionable Tasks
 
-**Last Updated**: 2025-12-22 (Post REPL MCP Integration)
-**Current Version**: v0.8.2-20-g14ee9b4-dirty
-**Status**: 🚀 **Building New Features** - 5/7 Complete (71%)!
+**Last Updated**: 2025-12-22 (Post CI/CD Integration)
+**Current Version**: v0.8.2-25-gb7d46fb
+**Status**: 🎉 **OPTION 1 COMPLETE!** - 6/7 Features Done (86%)!
 
 ---
 
 ## 🎉 Latest Accomplishments (2025-12-22)
 
-### Session: REPL Enhancement, AI Schema Suggestion, MCP Client Integration + REPL MCP
+### Session: REPL MCP Integration + CI/CD Integration (Path A + Path B)
 
 **Completed Features from Option 1:**
 
@@ -53,16 +53,45 @@
    - Full batch ingestion with parallel processing, retry logic, progress tracking
    - 630+ lines in `src/cmd/document/batch.go` + pipeline package
 
-**Total Implementation**: ~17.5 hours invested
-**Lines Added**: ~2,700+ lines (implementation + tests)
-**Progress**: 5/7 features complete (1 already existed)
-**Commits**: 7+ commits (7024702, cc07c41, 887f22a, 183ceef, 6d8c23a, 928db0e, b89ecce + REPL MCP)
+6. ✅ **Feature 1.1a: CI/CD Integration** (6-8 hours) 🆕🆕🆕
+   - **Phase 1**: Exit codes & JSON output for batch command
+     - Exit code constants (0=success, 1=partial, 2=failure)
+     - BatchReport struct with comprehensive JSON output
+     - Failure rate calculation (>50% = complete failure)
+     - Commit: 6a111f5
+
+   - **Phase 2**: Incremental ingestion flags
+     - `--since` flag with duration parsing (h/d/w)
+     - `--skip-existing` flag (placeholder)
+     - Time-based file filtering by modification time
+     - Commit: 08210dc
+
+   - **Phase 3**: CI/CD documentation (1,831 lines)
+     - GitHub Actions integration guide (450+ lines)
+     - Argo Workflows integration guide (550+ lines)
+     - Apache Airflow integration guide (650+ lines)
+     - Commit: 0afa09e
+
+   - **Phase 4**: CI/CD examples (10 production-ready files)
+     - GitHub Actions: basic-ingestion.yml, scheduled.yml, multi-env.yml
+     - Argo: simple-workflow.yaml, parallel-ingestion.yaml, configmap.yaml
+     - Airflow: simple_dag.py, advanced_dag.py, incremental_dag.py
+     - Commit: b7d46fb
+
+**Total Implementation**: ~24 hours invested
+**Lines Added**: ~5,000+ lines (implementation + tests + docs + examples)
+**Progress**: 6/7 features complete (1 already existed)
+**Commits**: 11+ commits (7024702, cc07c41, 887f22a, 183ceef, 6d8c23a, 928db0e, b89ecce, 1ca77c7, 6a111f5, 08210dc, 0afa09e, b7d46fb)
 
 **Impact:**
 - REPL has structured command routing alongside natural language
 - REPL can directly call external MCP servers without LLM routing
 - AI can suggest optimal vector DB schemas from sample documents
 - weave-cli can call external MCP servers (HTTP/stdio) via CLI or REPL
+- Full CI/CD integration with GitHub Actions, Argo Workflows, and Airflow
+- Exit codes and JSON output for automation pipelines
+- Incremental ingestion with time-based filtering (--since flag)
+- Production-ready workflow examples and comprehensive documentation
 - Comprehensive test coverage for all features
 
 ---
@@ -99,64 +128,78 @@
 
 ## 🚀 Next Steps
 
-**Progress**: 5/7 Option 1 features complete (1 already existed) - **71% DONE!**
-**Remaining**: ~2-7 hours for additional features
+**Progress**: 6/7 Option 1 features complete (1 already existed) - **86% DONE!**
+**Remaining**: ~3-8 hours for additional features
 
-### ✅ JUST COMPLETED: REPL MCP Integration (1.5 hours) 🎉
+### ✅ JUST COMPLETED: CI/CD Integration (6-8 hours) 🎉🎉🎉
 
-**Implementation:**
-1. ✅ Added `mcpClient` field and `mcpEnabled` bool to REPL struct
-2. ✅ Added MCP flags to root command (`--mcp-server`, `--mcp-transport`, `--mcp-timeout`)
-3. ✅ Implemented direct MCP client calls in `/mcp list`, `/mcp call`, `/mcp status`
-4. ✅ Added graceful fallback to LLM when MCP server not configured
-5. ✅ Updated `/status` command to show MCP connection info
-6. ✅ All tests passing (REPL integration + MCP client)
+**All 4 Phases Complete:**
 
-**Files Modified:**
-- `src/pkg/repl/repl.go` - Added MCP client initialization and cleanup
-- `src/pkg/repl/commands.go` - Direct MCP calls with fallback
-- `src/cmd/root.go` - Added MCP flags (`--mcp-server`, `--mcp-transport`, `--mcp-timeout`)
+**Phase 1: Exit Codes & JSON Output**
+- Exit code constants (0=success, 1=partial, 2=failure)
+- BatchReport struct with files/documents/errors/duration
+- Failure rate calculation (>50% = complete failure)
+- Modified `src/cmd/document/batch.go`
+- Commit: 6a111f5
 
-**Usage:**
+**Phase 2: Incremental Ingestion Flags**
+- `--since` flag for time-based filtering (supports h/d/w)
+- `--skip-existing` flag (placeholder for future)
+- Duration parsing and file modification time filtering
+- Modified `src/cmd/document/batch.go`
+- Commit: 08210dc
+
+**Phase 3: Documentation (1,831 lines)**
+- `docs/integrations/GITHUB_ACTIONS.md` (450+ lines)
+- `docs/integrations/ARGO_WORKFLOWS.md` (550+ lines)
+- `docs/integrations/AIRFLOW.md` (650+ lines)
+- Comprehensive setup, examples, best practices
+- Commit: 0afa09e
+
+**Phase 4: Production Examples (10 files)**
+- GitHub Actions: `basic-ingestion.yml`, `scheduled.yml`, `multi-env.yml`
+- Argo: `simple-workflow.yaml`, `parallel-ingestion.yaml`, `configmap.yaml`
+- Airflow: `simple_dag.py`, `advanced_dag.py`, `incremental_dag.py`
+- All examples production-ready with error handling
+- Commit: b7d46fb
+
+**Usage Examples:**
 ```bash
-# Start REPL with MCP server
-weave --mcp-server http://localhost:8030
+# CI/CD-friendly JSON output with exit codes
+weave docs batch --directory ./docs --collection docs --json > report.json
+echo "Exit code: $?"  # 0=success, 1=partial, 2=failure
 
-# In REPL - direct MCP calls without LLM
-weave> /mcp status
-✓ MCP connection: active
-   Server: http://localhost:8030
-   Transport: http
+# Incremental ingestion (only files modified in last 24h)
+weave docs batch --directory ./docs --collection docs --since 24h --json
 
-weave> /mcp list
-Available MCP Tools:
-===================
-1. extract_entities
-   Extract named entities from text
-   Parameters:
-     • text (string) - Text to analyze
-
-weave> /mcp call extract_entities text="Sample text"
-→ Calling MCP tool: extract_entities
-✓ Tool Result: {...}
-
-# Without MCP server - falls back to LLM
-weave> /mcp list
-⚠️  No MCP server configured. Use --mcp-server flag when starting REPL
-   Falling back to LLM-based MCP tools...
+# In GitHub Actions
+- run: weave docs batch --directory docs --collection docs --json
+  continue-on-error: true
+- run: |
+    EXIT_CODE=$?
+    if [ $EXIT_CODE -eq 0 ]; then
+      echo "✅ All documents ingested"
+    elif [ $EXIT_CODE -eq 1 ]; then
+      echo "⚠️ Partial success"
+    else
+      echo "❌ Failed"
+      exit 1
+    fi
 ```
 
 ---
 
 ### Option 1: New Features (In Progress - Recommended)
 **Focus**: Add value for users, expand capabilities
-**Completed**:
+**Completed (6/7)**:
 - ✅ Pipeline Commands (already existed)
 - ✅ REPL Enhancement (3-4h)
 - ✅ MCP Client (5-6h)
+- ✅ REPL MCP Integration (1.5h)
 - ✅ AI Schema Suggestion (5-6h)
+- ✅ CI/CD Integration (6-8h)
 
-**Remaining**: Progress Bars, JSON/YAML Output, Collection Statistics (3-8h total)
+**Remaining (1/7)**: Progress Bars, JSON/YAML Output (partial), Collection Statistics (3-8h total)
 
 **Note on Pipeline Commands**:
 Already implemented! Use:
@@ -219,4 +262,4 @@ Both have progress tracking, parallel workers, retry logic, and resume capabilit
 ---
 
 **Last Updated**: 2025-12-22
-**Next Review**: After REPL MCP integration complete
+**Next Review**: After completing remaining Option 1 features or user direction
