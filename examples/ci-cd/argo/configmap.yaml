@@ -1,0 +1,35 @@
+# ConfigMap and Secret for Argo Workflows
+# Apply with: kubectl apply -f configmap.yaml -n argo
+
+---
+# ConfigMap for weave-cli configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weave-config
+  namespace: argo
+data:
+  VECTOR_DB_TYPE: "qdrant-cloud"
+  EMBEDDING_MODEL: "text-embedding-3-small"
+  EMBEDDING_DIMENSIONS: "1536"
+
+---
+# Secret for VDB credentials (replace values with actual credentials)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vdb-credentials
+  namespace: argo
+type: Opaque
+stringData:
+  QDRANT_API_KEY: "your-qdrant-api-key-here"
+  QDRANT_URL: "https://your-qdrant-url.cloud"
+  OPENAI_API_KEY: "your-openai-api-key-here"
+
+---
+# Alternative: Create secret from command line
+# kubectl create secret generic vdb-credentials \
+#   --from-literal=QDRANT_API_KEY="your-key" \
+#   --from-literal=QDRANT_URL="https://your-url.cloud" \
+#   --from-literal=OPENAI_API_KEY="your-key" \
+#   -n argo

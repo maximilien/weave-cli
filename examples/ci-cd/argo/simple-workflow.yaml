@@ -1,0 +1,44 @@
+# Simple Argo Workflow for Document Ingestion
+# Run with: argo submit -n argo simple-workflow.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: weave-ingest-
+  namespace: argo
+spec:
+  entrypoint: ingest-documents
+
+  templates:
+  - name: ingest-documents
+    container:
+      image: ghcr.io/maximilien/weave-cli:latest
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          weave docs batch \
+            --directory /workspace/docs \
+            --collection documentation \
+            --parallel 3 \
+            --json > /tmp/batch-report.json
+
+          EXIT_CODE=$?
+          echo "Exit code: $EXIT_CODE"
+          cat /tmp/batch-report.json
+          exit $EXIT_CODE
+
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+
+      envFrom:
+        - configMapRef:
+            name: weave-config
+        - secretRef:
+            name: vdb-credentials
+
+  volumes:
+    - name: workspace
+      git:
+        repo: https://github.com/your-org/docs-repo.git
+        revision: main

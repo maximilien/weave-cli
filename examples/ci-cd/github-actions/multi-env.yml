@@ -1,0 +1,68 @@
+# Multi-Environment Deployment
+# Deploys to dev, staging, and prod environments using matrix strategy
+
+name: Multi-Environment Ingestion
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: [dev, staging, prod]
+        include:
+          - environment: dev
+            collection: docs-dev
+          - environment: staging
+            collection: docs-staging
+          - environment: prod
+            collection: docs-prod
+
+    environment: ${{ matrix.environment }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download weave-cli
+        run: |
+          curl -L https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 -o weave
+          chmod +x weave
+
+      - name: Ingest to ${{ matrix.environment }}
+        env:
+          VECTOR_DB_TYPE: qdrant-cloud
+          QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+          QDRANT_URL: ${{ secrets.QDRANT_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          ./weave docs batch \
+            --directory ./docs \
+            --collection ${{ matrix.collection }} \
+            --parallel 3 \
+            --json > batch-report-${{ matrix.environment }}.json
+
+      - name: Validate ingestion results
+        run: |
+          STATUS=$(jq -r '.status' batch-report-${{ matrix.environment }}.json)
+          EXIT_CODE=$(jq -r '.exit_code' batch-report-${{ matrix.environment }}.json)
+
+          echo "Environment: ${{ matrix.environment }}"
+          echo "Status: $STATUS"
+          echo "Exit Code: $EXIT_CODE"
+
+          if [ "$EXIT_CODE" != "0" ]; then
+            echo "::error::Batch ingestion failed for ${{ matrix.environment }}"
+            exit $EXIT_CODE
+          fi
+
+      - name: Upload batch report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: batch-report-${{ matrix.environment }}
+          path: batch-report-${{ matrix.environment }}.json
