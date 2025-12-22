@@ -19,6 +19,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Exit codes for CI/CD integration
+const (
+	ExitSuccess         = 0 // All documents ingested successfully
+	ExitPartialFailure  = 1 // Some errors, but majority succeeded
+	ExitCompleteFailure = 2 // Critical error, no documents ingested or majority failed
+)
+
 // ProcessedFileStatus represents the status of a processed file
 type ProcessedFileStatus struct {
 	FilePath         string    `json:"file_path"`
@@ -46,6 +53,55 @@ type BatchProgress struct {
 	StartTime          time.Time
 	EstimatedRemaining time.Duration
 	CurrentFile        string
+}
+
+// BatchReport represents the full batch processing report for JSON output
+type BatchReport struct {
+	Status        string                `json:"status"` // success, partial, failure
+	StartTime     string                `json:"start_time"`
+	EndTime       string                `json:"end_time"`
+	DurationSecs  float64               `json:"duration_seconds"`
+	Files         BatchFileStats        `json:"files"`
+	Documents     BatchDocStats         `json:"documents"`
+	Performance   BatchPerformanceStats `json:"performance"`
+	Configuration BatchConfigInfo       `json:"configuration"`
+	Errors        []BatchErrorInfo      `json:"errors"`
+	ExitCode      int                   `json:"exit_code"`
+}
+
+// BatchFileStats contains file processing statistics
+type BatchFileStats struct {
+	Scanned   int `json:"scanned"`
+	Processed int `json:"processed"`
+	Skipped   int `json:"skipped"`
+	Failed    int `json:"failed"`
+}
+
+// BatchDocStats contains document processing statistics
+type BatchDocStats struct {
+	Created int `json:"created"`
+	Failed  int `json:"failed"`
+}
+
+// BatchPerformanceStats contains performance metrics
+type BatchPerformanceStats struct {
+	ThroughputFilesPerSec float64 `json:"throughput_files_per_sec"`
+	ThroughputDocsPerSec  float64 `json:"throughput_docs_per_sec"`
+}
+
+// BatchConfigInfo contains batch configuration
+type BatchConfigInfo struct {
+	Collection string `json:"collection"`
+	VDBType    string `json:"vdb_type"`
+	BatchSize  int    `json:"batch_size"`
+	Workers    int    `json:"workers"`
+}
+
+// BatchErrorInfo contains error details
+type BatchErrorInfo struct {
+	File      string `json:"file"`
+	Error     string `json:"error"`
+	Timestamp string `json:"timestamp"`
 }
 
 // BatchCmd represents the batch command
@@ -120,6 +176,7 @@ func runBatchCreate(cmd *cobra.Command, args []string) {
 	batchSize, _ := cmd.Flags().GetInt("batch-size")
 	createReport, _ := cmd.Flags().GetString("create-report")
 	forceReprocess, _ := cmd.Flags().GetBool("force-reprocess")
+	jsonOutput, _ := cmd.Flags().GetBool("json")
 
 	// Validate directory
 	if _, err := os.Stat(directory); os.IsNotExist(err) {
@@ -191,13 +248,17 @@ func runBatchCreate(cmd *cobra.Command, args []string) {
 	utils.PrintInfo(fmt.Sprintf("Processing %d file(s)...", len(filesToProcess)))
 	fmt.Println()
 
+	// Track total files scanned and skipped
+	totalScanned := len(files)
+	skippedFiles := len(files) - len(filesToProcess)
+
 	// Initialize batch progress
 	progress := &BatchProgress{
 		TotalFiles:     len(filesToProcess),
 		ProcessedFiles: 0,
 		SuccessFiles:   0,
 		FailedFiles:    0,
-		SkippedFiles:   0,
+		SkippedFiles:   skippedFiles,
 		TotalChunks:    0,
 		TotalImages:    0,
 		StartTime:      time.Now(),
@@ -206,18 +267,38 @@ func runBatchCreate(cmd *cobra.Command, args []string) {
 	// Process files
 	processedStatuses := processBatchFiles(ctx, dbConfig, filesToProcess, collectionName, parallel, retryCount, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, progress)
 
-	// Print final summary
-	fmt.Println()
-	printBatchSummary(progress, processedStatuses)
+	// Get VDB type for report
+	vdbType := string(dbConfig.Type)
 
-	// Write report if requested
-	if createReport != "" {
-		if err := writeBatchReport(createReport, processedStatuses); err != nil {
-			utils.PrintWarning(fmt.Sprintf("Failed to write batch report: %v", err))
-		} else {
-			utils.PrintSuccess(fmt.Sprintf("Batch report written to: %s", createReport))
+	// Build batch report
+	report := BuildBatchReport(progress, processedStatuses, totalScanned, collectionName, vdbType, batchSize, parallel)
+
+	// Output results
+	if jsonOutput {
+		// Output JSON report
+		jsonData, err := json.MarshalIndent(report, "", "  ")
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to marshal JSON report: %v", err))
+			os.Exit(ExitCompleteFailure)
+		}
+		fmt.Println(string(jsonData))
+	} else {
+		// Print traditional summary
+		fmt.Println()
+		printBatchSummary(progress, processedStatuses)
+
+		// Write CSV report if requested
+		if createReport != "" {
+			if err := writeBatchReport(createReport, processedStatuses); err != nil {
+				utils.PrintWarning(fmt.Sprintf("Failed to write batch report: %v", err))
+			} else {
+				utils.PrintSuccess(fmt.Sprintf("Batch report written to: %s", createReport))
+			}
 		}
 	}
+
+	// Exit with appropriate code for CI/CD integration
+	os.Exit(report.ExitCode)
 }
 
 // scanDirectory scans directory for supported files
@@ -571,6 +652,97 @@ func saveProcessedStatus(filePath string, status *ProcessedFileStatus) error {
 		return err
 	}
 	return os.WriteFile(filePath, data, 0644)
+}
+
+// DetermineExitCode determines the exit code based on batch results
+func DetermineExitCode(progress *BatchProgress, totalScanned int) int {
+	// No files processed
+	if progress.ProcessedFiles == 0 {
+		return ExitCompleteFailure
+	}
+
+	// All succeeded
+	if progress.FailedFiles == 0 {
+		return ExitSuccess
+	}
+
+	// Calculate failure rate
+	totalFiles := progress.ProcessedFiles
+	failureRate := float64(progress.FailedFiles) / float64(totalFiles)
+
+	// More than 50% failed
+	if failureRate > 0.5 {
+		return ExitCompleteFailure
+	}
+
+	// Some failures but majority succeeded
+	return ExitPartialFailure
+}
+
+// BuildBatchReport builds a comprehensive batch report for JSON output
+func BuildBatchReport(progress *BatchProgress, statuses []ProcessedFileStatus, totalScanned int, collectionName string, vdbType string, batchSize int, workers int) *BatchReport {
+	endTime := time.Now()
+	duration := endTime.Sub(progress.StartTime)
+	exitCode := DetermineExitCode(progress, totalScanned)
+
+	// Determine status
+	status := "success"
+	if exitCode == ExitPartialFailure {
+		status = "partial"
+	} else if exitCode == ExitCompleteFailure {
+		status = "failure"
+	}
+
+	// Calculate performance metrics
+	throughputFilesPerSec := 0.0
+	throughputDocsPerSec := 0.0
+	if duration.Seconds() > 0 {
+		throughputFilesPerSec = float64(progress.ProcessedFiles) / duration.Seconds()
+		throughputDocsPerSec = float64(progress.TotalChunks) / duration.Seconds()
+	}
+
+	// Collect errors
+	errors := []BatchErrorInfo{}
+	for _, s := range statuses {
+		if !s.Success {
+			errors = append(errors, BatchErrorInfo{
+				File:      filepath.Base(s.FilePath),
+				Error:     s.Error,
+				Timestamp: s.ProcessedAt.Format(time.RFC3339),
+			})
+		}
+	}
+
+	report := &BatchReport{
+		Status:       status,
+		StartTime:    progress.StartTime.Format(time.RFC3339),
+		EndTime:      endTime.Format(time.RFC3339),
+		DurationSecs: duration.Seconds(),
+		Files: BatchFileStats{
+			Scanned:   totalScanned,
+			Processed: progress.ProcessedFiles,
+			Skipped:   progress.SkippedFiles,
+			Failed:    progress.FailedFiles,
+		},
+		Documents: BatchDocStats{
+			Created: progress.TotalChunks,
+			Failed:  0, // TODO: Track failed document count separately
+		},
+		Performance: BatchPerformanceStats{
+			ThroughputFilesPerSec: throughputFilesPerSec,
+			ThroughputDocsPerSec:  throughputDocsPerSec,
+		},
+		Configuration: BatchConfigInfo{
+			Collection: collectionName,
+			VDBType:    vdbType,
+			BatchSize:  batchSize,
+			Workers:    workers,
+		},
+		Errors:   errors,
+		ExitCode: exitCode,
+	}
+
+	return report
 }
 
 // loadProcessedStatus loads the processed status from a .processed file
