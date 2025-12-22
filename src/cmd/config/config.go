@@ -31,6 +31,9 @@ func init() {
 	Cmd.AddCommand(updateCmd)
 	Cmd.AddCommand(syncCmd)
 
+	// Add flags for show command
+	showCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
+
 	// Add flags for show-schema command
 	showSchemaCmd.Flags().Bool("yaml", false, "Output schema as YAML")
 	showSchemaCmd.Flags().Bool("json", false, "Output schema as JSON")

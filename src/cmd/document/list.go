@@ -37,7 +37,7 @@ func init() {
 	ListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	ListCmd.Flags().BoolP("virtual", "w", false, "Show documents in virtual structure (aggregate chunks by original document)")
 	ListCmd.Flags().BoolP("summary", "S", false, "Show a clean summary of documents (works with --virtual)")
-	ListCmd.Flags().Bool("json", false, "Output in JSON format")
+	ListCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
 }
 
 func runDocumentList(cmd *cobra.Command, args []string) {
@@ -47,7 +47,14 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	shortLines, _ := cmd.Flags().GetInt("short")
 	virtual, _ := cmd.Flags().GetBool("virtual")
 	summary, _ := cmd.Flags().GetBool("summary")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	outputFormat, _ := cmd.Flags().GetString("output")
+
+	// Support legacy --json flag for backward compatibility
+	jsonFlag, _ := cmd.Flags().GetBool("json")
+	if jsonFlag {
+		outputFormat = "json"
+	}
+	jsonOutput := (outputFormat == "json")
 
 	// Load configuration with interactive help
 	cfg, err := utils.LoadConfigWithInteractiveHelp()

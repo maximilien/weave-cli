@@ -39,14 +39,22 @@ func init() {
 	ListCmd.Flags().BoolP("virtual", "", false, "Show collections in virtual structure")
 	ListCmd.Flags().BoolP("summary", "S", false, "Show summary table (default for multiple VDBs)")
 	ListCmd.Flags().Bool("details", false, "Show detailed list (overrides default summary for multiple VDBs)")
+	ListCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
 	limit, _ := cmd.Flags().GetInt("limit")
 	virtual, _ := cmd.Flags().GetBool("virtual")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	outputFormat, _ := cmd.Flags().GetString("output")
 	summaryOutput, _ := cmd.Flags().GetBool("summary")
 	detailsOutput, _ := cmd.Flags().GetBool("details")
+
+	// Support legacy --json flag for backward compatibility
+	jsonFlag, _ := cmd.Flags().GetBool("json")
+	if jsonFlag {
+		outputFormat = "json"
+	}
+	jsonOutput := (outputFormat == "json")
 
 	// Load configuration with interactive help
 	cfg, err := utils.LoadConfigWithInteractiveHelp()

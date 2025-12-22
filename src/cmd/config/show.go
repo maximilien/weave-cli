@@ -4,6 +4,7 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // showCmd represents the config show command
@@ -32,6 +34,8 @@ Use 'weave config list' to see all available databases.`,
 }
 
 func runShow(cobraCmd *cobra.Command, args []string) {
+	outputFormat, _ := cobraCmd.Flags().GetString("output")
+
 	// Load configuration
 	cfg, err := utils.LoadConfigWithOverrides()
 	if err != nil {
@@ -39,6 +43,27 @@ func runShow(cobraCmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// If JSON or YAML output requested, output the whole config and exit
+	if outputFormat == "json" || outputFormat == "yaml" {
+		var data []byte
+		var marshalErr error
+
+		if outputFormat == "json" {
+			data, marshalErr = json.MarshalIndent(cfg, "", "  ")
+		} else {
+			data, marshalErr = yaml.Marshal(cfg)
+		}
+
+		if marshalErr != nil {
+			printError(fmt.Sprintf("Failed to marshal configuration: %v", marshalErr))
+			os.Exit(1)
+		}
+
+		fmt.Println(string(data))
+		return
+	}
+
+	// Text output (original behavior)
 	// If a specific database name is provided, show only that database
 	if len(args) > 0 {
 		dbName := args[0]

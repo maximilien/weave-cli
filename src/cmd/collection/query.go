@@ -46,6 +46,7 @@ func init() {
 	QueryCmd.Flags().Float64P("distance", "d", 0.0, "Maximum distance threshold for results")
 	QueryCmd.Flags().BoolP("search-metadata", "m", false, "Also search in metadata fields (default: false)")
 	QueryCmd.Flags().Bool("bm25", false, "Use BM25 keyword search instead of semantic search (default: false)")
+	QueryCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
@@ -56,7 +57,14 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	searchMetadata, _ := cmd.Flags().GetBool("search-metadata")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	useBM25, _ := cmd.Flags().GetBool("bm25")
-	jsonOutput, _ := cmd.Flags().GetBool("json")
+	outputFormat, _ := cmd.Flags().GetString("output")
+
+	// Support legacy --json flag for backward compatibility
+	jsonFlag, _ := cmd.Flags().GetBool("json")
+	if jsonFlag {
+		outputFormat = "json"
+	}
+	jsonOutput := (outputFormat == "json")
 
 	// Load configuration
 	cfg, err := utils.LoadConfigWithInteractiveHelp()
