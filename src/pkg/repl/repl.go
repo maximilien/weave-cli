@@ -36,6 +36,8 @@ type REPL struct {
 	batchMode        bool
 	queries          []string
 	queryIndex       int
+	currentVDB       string // Current VDB connection
+	currentCollection string // Current active collection
 }
 
 // New creates a new REPL instance
@@ -89,13 +91,8 @@ func NewWithOptions(opts Options) (*REPL, error) {
 		repl.queries = queries
 		repl.queryIndex = 0
 	} else {
-		// Create readline instance for interactive mode
-		rl, err := readline.NewEx(&readline.Config{
-			Prompt:          "\033[36m>\033[0m ",
-			HistoryFile:     os.ExpandEnv("$HOME/.weave_history"),
-			InterruptPrompt: "^C",
-			EOFPrompt:       "exit",
-		})
+		// Create readline instance for interactive mode with tab completion
+		rl, err := readline.NewEx(CreateReadlineConfig())
 		if err != nil {
 			return nil, fmt.Errorf("failed to create readline: %w", err)
 		}
@@ -259,7 +256,16 @@ func (r *REPL) displayBanner() {
 
 // handleSpecialCommand handles built-in commands
 func (r *REPL) handleSpecialCommand(line string) bool {
-	switch strings.ToLower(line) {
+	// Parse command and arguments
+	parts := strings.Fields(line)
+	if len(parts) == 0 {
+		return false
+	}
+
+	cmd := strings.ToLower(parts[0])
+	args := parts[1:]
+
+	switch cmd {
 	case "/exit", "/quit", "exit", "quit":
 		fmt.Println("Exiting weave CLI...")
 		r.rl.Close()
@@ -282,6 +288,30 @@ func (r *REPL) handleSpecialCommand(line string) bool {
 
 	case "/examples":
 		r.displayExamples()
+		return true
+
+	case "/mcp":
+		r.handleMCPCommand(args)
+		return true
+
+	case "/collection", "/col":
+		r.handleCollectionCommand(args)
+		return true
+
+	case "/search":
+		r.handleSearchCommand(args)
+		return true
+
+	case "/stats":
+		r.handleStatsCommand(args)
+		return true
+
+	case "/use":
+		r.handleUseCommand(args)
+		return true
+
+	case "/status":
+		r.displayStatus()
 		return true
 	}
 
@@ -324,11 +354,29 @@ func (r *REPL) displayHelp() {
 	fmt.Println()
 	fmt.Println(bold("Available Commands:"))
 	fmt.Println()
-	fmt.Println("  " + cyan("/help") + "      - Show this help message")
-	fmt.Println("  " + cyan("/examples") + "  - Show example queries")
-	fmt.Println("  " + cyan("/history") + "   - Show command history")
-	fmt.Println("  " + cyan("/clear") + "     - Clear the screen")
-	fmt.Println("  " + cyan("/exit") + "      - Exit the REPL")
+	fmt.Println(bold("  General:"))
+	fmt.Println("    " + cyan("/help") + "      - Show this help message")
+	fmt.Println("    " + cyan("/examples") + "  - Show example queries")
+	fmt.Println("    " + cyan("/history") + "   - Show command history")
+	fmt.Println("    " + cyan("/clear") + "     - Clear the screen")
+	fmt.Println("    " + cyan("/status") + "    - Show current status")
+	fmt.Println("    " + cyan("/exit") + "      - Exit the REPL")
+	fmt.Println()
+	fmt.Println(bold("  MCP Tools:"))
+	fmt.Println("    " + cyan("/mcp list") + "              - List available MCP tools")
+	fmt.Println("    " + cyan("/mcp call <tool> [args]") + " - Call an MCP tool")
+	fmt.Println("    " + cyan("/mcp status") + "            - Show MCP connection status")
+	fmt.Println()
+	fmt.Println(bold("  Collections:"))
+	fmt.Println("    " + cyan("/collection list") + "          - List all collections")
+	fmt.Println("    " + cyan("/use <name>") + "              - Set active collection")
+	fmt.Println("    " + cyan("/collection create <name>") + " - Create new collection")
+	fmt.Println("    " + cyan("/collection delete <name>") + " - Delete collection")
+	fmt.Println("    " + cyan("/collection info") + "         - Show current collection info")
+	fmt.Println()
+	fmt.Println(bold("  Search & Query:"))
+	fmt.Println("    " + cyan("/search <query>") + "  - Semantic search")
+	fmt.Println("    " + cyan("/stats") + "           - Show collection statistics")
 	fmt.Println()
 	fmt.Println(bold("Natural Language Queries:"))
 	fmt.Println()
