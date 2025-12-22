@@ -1,8 +1,8 @@
 # Option 1: New Features - Detailed Implementation Plan
 
-**Status**: In Progress (2/7 features complete)
+**Status**: In Progress (4/7 features complete, 1 already existed)
 **Priority**: ⭐⭐⭐ Highest
-**Total Effort**: 19-26 hours (8-10 hours remaining)
+**Total Effort**: 19-26 hours (~16 hours invested, ~3-10 hours remaining)
 **Target**: Weeks 1-2
 
 ---
@@ -12,9 +12,9 @@
 Add high-value user-facing features that leverage the solid v0.8.2 foundation. Focus on automation, interactivity, and AI integration to provide immediate value.
 
 **Core Features:**
-1. Pipeline Commands - Batch document ingestion
+1. ✅ Pipeline Commands - Batch document ingestion (ALREADY IMPLEMENTED: `weave docs batch`, `weave pipeline ingest`)
 2. ✅ Interactive REPL Mode - Enhanced with structured commands (COMPLETED 2025-12-22)
-3. MCP Client Integration - Call external MCP servers
+3. ✅ MCP Client Integration - Call external MCP servers (COMPLETED 2025-12-22)
 4. Progress Bars - Visual feedback
 5. JSON/YAML Output - Machine-readable formats
 6. Collection Statistics - Analytics
@@ -22,7 +22,10 @@ Add high-value user-facing features that leverage the solid v0.8.2 foundation. F
 
 ---
 
-## Feature 1.1: Pipeline Commands
+## Feature 1.1: Pipeline Commands ✅ ALREADY IMPLEMENTED
+
+**Status**: ✅ Already Implemented (discovered 2025-12-22)
+**Implementation**: `weave docs batch` and `weave pipeline ingest`
 
 ### Goal
 Enable batch document ingestion from files and directories with progress tracking, parallel processing, and error resilience.
@@ -1463,7 +1466,11 @@ func (s *MCPServer) toolSearchSemantic(ctx context.Context, args map[string]inte
 
 ---
 
-# Feature 1.2: MCP Client Integration
+# Feature 1.2: MCP Client Integration ✅ COMPLETED
+
+**Status**: ✅ Completed 2025-12-22
+**Effort**: 5-6 hours (actual)
+**Commits**: (pending)
 
 ## Overview
 Add MCP (Model Context Protocol) client capabilities to weave-cli, allowing it to call external MCP servers for document enrichment, metadata extraction, and enhanced query processing.
