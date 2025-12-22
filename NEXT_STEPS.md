@@ -1,8 +1,49 @@
 # Next Steps - Actionable Tasks
 
-**Last Updated**: 2025-12-19 (Post v0.8.2 Polish Complete)
-**Current Version**: v0.8.2 (Released on GitHub)
-**Status**: ✅ **"DONE" State Achieved** - All phases complete!
+**Last Updated**: 2025-12-22 (Post REPL & AI Schema Features)
+**Current Version**: v0.8.2-17-g183ceef (Latest: REPL + AI Schema Suggestion)
+**Status**: 🚀 **Building New Features** - REPL & AI Schema Complete!
+
+---
+
+## 🎉 Latest Accomplishments (2025-12-22)
+
+### Session: REPL Enhancement & AI Schema Suggestion
+
+**Completed Features from Option 1:**
+1. ✅ **Feature 1.2: Interactive REPL Enhancement** (3-4 hours)
+   - Enhanced existing REPL with structured commands
+   - Added tab completion for commands and subcommands
+   - Implemented session state management (currentVDB, currentCollection)
+   - Commands: /mcp, /collection, /search, /stats, /use, /status
+   - Dynamic prompt updates based on active collection
+   - Files: `src/pkg/repl/commands.go` (237 lines), `src/pkg/repl/completer.go` (137 lines)
+   - Commit: 7024702
+
+2. ✅ **Feature 1.7: AI Schema Suggestion** (5-6 hours)
+   - AI-powered document analysis using GPT-4o
+   - Document sampling for PDF, JSON, TXT, MD files
+   - Schema generation with field type inference
+   - YAML output with metadata headers
+   - CLI: `weave schema suggest SOURCE --collection NAME --output FILE`
+   - Files: `src/pkg/agents/schema_agent.go` (430 lines), `src/cmd/schema/` (2 files, 280 lines)
+   - Commit: cc07c41
+
+3. ✅ **Integration Tests** (2 hours)
+   - REPL integration tests (5 test functions, 12 sub-tests)
+   - Schema integration tests (4 test functions, 8+ sub-tests)
+   - All tests passing successfully
+   - Files: `tests/repl_integration_test.go` (245 lines), `tests/schema_integration_test.go` (369 lines)
+   - Commit: 887f22a
+
+**Total Implementation**: ~10-12 hours
+**Lines Added**: ~1,400 lines (implementation + tests)
+**Commits**: 4 commits (7024702, cc07c41, 887f22a, 183ceef)
+
+**Impact:**
+- REPL now has structured command routing alongside natural language
+- AI can suggest optimal vector DB schemas from sample documents
+- Comprehensive test coverage for both features
 
 ---
 
@@ -38,13 +79,15 @@
 
 ## 🚀 Next Session Ideas
 
-With v0.8.2 in "done" state, here are potential directions for future work:
+**Progress**: 2/7 Option 1 features complete (REPL ✅, AI Schema ✅)
+**Remaining**: ~8-10 hours for high-priority features
 
-### Option 1: New Features (Recommended)
+### Option 1: New Features (In Progress - Recommended)
 **Focus**: Add value for users, expand capabilities
-**Estimated Total**: 12-20 hours for high-priority features
+**Completed**: REPL Enhancement (3-4h), AI Schema Suggestion (5-6h)
+**Remaining**: Pipeline (4-6h), MCP Client (5-6h), Others (5-8h)
 
-#### 1.1 Pipeline Commands (High Priority - 4-6 hours)
+#### 1.1 Pipeline Commands (High Priority - 4-6 hours) 🎯 NEXT
 **Goal**: Batch document ingestion from files and directories
 
 **Implementation:**
@@ -558,7 +601,7 @@ Goodbye!
 
 ---
 
-#### 1.3 MCP Server (High Priority - 5-6 hours)
+#### 1.2 MCP Client Integration (High Priority - 5-6 hours) 🎯 ALTERNATIVE NEXT
 **Goal**: Make weave-cli accessible to Claude Desktop and other MCP clients
 
 **Implementation:**
