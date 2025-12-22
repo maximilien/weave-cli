@@ -17,6 +17,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/executor"
+	"github.com/maximilien/weave-cli/src/pkg/mcp"
 	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/viper"
 )
@@ -25,6 +26,9 @@ import (
 type Options struct {
 	QueryStringsFile string
 	NoConfirm        bool
+	MCPServerURL     string // MCP server URL for direct client calls
+	MCPTransport     string // MCP transport type (http, stdio)
+	MCPTimeout       int    // MCP timeout in seconds
 }
 
 // REPL represents the interactive Read-Eval-Print Loop
@@ -36,8 +40,10 @@ type REPL struct {
 	batchMode         bool
 	queries           []string
 	queryIndex        int
-	currentVDB        string // Current VDB connection
-	currentCollection string // Current active collection
+	currentVDB        string        // Current VDB connection
+	currentCollection string        // Current active collection
+	mcpClient         mcp.MCPClient // MCP client for direct calls
+	mcpEnabled        bool          // Whether MCP client is configured
 }
 
 // New creates a new REPL instance
@@ -80,6 +86,15 @@ func NewWithOptions(opts Options) (*REPL, error) {
 		interrupted:      false,
 		queryStringsFile: opts.QueryStringsFile,
 		batchMode:        opts.QueryStringsFile != "",
+		mcpEnabled:       false,
+	}
+
+	// Initialize MCP client if server URL provided
+	if opts.MCPServerURL != "" {
+		if err := repl.initMCPClient(opts); err != nil {
+			// Log warning but don't fail REPL startup
+			fmt.Fprintf(os.Stderr, "Warning: Failed to initialize MCP client: %v\n", err)
+		}
 	}
 
 	// Load queries from file if in batch mode
@@ -131,6 +146,7 @@ func loadQueriesFromFile(filename string) ([]string, error) {
 func (r *REPL) Run() error {
 	// Cleanup
 	defer r.executor.Close()
+	defer r.closeMCPClient()
 	if r.rl != nil {
 		defer r.rl.Close()
 	}
@@ -443,4 +459,59 @@ func getModel() string {
 		return model
 	}
 	return "gpt-4o"
+}
+
+// initMCPClient initializes the MCP client with the provided options
+func (r *REPL) initMCPClient(opts Options) error {
+	// Set default transport if not specified
+	transport := opts.MCPTransport
+	if transport == "" {
+		transport = "http"
+	}
+
+	// Set default timeout if not specified
+	timeout := opts.MCPTimeout
+	if timeout == 0 {
+		timeout = 30
+	}
+
+	// Create MCP client config
+	mcpConfig := &mcp.Config{
+		Name:      "repl-mcp-client",
+		ServerURL: opts.MCPServerURL,
+		Transport: mcp.Transport(transport),
+		Timeout:   time.Duration(timeout) * time.Second,
+	}
+
+	// Validate config
+	if err := mcp.ValidateConfig(mcpConfig); err != nil {
+		return fmt.Errorf("invalid MCP config: %w", err)
+	}
+
+	// Create MCP client
+	client, err := mcp.NewMCPClient(mcpConfig)
+	if err != nil {
+		return fmt.Errorf("failed to create MCP client: %w", err)
+	}
+
+	// Connect to MCP server
+	ctx, cancel := context.WithTimeout(context.Background(), mcpConfig.Timeout)
+	defer cancel()
+
+	if err := client.Connect(ctx); err != nil {
+		client.Close()
+		return fmt.Errorf("failed to connect to MCP server: %w", err)
+	}
+
+	r.mcpClient = client
+	r.mcpEnabled = true
+
+	return nil
+}
+
+// closeMCPClient closes the MCP client if initialized
+func (r *REPL) closeMCPClient() {
+	if r.mcpClient != nil {
+		r.mcpClient.Close()
+	}
 }

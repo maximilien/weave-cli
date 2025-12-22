@@ -34,6 +34,11 @@ var (
 	noConfirm      bool
 	queryStrings   string
 
+	// REPL MCP flags
+	mcpServerURL string
+	mcpTransport string
+	mcpTimeout   int
+
 	// Vector database type flags
 	useWeaviate        bool
 	useWeaviateLocal   bool
@@ -179,6 +184,9 @@ func init() {
 
 	// REPL-specific flags
 	rootCmd.Flags().StringVar(&queryStrings, "query-strings", "", "file with queries to execute (one per line, batch mode)")
+	rootCmd.Flags().StringVar(&mcpServerURL, "mcp-server", "", "MCP server URL for direct client calls (e.g., http://localhost:8030)")
+	rootCmd.Flags().StringVar(&mcpTransport, "mcp-transport", "http", "MCP transport type (http, stdio)")
+	rootCmd.Flags().IntVar(&mcpTimeout, "mcp-timeout", 30, "MCP client timeout in seconds")
 
 	// Environment variable override flags (highest priority)
 	rootCmd.PersistentFlags().StringVarP(&vectorDBType, "vector-db-type", "", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)")
@@ -472,6 +480,9 @@ func runREPL(cmd *cobra.Command, args []string) {
 	opts := repl.Options{
 		QueryStringsFile: queryStrings,
 		NoConfirm:        noConfirm,
+		MCPServerURL:     mcpServerURL,
+		MCPTransport:     mcpTransport,
+		MCPTimeout:       mcpTimeout,
 	}
 
 	r, err := repl.NewWithOptions(opts)
