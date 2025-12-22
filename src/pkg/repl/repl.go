@@ -29,14 +29,14 @@ type Options struct {
 
 // REPL represents the interactive Read-Eval-Print Loop
 type REPL struct {
-	executor         *executor.Executor
-	rl               *readline.Instance
-	interrupted      bool
-	queryStringsFile string
-	batchMode        bool
-	queries          []string
-	queryIndex       int
-	currentVDB       string // Current VDB connection
+	executor          *executor.Executor
+	rl                *readline.Instance
+	interrupted       bool
+	queryStringsFile  string
+	batchMode         bool
+	queries           []string
+	queryIndex        int
+	currentVDB        string // Current VDB connection
 	currentCollection string // Current active collection
 }
 

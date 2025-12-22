@@ -106,11 +106,11 @@ func (c *Completer) suggestSubcommands(subcommands []string, prefix string) [][]
 // CreateReadlineConfig creates a readline config with completion
 func CreateReadlineConfig() *readline.Config {
 	return &readline.Config{
-		Prompt:          "\033[36m>\033[0m ",
-		HistoryFile:     expandPath("$HOME/.weave_history"),
-		AutoComplete:    NewCompleter(),
-		InterruptPrompt: "^C",
-		EOFPrompt:       "exit",
+		Prompt:            "\033[36m>\033[0m ",
+		HistoryFile:       expandPath("$HOME/.weave_history"),
+		AutoComplete:      NewCompleter(),
+		InterruptPrompt:   "^C",
+		EOFPrompt:         "exit",
 		HistorySearchFold: true,
 		FuncFilterInputRune: func(r rune) (rune, bool) {
 			// Allow all characters

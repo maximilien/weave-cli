@@ -31,12 +31,12 @@ type SchemaAnalysisInput struct {
 
 // SchemaAnalysisOutput represents AI-generated schema suggestion
 type SchemaAnalysisOutput struct {
-	Schema       SchemaConfig      `json:"schema"`
-	Reasoning    string            `json:"reasoning"`
+	Schema        SchemaConfig      `json:"schema"`
+	Reasoning     string            `json:"reasoning"`
 	FieldAnalysis []FieldSuggestion `json:"field_analysis"`
-	Confidence   float64           `json:"confidence"`
-	Warnings     []string          `json:"warnings"`
-	Alternatives []SchemaConfig    `json:"alternatives,omitempty"`
+	Confidence    float64           `json:"confidence"`
+	Warnings      []string          `json:"warnings"`
+	Alternatives  []SchemaConfig    `json:"alternatives,omitempty"`
 }
 
 // FieldSuggestion represents analysis for a single field
