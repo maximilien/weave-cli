@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	chunkingcmd "github.com/maximilien/weave-cli/src/cmd/chunking"
 	configcmd "github.com/maximilien/weave-cli/src/cmd/config"
 	mcpcmd "github.com/maximilien/weave-cli/src/cmd/mcp"
 	pipelinecmd "github.com/maximilien/weave-cli/src/cmd/pipeline"
@@ -167,6 +168,9 @@ func init() {
 
 	rootCmd.AddCommand(schemacmd.SchemaCmd)
 	schemacmd.SchemaCmd.GroupID = "ai"
+
+	rootCmd.AddCommand(chunkingcmd.Cmd)
+	chunkingcmd.Cmd.GroupID = "ai"
 
 	rootCmd.AddCommand(mcpcmd.MCPCmd)
 	mcpcmd.MCPCmd.GroupID = "ai"

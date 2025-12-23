@@ -40,16 +40,7 @@ type SchemaAnalysisOutput struct {
 	ChunkingAdvice *ChunkingRecommendation `json:"chunking_advice,omitempty"`
 }
 
-// ChunkingRecommendation represents AI-powered chunking size recommendations
-type ChunkingRecommendation struct {
-	RecommendedSize int      `json:"recommended_size" yaml:"recommended_size"`
-	MinSize         int      `json:"min_size" yaml:"min_size"`
-	MaxSize         int      `json:"max_size" yaml:"max_size"`
-	OverlapSize     int      `json:"overlap_size" yaml:"overlap_size"`
-	Reasoning       string   `json:"reasoning" yaml:"reasoning"`
-	DocumentType    string   `json:"document_type" yaml:"document_type"`
-	Considerations  []string `json:"considerations,omitempty" yaml:"considerations,omitempty"`
-}
+// Note: ChunkingRecommendation is defined in chunking_agent.go
 
 // FieldSuggestion represents analysis for a single field
 type FieldSuggestion struct {
