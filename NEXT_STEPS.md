@@ -132,14 +132,109 @@
 
 ## 🎯 Next Session Plan
 
-**When**: Tomorrow or next available session
-**Focus**: Continue hardening and feature polish
+### Option A: Tonight (1 hour) - Quick Wins ⚡
 
-### Recommended Tasks (Pick 2-3):
-1. **MCP Integration Updates** (1-2h) - Update MCP code, fix ./test.sh --mcp
-2. **PDF Processing Enhancement** (2-3h) - Implement for Milvus/Supabase
-3. **Agents Config Loading** (1h) - Load from weave-agents.yaml instead of hardcoding
-4. **Batch Command Testing** (1-2h) - Add tests and CI for batch command (issue #9)
+**Focus**: High-impact fixes that can be completed quickly
+
+#### Task 1: Agents Config Loading (45 min) 🟡
+- **Issue**: Agent configs are hardcoded instead of loading from weave-agents.yaml
+- **Location**: `src/pkg/agents/*.go`
+- **Tasks**:
+  - [ ] Create example `weave-agents.yaml` config file
+  - [ ] Add config loading in agents package
+  - [ ] Update agents to use config values
+  - [ ] Test with schema and chunking agents
+  - [ ] Update docs with configuration options
+
+#### Task 2: Quick Documentation Polish (15 min) 📚
+- **Tasks**:
+  - [ ] Verify all links in README.md working
+  - [ ] Update version in docs/CHANGELOG.md
+  - [ ] Quick scan of user-facing docs for consistency
+
+**Expected Outcome**: Better configurability for AI agents, cleaner docs
+
+---
+
+### Option B: Tomorrow AM (3 hours) - Feature & Hardening 🚀
+
+**Focus**: Tackle deferred items and add polish
+
+#### Session 1: MCP Integration Updates (1.5 hours) 🔴
+
+**MCP Code Sync**
+- **Issue**: MCP server code needs updates to match latest CLI changes
+- **Location**: `/Users/maximilien/github/maximilien/weave-mcp/`
+- **Tasks**:
+  - [ ] Review CLI changes since last MCP update
+  - [ ] Update MCP server with new commands (schema suggest, chunking suggest)
+  - [ ] Update MCP tools/resources for new features
+  - [ ] Fix ./test.sh --mcp failures
+  - [ ] Test REPL mode with updated MCP server
+  - [ ] Update MCP documentation
+
+**Expected Outcome**: MCP server in sync, REPL mode fully functional
+
+#### Session 2: PDF Processing Enhancement (1 hour) 🟡
+
+**Implement PDF Support for Milvus/Supabase**
+- **Issue**: PDF processing not implemented for Milvus and Supabase VDBs
+- **Current**: Works for Weaviate, Qdrant, Chroma
+- **Tasks**:
+  - [ ] Review existing PDF processing code (weaviate/qdrant)
+  - [ ] Implement PDF text extraction for Milvus
+  - [ ] Implement PDF text extraction for Supabase
+  - [ ] Add integration tests for both VDBs
+  - [ ] Test with sample PDFs
+
+**Expected Outcome**: PDF support for 2 more VDBs
+
+#### Session 3: Agent Config + Testing (30 min) 🟢
+
+**Agents Config Loading + Batch Testing**
+- **Tasks**:
+  - [ ] Implement weave-agents.yaml config loading
+  - [ ] Add basic tests for batch command (issue #9)
+  - [ ] Quick documentation updates
+
+**Expected Outcome**: Better configurability + improved test coverage
+
+---
+
+### Option C: Tomorrow AM Alternative (3 hours) - Testing & Quality 🧪
+
+**Focus**: Test coverage, CI/CD improvements, bug fixes
+
+#### Session 1: Comprehensive Testing (1.5 hours)
+- [ ] Add integration tests for schema suggest command
+- [ ] Add integration tests for chunking suggest command
+- [ ] Add tests for batch command (issue #9)
+- [ ] Find/create small PDF test collection (issue #8)
+- [ ] Test all commands with --json output flag
+
+#### Session 2: CI/CD Improvements (1 hour)
+- [ ] Add automated tests for AI features
+- [ ] Improve test reporting
+- [ ] Add performance benchmarks for key operations
+- [ ] Document CI/CD setup in docs/
+
+#### Session 3: Bug Fixes & Polish (30 min)
+- [ ] Review and fix any open GitHub issues
+- [ ] Code cleanup and optimization
+- [ ] Documentation updates
+
+---
+
+## 📊 Recommended Choice
+
+**For Tonight (1h)**: Choose **Option A** - Quick wins, low risk, improves configurability
+
+**For Tomorrow AM (3h)**: Choose **Option B** - Highest impact
+- MCP sync is critical for REPL mode
+- PDF support extends functionality to more VDBs
+- Good balance of features + hardening
+
+**Alternative Tomorrow AM**: Choose **Option C** if you want to focus on quality/testing instead of new features
 
 ---
 
