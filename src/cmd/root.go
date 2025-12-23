@@ -12,6 +12,7 @@ import (
 	mcpcmd "github.com/maximilien/weave-cli/src/cmd/mcp"
 	pipelinecmd "github.com/maximilien/weave-cli/src/cmd/pipeline"
 	schemacmd "github.com/maximilien/weave-cli/src/cmd/schema"
+	statscmd "github.com/maximilien/weave-cli/src/cmd/stats"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/repl"
 	"github.com/maximilien/weave-cli/src/pkg/version"
@@ -169,6 +170,9 @@ func init() {
 
 	rootCmd.AddCommand(mcpcmd.MCPCmd)
 	mcpcmd.MCPCmd.GroupID = "ai"
+
+	rootCmd.AddCommand(statscmd.Cmd)
+	statscmd.Cmd.GroupID = "data"
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")

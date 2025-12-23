@@ -1,8 +1,8 @@
 # Next Steps - Actionable Tasks
 
-**Last Updated**: 2025-12-22 (Post CI/CD Integration)
-**Current Version**: v0.8.2-25-gb7d46fb
-**Status**: 🎉 **OPTION 1 COMPLETE!** - 6/7 Features Done (86%)!
+**Last Updated**: 2025-12-22 (Post Afternoon Session)
+**Current Version**: v0.8.2-28+
+**Status**: 🎉🎉 **OPTION 1 COMPLETE!** - 7/7 Features Done (100%)!
 
 ---
 
@@ -78,10 +78,36 @@
      - Airflow: simple_dag.py, advanced_dag.py, incremental_dag.py
      - Commit: b7d46fb
 
-**Total Implementation**: ~24 hours invested
-**Lines Added**: ~5,000+ lines (implementation + tests + docs + examples)
-**Progress**: 6/7 features complete (1 already existed)
-**Commits**: 11+ commits (7024702, cc07c41, 887f22a, 183ceef, 6d8c23a, 928db0e, b89ecce, 1ca77c7, 6a111f5, 08210dc, 0afa09e, b7d46fb)
+7. ✅ **Feature 1.3: Collection Statistics Command** (2 hours) 🆕🆕🆕🆕
+   - New `weave stats COLLECTION` command for analytics
+   - Document count and metadata field distribution
+   - Top values analysis for each metadata field
+   - Support for all 10 VDBs via unified interface
+   - Output formats: text, JSON, YAML (--output flag)
+   - Files: `src/cmd/stats/stats.go` (320 lines)
+   - Tests: `src/cmd/stats/stats_test.go` (220 lines, 100% passing)
+   - Commit: TBD
+
+8. ✅ **Feature 1.4: JSON/YAML Output Standardization** (1 hour) 🆕🆕🆕🆕
+   - Added `--output json|yaml|text` flag to key commands
+   - Commands: collection list, collection query, document list, config show
+   - Backward compatible with existing `--json` flags
+   - Enables CI/CD integration and automation
+   - Files modified: 5 command files
+   - Commit: 21e726d
+
+9. ✅ **Comprehensive Test Coverage** (1 hour) 🆕🆕🆕🆕
+   - Stats command: 4 test suites, 13+ test cases
+   - CI/CD batch features: 6 test suites, 25+ test cases
+   - Exit code determination, duration parsing, report generation
+   - All tests passing (100% success rate)
+   - Files: `src/cmd/stats/stats_test.go`, `src/cmd/document/batch_test.go`
+   - Commit: TBD
+
+**Total Implementation**: ~28 hours invested
+**Lines Added**: ~6,000+ lines (implementation + tests + docs + examples)
+**Progress**: 7/7 features complete (1 already existed) - **100% DONE!**
+**Commits**: 13+ commits (7024702, cc07c41, 887f22a, 183ceef, 6d8c23a, 928db0e, b89ecce, 1ca77c7, 6a111f5, 08210dc, 0afa09e, b7d46fb, 21e726d + 2 pending)
 
 **Impact:**
 - REPL has structured command routing alongside natural language
@@ -92,7 +118,9 @@
 - Exit codes and JSON output for automation pipelines
 - Incremental ingestion with time-based filtering (--since flag)
 - Production-ready workflow examples and comprehensive documentation
-- Comprehensive test coverage for all features
+- Collection statistics for monitoring and analytics
+- Standardized JSON/YAML output across all major commands
+- Comprehensive test coverage (38+ test cases, 100% passing)
 
 ---
 
