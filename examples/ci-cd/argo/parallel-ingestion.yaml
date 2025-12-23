@@ -1,3 +1,4 @@
+---
 # Parallel Multi-Collection Ingestion with DAG
 # Run with: argo submit -n argo parallel-ingestion.yaml
 
@@ -10,77 +11,77 @@ spec:
   entrypoint: multi-collection-dag
 
   templates:
-  - name: multi-collection-dag
-    dag:
-      tasks:
-      - name: ingest-api-docs
-        template: ingest-collection
-        arguments:
-          parameters:
+    - name: multi-collection-dag
+      dag:
+        tasks:
+          - name: ingest-api-docs
+            template: ingest-collection
+            arguments:
+              parameters:
+                - name: directory
+                  value: "/workspace/docs/api"
+                - name: collection
+                  value: "api-docs"
+
+          - name: ingest-tutorials
+            template: ingest-collection
+            arguments:
+              parameters:
+                - name: directory
+                  value: "/workspace/docs/tutorials"
+                - name: collection
+                  value: "tutorials"
+
+          - name: ingest-guides
+            template: ingest-collection
+            arguments:
+              parameters:
+                - name: directory
+                  value: "/workspace/docs/guides"
+                - name: collection
+                  value: "guides"
+
+          - name: summary
+            template: create-summary
+            dependencies: [ingest-api-docs, ingest-tutorials, ingest-guides]
+
+    - name: ingest-collection
+      inputs:
+        parameters:
           - name: directory
-            value: "/workspace/docs/api"
           - name: collection
-            value: "api-docs"
+      container:
+        image: ghcr.io/maximilien/weave-cli:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            weave docs batch \
+              --directory {{inputs.parameters.directory}} \
+              --collection {{inputs.parameters.collection}} \
+              --parallel 3 \
+              --json > /tmp/{{inputs.parameters.collection}}-report.json
 
-      - name: ingest-tutorials
-        template: ingest-collection
-        arguments:
-          parameters:
-          - name: directory
-            value: "/workspace/docs/tutorials"
-          - name: collection
-            value: "tutorials"
+            EXIT_CODE=$?
+            cat /tmp/{{inputs.parameters.collection}}-report.json
+            exit $EXIT_CODE
 
-      - name: ingest-guides
-        template: ingest-collection
-        arguments:
-          parameters:
-          - name: directory
-            value: "/workspace/docs/guides"
-          - name: collection
-            value: "guides"
+        envFrom:
+          - configMapRef:
+              name: weave-config
+          - secretRef:
+              name: vdb-credentials
 
-      - name: summary
-        template: create-summary
-        dependencies: [ingest-api-docs, ingest-tutorials, ingest-guides]
+        volumeMounts:
+          - name: workspace
+            mountPath: /workspace
 
-  - name: ingest-collection
-    inputs:
-      parameters:
-      - name: directory
-      - name: collection
-    container:
-      image: ghcr.io/maximilien/weave-cli:latest
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          weave docs batch \
-            --directory {{inputs.parameters.directory}} \
-            --collection {{inputs.parameters.collection}} \
-            --parallel 3 \
-            --json > /tmp/{{inputs.parameters.collection}}-report.json
-
-          EXIT_CODE=$?
-          cat /tmp/{{inputs.parameters.collection}}-report.json
-          exit $EXIT_CODE
-
-      envFrom:
-        - configMapRef:
-            name: weave-config
-        - secretRef:
-            name: vdb-credentials
-
-      volumeMounts:
-        - name: workspace
-          mountPath: /workspace
-
-  - name: create-summary
-    container:
-      image: alpine:latest
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          echo "✅ All collections processed successfully!"
+    - name: create-summary
+      container:
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            echo "✅ All collections processed successfully!"
 
   volumes:
     - name: workspace

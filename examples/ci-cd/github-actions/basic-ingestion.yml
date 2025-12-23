@@ -1,3 +1,4 @@
+---
 # Basic Document Ingestion Workflow
 # Triggers on pushes to docs/** in main branch
 
@@ -20,7 +21,9 @@ jobs:
 
       - name: Download weave-cli
         run: |
-          curl -L https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 -o weave
+          curl -L \
+            https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 \
+            -o weave
           chmod +x weave
 
       - name: Ingest documents

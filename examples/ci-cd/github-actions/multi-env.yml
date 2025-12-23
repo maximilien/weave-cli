@@ -1,3 +1,4 @@
+---
 # Multi-Environment Deployment
 # Deploys to dev, staging, and prod environments using matrix strategy
 
@@ -30,7 +31,9 @@ jobs:
 
       - name: Download weave-cli
         run: |
-          curl -L https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 -o weave
+          curl -L \
+            https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 \
+            -o weave
           chmod +x weave
 
       - name: Ingest to ${{ matrix.environment }}
@@ -48,8 +51,9 @@ jobs:
 
       - name: Validate ingestion results
         run: |
-          STATUS=$(jq -r '.status' batch-report-${{ matrix.environment }}.json)
-          EXIT_CODE=$(jq -r '.exit_code' batch-report-${{ matrix.environment }}.json)
+          REPORT="batch-report-${{ matrix.environment }}.json"
+          STATUS=$(jq -r '.status' "$REPORT")
+          EXIT_CODE=$(jq -r '.exit_code' "$REPORT")
 
           echo "Environment: ${{ matrix.environment }}"
           echo "Status: $STATUS"

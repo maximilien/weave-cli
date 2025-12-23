@@ -1,3 +1,4 @@
+---
 # Scheduled Incremental Updates
 # Runs daily at 2 AM UTC, processes files modified in last 24h
 
@@ -19,7 +20,9 @@ jobs:
 
       - name: Download weave-cli
         run: |
-          curl -L https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 -o weave
+          curl -L \
+            https://github.com/maximilien/weave-cli/releases/latest/download/weave-linux-amd64 \
+            -o weave
           chmod +x weave
 
       - name: Ingest recent documents
