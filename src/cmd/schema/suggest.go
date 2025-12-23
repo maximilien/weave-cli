@@ -263,6 +263,29 @@ func displaySchemaAnalysis(output *agents.SchemaAnalysisOutput) {
 		fmt.Printf("\n🔄 Alternative Schemas Available: %d\n", len(output.Alternatives))
 	}
 
+	// Display chunking recommendations
+	if output.ChunkingAdvice != nil {
+		fmt.Printf("\n📏 Chunking Recommendations:\n")
+		fmt.Printf("   Recommended Size: %d characters (~%d tokens)\n",
+			output.ChunkingAdvice.RecommendedSize,
+			output.ChunkingAdvice.RecommendedSize/4)
+		fmt.Printf("   Size Range: %d - %d characters\n",
+			output.ChunkingAdvice.MinSize,
+			output.ChunkingAdvice.MaxSize)
+		fmt.Printf("   Overlap Size: %d characters (~%.0f%%)\n",
+			output.ChunkingAdvice.OverlapSize,
+			float64(output.ChunkingAdvice.OverlapSize)/float64(output.ChunkingAdvice.RecommendedSize)*100)
+		fmt.Printf("   Document Type: %s\n", output.ChunkingAdvice.DocumentType)
+		fmt.Printf("\n   💡 Reasoning:\n   %s\n", output.ChunkingAdvice.Reasoning)
+
+		if len(output.ChunkingAdvice.Considerations) > 0 {
+			fmt.Printf("\n   📝 Considerations:\n")
+			for _, consideration := range output.ChunkingAdvice.Considerations {
+				fmt.Printf("      • %s\n", consideration)
+			}
+		}
+	}
+
 	fmt.Println(strings.Repeat("=", 60))
 }
 

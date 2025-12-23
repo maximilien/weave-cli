@@ -31,12 +31,24 @@ type SchemaAnalysisInput struct {
 
 // SchemaAnalysisOutput represents AI-generated schema suggestion
 type SchemaAnalysisOutput struct {
-	Schema        SchemaConfig      `json:"schema"`
-	Reasoning     string            `json:"reasoning"`
-	FieldAnalysis []FieldSuggestion `json:"field_analysis"`
-	Confidence    float64           `json:"confidence"`
-	Warnings      []string          `json:"warnings"`
-	Alternatives  []SchemaConfig    `json:"alternatives,omitempty"`
+	Schema         SchemaConfig             `json:"schema"`
+	Reasoning      string                   `json:"reasoning"`
+	FieldAnalysis  []FieldSuggestion        `json:"field_analysis"`
+	Confidence     float64                  `json:"confidence"`
+	Warnings       []string                 `json:"warnings"`
+	Alternatives   []SchemaConfig           `json:"alternatives,omitempty"`
+	ChunkingAdvice *ChunkingRecommendation  `json:"chunking_advice,omitempty"`
+}
+
+// ChunkingRecommendation represents AI-powered chunking size recommendations
+type ChunkingRecommendation struct {
+	RecommendedSize int      `json:"recommended_size" yaml:"recommended_size"`
+	MinSize         int      `json:"min_size" yaml:"min_size"`
+	MaxSize         int      `json:"max_size" yaml:"max_size"`
+	OverlapSize     int      `json:"overlap_size" yaml:"overlap_size"`
+	Reasoning       string   `json:"reasoning" yaml:"reasoning"`
+	DocumentType    string   `json:"document_type" yaml:"document_type"`
+	Considerations  []string `json:"considerations,omitempty" yaml:"considerations,omitempty"`
 }
 
 // FieldSuggestion represents analysis for a single field
@@ -54,12 +66,12 @@ type FieldSuggestion struct {
 
 // SchemaConfig represents a complete schema configuration
 type SchemaConfig struct {
-	CollectionName   string            `yaml:"collection_name" json:"collection_name"`
-	VectorDimensions int               `yaml:"vector_dimensions" json:"vector_dimensions"`
-	SimilarityMetric string            `yaml:"similarity_metric" json:"similarity_metric"`
-	Fields           []FieldConfig     `yaml:"fields" json:"fields"`
-	Indexes          []IndexConfig     `yaml:"indexes" json:"indexes"`
-	Metadata         map[string]string `yaml:"metadata,omitempty" json:"metadata,omitempty"`
+	CollectionName   string                 `yaml:"collection_name" json:"collection_name"`
+	VectorDimensions int                    `yaml:"vector_dimensions" json:"vector_dimensions"`
+	SimilarityMetric string                 `yaml:"similarity_metric" json:"similarity_metric"`
+	Fields           []FieldConfig          `yaml:"fields" json:"fields"`
+	Indexes          []IndexConfig          `yaml:"indexes" json:"indexes"`
+	Metadata         map[string]interface{} `yaml:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 // FieldConfig represents a field configuration
@@ -81,12 +93,17 @@ type IndexConfig struct {
 
 // DocumentStructure represents analyzed document structure
 type DocumentStructure struct {
-	Samples        []DocumentSample
-	FileTypes      []string
-	CommonFields   map[string]int    // field -> frequency
-	FieldTypes     map[string]string // field -> inferred type
-	ContentLengths []int
-	Languages      []string
+	Samples          []DocumentSample
+	FileTypes        []string
+	CommonFields     map[string]int    // field -> frequency
+	FieldTypes       map[string]string // field -> inferred type
+	ContentLengths   []int
+	Languages        []string
+	// Chunking analysis fields
+	ParagraphCounts  []int             // paragraph count per document
+	SectionCounts    []int             // section count per document
+	AvgParagraphLen  int               // average paragraph length
+	ContentDensity   string            // "sparse", "medium", "dense"
 }
 
 // DocumentSample represents a sampled document
@@ -285,6 +302,9 @@ func (a *SchemaAgent) analyzeStructure(samples []DocumentSample) DocumentStructu
 
 	// Analyze file types
 	typeMap := make(map[string]bool)
+	totalParagraphLen := 0
+	paragraphCount := 0
+
 	for _, sample := range samples {
 		typeMap[sample.Type] = true
 		structure.ContentLengths = append(structure.ContentLengths, int(sample.Size))
@@ -298,10 +318,58 @@ func (a *SchemaAgent) analyzeStructure(samples []DocumentSample) DocumentStructu
 				structure.FieldTypes[fieldName] = inferType(fieldValue)
 			}
 		}
+
+		// Analyze chunking characteristics
+		content := sample.Preview
+		if contentField, ok := sample.Fields["content"]; ok {
+			if contentStr, ok := contentField.(string); ok {
+				content = contentStr
+			}
+		}
+
+		// Count paragraphs (separated by double newline or single newline for simple cases)
+		paragraphs := strings.Split(content, "\n\n")
+		if len(paragraphs) == 1 {
+			// Fallback to single newline if no double newlines
+			paragraphs = strings.Split(content, "\n")
+		}
+		structure.ParagraphCounts = append(structure.ParagraphCounts, len(paragraphs))
+
+		// Calculate average paragraph length
+		for _, p := range paragraphs {
+			p = strings.TrimSpace(p)
+			if len(p) > 0 {
+				totalParagraphLen += len(p)
+				paragraphCount++
+			}
+		}
+
+		// Count sections (markdown headers or similar patterns)
+		sections := strings.Count(content, "#")
+		if sections == 0 {
+			// Try other section markers
+			sections = strings.Count(content, "===") + strings.Count(content, "---")
+		}
+		structure.SectionCounts = append(structure.SectionCounts, sections)
 	}
 
 	for fileType := range typeMap {
 		structure.FileTypes = append(structure.FileTypes, fileType)
+	}
+
+	// Calculate average paragraph length
+	if paragraphCount > 0 {
+		structure.AvgParagraphLen = totalParagraphLen / paragraphCount
+	}
+
+	// Determine content density
+	avgContentLen := avgLength(structure.ContentLengths)
+	if avgContentLen < 1000 {
+		structure.ContentDensity = "sparse"
+	} else if avgContentLen < 5000 {
+		structure.ContentDensity = "medium"
+	} else {
+		structure.ContentDensity = "dense"
 	}
 
 	return structure
@@ -309,7 +377,25 @@ func (a *SchemaAgent) analyzeStructure(samples []DocumentSample) DocumentStructu
 
 // buildAnalysisPrompt builds the LLM prompt for schema analysis
 func (a *SchemaAgent) buildAnalysisPrompt(structure DocumentStructure, input *SchemaAnalysisInput) string {
-	return fmt.Sprintf(`You are an expert at designing vector database schemas. Analyze the following document samples and suggest an optimal schema for a %s collection.
+	avgParagraphs := 0
+	if len(structure.ParagraphCounts) > 0 {
+		sum := 0
+		for _, c := range structure.ParagraphCounts {
+			sum += c
+		}
+		avgParagraphs = sum / len(structure.ParagraphCounts)
+	}
+
+	avgSections := 0
+	if len(structure.SectionCounts) > 0 {
+		sum := 0
+		for _, c := range structure.SectionCounts {
+			sum += c
+		}
+		avgSections = sum / len(structure.SectionCounts)
+	}
+
+	return fmt.Sprintf(`You are an expert at designing vector database schemas and document chunking strategies. Analyze the following document samples and suggest an optimal schema AND chunking configuration for a %s collection.
 
 Collection Name: %s
 Number of Samples: %d
@@ -320,13 +406,24 @@ Document Structure Analysis:
 - Common Fields: %v
 - Field Types: %v
 - Average Content Length: %d bytes
+- Average Paragraphs per Document: %d
+- Average Sections per Document: %d
+- Average Paragraph Length: %d characters
+- Content Density: %s
 
-Please suggest a schema configuration that:
-1. Optimizes for search and retrieval
-2. Includes appropriate indexes
-3. Handles the observed field types efficiently
-4. Supports filtering on common metadata
-5. Uses appropriate vector dimensions for the content type (1536 for OpenAI embeddings)
+Please suggest:
+1. A schema configuration that optimizes for search and retrieval
+2. A chunking strategy that balances context preservation and retrieval accuracy
+3. Appropriate indexes for vector and keyword search
+4. Field types that handle the observed data efficiently
+5. Vector dimensions appropriate for the content type (1536 for OpenAI embeddings)
+
+CHUNKING CONSIDERATIONS:
+- For technical documentation: 500-1000 tokens (preserves code blocks and explanations)
+- For narrative content: 1000-2000 tokens (preserves story flow and context)
+- For mixed content: 700-1200 tokens (balances both)
+- Overlap: 10-20%% of chunk size for context continuity
+- Consider document structure (paragraphs, sections) for natural boundaries
 
 Return ONLY a valid JSON object (no markdown, no explanations outside JSON) with this exact structure:
 {
@@ -348,7 +445,16 @@ Return ONLY a valid JSON object (no markdown, no explanations outside JSON) with
   ],
   "confidence": 0.85,
   "warnings": ["Warning messages if any"],
-  "alternatives": []
+  "alternatives": [],
+  "chunking_advice": {
+    "recommended_size": 1000,
+    "min_size": 500,
+    "max_size": 1500,
+    "overlap_size": 100,
+    "reasoning": "Based on average paragraph length and content density...",
+    "document_type": "technical|narrative|mixed",
+    "considerations": ["Preserve code blocks", "Maintain context", "Balance retrieval accuracy"]
+  }
 }`,
 		input.VDBType,
 		input.CollectionName,
@@ -358,6 +464,10 @@ Return ONLY a valid JSON object (no markdown, no explanations outside JSON) with
 		structure.CommonFields,
 		structure.FieldTypes,
 		avgLength(structure.ContentLengths),
+		avgParagraphs,
+		avgSections,
+		structure.AvgParagraphLen,
+		structure.ContentDensity,
 		input.CollectionName,
 	)
 }
