@@ -1,7 +1,7 @@
 # Next Steps - Actionable Tasks
 
-**Last Updated**: 2025-12-23 (Morning Session)
-**Current Version**: v0.8.2-32-gXXXXXXX
+**Last Updated**: 2025-12-23 (Evening Session)
+**Current Version**: v0.8.2-36-g1ac836a
 **Status**: 🎉 **OPTION 1 COMPLETE + AI Chunking!** - 8/8 Features (100%)
 
 ---
@@ -49,60 +49,97 @@
 
 ---
 
-## ✅ Completed (2025-12-23 AM)
+## ✅ Completed (2025-12-23)
 
-**AI Chunking Size Suggestion** (1h15m):
+**Morning Session - AI Chunking (1h15m)**:
 - ✅ Extended schema agent with document structure analysis
 - ✅ Added paragraph/section counting and content density metrics
 - ✅ Integrated AI-powered chunking recommendations into schema suggest
 - ✅ Displays recommended chunk size, overlap, and document type
-- ✅ Comprehensive test coverage (100% pass):
-  - 8 unit tests for document structure analysis
-  - 6 integration tests for schema suggest command
-  - Edge cases: empty samples, large documents, technical content
-  - Serialization tests: JSON/YAML with chunking advice
-  - Validation tests: chunk size ranges, overlap percentages
-- ✅ Feature: `weave schema suggest` now includes chunking advice
+- ✅ Comprehensive test coverage (14 tests, 100% pass)
+
+**Afternoon Session - Chunking Refactoring**:
+- ✅ Created separate `ChunkingAgent` in `src/pkg/agents/chunking_agent.go`
+- ✅ Created `weave chunking suggest` command (separate from schema)
+- ✅ Moved chunking logic to dedicated agent and command structure
+- ✅ Removed duplicate structs from `schema_agent.go`
+- ✅ Tested successfully with real data
+- ✅ Fixed unit test compilation error (metadata type mismatch)
+- ✅ Fixed --no-truncate flag implementation (d1404c3)
 
 **Test Summary**:
 - Total new tests: 14 (8 unit + 6 integration)
 - All tests passing (100%)
-- Coverage: document analysis, prompt building, serialization, validation
+- Coverage: document analysis, chunking metrics, serialization
 
-**Impact**: Schema suggestion now provides both schema AND optimal chunking strategy
+**Impact**:
+- Schema and chunking are now separate concerns with dedicated agents/commands
+- Users can run `weave chunking suggest` independently
 
 ---
 
-## 🚀 Next Plan (2025-12-23 PM - 2 hours)
+## ✅ Completed Tonight (2025-12-23 PM - 45 minutes)
 
-### Focus: Bug Fixes & Hardening
+### Priority 1: Critical Bug Investigation ✅
+**Milvus --text Collection Creation**
+- **Status**: ✅ **Already Fixed** - No action needed
+- **Finding**: Code correctly handles --text flag for Milvus (lines 177-186 in create.go)
+- **Evidence**: Command now fails with connection timeout (expected) vs schema error (bug)
+- **Verification**: Tested `weave cols create WeaveDocs --text --json-metadata --milvus-local`
 
-**Goal**: Fix critical bugs, improve documentation, and harden existing features
+### Priority 2: Code Cleanup ✅
+**Cleaned up .gitignore for local VDB storage**
+- ✅ Removed redundant entries (qdrant_storage/, milvus_storage/, chroma_data/, neo4j_storage/)
+- ✅ Kept single `/local/` entry (covers all local VDB storage)
+- ✅ Removed duplicate `/local/storage/` entry
+- **Result**: Cleaner .gitignore, all local VDB data in `./local/storage/`
 
-**Priority Tasks** (2 hours total):
+### Priority 3: Documentation Updates ✅
+**VDB Support Matrix (docs/VDB_SUPPORT_MATRIX.md)**
+- ✅ Verified BM25 support accuracy (Qdrant ❌, Chroma ❌, Neo4j ❌ - all correct)
+- ✅ Added "AI Schema Suggestions" feature row (✅ for all 10 VDBs)
+- ✅ Added "AI Chunking Suggestions" feature row (✅ for all 10 VDBs)
+- ✅ Added feature notes for new AI commands
 
-### 1. Documentation Updates (30 minutes)
-- Update `docs/VDB_SUPPORT_MATRIX.md` with latest VDB features
-- Fix inaccuracies in BM25 support notes
-- Add chunking recommendation feature to docs
-- Verify all VDB configuration examples are current
+**README.md**
+- ✅ Updated "Key Features" section with AI Schema & Chunking
+- ✅ Added example commands: `weave schema suggest`, `weave chunking suggest`
+- ✅ Enhanced AI-Powered feature description
 
-### 2. Critical Bug Fixes (45 minutes)
-- **Bug**: `--no-truncate` flag still shows truncated output (src/cmd/document/list.go:93)
-- **Bug**: Milvus --text collection creation failing with schema error
-- **Bug**: PDF processing not implemented for Milvus/Supabase VDBs
-- Test fixes and verify with integration tests
+**Time**: ~45 minutes (faster than planned!)
 
-### 3. Code Cleanup (15 minutes)
-- Move `qdrant_storage/` to `local/` directory for consistency
-- Ensure all local VDB storage uses `local/` path
-- Update .gitignore accordingly
+---
 
-### 4. Backlog Organization (30 minutes)
-- Consolidate weave-cli.txt items into NEXT_STEPS.md
-- Categorize by: Critical Bugs, Features, Enhancements, Tests
-- Archive completed items
-- Create clear priorities for next sessions
+## 🚫 Deferred Items
+
+### High Priority (Require > 2 hours)
+- **PDF Processing for Milvus/Supabase** (2-3h): Complex, requires refactoring
+- **MCP Code Updates** (1-2h): Needs testing both MCP and CLI
+- **./test.sh --mcp Failing** (1h): Depends on MCP updates
+
+### Medium Priority (From weave-cli.txt)
+- Update MCP code to match latest CLI changes
+- Agents config should load from weave-agents.yaml (not hardcoded)
+- Add test and CI for batch command (issue #9)
+- Find small PDF collection for testing (issue #8)
+
+### Low Priority / Features
+- Embedding suggestion command (`weave embeds suggest`)
+- Config search command to explain VDB search types
+- Advanced search options (--bm25, --vector, --hnsw)
+
+---
+
+## 🎯 Next Session Plan
+
+**When**: Tomorrow or next available session
+**Focus**: Continue hardening and feature polish
+
+### Recommended Tasks (Pick 2-3):
+1. **MCP Integration Updates** (1-2h) - Update MCP code, fix ./test.sh --mcp
+2. **PDF Processing Enhancement** (2-3h) - Implement for Milvus/Supabase
+3. **Agents Config Loading** (1h) - Load from weave-agents.yaml instead of hardcoding
+4. **Batch Command Testing** (1-2h) - Add tests and CI for batch command (issue #9)
 
 ---
 

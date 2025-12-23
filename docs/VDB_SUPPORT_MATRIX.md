@@ -37,6 +37,8 @@ and features.
 | **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Schema Management** | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ❌ | ✅ | ⚠️ | ⚠️ | ✅ |
 | **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **AI Schema Suggestions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **AI Chunking Suggestions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Legend:**
 - ✅ Fully supported
@@ -50,6 +52,8 @@ and features.
 - **Neo4j Schema**: Not supported - delete and recreate collection instead
 - **OpenSearch Batch**: Sequential operations (no native bulk API yet)
 - **Pinecone Hybrid**: Falls back to semantic search (vector-only database)
+- **AI Schema Suggestions**: Use `weave schema suggest` to analyze documents and get AI-powered schema recommendations
+- **AI Chunking Suggestions**: Use `weave chunking suggest` to analyze documents and get optimal chunk size recommendations
 
 ## Quick Start
 

@@ -104,12 +104,18 @@ weave emb ls --verbose
 # Create collection with specific embedding (used as default for all documents)
 weave cols create MyCollection --embedding text-embedding-3-small
 weave cols create MyCollection -e text-embedding-ada-002
+
+# Get AI-powered schema suggestions for your documents
+weave schema suggest ./docs --collection MyDocs --output schema.yaml
+
+# Get AI-powered chunking recommendations
+weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 ```
 
 ## Key Features
 
 - 🤖 **AI-Powered** - AI Agent mode, natural language interface with GPT-4o
-  multi-agent system
+  multi-agent system, schema suggestions, and chunking recommendations
 - ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
   (AI Agent mode) with real-time progress feedback
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
@@ -120,6 +126,8 @@ weave cols create MyCollection -e text-embedding-ada-002
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
   language
+- 🧠 **AI Schema & Chunking** - Analyze documents and get AI-powered schema and
+  optimal chunk size recommendations
 - 📊 **Embeddings** - List and explore available embedding models
 - ⏱️ **Configurable Timeouts** - Default 10s timeout, adjustable per
   command

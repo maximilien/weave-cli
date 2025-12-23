@@ -52,12 +52,8 @@ logs/
 tmp/
 temp/
 
-# Local VDB storage (only ignore in root directory)
+# Local VDB storage (all local databases store data in local/ directory)
 /local/
-qdrant_storage/
-milvus_storage/
-chroma_data/
-neo4j_storage/
 
 # Working documents (personal planning, not for public repo)
 TODO*
@@ -80,4 +76,3 @@ videos/*.cast
 !videos/weave-cli-full-demo.cast
 !videos/weave-cli-repl-demo.cast
 videos/latest-demo-uploads.txt
-/local/storage/
