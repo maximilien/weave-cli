@@ -31,13 +31,13 @@ type SchemaAnalysisInput struct {
 
 // SchemaAnalysisOutput represents AI-generated schema suggestion
 type SchemaAnalysisOutput struct {
-	Schema         SchemaConfig             `json:"schema"`
-	Reasoning      string                   `json:"reasoning"`
-	FieldAnalysis  []FieldSuggestion        `json:"field_analysis"`
-	Confidence     float64                  `json:"confidence"`
-	Warnings       []string                 `json:"warnings"`
-	Alternatives   []SchemaConfig           `json:"alternatives,omitempty"`
-	ChunkingAdvice *ChunkingRecommendation  `json:"chunking_advice,omitempty"`
+	Schema         SchemaConfig            `json:"schema"`
+	Reasoning      string                  `json:"reasoning"`
+	FieldAnalysis  []FieldSuggestion       `json:"field_analysis"`
+	Confidence     float64                 `json:"confidence"`
+	Warnings       []string                `json:"warnings"`
+	Alternatives   []SchemaConfig          `json:"alternatives,omitempty"`
+	ChunkingAdvice *ChunkingRecommendation `json:"chunking_advice,omitempty"`
 }
 
 // ChunkingRecommendation represents AI-powered chunking size recommendations
@@ -93,17 +93,17 @@ type IndexConfig struct {
 
 // DocumentStructure represents analyzed document structure
 type DocumentStructure struct {
-	Samples          []DocumentSample
-	FileTypes        []string
-	CommonFields     map[string]int    // field -> frequency
-	FieldTypes       map[string]string // field -> inferred type
-	ContentLengths   []int
-	Languages        []string
+	Samples        []DocumentSample
+	FileTypes      []string
+	CommonFields   map[string]int    // field -> frequency
+	FieldTypes     map[string]string // field -> inferred type
+	ContentLengths []int
+	Languages      []string
 	// Chunking analysis fields
-	ParagraphCounts  []int             // paragraph count per document
-	SectionCounts    []int             // section count per document
-	AvgParagraphLen  int               // average paragraph length
-	ContentDensity   string            // "sparse", "medium", "dense"
+	ParagraphCounts []int  // paragraph count per document
+	SectionCounts   []int  // section count per document
+	AvgParagraphLen int    // average paragraph length
+	ContentDensity  string // "sparse", "medium", "dense"
 }
 
 // DocumentSample represents a sampled document

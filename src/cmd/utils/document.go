@@ -155,7 +155,7 @@ func WriteProcessingReport(report *ProcessingReport) error {
 
 // ListWeaviateDocuments lists Weaviate documents
 // ListDocuments lists documents using the vector database abstraction (works for all DB types)
-func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, virtual bool, summary bool, jsonOutput bool) {
+func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, noTruncate bool, virtual bool, summary bool, jsonOutput bool) {
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -225,9 +225,9 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	}
 
 	if virtual {
-		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary, jsonOutput, vectorizer)
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, noTruncate, summary, jsonOutput, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, jsonOutput, vectorizer)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, noTruncate, jsonOutput, vectorizer)
 	}
 }
 
@@ -291,9 +291,9 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 
 	// ListWeaviateDocuments doesn't support JSON output, use default formatted output
 	if virtual {
-		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, summary, false, vectorizer)
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, false, summary, false, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, vectorizer)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, false, vectorizer)
 	}
 }
 

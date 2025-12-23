@@ -35,6 +35,7 @@ func init() {
 	ListCmd.Flags().IntP("limit", "l", 50, "Maximum number of documents to show")
 	ListCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	ListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
+	ListCmd.Flags().Bool("no-truncate", false, "Don't truncate content or metadata (show everything)")
 	ListCmd.Flags().BoolP("virtual", "w", false, "Show documents in virtual structure (aggregate chunks by original document)")
 	ListCmd.Flags().BoolP("summary", "S", false, "Show a clean summary of documents (works with --virtual)")
 	ListCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
@@ -45,6 +46,7 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	limit, _ := cmd.Flags().GetInt("limit")
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
+	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	virtual, _ := cmd.Flags().GetBool("virtual")
 	summary, _ := cmd.Flags().GetBool("summary")
 	outputFormat, _ := cmd.Flags().GetString("output")
@@ -110,5 +112,5 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 
 	// Use generic ListDocuments that works with all database types via vectordb abstraction
-	utils.ListDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, virtual, summary, jsonOutput)
+	utils.ListDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, noTruncate, virtual, summary, jsonOutput)
 }

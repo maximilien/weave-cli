@@ -315,14 +315,14 @@ func TestBuildAnalysisPrompt_IncludesChunkingMetrics(t *testing.T) {
 		Samples: []DocumentSample{
 			{Path: "test.md", Type: "md", Size: 1000},
 		},
-		FileTypes:        []string{"md"},
-		CommonFields:     map[string]int{"content": 1},
-		FieldTypes:       map[string]string{"content": "text"},
-		ContentLengths:   []int{1000},
-		ParagraphCounts:  []int{10},
-		SectionCounts:    []int{3},
-		AvgParagraphLen:  100,
-		ContentDensity:   "medium",
+		FileTypes:       []string{"md"},
+		CommonFields:    map[string]int{"content": 1},
+		FieldTypes:      map[string]string{"content": "text"},
+		ContentLengths:  []int{1000},
+		ParagraphCounts: []int{10},
+		SectionCounts:   []int{3},
+		AvgParagraphLen: 100,
+		ContentDensity:  "medium",
 	}
 
 	input := &SchemaAnalysisInput{
@@ -367,8 +367,8 @@ func TestContentDensityClassification(t *testing.T) {
 	agent := &SchemaAgent{}
 
 	tests := []struct {
-		name           string
-		size           int64
+		name            string
+		size            int64
 		expectedDensity string
 	}{
 		{"very small", 500, "sparse"},
@@ -405,6 +405,6 @@ func TestContentDensityClassification(t *testing.T) {
 func containsString(s, substr string) bool {
 	return len(s) > 0 && len(substr) > 0 &&
 		(s == substr || len(s) >= len(substr) &&
-		(s[:len(substr)] == substr ||
-		containsString(s[1:], substr)))
+			(s[:len(substr)] == substr ||
+				containsString(s[1:], substr)))
 }

@@ -241,7 +241,7 @@ func extractPageNumbers(images []VirtualDocument) (int, int) {
 }
 
 // DisplayRegularDocuments displays regular documents with styling
-func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, jsonOutput bool, vectorizer string) {
+func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, jsonOutput bool, vectorizer string) {
 	// If JSON output is requested, marshal and print JSON
 	if jsonOutput {
 		output := map[string]interface{}{
@@ -281,7 +281,7 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 			fmt.Printf("   ")
 			PrintStyledKeyProminent("Content")
 			fmt.Printf(": ")
-			if showLong {
+			if showLong || noTruncate {
 				PrintStyledValue(doc.Content)
 			} else {
 				// Use smartTruncate to handle base64 content appropriately
@@ -297,11 +297,16 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 			fmt.Println()
 			for key, value := range doc.Metadata {
 				if key != "id" { // Skip ID since it's already shown
-					// Use smartTruncate to handle base64 content appropriately
 					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := SmartTruncate(valueStr, key, shortLines)
+					var displayValue string
+					if noTruncate {
+						displayValue = valueStr
+					} else {
+						// Use smartTruncate to handle base64 content appropriately
+						displayValue = SmartTruncate(valueStr, key, shortLines)
+					}
 					fmt.Printf("     ")
-					PrintStyledKeyValueDimmed(key, truncatedValue)
+					PrintStyledKeyValueDimmed(key, displayValue)
 					fmt.Println()
 				}
 			}
@@ -311,7 +316,7 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 }
 
 // DisplayVirtualDocuments displays virtual documents with aggregation and styling
-func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, summary bool, jsonOutput bool, vectorizer string) {
+func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, summary bool, jsonOutput bool, vectorizer string) {
 	// Aggregate documents by original filename/source
 	virtualDocs := AggregateDocumentsByOriginal(documents)
 
@@ -380,9 +385,14 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			for key, value := range vdoc.Metadata {
 				if key != "id" { // Skip ID since it's redundant
 					valueStr := fmt.Sprintf("%v", value)
-					truncatedValue := SmartTruncate(valueStr, key, shortLines)
+					var displayValue string
+					if noTruncate {
+						displayValue = valueStr
+					} else {
+						displayValue = SmartTruncate(valueStr, key, shortLines)
+					}
 					fmt.Printf("     ")
-					PrintStyledKeyValueDimmed(key, truncatedValue)
+					PrintStyledKeyValueDimmed(key, displayValue)
 					fmt.Println()
 				}
 			}
@@ -403,7 +413,7 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			fmt.Printf("        ")
 			PrintStyledKeyProminent("Content")
 			fmt.Printf(": ")
-			if showLong {
+			if showLong || noTruncate {
 				PrintStyledValue(chunk.Content)
 			} else {
 				preview := SmartTruncate(chunk.Content, "content", shortLines)

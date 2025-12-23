@@ -73,13 +73,69 @@
 
 ---
 
-## 🚀 Next Plan (2025-12-23 PM)
+## 🚀 Next Plan (2025-12-23 PM - 2 hours)
 
-### Recommended: Option 2 - VDB Expansion
+### Focus: Bug Fixes & Hardening
 
-**Goal**: Add new vector database support or enhance existing VDBs
+**Goal**: Fix critical bugs, improve documentation, and harden existing features
 
-**Priority Tasks** (Pick 1-2):
+**Priority Tasks** (2 hours total):
+
+### 1. Documentation Updates (30 minutes)
+- Update `docs/VDB_SUPPORT_MATRIX.md` with latest VDB features
+- Fix inaccuracies in BM25 support notes
+- Add chunking recommendation feature to docs
+- Verify all VDB configuration examples are current
+
+### 2. Critical Bug Fixes (45 minutes)
+- **Bug**: `--no-truncate` flag still shows truncated output (src/cmd/document/list.go:93)
+- **Bug**: Milvus --text collection creation failing with schema error
+- **Bug**: PDF processing not implemented for Milvus/Supabase VDBs
+- Test fixes and verify with integration tests
+
+### 3. Code Cleanup (15 minutes)
+- Move `qdrant_storage/` to `local/` directory for consistency
+- Ensure all local VDB storage uses `local/` path
+- Update .gitignore accordingly
+
+### 4. Backlog Organization (30 minutes)
+- Consolidate weave-cli.txt items into NEXT_STEPS.md
+- Categorize by: Critical Bugs, Features, Enhancements, Tests
+- Archive completed items
+- Create clear priorities for next sessions
+
+---
+
+## 📋 Backlog (From weave-cli.txt Analysis)
+
+### 🔴 Critical Bugs
+- [ ] Milvus: Cannot create --text collection (schema not found error)
+- [ ] PDF processing not implemented for Milvus/Supabase VDBs
+- [ ] `--no-truncate` flag not working correctly
+- [ ] Old PDF files produce empty output after conversion
+- [ ] `./test.sh --mcp` is failing
+
+### 🟡 Medium Priority
+- [ ] Update MCP code to match latest CLI changes
+- [ ] Agents config should load from weave-agents.yaml (not hardcoded)
+- [ ] Move qdrant_storage/ to local/ directory
+- [ ] Add test and CI for batch command (issue #9)
+- [ ] Find small PDF collection for testing (issue #8)
+
+### 🟢 Low Priority / Features
+- [ ] Embedding suggestion command (`weave embeds suggest`)
+- [ ] Config search command to explain VDB search types
+- [ ] Advanced search options (--bm25, --vector, --hnsw)
+
+---
+
+## 🗂️ Archived / Completed (Reference)
+
+### Recommended: Option 2 - VDB Expansion (Deprioritized)
+
+**Note**: VDB expansion postponed to focus on stability
+
+**Future Tasks** (Pick 1-2):
 
 1. **LanceDB Support** (4-6 hours) - HIGH VALUE
    - Add LanceDB adapter (requires CGO setup)
