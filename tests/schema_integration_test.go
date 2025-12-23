@@ -216,7 +216,7 @@ func TestSchemaYAMLOutput(t *testing.T) {
 				Type:   "bm25",
 			},
 		},
-		Metadata: map[string]string{
+		Metadata: map[string]interface{}{
 			"version": "1.0",
 			"created": "2025-01-01",
 		},
