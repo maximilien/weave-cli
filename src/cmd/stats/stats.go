@@ -48,10 +48,10 @@ type CollectionStats struct {
 
 // MetadataFieldStat represents statistics for a metadata field
 type MetadataFieldStat struct {
-	Type         string                 `json:"type" yaml:"type"`
-	UniqueValues int                    `json:"unique_values" yaml:"unique_values"`
-	TopValues    []ValueCount           `json:"top_values,omitempty" yaml:"top_values,omitempty"`
-	SampleValue  interface{}            `json:"sample_value,omitempty" yaml:"sample_value,omitempty"`
+	Type         string       `json:"type" yaml:"type"`
+	UniqueValues int          `json:"unique_values" yaml:"unique_values"`
+	TopValues    []ValueCount `json:"top_values,omitempty" yaml:"top_values,omitempty"`
+	SampleValue  interface{}  `json:"sample_value,omitempty" yaml:"sample_value,omitempty"`
 }
 
 // ValueCount represents a value and its count
