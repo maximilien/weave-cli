@@ -247,21 +247,28 @@ cd /Users/maximilien/github/maximilien/weave-cli && ./test.sh --mcp
 
 ---
 
-### PDF Processing Enhancement (1 hour) 🟡
+### PDF Processing Enhancement (1 hour) 🟡 **DEFERRED**
 
 **Goal**: Add PDF support for Milvus and Supabase VDBs
 
-**Current**: Works for Weaviate, Qdrant, Chroma
-**Issue**: PDF processing not implemented for Milvus/Supabase
+**Current**: Works for Weaviate (has dedicated PDF path)
+**Issue**: Generic VDB path doesn't support PDF processing yet
 
-**Tasks**:
-- [ ] Review existing PDF code (weaviate/qdrant)
-- [ ] Implement PDF text extraction for Milvus
-- [ ] Implement PDF text extraction for Supabase
-- [ ] Add integration tests
-- [ ] Test with sample PDFs
+**Finding** (Dec 23):
+- PDF processing exists in `src/pkg/pdf/` package
+- Weaviate uses dedicated PDF processing path
+- Generic VDB path (`CreateDocumentFromFileGeneric` in `src/cmd/utils/document.go:378`) returns error
+- Requires refactoring to enable PDF for all VDBs (Milvus, Supabase, Qdrant, etc.)
 
-**Files**: `src/pkg/vectordb/milvus/`, `src/pkg/vectordb/supabase/`
+**Recommendation**: Defer to dedicated refactoring session (2-3h)
+- Extract PDF processing to generic helper
+- Update all VDB adapters to use generic PDF helper
+- Add integration tests across VDBs
+
+**Files**:
+- `src/cmd/utils/document.go:378` - Add PDF processing
+- `src/pkg/pdf/` - Already has extraction logic
+- `src/pkg/vectordb/*/document.go` - Update adapters
 
 ---
 
