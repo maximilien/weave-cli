@@ -164,7 +164,118 @@
 
 ---
 
-## 🎯 Next Session Plan
+## 🎯 Tomorrow's Session Plan (3 hours)
+
+### MCP Integration Updates (1.5 hours) 🔴 Critical
+
+**Goal**: Sync weave-mcp server with latest CLI changes for full REPL functionality
+
+#### Changes Since Last MCP Update
+
+**1. AI Schema Suggestions** ⭐ NEW
+- **CLI**: `weave schema suggest ./docs --collection MyDocs`
+- **MCP Status**: ❌ Not implemented
+- **Add**: `suggest_schema` tool (45 min)
+  - Parameters: source_path, collection_name, requirements, max_samples
+  - Handler: Call CLI with --output json
+  - Test: Sample documents analysis
+
+**2. AI Chunking Suggestions** ⭐ NEW
+- **CLI**: `weave chunking suggest ./docs --collection MyDocs`
+- **MCP Status**: ❌ Not implemented
+- **Add**: `suggest_chunking` tool (45 min)
+  - Parameters: source_path, collection_name, requirements, max_samples
+  - Handler: Call CLI with --output json
+  - Test: Chunking recommendations
+
+**3. Configurable AI Agents** ⭐ NEW (Tonight)
+- **Feature**: `weave-agents.yaml` configuration
+- **MCP Status**: ⚠️ Needs awareness
+- **Add**: Config loading support (15 min)
+
+#### MCP Update Checklist
+
+**High Priority** (1.5h):
+- [ ] Add `suggest_schema` tool handler
+- [ ] Add `suggest_chunking` tool handler
+- [ ] Register tools in MCP server
+- [ ] Test with real documents
+
+**Medium Priority** (30 min):
+- [ ] Add weave-agents.yaml support
+- [ ] Improve error handling for AI commands
+- [ ] Handle OPENAI_API_KEY missing gracefully
+
+**Low Priority** (30 min):
+- [ ] Fix `./test.sh --mcp` failures
+- [ ] Update MCP documentation
+- [ ] Add examples for new tools
+
+#### Implementation Notes
+
+**Handler Template**:
+```go
+// File: /Users/maximilien/github/maximilien/weave-mcp/src/pkg/mcp/handlers.go
+func (s *Server) handleSuggestSchema(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+    sourcePath := args["source_path"].(string)
+    collectionName := args["collection_name"].(string)
+
+    cmd := fmt.Sprintf("weave schema suggest %s --collection %s --output json",
+        sourcePath, collectionName)
+
+    return executeCommand(ctx, cmd)
+}
+```
+
+**Testing**:
+```bash
+# Unit tests
+cd /Users/maximilien/github/maximilien/weave-mcp && go test ./... -v
+
+# Integration tests
+cd /Users/maximilien/github/maximilien/weave-cli && ./test.sh --mcp
+
+# Manual REPL test
+./bin/weave
+> analyze my documents in ./docs and suggest a schema
+```
+
+**Expected Outcome**:
+- ✅ MCP server supports schema/chunking suggestions
+- ✅ REPL mode can use AI features
+- ✅ All tests passing
+
+---
+
+### PDF Processing Enhancement (1 hour) 🟡
+
+**Goal**: Add PDF support for Milvus and Supabase VDBs
+
+**Current**: Works for Weaviate, Qdrant, Chroma
+**Issue**: PDF processing not implemented for Milvus/Supabase
+
+**Tasks**:
+- [ ] Review existing PDF code (weaviate/qdrant)
+- [ ] Implement PDF text extraction for Milvus
+- [ ] Implement PDF text extraction for Supabase
+- [ ] Add integration tests
+- [ ] Test with sample PDFs
+
+**Files**: `src/pkg/vectordb/milvus/`, `src/pkg/vectordb/supabase/`
+
+---
+
+### Testing & Polish (30 min) 🟢
+
+**Tasks**:
+- [ ] Add integration tests for schema suggest
+- [ ] Add integration tests for chunking suggest
+- [ ] Quick code cleanup
+- [ ] Documentation updates
+
+---
+
+## 🚫 Archived Session Plans
 
 ### Option A: Tonight (1 hour) - Quick Wins ⚡
 

@@ -13,17 +13,17 @@ import (
 
 // AgentConfig represents the configuration for AI agents
 type AgentConfig struct {
-	LLM            LLMConfig            `yaml:"llm"`
-	SchemaAgent    SchemaAgentConfig    `yaml:"schema_agent"`
-	ChunkingAgent  ChunkingAgentConfig  `yaml:"chunking_agent"`
-	QueryAgent     QueryAgentConfig     `yaml:"query_agent"`
-	PlanningAgent  PlanningAgentConfig  `yaml:"planning_agent"`
-	ReportAgent    ReportAgentConfig    `yaml:"report_agent"`
-	EvalAgent      EvalAgentConfig      `yaml:"eval_agent"`
-	Output         AgentOutputConfig    `yaml:"output"`
-	Cache          CacheConfig          `yaml:"cache"`
-	Performance    PerformanceConfig    `yaml:"performance"`
-	Features       FeaturesConfig       `yaml:"features"`
+	LLM           LLMConfig           `yaml:"llm"`
+	SchemaAgent   SchemaAgentConfig   `yaml:"schema_agent"`
+	ChunkingAgent ChunkingAgentConfig `yaml:"chunking_agent"`
+	QueryAgent    QueryAgentConfig    `yaml:"query_agent"`
+	PlanningAgent PlanningAgentConfig `yaml:"planning_agent"`
+	ReportAgent   ReportAgentConfig   `yaml:"report_agent"`
+	EvalAgent     EvalAgentConfig     `yaml:"eval_agent"`
+	Output        AgentOutputConfig   `yaml:"output"`
+	Cache         CacheConfig         `yaml:"cache"`
+	Performance   PerformanceConfig   `yaml:"performance"`
+	Features      FeaturesConfig      `yaml:"features"`
 }
 
 // LLMConfig represents LLM provider configuration
