@@ -7,6 +7,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.3] - 2025-12-24
+
+### Summary
+
+AI Configuration & MCP Integration - New `weave config agents` command for easy AI setup, MCP server tools for schema and chunking suggestions, comprehensive test coverage, and version 0.8.3 release with YAML linting fixes.
+
+### Added
+
+- **AI Agents Configuration Command** (`weave config agents`)
+  - Interactive command to create `weave-agents.yaml` configuration
+  - `--global` flag to create in `~/.weave-cli` directory
+  - `--show-template` flag to preview configuration template
+  - Embedded default config (works without template file)
+  - Multiple template search paths for flexibility
+  - Overwrite protection with confirmation prompts
+  - 4 comprehensive unit tests, all passing
+  - Makes AI features accessible without manual file editing
+
+- **MCP AI Tools Integration** (weave-mcp repository)
+  - `suggest_schema` tool for AI-powered schema analysis
+  - `suggest_chunking` tool for AI-powered chunking recommendations
+  - `executeCommand` helper for running weave CLI commands
+  - 60-second timeout for AI operations (LLM calls)
+  - Supports optional parameters: requirements, vdb_type, max_samples
+  - Returns structured JSON output
+  - Enables REPL to use AI tools through MCP interface
+
+- **Integration Tests for AI Features**
+  - `tests/ai_features_integration_test.go` with 9 test cases
+  - Schema suggestion tests (small sample, with requirements)
+  - Chunking suggestion tests (small sample, with requirements)
+  - Agent config loading tests
+  - Error handling tests (empty files, invalid paths)
+  - All tests passing (7.94s)
+
+### Changed
+
+- **Version Bump to 0.8.3**
+  - Updated MCP client version to 0.8.3
+  - Reflects new AI configuration and MCP features
+
+- **YAML Linting Improvements**
+  - Added YAML document start marker (`---`) to weave-agents.yaml
+  - Updated embedded default config with document marker
+  - All YAML linting now passes cleanly (no warnings)
+
+- **Agent Configuration System**
+  - Schema and chunking agents now load from weave-agents.yaml
+  - Configurable LLM models, temperatures, and token limits
+  - Configurable chunking defaults (sizes, overlap percentages)
+  - Configurable confidence thresholds
+  - Config precedence: local → configs/ → global → defaults
+
+### Fixed
+
+- **PDF Processing Investigation**
+  - Documented that PDF works for Weaviate (dedicated path)
+  - Identified generic VDB path needs refactoring (deferred)
+  - Line 378 in `src/cmd/utils/document.go` blocks non-Weaviate VDBs
+
+### Documentation
+
+- **Updated Documentation**
+  - NEXT_STEPS.md: 5 sessions documented (3h25m total)
+  - VDB_SUPPORT_MATRIX.md: Added AI feature rows
+  - README.md: Added AI configuration examples
+  - configs/README.md: Documented weave-agents.yaml
+
+### Sessions Completed (2025-12-24)
+
+1. **Session 1**: Quick wins & cleanup (45 min)
+2. **Session 2**: Agent configuration system (50 min)
+3. **Session 3**: Testing & PDF investigation (40 min)
+4. **Session 4**: MCP integration (30 min)
+5. **Session 5**: Config agents command (40 min)
+
+**Total**: 3h25m
+
 ## [0.8.2] - 2025-12-18
 
 ### Summary

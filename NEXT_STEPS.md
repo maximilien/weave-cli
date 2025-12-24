@@ -1,8 +1,8 @@
 # Next Steps - Actionable Tasks
 
-**Last Updated**: 2025-12-23 (Evening Session)
-**Current Version**: v0.8.2-36-g1ac836a
-**Status**: 🎉 **OPTION 1 COMPLETE + AI Chunking!** - 8/8 Features (100%)
+**Last Updated**: 2025-12-24 (Evening Session)
+**Current Version**: v0.8.3
+**Status**: 🎉 **AI Features Complete!** - Config + MCP Integration
 
 ---
 
@@ -225,7 +225,66 @@
 
 ---
 
-## 🎯 Tomorrow's Session Plan (3 hours)
+## 🎯 Tonight's Session Plan (3-4 hours)
+
+### **Priority 1: PDF Processing Refactoring** (2-3h) 🔴 Critical
+
+**Problem**: PDF processing only works for Weaviate, blocks 8 other VDB types
+
+**Root Cause**: Line 378 in `src/cmd/utils/document.go` throws error for generic VDB clients
+
+**Solution**:
+1. **Extract PDF to Generic Helper** (1h)
+   - Create `src/pkg/pdf/processor.go` with generic PDF handling
+   - Move extraction logic from Weaviate-specific path
+   - Add chunking support, preserve metadata
+
+2. **Update VDB Adapters** (45 min)
+   - Update Milvus, Supabase, MongoDB adapters
+   - Ensure Weaviate still works (regression test)
+   - Test with mock VDB
+
+3. **Add Tests** (30 min)
+   - Integration tests for PDF with multiple VDBs
+   - Unit tests for PDF processor
+   - Regression test for Weaviate
+
+4. **Document** (15 min)
+   - Update VDB_SUPPORT_MATRIX.md
+   - Update USER_GUIDE.md with PDF examples
+
+**Files to Modify**:
+- `src/cmd/utils/document.go` (line 378)
+- `src/pkg/pdf/extractor.go`
+- New: `src/pkg/pdf/processor.go`
+
+**Success Criteria**:
+- PDF works for at least Milvus or Supabase
+- All tests passing
+- No Weaviate regression
+
+---
+
+### **Alternative: If PDF Too Complex** (1-2h)
+
+**Option A: MCP End-to-End Testing** (45 min)
+- Start MCP server, test suggest_schema and suggest_chunking
+- Document API examples
+- Fix any issues
+
+**Option B: Documentation Sprint** (1h)
+- Polish README.md, update ARCHITECTURE.md
+- Add more examples to docs/examples/
+- Update troubleshooting guide
+
+**Option C: Quick Features** (1-2h)
+- Progress bars for batch operations
+- Retry logic with exponential backoff
+- `weave validate config` command
+
+---
+
+## 🗂️ Archive Completed Work (TODO)
 
 ### MCP Integration Updates (1.5 hours) 🔴 Critical
 
