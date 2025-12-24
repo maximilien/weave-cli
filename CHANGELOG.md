@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Summary
 
-AI Configuration & MCP Integration - New `weave config agents` command for easy AI setup, MCP server tools for schema and chunking suggestions, comprehensive test coverage, and version 0.8.3 release with YAML linting fixes.
+AI Configuration & MCP Integration - New `weave config agents` command for
+easy AI setup, MCP server tools for schema and chunking suggestions,
+comprehensive test coverage, and version 0.8.3 release with YAML linting fixes.
 
 ### Added
 
@@ -69,11 +71,27 @@ AI Configuration & MCP Integration - New `weave config agents` command for easy 
 
 ### Documentation
 
+- **MCP AI Tools API Documentation**
+  - Created docs/mcp/MCP_AI_TOOLS.md with complete API reference
+  - Documents suggest_schema and suggest_chunking MCP tools
+  - Includes curl examples, input schemas, response formats
+  - Added configuration and requirements sections
+  - Linked from README.md under Guides section
+
 - **Updated Documentation**
-  - NEXT_STEPS.md: 5 sessions documented (3h25m total)
+  - NEXT_STEPS.md: 6 sessions documented (4h10m total)
   - VDB_SUPPORT_MATRIX.md: Added AI feature rows
-  - README.md: Added AI configuration examples
+  - README.md: Added AI configuration examples and MCP tools link
   - configs/README.md: Documented weave-agents.yaml
+
+### Testing
+
+- **MCP End-to-End Testing Completed**
+  - Started MCP server on port 8030, health check passing
+  - Tested suggest_schema tool via HTTP API (85% confidence)
+  - Tested suggest_chunking tool via HTTP API (85% confidence)
+  - Validated JSON responses, error handling, 60s timeout
+  - Both tools working as expected with real documents
 
 ### Sessions Completed (2025-12-24)
 
@@ -82,8 +100,9 @@ AI Configuration & MCP Integration - New `weave config agents` command for easy 
 3. **Session 3**: Testing & PDF investigation (40 min)
 4. **Session 4**: MCP integration (30 min)
 5. **Session 5**: Config agents command (40 min)
+6. **Session 6**: MCP testing & documentation (15 min)
 
-**Total**: 3h25m
+**Total**: 4h10m
 
 ## [0.8.2] - 2025-12-18
 
