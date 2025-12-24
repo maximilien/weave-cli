@@ -18,6 +18,7 @@ import (
 // SchemaAgent analyzes documents and suggests collection schemas
 type SchemaAgent struct {
 	llmClient *llm.OpenAIClient
+	config    *AgentConfig
 }
 
 // SchemaAnalysisInput represents input for schema analysis
@@ -108,7 +109,16 @@ type DocumentSample struct {
 
 // NewSchemaAgent creates a new schema analysis agent
 func NewSchemaAgent(llmClient *llm.OpenAIClient) *SchemaAgent {
-	return &SchemaAgent{llmClient: llmClient}
+	// Load agent config (use defaults if not found)
+	config, err := LoadAgentConfig()
+	if err != nil {
+		// Fall back to defaults on error
+		config = defaultConfig()
+	}
+	return &SchemaAgent{
+		llmClient: llmClient,
+		config:    config,
+	}
 }
 
 // Name returns the agent name
@@ -135,11 +145,11 @@ func (a *SchemaAgent) Execute(ctx context.Context, input interface{}) (interface
 	// Step 3: Use LLM to suggest schema
 	prompt := a.buildAnalysisPrompt(structure, analysisInput)
 
-	// Call LLM with JSON mode for structured output
+	// Call LLM with JSON mode for structured output (use config values)
 	response, err := a.llmClient.Complete(ctx, prompt,
-		llm.WithModel("gpt-4o"),
-		llm.WithTemperature(0.3),
-		llm.WithMaxTokens(2000),
+		llm.WithModel(a.config.GetModel("schema")),
+		llm.WithTemperature(a.config.GetTemperature("schema")),
+		llm.WithMaxTokens(a.config.GetMaxTokens("schema")),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze schema: %w", err)

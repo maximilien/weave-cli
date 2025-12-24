@@ -15,6 +15,7 @@ import (
 // ChunkingAgent analyzes documents and suggests optimal chunking strategies
 type ChunkingAgent struct {
 	llmClient *llm.OpenAIClient
+	config    *AgentConfig
 }
 
 // ChunkingAnalysisInput represents input for chunking analysis
@@ -57,7 +58,16 @@ type ChunkingMetrics struct {
 
 // NewChunkingAgent creates a new chunking analysis agent
 func NewChunkingAgent(llmClient *llm.OpenAIClient) *ChunkingAgent {
-	return &ChunkingAgent{llmClient: llmClient}
+	// Load agent config (use defaults if not found)
+	config, err := LoadAgentConfig()
+	if err != nil {
+		// Fall back to defaults on error
+		config = defaultConfig()
+	}
+	return &ChunkingAgent{
+		llmClient: llmClient,
+		config:    config,
+	}
 }
 
 // Name returns the agent name
@@ -86,11 +96,11 @@ func (a *ChunkingAgent) Execute(ctx context.Context, input interface{}) (interfa
 	// Build prompt for LLM
 	prompt := a.buildChunkingPrompt(metrics, analysisInput)
 
-	// Call LLM for recommendations
+	// Call LLM for recommendations (use config values)
 	response, err := a.llmClient.Complete(ctx, prompt,
-		llm.WithModel("gpt-4o"),
-		llm.WithTemperature(0.3),
-		llm.WithMaxTokens(1000),
+		llm.WithModel(a.config.GetModel("chunking")),
+		llm.WithTemperature(a.config.GetTemperature("chunking")),
+		llm.WithMaxTokens(a.config.GetMaxTokens("chunking")),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to analyze chunking strategy: %w", err)
