@@ -145,6 +145,7 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 
 - **[🤖 AI Agents](docs/guides/WEAVE_CLI_AI.md)** - REPL mode with natural
   language query system
+- **[🔌 MCP AI Tools API](docs/mcp/MCP_AI_TOOLS.md)** - Using AI tools via MCP server
 - **[📦 Batch Processing](docs/guides/BATCH_DOCS_CREATION.md)** - Directory
   processing guide
 - **[📚 Vector DB Abstraction](docs/guides/VECTOR_DB_ABSTRACTION.md)** -
