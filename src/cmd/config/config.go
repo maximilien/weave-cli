@@ -15,6 +15,7 @@ var Cmd = &cobra.Command{
 
 This command provides subcommands to view and manage configuration settings:
   • create/update - Interactively create or update .env and config.yaml files
+  • agents - Create weave-agents.yaml for AI features configuration
   • update --weave-mcp - Download and install weave-mcp binary for REPL mode
   • sync - Sync local configuration files to global ~/.weave-cli directory
   • show - Display current configuration
@@ -30,6 +31,7 @@ func init() {
 	Cmd.AddCommand(createCmd)
 	Cmd.AddCommand(updateCmd)
 	Cmd.AddCommand(syncCmd)
+	Cmd.AddCommand(agentsCmd)
 
 	// Add flags for show command
 	showCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
