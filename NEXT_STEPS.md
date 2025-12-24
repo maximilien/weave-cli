@@ -78,7 +78,41 @@
 
 ---
 
-## ✅ Completed Tonight (2025-12-23 PM - 45 minutes)
+## ✅ Completed Tonight (2025-12-23 PM)
+
+### Session 1: Quick Wins (45 minutes)
+
+**Bug Investigation & Cleanup**
+- ✅ Verified Milvus --text bug already fixed
+- ✅ Cleaned up .gitignore (consolidated local storage entries)
+- ✅ Updated VDB Support Matrix with AI features
+- ✅ Updated README.md with chunking examples
+- **Commit**: `3906d62` - cleanup and documentation updates
+
+### Session 2: Agent Configuration (50 minutes)
+
+**Configurable AI Agents**
+- ✅ Created `configs/weave-agents.yaml` - Complete AI agent configuration
+- ✅ Implemented config loading with precedence: local → configs → global → defaults
+- ✅ Updated SchemaAgent to use config (model, temperature, max_tokens)
+- ✅ Updated ChunkingAgent to use config (model, temperature, max_tokens)
+- ✅ Fixed OutputConfig naming conflict (→ AgentOutputConfig)
+- ✅ Created `configs/README.md` documenting agent configuration
+- ✅ Tested successfully with `weave schema suggest`
+- **Commit**: `93dac23` - configurable AI agents
+
+**Impact**:
+- Users can now customize LLM models, temperatures, and parameters
+- Chunking defaults (sizes, overlap) configurable
+- Confidence thresholds adjustable
+- Performance settings tunable
+- Clean separation from existing OutputConfig
+
+**Total Time**: ~1h35m
+
+---
+
+## ✅ Completed Tonight (2025-12-23 PM - Earlier Session - 45 minutes)
 
 ### Priority 1: Critical Bug Investigation ✅
 **Milvus --text Collection Creation**
