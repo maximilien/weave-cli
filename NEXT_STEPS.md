@@ -80,6 +80,24 @@
 
 ## ✅ Completed Tonight (2025-12-23/24 PM)
 
+### Session 4: MCP Integration (30 minutes) 🎉
+
+**MCP AI Tools**
+- ✅ Added `handleSuggestSchema` handler to MCP server
+- ✅ Added `handleSuggestChunking` handler to MCP server
+- ✅ Registered `suggest_schema` and `suggest_chunking` tools
+- ✅ Added `executeCommand` helper for running weave CLI commands
+- ✅ 60s timeout for AI operations (LLM calls)
+- ✅ Supports optional requirements, vdb_type, max_samples parameters
+- ✅ Returns structured JSON output
+- ✅ All tests passing
+- **Commit**: `ba075a5` (weave-mcp repo)
+
+**Impact**:
+- AI schema and chunking suggestions now accessible via MCP
+- REPL can use AI tools through MCP interface
+- Fully integrated with weave CLI backend
+
 ### Session 3: Testing & Investigation (40 minutes)
 
 **Integration Testing**
@@ -98,7 +116,7 @@
 - ✅ Documented findings and deferred to future session
 - **Commit**: `888cbd3`
 
-**Total Time Tonight**: ~2h15m (Sessions 1-3)
+**Total Time Tonight**: ~2h45m (Sessions 1-4)
 
 ---
 
@@ -172,11 +190,10 @@
 
 ### High Priority (Require > 2 hours)
 - **PDF Processing for Milvus/Supabase** (2-3h): Complex, requires refactoring
-- **MCP Code Updates** (1-2h): Needs testing both MCP and CLI
-- **./test.sh --mcp Failing** (1h): Depends on MCP updates
+- **./test.sh --mcp Testing** (1h): Manual testing of MCP AI tools needed
 
-### Medium Priority (From weave-cli.txt)
-- Update MCP code to match latest CLI changes
+### Medium Priority
+- Manual end-to-end testing of MCP AI tools with real documents
 - Agents config should load from weave-agents.yaml (not hardcoded)
 - Add test and CI for batch command (issue #9)
 - Find small PDF collection for testing (issue #8)
