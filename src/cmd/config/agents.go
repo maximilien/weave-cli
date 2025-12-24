@@ -125,8 +125,8 @@ func createAgentsFileInDir(targetDir string) error {
 
 	// Try to find template in multiple locations
 	templatePaths := []string{
-		"configs/weave-agents.yaml",                                    // From project root
-		"../configs/weave-agents.yaml",                                 // From bin directory
+		"configs/weave-agents.yaml",                                         // From project root
+		"../configs/weave-agents.yaml",                                      // From bin directory
 		filepath.Join(os.Getenv("HOME"), ".weave-cli", "weave-agents.yaml"), // Global template
 	}
 
@@ -234,7 +234,8 @@ func createDefaultAgentsFile(agentsFile string) error {
 		fmt.Println()
 	}
 
-	defaultConfig := `# Weave AI Agents Configuration
+	defaultConfig := `---
+# Weave AI Agents Configuration
 # This file configures the AI agents used by Weave CLI for schema suggestions,
 # chunking recommendations, and other AI-powered features.
 

@@ -55,7 +55,7 @@ func (h *HTTPClient) Connect(ctx context.Context) error {
 			"capabilities":    map[string]interface{}{},
 			"clientInfo": map[string]interface{}{
 				"name":    "weave-cli",
-				"version": "0.8.2",
+				"version": "0.8.3",
 			},
 		},
 	}
