@@ -219,9 +219,9 @@ $ weave docs create WeaveDocs sample.pdf --mongodb
 
 ## Commits
 
-**Commit**: TBD
+**Commit**: e061228 (pushed)
 **Branch**: main
-**Files Changed**: 1 file, 64 lines added
+**Files Changed**: 4 files, 290 insertions(+), 17 deletions(-)
 **Tests**: Weaviate (regression), MongoDB (new), Supabase (new)
 
 ---

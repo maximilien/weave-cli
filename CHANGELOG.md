@@ -74,11 +74,13 @@ production blocker and increases readiness score from 95 to 98.
 ### Impact
 
 **Production Readiness:**
+
 - Removed last major blocker for PDF workflows
 - All 10 VDBs now support complete document ingestion
 - Ready for production use with PDF-heavy workloads
 
 **User Experience:**
+
 - Unified PDF processing across all databases
 - Same commands work for any configured VDB
 - Consistent metadata and chunking behavior
