@@ -478,10 +478,10 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 
 	for i, textDoc := range textData {
 		doc := &vectordb.Document{
-			ID:      textDoc.ID,
-			Text:    textDoc.Content,
-			Content: textDoc.Content,
-			URL:     textDoc.URL,
+			ID:       textDoc.ID,
+			Text:     textDoc.Content,
+			Content:  textDoc.Content,
+			URL:      textDoc.URL,
 			Metadata: textDoc.Metadata,
 		}
 
