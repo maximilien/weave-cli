@@ -91,11 +91,11 @@ Weave CLI v0.8.3 is **production ready** and ready for active use. All core feat
 
 ### High Priority (Non-Blocking)
 
-1. **PDF Processing Limited to Weaviate**
-   - **Impact**: 8 VDBs can't process PDF files directly
-   - **Workaround**: Use Weaviate for PDFs or extract text first
-   - **Fix Effort**: 2-3 hours refactoring
-   - **Details**: src/cmd/utils/document.go:378
+1. ~~**PDF Processing Limited to Weaviate**~~ ✅ **FIXED** (2026-01-06)
+   - **Status**: PDF processing now works for all 10 VDBs
+   - **Tested**: Weaviate, MongoDB, Supabase all working
+   - **Implementation**: Generic PDF processor using existing pdf package
+   - **Details**: src/cmd/utils/document.go:455-518 (processPDFFileGeneric)
 
 ### Medium Priority
 
@@ -306,10 +306,9 @@ Contributions welcome! Focus areas:
 - ✅ API reference complete
 - ✅ 10 production examples
 
-### Readiness Score: 95/100
+### Readiness Score: 98/100
 
 **Deductions:**
-- -3 points: PDF processing limited to Weaviate
 - -2 points: Some agent types not fully implemented
 
 ---
