@@ -375,8 +375,8 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 
 	switch ext {
 	case ".pdf":
-		// PDF processing not yet implemented for generic vectordb client
-		return fmt.Errorf("PDF processing not yet implemented for this database type")
+		// Process PDF file for generic vectordb client
+		return processPDFFileGeneric(ctx, client, collectionName, filePath, chunkSize)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		// Image processing not yet implemented for generic vectordb client
 		return fmt.Errorf("image processing not yet implemented for this database type")
@@ -449,6 +449,65 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 	}
 
 	PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
+	return nil
+}
+
+// processPDFFileGeneric processes a PDF file for generic vectordb clients
+func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int) error {
+	fmt.Printf("📄 Processing PDF: %s\n", filepath.Base(filePath))
+
+	// Extract PDF content using the existing PDF processor
+	fmt.Println("🔍 Extracting content from PDF...")
+	noTips := viper.GetBool("no-tips")
+	textData, _, err := pdf.ExtractPDFContent(filePath, chunkSize, true, 0, noTips)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
+		return err
+	}
+
+	if len(textData) == 0 {
+		PrintWarning("No text content extracted from PDF")
+		return fmt.Errorf("no text content found in PDF")
+	}
+
+	fmt.Printf("✅ Found %d text chunks\n", len(textData))
+
+	// Create text documents with progress
+	successCount := 0
+	fmt.Printf("\n📝 Creating text documents (%d chunks):\n", len(textData))
+
+	for i, textDoc := range textData {
+		doc := &vectordb.Document{
+			ID:      textDoc.ID,
+			Text:    textDoc.Content,
+			Content: textDoc.Content,
+			URL:     textDoc.URL,
+			Metadata: textDoc.Metadata,
+		}
+
+		err := client.CreateDocument(ctx, collectionName, doc)
+		if err != nil {
+			// Check if this is a "collection not found" error - fail fast
+			errStr := err.Error()
+			if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+				return fmt.Errorf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName)
+			}
+			PrintError(fmt.Sprintf("Failed to create PDF text document %s: %v", textDoc.ID, err))
+			continue
+		}
+		successCount++
+
+		// Progress indicator
+		if (i+1)%5 == 0 || i == len(textData)-1 {
+			fmt.Printf("  [%d/%d] chunks created\n", successCount, len(textData))
+		}
+	}
+
+	if successCount == 0 {
+		return fmt.Errorf("failed to create any PDF document chunks")
+	}
+
+	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d/%d chunks)", filepath.Base(filePath), successCount, len(textData)))
 	return nil
 }
 

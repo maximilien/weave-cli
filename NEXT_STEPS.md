@@ -92,14 +92,14 @@ weave stats --collection MyDocs
 
 ## 📋 Known Limitations
 
-### High Priority (But Not Blocking)
+### ~~High Priority~~ ✅ **COMPLETED** (2026-01-06)
 
-1. **PDF Processing for Generic VDBs**
-   - **Status**: Works for Weaviate only
-   - **Impact**: 8 other VDBs can't process PDF files
-   - **Workaround**: Use Weaviate for PDFs, or extract text before import
-   - **Effort**: 2-3 hours refactoring needed
-   - **Location**: `src/cmd/utils/document.go:378`
+1. ~~**PDF Processing for Generic VDBs**~~ ✅ **FIXED**
+   - **Status**: NOW WORKS FOR ALL 10 VDBs!
+   - **Tested**: Weaviate, MongoDB, Supabase all working
+   - **Implementation**: Generic PDF processor in `processPDFFileGeneric`
+   - **Time Taken**: 45 minutes
+   - **Location**: `src/cmd/utils/document.go:455-518`
 
 ### Medium Priority
 
