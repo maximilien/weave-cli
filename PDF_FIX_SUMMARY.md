@@ -8,8 +8,10 @@
 
 ## Problem
 
-PDF processing was limited to Weaviate only. All other 8 production VDBs would fail with:
-```
+PDF processing was limited to Weaviate only. All other 8 production VDBs would
+fail with:
+
+```text
 Error: PDF processing not yet implemented for this database type
 ```
 
@@ -24,6 +26,7 @@ Implemented `processPDFFileGeneric()` function that works with the generic `vect
 **Key Changes**:
 
 1. **Updated switch statement** (line 377-379):
+
    ```go
    case ".pdf":
        // Process PDF file for generic vectordb client
@@ -38,6 +41,7 @@ Implemented `processPDFFileGeneric()` function that works with the generic `vect
    - Includes progress indicators and error handling
 
 **Files Modified**:
+
 - `src/cmd/utils/document.go` - Added generic PDF processor (64 lines)
 
 ---
@@ -45,22 +49,28 @@ Implemented `processPDFFileGeneric()` function that works with the generic `vect
 ## Testing
 
 ### ✅ Regression Test: Weaviate
+
 ```bash
 ./bin/weave docs create WeaveDocs tests/fixtures/ragme-io.pdf --weaviate-cloud
 ```
+
 **Result**: ✅ Success - 3/3 chunks created (existing path still works)
 
 ### ✅ New Support: MongoDB
+
 ```bash
 ./bin/weave docs create WeaveDocs tests/fixtures/ragme-io.pdf --mongodb
 ```
+
 **Result**: ✅ Success - 3/3 chunks created via generic path
 **Verification**: Documents confirmed in collection with proper metadata
 
 ### ✅ New Support: Supabase
+
 ```bash
 ./bin/weave docs create WeaveDocs tests/fixtures/ragme-io.pdf --supabase
 ```
+
 **Result**: ✅ Success - 3/3 chunks created via generic path
 **Verification**: 3 PDF chunks found with type="pdf" metadata
 
@@ -69,16 +79,19 @@ Implemented `processPDFFileGeneric()` function that works with the generic `vect
 ## Impact
 
 ### Before Fix
+
 - ❌ PDF support: Weaviate only (1 out of 10 VDBs)
 - ⚠️ Blocking production use for PDF workflows
 - 📉 Readiness Score: 95/100
 
 ### After Fix
+
 - ✅ PDF support: All 10 VDBs (100% coverage)
 - ✅ No longer blocking production
 - 📈 Readiness Score: 98/100 (+3 points)
 
 ### VDBs Now Supporting PDF
+
 1. ✅ Weaviate (Cloud + Local) - Already worked
 2. ✅ Supabase - **NEW** via generic path
 3. ✅ MongoDB - **NEW** via generic path
@@ -100,6 +113,7 @@ Implemented `processPDFFileGeneric()` function that works with the generic `vect
 1. **File Detection**: `filepath.Ext(filePath)` detects `.pdf` extension
 2. **Extraction**: `pdf.ExtractPDFContent()` extracts text with chunking
 3. **Document Creation**: Each chunk becomes a `vectordb.Document`:
+
    ```go
    doc := &vectordb.Document{
        ID:      textDoc.ID,
@@ -109,11 +123,13 @@ Implemented `processPDFFileGeneric()` function that works with the generic `vect
        Metadata: textDoc.Metadata,
    }
    ```
+
 4. **Storage**: `client.CreateDocument()` stores in VDB
 
 ### Metadata Preserved
 
 The PDF processor preserves all metadata from the pdf package:
+
 - `type: "pdf"`
 - `filename`, `original_filename`
 - `source_document`
@@ -127,7 +143,8 @@ The PDF processor preserves all metadata from the pdf package:
 ### Progress Indicators
 
 The function provides user-friendly progress:
-```
+
+```text
 📄 Processing PDF: ragme-io.pdf
 🔍 Extracting content from PDF...
 ✅ Found 3 text chunks
@@ -142,11 +159,13 @@ The function provides user-friendly progress:
 ## Code Quality
 
 ### ✅ Passes All Checks
+
 - Build: ✅ Success
 - Tests: ✅ No regressions
 - Linting: ✅ Clean
 
 ### Design Principles
+
 - **DRY**: Reuses existing `pdf.ExtractPDFContent()`
 - **Generic**: Works with any VectorDBClient implementation
 - **Error Handling**: Proper error messages and collection validation
@@ -157,12 +176,14 @@ The function provides user-friendly progress:
 ## User Experience
 
 ### Before
+
 ```bash
 $ weave docs create WeaveDocs sample.pdf --mongodb
 Error: PDF processing not yet implemented for this database type
 ```
 
 ### After
+
 ```bash
 $ weave docs create WeaveDocs sample.pdf --mongodb
 📄 Processing PDF: sample.pdf
@@ -179,12 +200,14 @@ $ weave docs create WeaveDocs sample.pdf --mongodb
 ## Future Enhancements
 
 ### Potential Improvements (Not Required)
+
 1. Add image extraction support for generic path (currently Weaviate-only feature)
 2. Add batch PDF processing optimization
 3. Add PDF metadata enrichment (e.g., automatic title detection)
 4. Add support for encrypted/password-protected PDFs
 
 ### Already Supported
+
 - ✅ Text extraction with chunking
 - ✅ Metadata preservation
 - ✅ Multi-page PDFs
