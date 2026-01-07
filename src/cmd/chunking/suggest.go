@@ -14,6 +14,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"gopkg.in/yaml.v3"
 )
 
@@ -76,10 +77,14 @@ func runChunkingSuggest(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("source path does not exist: %s", source)
 	}
 
-	// Create LLM client
+	// Create LLM client - try environment variable first, then viper config
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
-		return fmt.Errorf("OPENAI_API_KEY required for AI chunking analysis")
+		// Fallback to viper config (which loads from .env and config.yaml)
+		apiKey = viper.GetString("OPENAI_API_KEY")
+	}
+	if apiKey == "" {
+		return fmt.Errorf("OPENAI_API_KEY required for AI chunking analysis - set in .env file or environment")
 	}
 
 	llmClient, err := llm.NewOpenAIClient(apiKey)
