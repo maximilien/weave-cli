@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/spf13/cobra"
@@ -78,6 +79,9 @@ func runSchemaSuggest(cmd *cobra.Command, args []string) error {
 	if _, err := os.Stat(source); err != nil {
 		return fmt.Errorf("source path does not exist: %s", source)
 	}
+
+	// Load .env file if it exists (this ensures viper can access env vars from .env)
+	_ = godotenv.Load()
 
 	// Create LLM client - try environment variable first, then viper config
 	apiKey := os.Getenv("OPENAI_API_KEY")
