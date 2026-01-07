@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 // FileScanner handles file discovery and filtering
@@ -54,33 +56,42 @@ func (s *FileScanner) Scan(ctx context.Context) ([]FileInfo, error) {
 			return nil
 		}
 
+		// Get relative path for pattern matching
+		relPath, err := filepath.Rel(s.root, path)
+		if err != nil {
+			relPath = filepath.Base(path)
+		}
+
 		// Check exclusion patterns
 		for _, pattern := range s.exclude {
-			if matched, _ := filepath.Match(pattern, filepath.Base(path)); matched {
+			// Try doublestar match first (supports ** patterns)
+			if matched, _ := doublestar.Match(pattern, relPath); matched {
 				return nil
 			}
-			// Also check against relative path for patterns like "drafts/**"
-			relPath, _ := filepath.Rel(s.root, path)
-			if matched, _ := filepath.Match(pattern, relPath); matched {
+			// Also try matching against basename for simple patterns
+			if matched, _ := doublestar.Match(pattern, filepath.Base(path)); matched {
 				return nil
 			}
 		}
 
 		// Check glob pattern if specified
 		if s.pattern != "" {
-			// Support both simple patterns and ** patterns
-			if strings.Contains(s.pattern, "**") {
-				// Handle ** glob pattern (match any directory depth)
-				pattern := strings.ReplaceAll(s.pattern, "**", "*")
-				relPath, _ := filepath.Rel(s.root, path)
-				if matched, _ := filepath.Match(pattern, relPath); !matched {
-					return nil
+			matched := false
+
+			// Try doublestar match first (supports ** and directory separators)
+			if m, _ := doublestar.Match(s.pattern, relPath); m {
+				matched = true
+			}
+
+			// Also try matching against basename for simple patterns like "*.pdf"
+			if !matched {
+				if m, _ := doublestar.Match(s.pattern, filepath.Base(path)); m {
+					matched = true
 				}
-			} else {
-				// Simple pattern matching on filename
-				if matched, _ := filepath.Match(s.pattern, filepath.Base(path)); !matched {
-					return nil
-				}
+			}
+
+			if !matched {
+				return nil
 			}
 		}
 

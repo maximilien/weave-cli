@@ -6,6 +6,7 @@ toolchain go1.24.1
 
 require (
 	github.com/amikos-tech/chroma-go v0.2.5
+	github.com/bmatcuk/doublestar/v4 v4.9.1
 	github.com/chzyer/readline v1.5.1
 	github.com/elastic/go-elasticsearch/v9 v9.2.1
 	github.com/fatih/color v1.17.0
