@@ -1925,6 +1925,17 @@ func processExtractedPDFImage(ctx context.Context, imageDoc pdf.PDFImageData, co
 			metadata["ocr_text_summary"] = ocrData.GetTextSummary(200)
 		}
 
+		// Add contextual text for searchability
+		if imageDoc.Caption != "" {
+			metadata["caption"] = imageDoc.Caption
+		}
+		if imageDoc.SurroundingText != "" {
+			metadata["surrounding_text"] = imageDoc.SurroundingText
+		}
+		if imageDoc.SectionHeading != "" {
+			metadata["section_heading"] = imageDoc.SectionHeading
+		}
+
 		return weaviate.Document{
 			ID:        imageDoc.ID,
 			Image:     imageDoc.Image,

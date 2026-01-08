@@ -370,3 +370,183 @@ func chunkText(text string, chunkSize int) []string {
 
 	return chunks
 }
+
+// extractTextByPage extracts text from PDF page by page for image context correlation
+func extractTextByPage(filePath string) (map[int]string, error) {
+	pageTexts := make(map[int]string)
+
+	// Try pdftotext with page separation first
+	text, _, err := extractTextWithPdftotext(filePath)
+	if err == nil && text != "" {
+		// Split by form feed character (page separator in pdftotext output)
+		pages := strings.Split(text, "\f")
+		for i, pageText := range pages {
+			pageNum := i + 1
+			pageTexts[pageNum] = strings.TrimSpace(pageText)
+		}
+		return pageTexts, nil
+	}
+
+	// Fall back to pdfcpu extraction (per-page)
+	tmpDir, err := os.MkdirTemp("", "pdfpages-*")
+	if err != nil {
+		return pageTexts, fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Extract text using pdfcpu
+	err = api.ExtractContentFile(filePath, tmpDir, nil, nil)
+	if err != nil {
+		return pageTexts, fmt.Errorf("failed to extract content: %w", err)
+	}
+
+	// Read per-page text files
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		return pageTexts, fmt.Errorf("failed to read temp directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".txt") {
+			continue
+		}
+
+		// Parse page number from filename (usually "page_N.txt")
+		var pageNum int
+		if _, err := fmt.Sscanf(entry.Name(), "page_%d.txt", &pageNum); err != nil {
+			continue
+		}
+
+		textPath := filepath.Join(tmpDir, entry.Name())
+		content, err := os.ReadFile(textPath)
+		if err != nil {
+			continue
+		}
+
+		pageTexts[pageNum] = strings.TrimSpace(string(content))
+	}
+
+	return pageTexts, nil
+}
+
+// enrichImageWithContext adds caption and surrounding text to image metadata
+func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string) {
+	if image == nil {
+		return
+	}
+
+	// Get text from the page where this image appears
+	pageText, hasPageText := pageTexts[image.PageNumber]
+	if !hasPageText || pageText == "" {
+		// No page text available, use OCR text if available
+		if image.OCRText != "" {
+			image.Caption = extractCaptionFromOCR(image.OCRText)
+			image.SurroundingText = truncateText(image.OCRText, 500)
+		}
+		return
+	}
+
+	// Extract caption (look for "Figure", "Fig.", "Image", "Diagram", etc.)
+	image.Caption = extractCaptionFromText(pageText, image.ImageIndex)
+
+	// Extract surrounding text (first ~500 chars as context)
+	image.SurroundingText = truncateText(pageText, 500)
+
+	// Extract section heading (first line or heading-like text)
+	image.SectionHeading = extractSectionHeading(pageText)
+}
+
+// extractCaptionFromText tries to find a caption related to the image
+func extractCaptionFromText(pageText string, imageIndex int) string {
+	// Look for common caption patterns
+	captionPatterns := []string{
+		fmt.Sprintf("Figure %d:", imageIndex+1),
+		fmt.Sprintf("Fig. %d:", imageIndex+1),
+		fmt.Sprintf("Image %d:", imageIndex+1),
+		"Figure:",
+		"Fig.:",
+		"Diagram:",
+		"Chart:",
+		"Graph:",
+	}
+
+	lines := strings.Split(pageText, "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		for _, pattern := range captionPatterns {
+			if strings.Contains(strings.ToLower(line), strings.ToLower(pattern)) {
+				// Found a caption, get this line and maybe the next one
+				caption := line
+				if i+1 < len(lines) && len(lines[i+1]) < 200 {
+					caption += " " + strings.TrimSpace(lines[i+1])
+				}
+				return truncateText(caption, 300)
+			}
+		}
+	}
+
+	// No caption found, return empty
+	return ""
+}
+
+// extractCaptionFromOCR extracts caption from OCR text
+func extractCaptionFromOCR(ocrText string) string {
+	// For OCR text, just take the first meaningful line
+	lines := strings.Split(ocrText, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) > 10 { // Skip very short lines
+			return truncateText(line, 200)
+		}
+	}
+	return ""
+}
+
+// extractSectionHeading tries to extract the section/chapter heading from page text
+func extractSectionHeading(pageText string) string {
+	lines := strings.Split(pageText, "\n")
+
+	// Look for heading-like patterns:
+	// - Short lines (< 80 chars)
+	// - At the beginning of the page
+	// - ALL CAPS or Title Case
+	// - May have numbers (e.g., "1. Introduction")
+
+	for i, line := range lines {
+		if i > 5 {
+			break // Only check first few lines
+		}
+
+		line = strings.TrimSpace(line)
+		if len(line) == 0 || len(line) > 100 {
+			continue
+		}
+
+		// Check if it looks like a heading
+		isAllCaps := strings.ToUpper(line) == line && len(line) > 5
+		hasNumbers := strings.Contains(line, "1.") || strings.Contains(line, "2.") || strings.Contains(line, "3.")
+
+		if isAllCaps || hasNumbers {
+			return truncateText(line, 150)
+		}
+	}
+
+	// No heading found, return first substantial line
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) > 20 && len(line) < 100 {
+			return truncateText(line, 150)
+		}
+	}
+
+	return ""
+}
+
+// truncateText truncates text to maxLen characters with ellipsis if needed
+func truncateText(text string, maxLen int) string {
+	text = strings.TrimSpace(text)
+	if len(text) <= maxLen {
+		return text
+	}
+	return text[:maxLen-3] + "..."
+}
