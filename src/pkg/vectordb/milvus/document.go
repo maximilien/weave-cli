@@ -43,7 +43,20 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	}
 
 	// Prepare image data as JSON (supports large base64 strings unlike VARCHAR)
+	// NOTE: Milvus JSON fields have a 65,536 byte (64KB) limit
+	// For images larger than this, we store empty ImageData and rely on Image URL
 	imageDataJSON := map[string]string{"data": mdoc.ImageData}
+	imageDataBytes := mustMarshalJSON(imageDataJSON)
+
+	// Check if image data exceeds Milvus JSON limit (64KB)
+	const milvusJSONLimit = 65536
+	if len(imageDataBytes) > milvusJSONLimit {
+		// Store empty image data and log warning
+		imageDataJSON = map[string]string{"data": ""}
+		imageDataBytes = mustMarshalJSON(imageDataJSON)
+		fmt.Fprintf(os.Stderr, "Warning: Image data for document %s exceeds Milvus JSON limit (%d bytes > %d bytes). Storing URL only.\n",
+			mdoc.DocumentID, len(imageDataBytes), milvusJSONLimit)
+	}
 
 	// Prepare column data for insertion
 	columns := []entity.Column{
@@ -51,7 +64,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		entity.NewColumnVarChar(FieldText, []string{mdoc.Text}),
 		entity.NewColumnVarChar(FieldContent, []string{mdoc.Content}),
 		entity.NewColumnVarChar(FieldImage, []string{mdoc.Image}),
-		entity.NewColumnJSONBytes(FieldImageData, [][]byte{mustMarshalJSON(imageDataJSON)}),
+		entity.NewColumnJSONBytes(FieldImageData, [][]byte{imageDataBytes}),
 		entity.NewColumnVarChar(FieldURL, []string{mdoc.URL}),
 		entity.NewColumnFloatVector(FieldEmbedding, a.config.VectorDimensions, [][]float32{mdoc.Embedding}),
 		entity.NewColumnJSONBytes(FieldMetadata, [][]byte{mustMarshalJSON(mdoc.Metadata)}),
@@ -122,7 +135,20 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		texts[i] = mdoc.Text
 		contents[i] = mdoc.Content
 		images[i] = mdoc.Image
-		imageDatas[i] = mustMarshalJSON(map[string]string{"data": mdoc.ImageData}) // Store as JSON
+
+		// Check if image data exceeds Milvus JSON limit (64KB)
+		imageDataJSON := map[string]string{"data": mdoc.ImageData}
+		imageDataBytes := mustMarshalJSON(imageDataJSON)
+		const milvusJSONLimit = 65536
+		if len(imageDataBytes) > milvusJSONLimit {
+			// Store empty image data and log warning
+			imageDataJSON = map[string]string{"data": ""}
+			imageDataBytes = mustMarshalJSON(imageDataJSON)
+			fmt.Fprintf(os.Stderr, "Warning: Image data for document %s exceeds Milvus JSON limit (%d bytes > %d bytes). Storing URL only.\n",
+				mdoc.DocumentID, len(imageDataBytes), milvusJSONLimit)
+		}
+		imageDatas[i] = imageDataBytes
+
 		urls[i] = mdoc.URL
 		embeddings[i] = mdoc.Embedding
 		metadatas[i] = mustMarshalJSON(mdoc.Metadata)
