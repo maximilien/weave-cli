@@ -1041,15 +1041,25 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	// Create the document using the Weaviate client
-	// Convert metadata to JSON string for compatibility with existing collections
-	var metadataJSON string
-	if doc.Metadata != nil {
-		metadataBytes, err := json.Marshal(doc.Metadata)
-		if err != nil {
-			return fmt.Errorf("Weaviate: failed to marshal metadata: %w", err)
+	// Determine if this is an image collection (RagMeImages schema uses object metadata)
+	isImage := isImageCollection(collectionName)
+
+	// Prepare metadata: image collections use native object, text collections use JSON string
+	var metadataValue interface{}
+	if isImage {
+		// RagMeImages schema: metadata is a native object
+		metadataValue = doc.Metadata
+	} else {
+		// RagMeDocs schema: metadata is a JSON string for backward compatibility
+		var metadataJSON string
+		if doc.Metadata != nil {
+			metadataBytes, err := json.Marshal(doc.Metadata)
+			if err != nil {
+				return fmt.Errorf("Weaviate: failed to marshal metadata: %w", err)
+			}
+			metadataJSON = string(metadataBytes)
 		}
-		metadataJSON = string(metadataBytes)
+		metadataValue = metadataJSON
 	}
 
 	properties := map[string]interface{}{
@@ -1058,7 +1068,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, doc 
 		"image":      doc.Image,     // Base64 image with data URI prefix
 		"image_data": doc.ImageData, // Raw base64 without prefix (required for RAGme-io display)
 		"url":        doc.URL,
-		"metadata":   metadataJSON, // Store as JSON string for compatibility
+		"metadata":   metadataValue, // Object for images, JSON string for text
 	}
 
 	// Add PDF metadata fields as top-level properties for compatibility with RagMeDocs
