@@ -60,6 +60,8 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	}
 
 	// Convert metadata to Pinecone format
+	// NOTE: Pinecone has a 40KB total metadata size limit per vector
+	// For images, store only the URL/path, not the full base64 image data
 	metadataMap := make(map[string]interface{})
 	if doc.Metadata != nil {
 		for k, v := range doc.Metadata {
@@ -68,6 +70,14 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	}
 	// Add content to metadata
 	metadataMap["content"] = contentToEmbed
+
+	// Store image URL only (not ImageData) to avoid exceeding 40KB metadata limit
+	if doc.Image != "" {
+		metadataMap["image"] = doc.Image
+	}
+	if doc.URL != "" {
+		metadataMap["url"] = doc.URL
+	}
 
 	metadata, err := structpb.NewStruct(metadataMap)
 	if err != nil {
@@ -319,6 +329,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		}
 
 		// Prepare metadata
+		// NOTE: Pinecone has a 40KB total metadata size limit per vector
 		metadataMap := make(map[string]interface{})
 		if doc.Metadata != nil {
 			for k, v := range doc.Metadata {
@@ -327,6 +338,14 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		}
 		// Store content in metadata
 		metadataMap["content"] = contentToEmbed
+
+		// Store image URL only (not ImageData) to avoid exceeding 40KB metadata limit
+		if doc.Image != "" {
+			metadataMap["image"] = doc.Image
+		}
+		if doc.URL != "" {
+			metadataMap["url"] = doc.URL
+		}
 
 		metadata, err := structpb.NewStruct(metadataMap)
 		if err != nil {
