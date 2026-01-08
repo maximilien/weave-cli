@@ -115,6 +115,7 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 				"vectorizer": map[string]interface{}{
 					"none": map[string]interface{}{},
 				},
+				"vectorIndexType": "hnsw",
 			},
 		}
 	} else {
@@ -126,6 +127,7 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 						"model": embeddingModel,
 					},
 				},
+				"vectorIndexType": "hnsw",
 			},
 		}
 	}
