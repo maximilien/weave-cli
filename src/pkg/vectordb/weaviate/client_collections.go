@@ -188,6 +188,22 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 						"name":     "has_ocr_text",
 						"dataType": []string{"boolean"},
 					},
+					{
+						"name":     "caption",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "surrounding_text",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "section_heading",
+						"dataType": []string{"text"},
+					},
+					{
+						"name":     "pdf_page",
+						"dataType": []string{"int"},
+					},
 				},
 			},
 		}
