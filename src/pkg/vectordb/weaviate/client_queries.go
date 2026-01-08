@@ -95,6 +95,12 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		return c.queryWithBM25(ctx, collectionName, queryText, options, contentField)
 	}
 
+	// Check if this is an image collection (vectorizer: "none")
+	// Image collections can't use nearText, so fall back to BM25
+	if isImageCollection(collectionName) {
+		return c.queryWithBM25(ctx, collectionName, queryText, options, contentField)
+	}
+
 	// Build the GraphQL query for semantic search using nearText
 	// This uses the vectorizer configured for the collection (e.g., text2vec-openai)
 	// For Weaviate v1.25+, we need to specify the target vector name
@@ -151,6 +157,7 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 	hasContent := false
 	hasText := false
 	hasMetadata := false
+	hasURL := false
 	for _, prop := range schema.Properties {
 		if prop.Name == "content" {
 			hasContent = true
@@ -161,18 +168,31 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 		if prop.Name == "metadata" {
 			hasMetadata = true
 		}
+		if prop.Name == "url" {
+			hasURL = true
+		}
 	}
 
 	// Build query fields for BM25 search
 	var queryFields []string
-	if hasContent {
-		queryFields = append(queryFields, "content")
-	}
-	if hasText {
-		queryFields = append(queryFields, "text")
-	}
-	if options.SearchMetadata && hasMetadata {
-		queryFields = append(queryFields, "metadata")
+
+	// For image collections, search url field only (metadata is object type, can't use in BM25 properties)
+	// BM25 will still search through nested text fields automatically
+	if isImageCollection(collectionName) {
+		if hasURL {
+			queryFields = append(queryFields, "url")
+		}
+	} else {
+		// For text collections, use content/text fields
+		if hasContent {
+			queryFields = append(queryFields, "content")
+		}
+		if hasText {
+			queryFields = append(queryFields, "text")
+		}
+		if options.SearchMetadata && hasMetadata {
+			queryFields = append(queryFields, "metadata")
+		}
 	}
 
 	if len(queryFields) == 0 {
