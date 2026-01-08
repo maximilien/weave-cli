@@ -107,16 +107,25 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 		"class": collectionName,
 	}
 
-	// Configure vectorizer based on collection type
+	// Configure vectorizer using named vectors (required in Weaviate v1.25+)
 	if isImage {
-		// For image collections, disable vectorization to avoid issues with large base64 data
-		classSchema["vectorizer"] = "none"
+		// For image collections, use named vector with "none" vectorizer
+		classSchema["vectorConfig"] = map[string]interface{}{
+			"default": map[string]interface{}{
+				"vectorizer": map[string]interface{}{
+					"none": map[string]interface{}{},
+				},
+			},
+		}
 	} else {
-		// For text collections, use text2vec-openai
-		classSchema["vectorizer"] = "text2vec-openai"
-		classSchema["moduleConfig"] = map[string]interface{}{
-			"text2vec-openai": map[string]interface{}{
-				"model": embeddingModel,
+		// For text collections, use named vector with text2vec-openai vectorizer
+		classSchema["vectorConfig"] = map[string]interface{}{
+			"default": map[string]interface{}{
+				"vectorizer": map[string]interface{}{
+					"text2vec-openai": map[string]interface{}{
+						"model": embeddingModel,
+					},
+				},
 			},
 		}
 	}
