@@ -376,7 +376,7 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 	switch ext {
 	case ".pdf":
 		// Process PDF file for generic vectordb client
-		return processPDFFileGeneric(ctx, client, collectionName, filePath, chunkSize)
+		return processPDFFileGeneric(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		// Image processing not yet implemented for generic vectordb client
 		return fmt.Errorf("image processing not yet implemented for this database type")
@@ -453,13 +453,13 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 }
 
 // processPDFFileGeneric processes a PDF file for generic vectordb clients
-func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int) error {
+func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) error {
 	fmt.Printf("📄 Processing PDF: %s\n", filepath.Base(filePath))
 
 	// Extract PDF content using the existing PDF processor
 	fmt.Println("🔍 Extracting content from PDF...")
 	noTips := viper.GetBool("no-tips")
-	textData, _, err := pdf.ExtractPDFContent(filePath, chunkSize, true, 0, noTips)
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, noTips)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return err
@@ -470,10 +470,15 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 		return fmt.Errorf("no text content found in PDF")
 	}
 
-	fmt.Printf("✅ Found %d text chunks\n", len(textData))
+	fmt.Printf("✅ Found %d text chunks", len(textData))
+	if len(imageData) > 0 {
+		fmt.Printf(" and %d images\n", len(imageData))
+	} else {
+		fmt.Println()
+	}
 
 	// Create text documents with progress
-	successCount := 0
+	textSuccessCount := 0
 	fmt.Printf("\n📝 Creating text documents (%d chunks):\n", len(textData))
 
 	for i, textDoc := range textData {
@@ -495,19 +500,65 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 			PrintError(fmt.Sprintf("Failed to create PDF text document %s: %v", textDoc.ID, err))
 			continue
 		}
-		successCount++
+		textSuccessCount++
 
 		// Progress indicator
 		if (i+1)%5 == 0 || i == len(textData)-1 {
-			fmt.Printf("  [%d/%d] chunks created\n", successCount, len(textData))
+			fmt.Printf("  [%d/%d] chunks created\n", textSuccessCount, len(textData))
 		}
 	}
 
-	if successCount == 0 {
+	if textSuccessCount == 0 {
 		return fmt.Errorf("failed to create any PDF document chunks")
 	}
 
-	PrintSuccess(fmt.Sprintf("Successfully created PDF document: %s (%d/%d chunks)", filepath.Base(filePath), successCount, len(textData)))
+	PrintSuccess(fmt.Sprintf("Successfully created PDF text documents: %s (%d/%d chunks)", filepath.Base(filePath), textSuccessCount, len(textData)))
+
+	// Process images if image collection is specified
+	if imageCollection != "" && len(imageData) > 0 {
+		fmt.Printf("\n🖼️  Creating image documents (%d images):\n", len(imageData))
+		imageSuccessCount := 0
+
+		for i, imgData := range imageData {
+			doc := &vectordb.Document{
+				ID:        imgData.ID,
+				Text:      imgData.OCRText,
+				Content:   imgData.OCRText,
+				ImageData: imgData.ImageData,
+				Image:     imgData.Image,
+				URL:       imgData.URL,
+				Metadata:  imgData.Metadata,
+			}
+
+			err := client.CreateDocument(ctx, imageCollection, doc)
+			if err != nil {
+				// Check if this is a "collection not found" error
+				errStr := err.Error()
+				if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+					PrintError(fmt.Sprintf("Image collection '%s' not found. Create it first with: weave cols create %s", imageCollection, imageCollection))
+					return fmt.Errorf("image collection '%s' not found", imageCollection)
+				}
+				PrintError(fmt.Sprintf("Failed to create image document %s: %v", imgData.ID, err))
+				continue
+			}
+			imageSuccessCount++
+
+			// Progress indicator
+			if (i+1)%5 == 0 || i == len(imageData)-1 {
+				fmt.Printf("  [%d/%d] images created\n", imageSuccessCount, len(imageData))
+			}
+		}
+
+		if imageSuccessCount > 0 {
+			PrintSuccess(fmt.Sprintf("Successfully created %d/%d image documents in collection '%s'", imageSuccessCount, len(imageData), imageCollection))
+		} else {
+			PrintWarning("Failed to create any image documents")
+		}
+	} else if len(imageData) > 0 {
+		PrintWarning(fmt.Sprintf("Found %d images but no --image-collection specified. Images will not be stored.", len(imageData)))
+		PrintWarning("To store images, use: weave docs create <collection> <file> --image-collection <image-col>")
+	}
+
 	return nil
 }
 
