@@ -97,12 +97,14 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 
 	// Build the GraphQL query for semantic search using nearText
 	// This uses the vectorizer configured for the collection (e.g., text2vec-openai)
+	// For Weaviate v1.25+, we need to specify the target vector name
 	query := fmt.Sprintf(`
 		{
 			Get {
 				%s(
 					nearText: {
 						concepts: ["%s"]
+						targetVectors: ["default"]
 					}
 					limit: %d
 				) {
@@ -282,12 +284,14 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 	}
 
 	// Build the GraphQL query for semantic search with filters
+	// For Weaviate v1.25+, we need to specify the target vector name
 	query := fmt.Sprintf(`
 		{
 			Get {
 				%s(
 					nearText: {
 						concepts: ["%s"]
+						targetVectors: ["default"]
 						limit: %d
 					}%s
 				) {
