@@ -42,13 +42,16 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		}
 	}
 
+	// Prepare image data as JSON (supports large base64 strings unlike VARCHAR)
+	imageDataJSON := map[string]string{"data": mdoc.ImageData}
+
 	// Prepare column data for insertion
 	columns := []entity.Column{
 		entity.NewColumnVarChar(FieldDocumentID, []string{mdoc.DocumentID}),
 		entity.NewColumnVarChar(FieldText, []string{mdoc.Text}),
 		entity.NewColumnVarChar(FieldContent, []string{mdoc.Content}),
 		entity.NewColumnVarChar(FieldImage, []string{mdoc.Image}),
-		entity.NewColumnVarChar(FieldImageData, []string{mdoc.ImageData}),
+		entity.NewColumnJSONBytes(FieldImageData, [][]byte{mustMarshalJSON(imageDataJSON)}),
 		entity.NewColumnVarChar(FieldURL, []string{mdoc.URL}),
 		entity.NewColumnFloatVector(FieldEmbedding, a.config.VectorDimensions, [][]float32{mdoc.Embedding}),
 		entity.NewColumnJSONBytes(FieldMetadata, [][]byte{mustMarshalJSON(mdoc.Metadata)}),
@@ -85,7 +88,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	texts := make([]string, len(documents))
 	contents := make([]string, len(documents))
 	images := make([]string, len(documents))
-	imageDatas := make([]string, len(documents))
+	imageDatas := make([][]byte, len(documents)) // JSON field for large base64 images
 	urls := make([]string, len(documents))
 	embeddings := make([][]float32, len(documents))
 	metadatas := make([][]byte, len(documents))
@@ -119,7 +122,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		texts[i] = mdoc.Text
 		contents[i] = mdoc.Content
 		images[i] = mdoc.Image
-		imageDatas[i] = mdoc.ImageData
+		imageDatas[i] = mustMarshalJSON(map[string]string{"data": mdoc.ImageData}) // Store as JSON
 		urls[i] = mdoc.URL
 		embeddings[i] = mdoc.Embedding
 		metadatas[i] = mustMarshalJSON(mdoc.Metadata)
@@ -133,7 +136,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		entity.NewColumnVarChar(FieldText, texts),
 		entity.NewColumnVarChar(FieldContent, contents),
 		entity.NewColumnVarChar(FieldImage, images),
-		entity.NewColumnVarChar(FieldImageData, imageDatas),
+		entity.NewColumnJSONBytes(FieldImageData, imageDatas), // JSON field supports large base64 images
 		entity.NewColumnVarChar(FieldURL, urls),
 		entity.NewColumnFloatVector(FieldEmbedding, a.config.VectorDimensions, embeddings),
 		entity.NewColumnJSONBytes(FieldMetadata, metadatas),
@@ -182,7 +185,17 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 	text := result.GetColumn(FieldText).(*entity.ColumnVarChar).Data()[0]
 	content := result.GetColumn(FieldContent).(*entity.ColumnVarChar).Data()[0]
 	image := result.GetColumn(FieldImage).(*entity.ColumnVarChar).Data()[0]
-	imageData := result.GetColumn(FieldImageData).(*entity.ColumnVarChar).Data()[0]
+
+	// Extract image data from JSON field
+	var imageData string
+	if imageDataCol := result.GetColumn(FieldImageData); imageDataCol != nil {
+		imageDataBytes := imageDataCol.(*entity.ColumnJSONBytes).Data()[0]
+		imageDataMap := mustUnmarshalJSON(imageDataBytes)
+		if data, ok := imageDataMap["data"].(string); ok {
+			imageData = data
+		}
+	}
+
 	url := result.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[0]
 
 	var metadata map[string]interface{}
@@ -346,7 +359,17 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 		text := result.GetColumn(FieldText).(*entity.ColumnVarChar).Data()[i]
 		content := result.GetColumn(FieldContent).(*entity.ColumnVarChar).Data()[i]
 		image := result.GetColumn(FieldImage).(*entity.ColumnVarChar).Data()[i]
-		imageData := result.GetColumn(FieldImageData).(*entity.ColumnVarChar).Data()[i]
+
+		// Extract image data from JSON field
+		var imageData string
+		if imageDataCol := result.GetColumn(FieldImageData); imageDataCol != nil {
+			imageDataBytes := imageDataCol.(*entity.ColumnJSONBytes).Data()[i]
+			imageDataMap := mustUnmarshalJSON(imageDataBytes)
+			if data, ok := imageDataMap["data"].(string); ok {
+				imageData = data
+			}
+		}
+
 		url := result.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[i]
 
 		var metadata map[string]interface{}

@@ -60,7 +60,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 		// Additional fields
 		"image":       types.NewKeywordProperty(),
-		"image_data":  types.NewKeywordProperty(),
+		"image_data":  types.NewTextProperty(), // Text field supports large base64 images (keyword limit: 32KB)
 		"url":         types.NewKeywordProperty(),
 		"document_id": types.NewKeywordProperty(),
 

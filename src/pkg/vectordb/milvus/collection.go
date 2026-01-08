@@ -65,11 +65,10 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 			entity.NewField().
 				WithName(FieldImage).
 				WithDataType(entity.FieldTypeVarChar).
-				WithTypeParams("max_length", "512"),
+				WithTypeParams("max_length", "2048"), // Increased for longer URLs
 			entity.NewField().
 				WithName(FieldImageData).
-				WithDataType(entity.FieldTypeVarChar).
-				WithTypeParams("max_length", "65535"),
+				WithDataType(entity.FieldTypeJSON), // JSON field has no size limit (unlike VARCHAR 65535)
 			// URL field
 			entity.NewField().
 				WithName(FieldURL).

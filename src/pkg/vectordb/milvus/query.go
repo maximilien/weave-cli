@@ -199,7 +199,17 @@ func (a *Adapter) parseSearchResults(results []client.SearchResult) ([]*vectordb
 		text := result.Fields.GetColumn(FieldText).(*entity.ColumnVarChar).Data()[i]
 		content := result.Fields.GetColumn(FieldContent).(*entity.ColumnVarChar).Data()[i]
 		image := result.Fields.GetColumn(FieldImage).(*entity.ColumnVarChar).Data()[i]
-		imageData := result.Fields.GetColumn(FieldImageData).(*entity.ColumnVarChar).Data()[i]
+
+		// Extract image data from JSON field
+		var imageData string
+		if imageDataCol := result.Fields.GetColumn(FieldImageData); imageDataCol != nil {
+			imageDataBytes := imageDataCol.(*entity.ColumnJSONBytes).Data()[i]
+			imageDataMap := mustUnmarshalJSON(imageDataBytes)
+			if data, ok := imageDataMap["data"].(string); ok {
+				imageData = data
+			}
+		}
+
 		url := result.Fields.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[i]
 
 		var metadata map[string]interface{}
@@ -230,7 +240,17 @@ func (c *Client) parseQueryResults(result client.ResultSet, defaultScore float64
 		text := result.GetColumn(FieldText).(*entity.ColumnVarChar).Data()[i]
 		content := result.GetColumn(FieldContent).(*entity.ColumnVarChar).Data()[i]
 		image := result.GetColumn(FieldImage).(*entity.ColumnVarChar).Data()[i]
-		imageData := result.GetColumn(FieldImageData).(*entity.ColumnVarChar).Data()[i]
+
+		// Extract image data from JSON field
+		var imageData string
+		if imageDataCol := result.GetColumn(FieldImageData); imageDataCol != nil {
+			imageDataBytes := imageDataCol.(*entity.ColumnJSONBytes).Data()[i]
+			imageDataMap := mustUnmarshalJSON(imageDataBytes)
+			if data, ok := imageDataMap["data"].(string); ok {
+				imageData = data
+			}
+		}
+
 		url := result.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[i]
 
 		var metadata map[string]interface{}
