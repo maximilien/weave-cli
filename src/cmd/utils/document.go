@@ -1478,7 +1478,10 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 
 	// Generate base64 data
 	base64Data := base64.StdEncoding.EncodeToString(imageBytes)
-	dataURL := fmt.Sprintf("data:image/%s;base64,%s", strings.TrimPrefix(filepath.Ext(filePath), "."), base64Data)
+
+	// Image field should be a simple file reference, not a data URL
+	// This avoids exceeding VARCHAR limits in databases like Milvus (2048 chars)
+	imageRef := fmt.Sprintf("file://%s", filePath)
 
 	// Record processing start time (Phase 5)
 	processingStartTime := time.Now()
@@ -1594,9 +1597,9 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 
 		document = weaviate.Document{
 			ID:        docID,
-			Image:     dataURL,
+			Image:     imageRef, // Use file:// URL, not data URL with base64
 			ImageData: base64Data,
-			URL:       fmt.Sprintf("file://%s", filePath),
+			URL:       imageRef,
 			Metadata:  metadata,
 		}
 	} else {
@@ -1613,9 +1616,9 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 
 		document = weaviate.Document{
 			ID:        docID,
-			Image:     dataURL,
+			Image:     imageRef, // Use file:// URL, not data URL with base64
 			ImageData: base64Data,
-			URL:       fmt.Sprintf("file://%s", filePath),
+			URL:       imageRef,
 			Metadata:  metadata,
 		}
 	}
@@ -2179,7 +2182,10 @@ func processImageFileMock(ctx context.Context, client *mock.Client, collectionNa
 
 	// Generate base64 data
 	base64Data := base64.StdEncoding.EncodeToString(imageBytes)
-	dataURL := fmt.Sprintf("data:image/%s;base64,%s", strings.TrimPrefix(filepath.Ext(filePath), "."), base64Data)
+
+	// Image field should be a simple reference (not data URL with embedded base64)
+	// This avoids exceeding VARCHAR limits in databases like Milvus
+	imageRef := fmt.Sprintf("file://%s", filePath)
 
 	// Determine if this is a WeaveImages collection (new schema) or RagMeImages (legacy)
 	isWeaveImages := isWeaveImagesCollection(collectionName)
@@ -2192,9 +2198,9 @@ func processImageFileMock(ctx context.Context, client *mock.Client, collectionNa
 		// Use WeaveImages schema (flat metadata structure)
 		document = mock.Document{
 			ID:        docID,
-			Image:     dataURL,
+			Image:     imageRef, // Use file:// URL, not data URL
 			ImageData: base64Data,
-			URL:       fmt.Sprintf("file://%s", filePath),
+			URL:       imageRef,
 			Metadata: map[string]interface{}{
 				"id":                docID,
 				"added_date":        time.Now().Format(time.RFC3339),
@@ -2231,9 +2237,9 @@ func processImageFileMock(ctx context.Context, client *mock.Client, collectionNa
 
 		document = mock.Document{
 			ID:        docID,
-			Image:     dataURL,
+			Image:     imageRef, // Use file:// URL, not data URL
 			ImageData: base64Data,
-			URL:       fmt.Sprintf("file://%s", filePath),
+			URL:       imageRef,
 			Metadata:  metadata,
 		}
 	}
