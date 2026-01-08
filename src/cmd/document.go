@@ -31,5 +31,6 @@ func init() {
 	documentCmd.AddCommand(document.DeleteCmd)
 	documentCmd.AddCommand(document.DeleteAllCmd)
 	documentCmd.AddCommand(document.BatchCmd)
+	documentCmd.AddCommand(document.InspectCmd)
 	documentCmd.AddCommand(document.PdfConvertCmd)
 }
