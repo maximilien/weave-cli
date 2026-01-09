@@ -611,6 +611,20 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 	// Escape query text for GraphQL
 	queryTextEscaped := strings.ReplaceAll(queryText, `"`, `\"`)
 
+	// Determine target vector for collections with multiple vectors
+	targetVector := "default"
+	hasImage := false
+	for _, prop := range schema.Properties {
+		if prop.Name == "image" || prop.Name == "image_data" {
+			hasImage = true
+			break
+		}
+	}
+	// For image collections with dual vectors, use text_vector
+	if hasImage && !hasContent && !hasText {
+		targetVector = "text_vector"
+	}
+
 	// Build the GraphQL query using hybrid search for real similarity scores
 	// Hybrid search combines vector search with keyword search
 	query := fmt.Sprintf(`
@@ -620,6 +634,7 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 					hybrid: {
 						query: "%s"
 						alpha: 0.75
+						targetVectors: ["%s"]
 					}
 					limit: %d
 				) {
@@ -632,7 +647,7 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 					metadata
 				}
 			}
-		}`, collectionName, queryTextEscaped, options.TopK, contentField)
+		}`, collectionName, queryTextEscaped, targetVector, options.TopK, contentField)
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
