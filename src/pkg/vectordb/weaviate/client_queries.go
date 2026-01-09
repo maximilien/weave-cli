@@ -358,6 +358,7 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 	contentField := "content"
 	hasContent := false
 	hasText := false
+	hasImage := false
 
 	for _, prop := range schema.Properties {
 		if prop.Name == "content" {
@@ -366,6 +367,9 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 		if prop.Name == "text" {
 			hasText = true
 		}
+		if prop.Name == "image" || prop.Name == "image_data" {
+			hasImage = true
+		}
 	}
 
 	// Use content if available, otherwise use text
@@ -373,6 +377,13 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 		contentField = "content"
 	} else if hasText {
 		contentField = "text"
+	}
+
+	// Determine target vector for multi-vector collections
+	targetVector := "default"
+	isImageColl := hasImage && !hasContent && !hasText
+	if isImageColl {
+		targetVector = "text_vector"
 	}
 
 	// Build where clause for filters
@@ -393,7 +404,7 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 				%s(
 					nearText: {
 						concepts: ["%s"]
-						targetVectors: ["default"]
+						targetVectors: ["%s"]
 						limit: %d
 					}%s
 				) {
@@ -405,7 +416,7 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 					metadata
 				}
 			}
-		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), options.TopK,
+		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), targetVector, options.TopK,
 		func() string {
 			if whereClause != "" {
 				return ",\n\t\t\t" + whereClause
