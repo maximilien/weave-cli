@@ -77,7 +77,6 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	hasContent := false
 	hasText := false
 	hasURL := false
-	hasImage := false
 
 	for _, prop := range schema.Properties {
 		if prop.Name == "content" {
@@ -89,19 +88,18 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		if prop.Name == "url" {
 			hasURL = true
 		}
-		if prop.Name == "image" || prop.Name == "image_data" {
-			hasImage = true
-		}
 	}
 
-	// Determine if this is an image collection (has image but no content/text)
-	isImageColl := hasImage && !hasContent && !hasText
+	// Determine if this is an image collection by checking collection name
+	// This matches collections created with image schema (dual vectors: text_vector + image_vector)
+	isImageColl := isImageCollection(collectionName)
 
 	// Build the field list for the query based on collection type
 	var queryFields string
 	if isImageColl {
-		// For image collections, request url, image_data, and metadata
-		queryFields = "url\n\t\t\t\t\timage_data\n\t\t\t\t\tmetadata"
+		// For image collections, request url and metadata.filename
+		// GraphQL allows accessing nested properties directly by name
+		queryFields = "url\n\t\t\t\t\tmetadata {\n\t\t\t\t\t\tfilename\n\t\t\t\t\t}"
 		if hasURL {
 			contentField = "url" // Use URL for display purposes
 		}
