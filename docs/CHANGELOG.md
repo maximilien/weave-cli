@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-01-09
+
+### Added
+- **Multi-Vector Image Search**: Full support for Weaviate v1.25+ multi-vector collections
+  - Dual named vectors: `text_vector` (text2vec-openai) + `image_vector` (multi2vec-clip)
+  - Text metadata search: Queries filenames, captions, OCR content, surrounding text
+  - Visual similarity search: CLIP-based image content matching
+  - CLI flags: `--vector <name>`, `--search-type <text|visual>`, `--image <path>`
+  - Contextual metadata extraction: page numbers, captions, section headings, surrounding text
+  - Commits: 0bbb76b (multi2vec-clip), a97861e (CLI flags), d1e88a0 (contextual metadata)
+
+### Fixed
+- **Weaviate v1.25+ Compatibility**: Updated schema and query generation for named vectors
+  - Schema: Use `vectorConfig` with named vectors instead of deprecated `vectorizer`
+  - Queries: Add `targetVectors` parameter to all query types (nearText, hybrid, nearImage)
+  - Dynamic target vector selection based on collection type (default, text_vector, image_vector)
+  - Commits: c68d974, d199dd9, 05584c9, 702a2f7
+- **Image Collection Detection**: Fixed collection type detection for multi-vector queries
+  - Use name-based detection via `isImageCollection()` helper
+  - Previous property-based detection failed when collections had additional properties
+  - Commit: 06983b6
+- **Query Field Selection**: Corrected fields requested for image collections
+  - Request `url` and `metadata { filename }` instead of `image_data` and `content`
+  - Use GraphQL nested property syntax for structured metadata access
+  - Commit: 06983b6
+- **PDF Image Storage**: Fixed Milvus image storage with dynamic vector schema
+  - Handle collections without pre-defined image_vector field
+  - Use dynamic schema-based field detection
+  - Related to multi-vector implementation work
+
+### Changed
+- **Debug Logging**: Added comprehensive GraphQL query logging for troubleshooting
+  - Log complete query strings, target vectors, field lists, GraphQL errors
+  - Enabled quick identification of query construction issues
+  - Commit: 4cece2c
+
+### Tests
+- **Regression Tests**: Added comprehensive test coverage for multi-vector support
+  - `TestTargetVectorSelection`: Vector selection logic validation
+  - `TestQueryConstructionWithTargetVectors`: Query parameter validation
+  - `TestMultiVectorCollectionDetection`: Collection type detection
+  - Prevents future breakage of multi-vector query support
+  - Commit: c89cd87
+
+### Issues Resolved
+- Issue #20: Multiple vector spaces not supported without named vectors
+- Issue #19: Image search not working for PDF-extracted images
+- Issue #18: Milvus image storage compatibility
+
 ## [0.8.1] - 2025-12-18
 
 ### Added
