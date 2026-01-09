@@ -69,10 +69,12 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		return nil, fmt.Errorf("Weaviate: failed to get collection schema: %w", err)
 	}
 
-	// Determine the content field name - prefer content, fallback to text
+	// Determine the content field name and collection type
 	contentField := "content"
 	hasContent := false
 	hasText := false
+	hasURL := false
+	hasImage := false
 
 	for _, prop := range schema.Properties {
 		if prop.Name == "content" {
@@ -81,13 +83,36 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		if prop.Name == "text" {
 			hasText = true
 		}
+		if prop.Name == "url" {
+			hasURL = true
+		}
+		if prop.Name == "image" || prop.Name == "image_data" {
+			hasImage = true
+		}
 	}
 
-	// Use content if available, otherwise use text
-	if hasContent {
-		contentField = "content"
-	} else if hasText {
-		contentField = "text"
+	// Determine if this is an image collection (has image but no content/text)
+	isImageColl := hasImage && !hasContent && !hasText
+
+	// Build the field list for the query based on collection type
+	var queryFields string
+	if isImageColl {
+		// For image collections, request url, image_data, and metadata
+		queryFields = "url\n\t\t\t\t\timage_data\n\t\t\t\t\tmetadata"
+		if hasURL {
+			contentField = "url" // Use URL for display purposes
+		}
+	} else {
+		// For text collections, request content/text and metadata
+		if hasContent {
+			contentField = "content"
+			queryFields = "content\n\t\t\t\t\tmetadata"
+		} else if hasText {
+			contentField = "text"
+			queryFields = "text\n\t\t\t\t\tmetadata"
+		} else {
+			queryFields = "metadata"
+		}
 	}
 
 	// If BM25 flag is set, use BM25 search directly
@@ -115,10 +140,9 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 						certainty
 					}
 					%s
-					metadata
 				}
 			}
-		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), options.TopK, contentField)
+		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), options.TopK, queryFields)
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
