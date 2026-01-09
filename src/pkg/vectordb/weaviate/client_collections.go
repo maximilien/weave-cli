@@ -108,16 +108,45 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	}
 
 	// Configure vectorizer using named vectors (required in Weaviate v1.25+)
-	// Both image and text collections use text2vec-openai for semantic search
-	classSchema["vectorConfig"] = map[string]interface{}{
-		"default": map[string]interface{}{
-			"vectorizer": map[string]interface{}{
-				"text2vec-openai": map[string]interface{}{
-					"model": embeddingModel,
+	if isImage {
+		// Image collections: Use dual named vectors for text + visual search
+		// 1. text_vector: Vectorizes text metadata (captions, OCR, filenames) via text2vec-openai
+		// 2. image_vector: Vectorizes actual image pixels via multi2vec-clip
+		classSchema["vectorConfig"] = map[string]interface{}{
+			"text_vector": map[string]interface{}{
+				"vectorizer": map[string]interface{}{
+					"text2vec-openai": map[string]interface{}{
+						"model": embeddingModel,
+					},
 				},
+				"vectorIndexType": "hnsw",
 			},
-			"vectorIndexType": "hnsw",
-		},
+			"image_vector": map[string]interface{}{
+				"vectorizer": map[string]interface{}{
+					"multi2vec-clip": map[string]interface{}{
+						"imageFields": []string{"image_data"}, // Vectorize the actual image
+						"textFields":  []string{"url"},        // Include filename for context
+						"weights": map[string]interface{}{
+							"imageFields": []float64{0.9}, // Prioritize visual content
+							"textFields":  []float64{0.1}, // Minor boost from filename
+						},
+					},
+				},
+				"vectorIndexType": "hnsw",
+			},
+		}
+	} else {
+		// Text collections: Single named vector for text search
+		classSchema["vectorConfig"] = map[string]interface{}{
+			"default": map[string]interface{}{
+				"vectorizer": map[string]interface{}{
+					"text2vec-openai": map[string]interface{}{
+						"model": embeddingModel,
+					},
+				},
+				"vectorIndexType": "hnsw",
+			},
+		}
 	}
 
 	// Create schema based on type
@@ -129,7 +158,10 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 				"dataType": []string{"text"},
 				"moduleConfig": map[string]interface{}{
 					"text2vec-openai": map[string]interface{}{
-						"skip": false, // Vectorize URL (contains filename which may be descriptive)
+						"skip": false, // Vectorize URL for text search
+					},
+					"multi2vec-clip": map[string]interface{}{
+						"skip": false, // Include filename in CLIP vector
 					},
 				},
 			},
@@ -144,10 +176,13 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 			},
 			{
 				"name":     "image_data",
-				"dataType": []string{"text"},
+				"dataType": []string{"text"}, // Base64 encoded image data
 				"moduleConfig": map[string]interface{}{
 					"text2vec-openai": map[string]interface{}{
-						"skip": true, // Skip binary image data
+						"skip": true, // Skip for text vectorization
+					},
+					"multi2vec-clip": map[string]interface{}{
+						"skip": false, // Use for visual vectorization
 					},
 				},
 			},

@@ -28,6 +28,8 @@ type QueryOptions struct {
 	NoTruncate     bool    `json:"no_truncate"`
 	UseBM25        bool    `json:"use_bm25"`
 	JSONOutput     bool    `json:"json_output"`
+	ImageQuery     string  `json:"image_query"`      // Base64 encoded image for nearImage search
+	UseImageVector bool    `json:"use_image_vector"` // Use image_vector instead of text_vector
 }
 
 // normalizeScore applies a non-linear transformation to spread scores across a wider range.
@@ -120,17 +122,34 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		return c.queryWithBM25(ctx, collectionName, queryText, options, contentField)
 	}
 
+	// If image query is provided, use nearImage search with image_vector
+	if options.ImageQuery != "" && isImageColl {
+		return c.queryWithNearImage(ctx, collectionName, options.ImageQuery, options, queryFields)
+	}
+
 	// Build the GraphQL query for semantic search using nearText
-	// Both text and image collections now support semantic search
-	// This uses the vectorizer configured for the collection (e.g., text2vec-openai)
-	// For Weaviate v1.25+, we need to specify the target vector name
+	// Determine which named vector to use based on collection type and options
+	var targetVector string
+	if isImageColl {
+		if options.UseImageVector {
+			// Use image_vector for visual similarity search
+			targetVector = "image_vector"
+		} else {
+			// Use text_vector for text metadata search (default)
+			targetVector = "text_vector"
+		}
+	} else {
+		// For text collections, use default vector
+		targetVector = "default"
+	}
+
 	query := fmt.Sprintf(`
 		{
 			Get {
 				%s(
 					nearText: {
 						concepts: ["%s"]
-						targetVectors: ["default"]
+						targetVectors: ["%s"]
 					}
 					limit: %d
 				) {
@@ -142,7 +161,7 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 					%s
 				}
 			}
-		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), options.TopK, queryFields)
+		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), targetVector, options.TopK, queryFields)
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
@@ -159,6 +178,50 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 	results, err := c.parseQueryResults(result, contentField)
 	if err != nil {
 		return nil, fmt.Errorf("Weaviate: failed to parse query results: %v", err)
+	}
+
+	return results, nil
+}
+
+// queryWithNearImage performs visual similarity search using nearImage operator
+// This uses the image_vector (multi2vec-clip) to find visually similar images
+func (c *Client) queryWithNearImage(ctx context.Context, collectionName, imageBase64 string, options QueryOptions, queryFields string) ([]QueryResult, error) {
+	// Build GraphQL query with nearImage operator
+	// nearImage requires base64 encoded image data
+	query := fmt.Sprintf(`
+		{
+			Get {
+				%s(
+					nearImage: {
+						image: "%s"
+						targetVectors: ["image_vector"]
+					}
+					limit: %d
+				) {
+					_additional {
+						id
+						distance
+						certainty
+					}
+					%s
+				}
+			}
+		}`, collectionName, imageBase64, options.TopK, queryFields)
+
+	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Weaviate: failed to execute nearImage search query: %w", err)
+	}
+
+	// Check for GraphQL errors
+	if hasGraphQLErrors(result) {
+		return nil, fmt.Errorf("Weaviate: nearImage query returned errors")
+	}
+
+	// Parse the results (reuse existing parser)
+	results, err := c.parseQueryResults(result, "url") // Use url as contentField for images
+	if err != nil {
+		return nil, fmt.Errorf("Weaviate: failed to parse nearImage results: %v", err)
 	}
 
 	return results, nil
