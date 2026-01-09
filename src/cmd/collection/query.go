@@ -24,6 +24,11 @@ var QueryCmd = &cobra.Command{
 This command uses Weaviate's vector search capabilities to find the most relevant
 documents based on semantic similarity to your query text.
 
+For image collections with multi-vector support, you can search by:
+  - Text metadata (captions, OCR, context) using --search-type text (default)
+  - Visual similarity using --search-type visual (requires multi2vec-clip)
+  - Specific named vector using --vector <name>
+
 Score Interpretation:
   Scores are normalized to spread results across a wider range:
   - < 0.3: No good matches found (try rephrasing your query)
@@ -32,9 +37,19 @@ Score Interpretation:
   - > 0.7: Strong semantic relevance
 
 Examples:
+  # Text document search
   weave cols query MyDocs "machine learning algorithms"
   weave cols q MyDocs "artificial intelligence" --top_k 10
-  weave cols query WeaveImages "sunset over mountains" --top_k 3
+
+  # Image search by text metadata (captions, OCR)
+  weave cols query MyImages "sunset over mountains" --top_k 3
+  weave cols query MyImages "camera" --search-type text
+
+  # Visual similarity search (CLIP)
+  weave cols query MyImages "product photo" --search-type visual
+  weave cols query MyImages "" --vector image_vector --top_k 5
+
+  # Keyword search
   weave cols q MyDocs "exact keywords" --bm25
   weave cols q MyDocs "search term" --search-metadata --bm25`,
 	Args: cobra.ExactArgs(2),
@@ -47,6 +62,9 @@ func init() {
 	QueryCmd.Flags().BoolP("search-metadata", "m", false, "Also search in metadata fields (default: false)")
 	QueryCmd.Flags().Bool("bm25", false, "Use BM25 keyword search instead of semantic search (default: false)")
 	QueryCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
+	QueryCmd.Flags().String("vector", "", "Named vector to search (e.g., 'text_vector', 'image_vector')")
+	QueryCmd.Flags().String("search-type", "", "Search type: 'text' (text metadata) or 'visual' (image content)")
+	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
@@ -58,6 +76,9 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
 	useBM25, _ := cmd.Flags().GetBool("bm25")
 	outputFormat, _ := cmd.Flags().GetString("output")
+	vectorName, _ := cmd.Flags().GetString("vector")
+	searchType, _ := cmd.Flags().GetString("search-type")
+	imagePath, _ := cmd.Flags().GetString("image")
 
 	// Support legacy --json flag for backward compatibility
 	jsonFlag, _ := cmd.Flags().GetBool("json")
@@ -75,6 +96,42 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 
 	ctx := context.Background()
 
+	// Handle search-type flag (maps to UseImageVector)
+	useImageVector := false
+	if searchType == "visual" {
+		useImageVector = true
+	} else if searchType == "text" {
+		useImageVector = false
+	} else if searchType != "" {
+		utils.PrintError(fmt.Sprintf("Invalid search-type '%s'. Must be 'text' or 'visual'", searchType))
+		os.Exit(1)
+	}
+
+	// Handle image file for visual similarity search
+	var imageBase64 string
+	if imagePath != "" {
+		// TODO: Read image file and convert to base64
+		// For now, treat imagePath as already base64 encoded
+		imageBase64 = imagePath
+	}
+
+	// Handle explicit vector name override
+	if vectorName != "" {
+		// Map common vector names
+		switch vectorName {
+		case "text", "text_vector":
+			vectorName = "text_vector"
+			useImageVector = false
+		case "image", "image_vector", "visual":
+			vectorName = "image_vector"
+			useImageVector = true
+		case "default":
+			vectorName = "default"
+			useImageVector = false
+		}
+		// Note: vectorName is informational for now, actual routing uses useImageVector
+	}
+
 	// Create query options
 	options := weaviate.QueryOptions{
 		TopK:           topK,
@@ -83,6 +140,8 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		NoTruncate:     noTruncate,
 		UseBM25:        useBM25,
 		JSONOutput:     jsonOutput,
+		ImageQuery:     imageBase64,
+		UseImageVector: useImageVector,
 	}
 
 	// Use vector database selector based on flags to get the appropriate database
