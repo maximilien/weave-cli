@@ -95,13 +95,8 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		return c.queryWithBM25(ctx, collectionName, queryText, options, contentField)
 	}
 
-	// Check if this is an image collection (vectorizer: "none")
-	// Image collections can't use nearText, so fall back to BM25
-	if isImageCollection(collectionName) {
-		return c.queryWithBM25(ctx, collectionName, queryText, options, contentField)
-	}
-
 	// Build the GraphQL query for semantic search using nearText
+	// Both text and image collections now support semantic search
 	// This uses the vectorizer configured for the collection (e.g., text2vec-openai)
 	// For Weaviate v1.25+, we need to specify the target vector name
 	query := fmt.Sprintf(`

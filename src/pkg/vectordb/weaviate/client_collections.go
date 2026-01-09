@@ -108,28 +108,16 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	}
 
 	// Configure vectorizer using named vectors (required in Weaviate v1.25+)
-	if isImage {
-		// For image collections, use named vector with "none" vectorizer
-		classSchema["vectorConfig"] = map[string]interface{}{
-			"default": map[string]interface{}{
-				"vectorizer": map[string]interface{}{
-					"none": map[string]interface{}{},
+	// Both image and text collections use text2vec-openai for semantic search
+	classSchema["vectorConfig"] = map[string]interface{}{
+		"default": map[string]interface{}{
+			"vectorizer": map[string]interface{}{
+				"text2vec-openai": map[string]interface{}{
+					"model": embeddingModel,
 				},
-				"vectorIndexType": "hnsw",
 			},
-		}
-	} else {
-		// For text collections, use named vector with text2vec-openai vectorizer
-		classSchema["vectorConfig"] = map[string]interface{}{
-			"default": map[string]interface{}{
-				"vectorizer": map[string]interface{}{
-					"text2vec-openai": map[string]interface{}{
-						"model": embeddingModel,
-					},
-				},
-				"vectorIndexType": "hnsw",
-			},
-		}
+			"vectorIndexType": "hnsw",
+		},
 	}
 
 	// Create schema based on type
@@ -139,14 +127,29 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 			{
 				"name":     "url",
 				"dataType": []string{"text"},
+				"moduleConfig": map[string]interface{}{
+					"text2vec-openai": map[string]interface{}{
+						"skip": false, // Vectorize URL (contains filename which may be descriptive)
+					},
+				},
 			},
 			{
 				"name":     "image",
 				"dataType": []string{"text"},
+				"moduleConfig": map[string]interface{}{
+					"text2vec-openai": map[string]interface{}{
+						"skip": true, // Skip binary image data
+					},
+				},
 			},
 			{
 				"name":     "image_data",
 				"dataType": []string{"text"},
+				"moduleConfig": map[string]interface{}{
+					"text2vec-openai": map[string]interface{}{
+						"skip": true, // Skip binary image data
+					},
+				},
 			},
 			{
 				"name":     "metadata",
@@ -155,6 +158,11 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 					{
 						"name":     "filename",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": false, // Vectorize filename for searchability
+							},
+						},
 					},
 					{
 						"name":     "file_size",
@@ -163,10 +171,20 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 					{
 						"name":     "content_type",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": true, // Skip MIME types
+							},
+						},
 					},
 					{
 						"name":     "date_added",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": true, // Skip timestamps
+							},
+						},
 					},
 					{
 						"name":     "image_index",
@@ -175,6 +193,11 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 					{
 						"name":     "source_document",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": false, // Vectorize source document name
+							},
+						},
 					},
 					{
 						"name":     "is_extracted_from_document",
@@ -183,6 +206,11 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 					{
 						"name":     "ocr_content",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": false, // Vectorize OCR text for semantic search
+							},
+						},
 					},
 					{
 						"name":     "has_ocr_text",
@@ -191,14 +219,29 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 					{
 						"name":     "caption",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": false, // Vectorize captions for semantic search
+							},
+						},
 					},
 					{
 						"name":     "surrounding_text",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": false, // Vectorize surrounding text for semantic search
+							},
+						},
 					},
 					{
 						"name":     "section_heading",
 						"dataType": []string{"text"},
+						"moduleConfig": map[string]interface{}{
+							"text2vec-openai": map[string]interface{}{
+								"skip": false, // Vectorize section headings for semantic search
+							},
+						},
 					},
 					{
 						"name":     "pdf_page",
