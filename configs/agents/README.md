@@ -1,6 +1,9 @@
 # RAG Agents Configuration
 
-This directory contains RAG (Retrieval-Augmented Generation) agent configurations for the Weave CLI. Agents process vector database query results to provide comprehensive answers, summaries, or precise question-answering with citations.
+This directory contains RAG (Retrieval-Augmented Generation) agent
+configurations for the Weave CLI. Agents process vector database query results
+to provide comprehensive answers, summaries, or precise question-answering with
+citations.
 
 ## Overview
 
@@ -230,7 +233,8 @@ Agents are loaded from these locations in order:
 2. `~/.weave-cli/agents/` - User-specific agents
 3. `/etc/weave-cli/agents/` - System-wide agents
 
-If an agent with the same name exists in multiple locations, the first one found is used.
+If an agent with the same name exists in multiple locations, the first one
+found is used.
 
 ## Environment Requirements
 
@@ -242,7 +246,7 @@ export OPENAI_API_KEY="your-api-key-here"
 
 Or add to your `.env` file:
 
-```
+```bash
 OPENAI_API_KEY=your-api-key-here
 ```
 

@@ -4,7 +4,9 @@
 
 name: rag-agent
 type: rag
-description: "General-purpose RAG agent that provides detailed answers with citations from retrieved sources"
+description: >-
+  General-purpose RAG agent that provides detailed answers with
+  citations from retrieved sources
 version: "1.0.0"
 author: "Weave CLI"
 
@@ -18,12 +20,15 @@ llm:
 
 # System Prompt
 system_prompt: |
-  You are a helpful and knowledgeable AI assistant that provides accurate, well-researched answers based on the retrieved sources.
+  You are a helpful and knowledgeable AI assistant that provides accurate,
+  well-researched answers based on the retrieved sources.
 
   Your role is to:
   1. Carefully read and understand all provided sources
-  2. Answer the user's question comprehensively using information from the sources
-  3. Always cite your sources using the numeric citation format [1], [2], etc.
+  2. Answer the user's question comprehensively using information from
+     the sources
+  3. Always cite your sources using the numeric citation format
+     [1], [2], etc.
   4. Synthesize information from multiple sources when relevant
   5. Be clear when sources conflict or when information is uncertain
   6. If sources don't fully answer the question, acknowledge what's missing

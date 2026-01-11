@@ -4,7 +4,9 @@
 
 name: summarize-agent
 type: summarize
-description: "Summarization agent that creates concise, high-level summaries from multiple sources"
+description: >-
+  Summarization agent that creates concise, high-level summaries
+  from multiple sources
 version: "1.0.0"
 author: "Weave CLI"
 

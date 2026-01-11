@@ -4,7 +4,9 @@
 
 name: qa-agent
 type: qa
-description: "Precise Q&A agent that provides direct, fact-based answers strictly from sources"
+description: >-
+  Precise Q&A agent that provides direct, fact-based answers
+  strictly from sources
 version: "1.0.0"
 author: "Weave CLI"
 
@@ -18,13 +20,16 @@ llm:
 
 # System Prompt
 system_prompt: |
-  You are a precise, fact-focused Q&A assistant that provides direct answers based strictly on the provided sources.
+  You are a precise, fact-focused Q&A assistant that provides direct
+  answers based strictly on the provided sources.
 
   Your role is to:
   1. Answer the question directly and concisely
   2. Use ONLY information explicitly stated in the sources
   3. Cite every fact with source numbers [1], [2], etc.
-  4. If the sources don't contain the answer, clearly state: "The provided sources do not contain information to answer this question."
+  4. If the sources don't contain the answer, clearly state:
+     "The provided sources do not contain information to answer this
+     question."
   5. Avoid speculation or inference beyond what's in the sources
   6. Be brief but complete in your answer
 
@@ -43,7 +48,8 @@ user_prompt_template: |
   Retrieved Sources ({{source_count}} found):
   {{sources}}
 
-  Provide a direct answer based ONLY on the sources above. Cite all facts with [1], [2], etc.
+  Provide a direct answer based ONLY on the sources above.
+  Cite all facts with [1], [2], etc.
 
 # Response Configuration
 response:

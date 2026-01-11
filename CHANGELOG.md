@@ -26,7 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Collection Query Agent Integration**
   - Added `--agent` flag to `weave cols query` command
-  - Execute queries with agent processing: `weave cols query MyDocs "query" --agent rag-agent`
+  - Execute queries with agent processing:
+    `weave cols query MyDocs "query" --agent rag-agent`
   - Agent responses include citations, summaries, or precise answers
   - Requires `OPENAI_API_KEY` environment variable
 
