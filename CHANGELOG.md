@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-01-11
+
+### Summary
+
+RAG Agent System - Major feature release adding intelligent query result
+processing with three built-in agents. Transforms vector search into
+comprehensive answers with citations, summaries, and precise Q&A.
+
 ### Added
 
 - **RAG Agent System for Query Results Processing**
@@ -14,7 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Three built-in agents: `rag-agent`, `qa-agent`, `summarize-agent`
   - Agents provide comprehensive answers with citations from query results
   - YAML-based agent configuration system with validation
-  - Multi-tier search paths: `configs/agents/`, `~/.weave-cli/agents/`, `/etc/weave-cli/agents/`
+  - Multi-tier search paths: `configs/agents/`, `~/.weave-cli/agents/`,
+    `/etc/weave-cli/agents/`
   - Agent caching for performance
   - Support for multiple LLM providers (OpenAI)
 
@@ -39,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Source deduplication and relevance sorting
   - Confidence scoring and metadata
 
+- **Verbose Debug Logging**
+  - Added `--verbose` / `-v` flag to collection query command
+  - Conditional debug logging for GraphQL queries
+  - Shows target vectors, collections, and query details
+  - Disabled by default for clean output
+
 - **Documentation**
   - `configs/agents/README.md` - Complete agent configuration guide
   - `docs/planning/RAG_AGENT_FEATURE.md` - Feature planning document
@@ -51,6 +66,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced query results with natural language processing
 - Updated help documentation with RAG agent usage examples
 
+### Fixed
+
+- Agent queries now respect `--json` and `--output` flags
+- Command-line output format flags properly override agent YAML config
+- Debug logs only appear when `--verbose` flag is specified
+
 ### Technical Details
 
 - Core components:
@@ -59,7 +80,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AgentRegistry` - Agent discovery and management
   - `ContextBuilder` - Convert vector search results to agent context
   - `RAGAgent` - Full RAG implementation with citations
-- Comprehensive unit test coverage (40+ tests)
+- Comprehensive unit test coverage (41+ tests including regression tests)
 - All tests passing, linting clean
 - Location: `src/pkg/agents/`, `src/cmd/agents/`, `configs/agents/`
 
