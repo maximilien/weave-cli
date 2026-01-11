@@ -76,6 +76,7 @@ func init() {
 	QueryCmd.Flags().String("search-type", "", "Search type: 'text' (text metadata) or 'visual' (image content)")
 	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
 	QueryCmd.Flags().String("agent", "", "Agent to use for processing results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent')")
+	QueryCmd.Flags().BoolP("verbose", "v", false, "Enable verbose debug logging")
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
@@ -91,6 +92,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	searchType, _ := cmd.Flags().GetString("search-type")
 	imagePath, _ := cmd.Flags().GetString("image")
 	agentName, _ := cmd.Flags().GetString("agent")
+	verbose, _ := cmd.Flags().GetBool("verbose")
 
 	// Support legacy --json flag for backward compatibility
 	jsonFlag, _ := cmd.Flags().GetBool("json")
@@ -154,6 +156,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		JSONOutput:     jsonOutput,
 		ImageQuery:     imageBase64,
 		UseImageVector: useImageVector,
+		Verbose:        verbose,
 	}
 
 	// Use vector database selector based on flags to get the appropriate database

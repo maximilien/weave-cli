@@ -31,6 +31,7 @@ type QueryOptions struct {
 	JSONOutput     bool    `json:"json_output"`
 	ImageQuery     string  `json:"image_query"`      // Base64 encoded image for nearImage search
 	UseImageVector bool    `json:"use_image_vector"` // Use image_vector instead of text_vector
+	Verbose        bool    `json:"verbose"`          // Enable debug logging
 }
 
 // normalizeScore applies a non-linear transformation to spread scores across a wider range.
@@ -163,21 +164,21 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		}`, collectionName, strings.ReplaceAll(queryText, `"`, `\"`), targetVector, options.TopK, queryFields)
 
 	// Debug logging
-	log.Printf("🔍 DEBUG: GraphQL Query (nearText):\n%s\n", query)
-	log.Printf("🔍 DEBUG: Target Vector: %s", targetVector)
-	log.Printf("🔍 DEBUG: Collection: %s", collectionName)
-	log.Printf("🔍 DEBUG: Fields requested: %s", queryFields)
+	if options.Verbose {
+		log.Printf("🔍 DEBUG: GraphQL Query (nearText):\n%s\n", query)
+		log.Printf("🔍 DEBUG: Target Vector: %s", targetVector)
+		log.Printf("🔍 DEBUG: Collection: %s", collectionName)
+		log.Printf("🔍 DEBUG: Content field: %s", contentField)
+		log.Printf("🔍 DEBUG: Query fields: %s", queryFields)
+	}
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
-		log.Printf("🔍 DEBUG: Query execution error: %v", err)
 		return nil, fmt.Errorf("Weaviate: failed to execute semantic search query: %w", err)
 	}
 
 	// Check for GraphQL errors
 	if hasGraphQLErrors(result) {
-		log.Printf("🔍 DEBUG: GraphQL errors detected, falling back to hybrid search")
-		log.Printf("🔍 DEBUG: GraphQL errors: %+v", result.Errors)
 		// Try fallback query with hybrid search instead of nearText
 		return c.queryWithFallback(ctx, collectionName, queryText, options, contentField)
 	}
@@ -217,10 +218,12 @@ func (c *Client) queryWithNearImage(ctx context.Context, collectionName, imageBa
 		}`, collectionName, imageBase64, options.TopK, queryFields)
 
 	// Debug logging
-	log.Printf("🔍 DEBUG: GraphQL Query (nearImage):\n%s\n", query)
-	log.Printf("🔍 DEBUG: Target Vector: image_vector")
-	log.Printf("🔍 DEBUG: Collection: %s", collectionName)
-	log.Printf("🔍 DEBUG: Fields requested: %s", queryFields)
+	if options.Verbose {
+		log.Printf("🔍 DEBUG: GraphQL Query (nearImage):\n%s\n", query)
+		log.Printf("🔍 DEBUG: Target Vector: image_vector")
+		log.Printf("🔍 DEBUG: Collection: %s", collectionName)
+		log.Printf("🔍 DEBUG: Fields requested: %s", queryFields)
+	}
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
@@ -332,9 +335,11 @@ func (c *Client) queryWithBM25(ctx context.Context, collectionName, queryText st
 		}`, collectionName, queryTextEscaped, propertiesList, options.TopK, contentField)
 
 	// Debug logging
-	log.Printf("🔍 DEBUG: GraphQL Query (BM25):\n%s\n", query)
-	log.Printf("🔍 DEBUG: Collection: %s", collectionName)
-	log.Printf("🔍 DEBUG: BM25 properties: %v", queryFields)
+	if options.Verbose {
+		log.Printf("🔍 DEBUG: GraphQL Query (BM25):\n%s\n", query)
+		log.Printf("🔍 DEBUG: Collection: %s", collectionName)
+		log.Printf("🔍 DEBUG: BM25 properties: %v", queryFields)
+	}
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
@@ -444,11 +449,13 @@ func (c *Client) QueryWithFilters(ctx context.Context, collectionName, queryText
 		}(), contentField)
 
 	// Debug logging
-	log.Printf("🔍 DEBUG: GraphQL Query (QueryWithFilters):\n%s\n", query)
-	log.Printf("🔍 DEBUG: Target Vector: %s", targetVector)
-	log.Printf("🔍 DEBUG: Collection: %s", collectionName)
-	log.Printf("🔍 DEBUG: Content field: %s", contentField)
-	log.Printf("🔍 DEBUG: Filters: %v", filters)
+	if options.Verbose {
+		log.Printf("🔍 DEBUG: GraphQL Query (QueryWithFilters):\n%s\n", query)
+		log.Printf("🔍 DEBUG: Target Vector: %s", targetVector)
+		log.Printf("🔍 DEBUG: Collection: %s", collectionName)
+		log.Printf("🔍 DEBUG: Content field: %s", contentField)
+		log.Printf("🔍 DEBUG: Filters: %v", filters)
+	}
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
@@ -687,10 +694,12 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 		}`, collectionName, queryTextEscaped, targetVector, options.TopK, contentField)
 
 	// Debug logging
-	log.Printf("🔍 DEBUG: GraphQL Query (Hybrid Fallback):\n%s\n", query)
-	log.Printf("🔍 DEBUG: Target Vector: %s", targetVector)
-	log.Printf("🔍 DEBUG: Collection: %s", collectionName)
-	log.Printf("🔍 DEBUG: Content field: %s", contentField)
+	if options.Verbose {
+		log.Printf("🔍 DEBUG: GraphQL Query (Hybrid Fallback):\n%s\n", query)
+		log.Printf("🔍 DEBUG: Target Vector: %s", targetVector)
+		log.Printf("🔍 DEBUG: Collection: %s", collectionName)
+		log.Printf("🔍 DEBUG: Content field: %s", contentField)
+	}
 
 	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
 	if err != nil {
