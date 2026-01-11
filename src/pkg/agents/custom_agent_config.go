@@ -24,9 +24,9 @@ type CustomAgentConfig struct {
 	LLM CustomAgentLLMConfig `yaml:"llm"`
 
 	// Prompts
-	SystemPrompt         string `yaml:"system_prompt"`
-	UserPromptTemplate   string `yaml:"user_prompt_template,omitempty"`
-	AssistantPromptHint  string `yaml:"assistant_prompt_hint,omitempty"`
+	SystemPrompt        string `yaml:"system_prompt"`
+	UserPromptTemplate  string `yaml:"user_prompt_template,omitempty"`
+	AssistantPromptHint string `yaml:"assistant_prompt_hint,omitempty"`
 
 	// Response Configuration
 	Response CustomAgentResponseConfig `yaml:"response,omitempty"`
@@ -43,33 +43,33 @@ type CustomAgentConfig struct {
 
 // CustomAgentLLMConfig represents LLM settings for a custom agent
 type CustomAgentLLMConfig struct {
-	Provider          string  `yaml:"provider,omitempty"` // openai, anthropic
-	Model             string  `yaml:"model"`
-	Temperature       float64 `yaml:"temperature,omitempty"`
-	MaxTokens         int     `yaml:"max_tokens,omitempty"`
-	TopP              float64 `yaml:"top_p,omitempty"`
-	FrequencyPenalty  float64 `yaml:"frequency_penalty,omitempty"`
-	PresencePenalty   float64 `yaml:"presence_penalty,omitempty"`
+	Provider         string  `yaml:"provider,omitempty"` // openai, anthropic
+	Model            string  `yaml:"model"`
+	Temperature      float64 `yaml:"temperature,omitempty"`
+	MaxTokens        int     `yaml:"max_tokens,omitempty"`
+	TopP             float64 `yaml:"top_p,omitempty"`
+	FrequencyPenalty float64 `yaml:"frequency_penalty,omitempty"`
+	PresencePenalty  float64 `yaml:"presence_penalty,omitempty"`
 }
 
 // CustomAgentResponseConfig represents response formatting configuration
 type CustomAgentResponseConfig struct {
-	IncludeReferences   bool    `yaml:"include_references,omitempty"`
-	CitationFormat      string  `yaml:"citation_format,omitempty"` // numeric, author-year, footnote
-	MaxContextChunks    int     `yaml:"max_context_chunks,omitempty"`
-	MinRelevanceScore   float64 `yaml:"min_relevance_score,omitempty"`
-	DeduplicateSources  bool    `yaml:"deduplicate_sources,omitempty"`
-	SortByRelevance     bool    `yaml:"sort_by_relevance,omitempty"`
-	StrictMode          bool    `yaml:"strict_mode,omitempty"`
+	IncludeReferences  bool    `yaml:"include_references,omitempty"`
+	CitationFormat     string  `yaml:"citation_format,omitempty"` // numeric, author-year, footnote
+	MaxContextChunks   int     `yaml:"max_context_chunks,omitempty"`
+	MinRelevanceScore  float64 `yaml:"min_relevance_score,omitempty"`
+	DeduplicateSources bool    `yaml:"deduplicate_sources,omitempty"`
+	SortByRelevance    bool    `yaml:"sort_by_relevance,omitempty"`
+	StrictMode         bool    `yaml:"strict_mode,omitempty"`
 }
 
 // CustomAgentOutputConfig represents output formatting configuration
 type CustomAgentOutputConfig struct {
-	Format           string `yaml:"format,omitempty"` // markdown, text, json
-	IncludeMetadata  bool   `yaml:"include_metadata,omitempty"`
-	ShowConfidence   bool   `yaml:"show_confidence,omitempty"`
-	ShowSources      bool   `yaml:"show_sources,omitempty"`
-	TruncateSources  int    `yaml:"truncate_sources,omitempty"` // characters
+	Format          string `yaml:"format,omitempty"` // markdown, text, json
+	IncludeMetadata bool   `yaml:"include_metadata,omitempty"`
+	ShowConfidence  bool   `yaml:"show_confidence,omitempty"`
+	ShowSources     bool   `yaml:"show_sources,omitempty"`
+	TruncateSources int    `yaml:"truncate_sources,omitempty"` // characters
 }
 
 // CustomAgentFeaturesConfig represents feature flags
@@ -81,9 +81,9 @@ type CustomAgentFeaturesConfig struct {
 
 // CustomAgentPerformanceConfig represents performance settings
 type CustomAgentPerformanceConfig struct {
-	TimeoutSeconds  int  `yaml:"timeout_seconds,omitempty"`
-	MaxRetries      int  `yaml:"max_retries,omitempty"`
-	CacheResponses  bool `yaml:"cache_responses,omitempty"`
+	TimeoutSeconds int  `yaml:"timeout_seconds,omitempty"`
+	MaxRetries     int  `yaml:"max_retries,omitempty"`
+	CacheResponses bool `yaml:"cache_responses,omitempty"`
 }
 
 // LoadCustomAgentConfig loads a custom agent configuration from a YAML file
