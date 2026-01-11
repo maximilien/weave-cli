@@ -15,8 +15,8 @@ import (
 
 // RAGAgent implements RAG (Retrieval-Augmented Generation) pattern
 type RAGAgent struct {
-	config        *CustomAgentConfig
-	llmClient     llm.Client
+	config         *CustomAgentConfig
+	llmClient      llm.Client
 	contextBuilder *ContextBuilder
 }
 
@@ -28,10 +28,10 @@ type RAGInput struct {
 
 // RAGOutput is output from RAG agent
 type RAGOutput struct {
-	Answer      string              `json:"answer"`
-	Sources     []SourceCitation    `json:"sources,omitempty"`
-	Confidence  float64             `json:"confidence,omitempty"`
-	Metadata    *RAGMetadata        `json:"metadata,omitempty"`
+	Answer     string           `json:"answer"`
+	Sources    []SourceCitation `json:"sources,omitempty"`
+	Confidence float64          `json:"confidence,omitempty"`
+	Metadata   *RAGMetadata     `json:"metadata,omitempty"`
 }
 
 // SourceCitation represents a cited source
@@ -45,13 +45,13 @@ type SourceCitation struct {
 
 // RAGMetadata contains metadata about the RAG response
 type RAGMetadata struct {
-	TotalSources     int     `json:"total_sources"`
-	SourcesUsed      int     `json:"sources_used"`
-	MinRelevance     float64 `json:"min_relevance"`
-	MaxRelevance     float64 `json:"max_relevance"`
-	AvgRelevance     float64 `json:"avg_relevance"`
-	Model            string  `json:"model"`
-	Temperature      float64 `json:"temperature"`
+	TotalSources int     `json:"total_sources"`
+	SourcesUsed  int     `json:"sources_used"`
+	MinRelevance float64 `json:"min_relevance"`
+	MaxRelevance float64 `json:"max_relevance"`
+	AvgRelevance float64 `json:"avg_relevance"`
+	Model        string  `json:"model"`
+	Temperature  float64 `json:"temperature"`
 }
 
 // NewRAGAgent creates a new RAG agent
@@ -69,8 +69,8 @@ func NewRAGAgent(config *CustomAgentConfig, llmClient llm.Client) (*RAGAgent, er
 	}
 
 	return &RAGAgent{
-		config:        config,
-		llmClient:     llmClient,
+		config:         config,
+		llmClient:      llmClient,
 		contextBuilder: NewContextBuilder(config),
 	}, nil
 }
@@ -200,9 +200,9 @@ func (a *RAGAgent) buildSourceCitations(queryContext *QueryContext) []SourceCita
 
 	for i, source := range queryContext.Sources {
 		citation := SourceCitation{
-			Index:  source.Index,
-			Score:  source.Score,
-			DocID:  source.DocID,
+			Index: source.Index,
+			Score: source.Score,
+			DocID: source.DocID,
 		}
 
 		// Include content if ShowSources is enabled
