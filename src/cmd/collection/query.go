@@ -36,10 +36,20 @@ Score Interpretation:
   - 0.5-0.7: Good semantic relevance
   - > 0.7: Strong semantic relevance
 
+RAG Agents:
+  Use the --agent flag to process query results through a custom RAG agent.
+  Available agents: rag-agent, summarize-agent, qa-agent
+  Agents provide comprehensive answers with citations, summaries, or precise Q&A.
+  Requires: OPENAI_API_KEY environment variable
+
 Examples:
   # Text document search
   weave cols query MyDocs "machine learning algorithms"
   weave cols q MyDocs "artificial intelligence" --top_k 10
+
+  # RAG agent query with comprehensive answer
+  weave cols query MyDocs "What is machine learning?" --agent rag-agent
+  weave cols q MyDocs "Summarize the main topics" --agent summarize-agent --top_k 10
 
   # Image search by text metadata (captions, OCR)
   weave cols query MyImages "sunset over mountains" --top_k 3
@@ -65,6 +75,7 @@ func init() {
 	QueryCmd.Flags().String("vector", "", "Named vector to search (e.g., 'text_vector', 'image_vector')")
 	QueryCmd.Flags().String("search-type", "", "Search type: 'text' (text metadata) or 'visual' (image content)")
 	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
+	QueryCmd.Flags().String("agent", "", "Agent to use for processing results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent')")
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
@@ -79,6 +90,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	vectorName, _ := cmd.Flags().GetString("vector")
 	searchType, _ := cmd.Flags().GetString("search-type")
 	imagePath, _ := cmd.Flags().GetString("image")
+	agentName, _ := cmd.Flags().GetString("agent")
 
 	// Support legacy --json flag for backward compatibility
 	jsonFlag, _ := cmd.Flags().GetBool("json")
@@ -172,6 +184,19 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// If agent is specified, use agent-enabled query path
+	if agentName != "" {
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName)
+		default:
+			utils.PrintError(fmt.Sprintf("Agent execution is currently only supported for Weaviate databases"))
+			os.Exit(1)
+		}
+		return
+	}
+
+	// Standard query path (no agent)
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		utils.QueryWeaviateCollection(ctx, dbConfig, collectionName, queryText, options)
