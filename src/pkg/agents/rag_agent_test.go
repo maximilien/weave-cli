@@ -508,6 +508,74 @@ func TestRAGAgent_CustomPromptTemplate(t *testing.T) {
 	}
 }
 
+// TestRAGAgent_OutputFormatOverride tests that output format can be overridden at runtime
+func TestRAGAgent_OutputFormatOverride(t *testing.T) {
+	// Create agent with markdown output format (default for rag-agent)
+	config := &CustomAgentConfig{
+		Name: "test-agent",
+		Type: "rag",
+		LLM: CustomAgentLLMConfig{
+			Model: "gpt-4o",
+		},
+		SystemPrompt: "Test",
+		Output: CustomAgentOutputConfig{
+			Format: "markdown", // Default format
+		},
+	}
+	config.applyDefaults()
+
+	mockClient := NewMockLLMClient("Test answer", nil)
+	agent, err := NewRAGAgent(config, mockClient)
+	if err != nil {
+		t.Fatalf("NewRAGAgent() failed: %v", err)
+	}
+
+	output := &RAGOutput{
+		Answer: "Test answer",
+		Sources: []SourceCitation{
+			{Index: 1, Score: 0.9, DocID: "doc1"},
+		},
+	}
+
+	// Test 1: Default format (markdown)
+	formatted, err := agent.FormatOutput(output)
+	if err != nil {
+		t.Fatalf("FormatOutput() failed: %v", err)
+	}
+	if !strings.Contains(formatted, "## Answer") {
+		t.Error("Default format should be markdown with ## Answer header")
+	}
+
+	// Test 2: Override to JSON format (simulating --json flag)
+	agent.config.Output.Format = "json"
+	formattedJSON, err := agent.FormatOutput(output)
+	if err != nil {
+		t.Fatalf("FormatOutput() with JSON override failed: %v", err)
+	}
+
+	// Verify it's valid JSON
+	var parsed map[string]interface{}
+	if err := json.Unmarshal([]byte(formattedJSON), &parsed); err != nil {
+		t.Errorf("Overridden JSON output is not valid JSON: %v", err)
+	}
+	if !strings.Contains(formattedJSON, `"answer"`) {
+		t.Error("JSON output should contain 'answer' field")
+	}
+
+	// Test 3: Override to text format
+	agent.config.Output.Format = "text"
+	formattedText, err := agent.FormatOutput(output)
+	if err != nil {
+		t.Fatalf("FormatOutput() with text override failed: %v", err)
+	}
+	if strings.Contains(formattedText, "##") || strings.Contains(formattedText, "{") {
+		t.Error("Text format should not contain markdown or JSON formatting")
+	}
+	if !strings.Contains(formattedText, "Test answer") {
+		t.Error("Text output should contain the answer")
+	}
+}
+
 // floatEquals checks if two floats are equal within a tolerance
 func floatEquals(a, b, tolerance float64) bool {
 	diff := a - b

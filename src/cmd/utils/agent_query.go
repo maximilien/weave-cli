@@ -16,7 +16,7 @@ import (
 )
 
 // ExecuteQueryWithAgent executes a query and processes results through an agent
-func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, results []weaviate.QueryResult) {
+func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, results []weaviate.QueryResult, outputFormat string) {
 	// Load agent configuration
 	agentConfig, err := agents.LoadAgent(agentName)
 	if err != nil {
@@ -26,6 +26,11 @@ func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, 
 			PrintError(fmt.Sprintf("Failed to load agent '%s': %v", agentName, err))
 		}
 		os.Exit(1)
+	}
+
+	// Override output format if specified via command-line flag
+	if outputFormat != "" {
+		agentConfig.Output.Format = outputFormat
 	}
 
 	// Create LLM client
@@ -90,7 +95,7 @@ func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, 
 }
 
 // QueryWeaviateCollectionWithAgent queries a collection and processes results through an agent
-func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string) {
+func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string) {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create Weaviate client: %v", err))
@@ -105,5 +110,5 @@ func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBC
 	}
 
 	// Execute through agent
-	ExecuteQueryWithAgent(ctx, agentName, queryText, results)
+	ExecuteQueryWithAgent(ctx, agentName, queryText, results, outputFormat)
 }

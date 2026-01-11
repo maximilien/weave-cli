@@ -191,7 +191,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	if agentName != "" {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName)
+			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat)
 		default:
 			utils.PrintError(fmt.Sprintf("Agent execution is currently only supported for Weaviate databases"))
 			os.Exit(1)
