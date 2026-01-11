@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **RAG Agent System for Query Results Processing**
+  - New agent infrastructure for processing vector database query results
+  - Three built-in agents: `rag-agent`, `qa-agent`, `summarize-agent`
+  - Agents provide comprehensive answers with citations from query results
+  - YAML-based agent configuration system with validation
+  - Multi-tier search paths: `configs/agents/`, `~/.weave-cli/agents/`, `/etc/weave-cli/agents/`
+  - Agent caching for performance
+  - Support for multiple LLM providers (OpenAI)
+
+- **Agent Management Commands**
+  - `weave agents list` - List all available agents
+  - `weave agents show AGENT` - Show detailed agent configuration
+  - `weave agents validate FILE` - Validate agent YAML files
+  - JSON, YAML, and text output formats
+
+- **Collection Query Agent Integration**
+  - Added `--agent` flag to `weave cols query` command
+  - Execute queries with agent processing: `weave cols query MyDocs "query" --agent rag-agent`
+  - Agent responses include citations, summaries, or precise answers
+  - Requires `OPENAI_API_KEY` environment variable
+
+- **Agent Configuration Features**
+  - Citation formats: numeric [1], author-year, footnote
+  - Output formats: markdown, text, JSON
+  - Configurable temperature, max tokens, relevance scoring
+  - Strict mode for source-only responses
+  - Source deduplication and relevance sorting
+  - Confidence scoring and metadata
+
+- **Documentation**
+  - `configs/agents/README.md` - Complete agent configuration guide
+  - `docs/planning/RAG_AGENT_FEATURE.md` - Feature planning document
+  - Updated command help text with agent examples
+  - Example agent configurations for reference
+
+### Changed
+
+- Collection query command now supports agent-based response generation
+- Enhanced query results with natural language processing
+- Updated help documentation with RAG agent usage examples
+
+### Technical Details
+
+- Core components:
+  - `CustomAgentConfig` - YAML-based agent configuration with validation
+  - `AgentLoader` - Multi-path agent loading with caching
+  - `AgentRegistry` - Agent discovery and management
+  - `ContextBuilder` - Convert vector search results to agent context
+  - `RAGAgent` - Full RAG implementation with citations
+- Comprehensive unit test coverage (40+ tests)
+- All tests passing, linting clean
+- Location: `src/pkg/agents/`, `src/cmd/agents/`, `configs/agents/`
+
 ## [0.8.4] - 2026-01-06
 
 ### Summary
