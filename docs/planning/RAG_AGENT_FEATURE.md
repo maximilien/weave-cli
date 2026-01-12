@@ -586,15 +586,15 @@ type SourceContext struct {
 
 ## Implementation Tasks
 
-### Phase 1: Core Infrastructure (Days 1-2)
+### Phase 1: Core Infrastructure ✅ COMPLETED (v0.9.0)
 
-- [ ] **Task 1.1**: Create agent YAML schema and validation
+- [x] ✅ **Task 1.1**: Create agent YAML schema and validation
   - File: `src/pkg/agents/agent_config.go`
   - Define `CustomAgentConfig` struct
   - Add YAML parsing logic
   - Add validation functions
 
-- [ ] **Task 1.2**: Implement agent loader
+- [x] ✅ **Task 1.2**: Implement agent loader
   - File: `src/pkg/agents/agent_loader.go`
   - Load agent from YAML file
   - Search standard paths (configs/agents/, ~/.weave-cli/agents/)

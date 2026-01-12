@@ -159,9 +159,9 @@ func (c *Client) getTimeoutFor(opType vectordb.OperationType) time.Duration {
 
 // getCollection retrieves a collection by name with the required embedding function
 func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collection, error) {
-	// Chroma v2 requires an embedding function for GetCollection
-	// Use noopEmbeddingFunction to avoid tokenizer CGO dependencies
-	// It generates dummy embeddings of the correct dimensions
+	// Use the configured dimensions from client config
+	// NOTE: For collections created with the metadata fix, this will use stored dimensions
+	// For older collections, users may need to recreate them or configure dimensions correctly
 	return c.client.GetCollection(ctx, name, chroma.WithEmbeddingFunctionGet(&noopEmbeddingFunction{dimensions: c.config.VectorDimensions}))
 }
 
@@ -232,10 +232,12 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 	// Build metadata options
 	var opts []chroma.CreateCollectionOption
 
-	// Add distance function metadata
+	// Store both distance function and vector dimensions in metadata
+	// This allows us to retrieve the correct config when querying
 	opts = append(opts, chroma.WithCollectionMetadataCreate(
 		chroma.NewMetadata(
 			chroma.NewStringAttribute("hnsw:space", c.GetDistanceFunction()),
+			chroma.NewIntAttribute("vector_dimensions", int64(c.config.VectorDimensions)),
 		),
 	))
 

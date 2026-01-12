@@ -49,6 +49,12 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 	// Search parameters
 	sp, _ := entity.NewIndexIvfFlatSearchParam(16) // nprobe=16
 
+	// Get the collection's actual metric type from its index
+	metricType, err := a.getCollectionMetricType(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("Milvus: failed to get collection metric type: %w", err)
+	}
+
 	// Perform vector search
 	results, err := a.client.Search(
 		ctx,
@@ -58,7 +64,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		outputFields,
 		searchVectors,
 		FieldEmbedding,
-		a.getMetricType(),
+		metricType,
 		opts.TopK,
 		sp,
 	)

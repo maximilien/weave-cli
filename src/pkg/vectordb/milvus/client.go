@@ -249,3 +249,55 @@ func (c *Client) getMetricType() entity.MetricType {
 		return entity.L2 // Euclidean distance (default)
 	}
 }
+
+// getCollectionMetricType retrieves the metric type used by a collection's index
+func (c *Client) getCollectionMetricType(ctx context.Context, collectionName string) (entity.MetricType, error) {
+	// Describe the index on the embedding field
+	indexes, err := c.client.DescribeIndex(ctx, collectionName, FieldEmbedding)
+	if err != nil {
+		// If we can't get index info, fall back to config default
+		return c.getMetricType(), nil
+	}
+
+	// Get metric type from first index
+	if len(indexes) > 0 {
+		metricType := indexes[0].Params()["metric_type"]
+		if metricType != "" {
+			switch metricType {
+			case "L2":
+				return entity.L2, nil
+			case "IP":
+				return entity.IP, nil
+			case "COSINE":
+				return entity.COSINE, nil
+			}
+		}
+	}
+
+	// Fall back to config default
+	return c.getMetricType(), nil
+}
+
+// getCollectionDimensions retrieves the vector dimensions from a collection's schema
+func (c *Client) getCollectionDimensions(ctx context.Context, collectionName string) (int, error) {
+	// Describe the collection to get its schema
+	coll, err := c.client.DescribeCollection(ctx, collectionName)
+	if err != nil {
+		// If we can't get collection info, fall back to config default
+		return c.config.VectorDimensions, nil
+	}
+
+	// Find the embedding field and get its dimensions
+	for _, field := range coll.Schema.Fields {
+		if field.Name == FieldEmbedding {
+			if dimStr, ok := field.TypeParams["dim"]; ok {
+				var dim int
+				fmt.Sscanf(dimStr, "%d", &dim)
+				return dim, nil
+			}
+		}
+	}
+
+	// Fall back to config default
+	return c.config.VectorDimensions, nil
+}
