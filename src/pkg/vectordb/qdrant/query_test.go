@@ -52,7 +52,7 @@ func TestQueryOptions_Validation(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Nil options (should use defaults)",
+			name:    "Nil options (should use defaults)",
 			options: nil,
 			wantErr: false,
 		},

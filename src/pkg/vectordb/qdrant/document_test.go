@@ -312,7 +312,7 @@ func TestBatchOperations(t *testing.T) {
 			docs := make([]*vectordb.Document, tt.batchSize)
 			for i := 0; i < tt.batchSize; i++ {
 				docs[i] = &vectordb.Document{
-					ID:   "",  // Will be auto-generated
+					ID:   "", // Will be auto-generated
 					Text: "Test content",
 				}
 			}
