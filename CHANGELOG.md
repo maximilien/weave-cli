@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-VDB Agent Support**
+  - Agents now work with all 10+ vector databases, not just Weaviate
+  - Generic `QueryCollectionWithAgent()` function for Chroma, Qdrant,
+    Milvus, Neo4j, Supabase, MongoDB, Pinecone, and others
+  - Maintains backward compatibility with existing Weaviate agent queries
+  - Same agent behavior and output across all vector databases
+
+- **Query Progress Indicator**
+  - Added `--progress` flag to `weave cols query` command
+  - Real-time progress updates during query execution
+  - Shows search, agent processing, and response generation phases
+  - JSON output mode: When used with `--json`, outputs progress as JSON
+    Lines format (one JSON object per line) for easy parsing
+  - Text output mode: Progress messages sent to stderr for clean piping
+  - Works seamlessly with `--json`, `--output`, and `--verbose` flags
+
+### Changed
+
+- Agent execution now supports all vector database types
+- Progress reporting provides better user feedback during long-running queries
+
 ## [0.9.0] - 2026-01-11
 
 ### Summary

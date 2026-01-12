@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/progress"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
@@ -2507,6 +2508,66 @@ func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collection
 	DisplayQueryResults(weaviateResults, collectionName, queryText, options.NoTruncate, options.JSONOutput)
 }
 
+// QueryCollectionWithAgent queries a collection using generic VDB client and processes results through an agent
+func QueryCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+	// Create progress reporter (use JSON reporter if output format is JSON)
+	var reporter *progress.Reporter
+	if showProgress && outputFormat == "json" {
+		reporter = progress.NewJSONReporter(true)
+		reporter.Start("Searching collection...")
+	} else if showProgress {
+		reporter = progress.NewReporter(true)
+		reporter.Start("Searching collection...")
+	} else {
+		reporter = progress.NewReporter(false)
+	}
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create client: %v", err))
+		return
+	}
+
+	// Convert weaviate.QueryOptions to vectordb.QueryOptions
+	vdbOptions := &vectordb.QueryOptions{
+		TopK:           options.TopK,
+		Distance:       options.Distance,
+		SearchMetadata: options.SearchMetadata,
+		NoTruncate:     options.NoTruncate,
+		UseBM25:        options.UseBM25,
+	}
+
+	// Perform semantic or BM25 search based on options
+	var results []*vectordb.QueryResult
+	if vdbOptions.UseBM25 {
+		results, err = client.SearchBM25(ctx, collectionName, queryText, vdbOptions)
+	} else {
+		results, err = client.SearchSemantic(ctx, collectionName, queryText, vdbOptions)
+	}
+
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, err))
+		return
+	}
+
+	if showProgress {
+		reporter.Update(fmt.Sprintf("Found %d results", len(results)))
+	}
+
+	// Convert vectordb.QueryResult to weaviate.QueryResult format for agent
+	weaviateResults := make([]weaviate.QueryResult, len(results))
+	for i, r := range results {
+		weaviateResults[i] = weaviate.QueryResult{
+			ID:       r.Document.ID,
+			Content:  r.Document.Content,
+			Metadata: r.Document.Metadata,
+			Score:    r.Score,
+		}
+	}
+
+	// Execute through agent
+	ExecuteQueryWithAgent(ctx, agentName, queryText, weaviateResults, outputFormat, showProgress)
+}
+
 // QueryMockCollection performs semantic search on a mock collection
 func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions) {
 	client := CreateMockClient(cfg)
@@ -2520,6 +2581,36 @@ func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collec
 
 	// Display results
 	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate, options.JSONOutput)
+}
+
+// QueryMockCollectionWithAgent performs semantic search on a mock collection and processes results through an agent
+func QueryMockCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+	// Create progress reporter (use JSON reporter if output format is JSON)
+	var reporter *progress.Reporter
+	if showProgress && outputFormat == "json" {
+		reporter = progress.NewJSONReporter(true)
+		reporter.Start("Searching collection...")
+	} else if showProgress {
+		reporter = progress.NewReporter(true)
+		reporter.Start("Searching collection...")
+	} else {
+		reporter = progress.NewReporter(false)
+	}
+	client := CreateMockClient(cfg)
+
+	// Perform mock semantic search
+	results, err := client.Query(ctx, collectionName, queryText, options)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to query mock collection '%s': %v", collectionName, err))
+		return
+	}
+
+	if showProgress {
+		reporter.Update(fmt.Sprintf("Found %d results", len(results)))
+	}
+
+	// Execute through agent
+	ExecuteQueryWithAgent(ctx, agentName, queryText, results, outputFormat, showProgress)
 }
 
 // Generic collection operations for VectorDB interface (Milvus, etc.)

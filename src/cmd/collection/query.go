@@ -51,6 +51,12 @@ Examples:
   weave cols query MyDocs "What is machine learning?" --agent rag-agent
   weave cols q MyDocs "Summarize the main topics" --agent summarize-agent --top_k 10
 
+  # Show progress during query execution
+  weave cols query MyDocs "complex query" --agent rag-agent --progress
+
+  # JSON output with progress (outputs JSON Lines format)
+  weave cols query MyDocs "query" --agent rag-agent --json --progress
+
   # Image search by text metadata (captions, OCR)
   weave cols query MyImages "sunset over mountains" --top_k 3
   weave cols query MyImages "camera" --search-type text
@@ -77,6 +83,7 @@ func init() {
 	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
 	QueryCmd.Flags().String("agent", "", "Agent to use for processing results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent')")
 	QueryCmd.Flags().BoolP("verbose", "v", false, "Enable verbose debug logging")
+	QueryCmd.Flags().Bool("progress", false, "Show progress during query execution")
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
@@ -93,6 +100,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	imagePath, _ := cmd.Flags().GetString("image")
 	agentName, _ := cmd.Flags().GetString("agent")
 	verbose, _ := cmd.Flags().GetBool("verbose")
+	progress, _ := cmd.Flags().GetBool("progress")
 
 	// Support legacy --json flag for backward compatibility
 	jsonFlag, _ := cmd.Flags().GetBool("json")
@@ -191,10 +199,14 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	if agentName != "" {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat)
+			// Weaviate: use specialized function (keeps current behavior)
+			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat, progress)
+		case config.VectorDBTypeMock:
+			// Mock: use specialized function
+			utils.QueryMockCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat, progress)
 		default:
-			utils.PrintError(fmt.Sprintf("Agent execution is currently only supported for Weaviate databases"))
-			os.Exit(1)
+			// All other VDBs: use generic function
+			utils.QueryCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat, progress)
 		}
 		return
 	}
