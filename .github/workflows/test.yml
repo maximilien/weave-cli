@@ -160,6 +160,17 @@ jobs:
           unset WEAVIATE_COLLECTION_TEST
           ./test.sh coverage
 
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.out
+          flags: unittests
+          name: codecov-weave-cli
+          fail_ci_if_error: false
+          verbose: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         with:

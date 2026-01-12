@@ -1,0 +1,34 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  range: "50...80"
+
+  status:
+    project:
+      default:
+        target: 60%        # Target coverage for whole project
+        threshold: 5%      # Allow 5% decrease
+        if_ci_failed: error
+
+    patch:
+      default:
+        target: 70%        # New code should be well-tested
+        threshold: 10%
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: false
+
+ignore:
+  - "tests/"
+  - "**/*_test.go"
+  - "**/*_mock.go"
+  - "tools/"
+  - "demos/"
+  - "local/"
+  - "configs/"
+  - "docs/"
