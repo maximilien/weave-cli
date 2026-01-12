@@ -27,12 +27,29 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 	// If LLM client is available, use vector similarity search
 	if a.llmClient != nil {
+		// Get the collection's actual dimensions to verify compatibility
+		collectionDims, err := a.getCollectionDimensions(ctx, collectionName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get collection dimensions: %w", err)
+		}
+
 		// Generate embedding for the query
 		queryEmbedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
 		if err != nil {
 			// Fall back to content search if embedding generation fails
 			fmt.Fprintf(os.Stderr, "Warning: Failed to generate query embedding: %v. Falling back to content search.\n", err)
 			return a.searchByContent(ctx, collectionName, query, options)
+		}
+
+		// Verify dimensions match
+		if len(queryEmbedding) != collectionDims {
+			return nil, fmt.Errorf("embedding dimension mismatch: collection has %d dimensions but query embedding has %d dimensions\n\n"+
+				"This usually means the collection was created with a different embedding model.\n"+
+				"Solutions:\n"+
+				"  1. Use the same embedding model that was used to create the collection\n"+
+				"  2. Recreate the collection with the current embedding model configuration\n"+
+				"  3. Configure SUPABASE_VECTOR_DIMENSIONS=%d in your .env file",
+				collectionDims, len(queryEmbedding), collectionDims)
 		}
 
 		// Use pgvector similarity search

@@ -12,6 +12,7 @@ import (
 )
 
 // CreateCollection creates a new collection in Qdrant with the specified vector configuration
+// Also stores embedding model metadata for later retrieval
 func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimensions int, similarityMetric string) error {
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
@@ -22,7 +23,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimens
 		return err
 	}
 
-	// Create collection request
+	// Create collection request with vector config
 	req := &qdrant.CreateCollection{
 		CollectionName: name,
 		VectorsConfig: &qdrant.VectorsConfig{
@@ -40,6 +41,10 @@ func (c *Client) CreateCollection(ctx context.Context, name string, vectorDimens
 	if err != nil {
 		return fmt.Errorf("failed to create collection %s: %w", name, err)
 	}
+
+	// Note: Qdrant doesn't have native collection-level metadata storage
+	// Embedding model info is implicitly stored in the vector config (dimensions and distance)
+	// We retrieve it later from GetCollectionInfo
 
 	return nil
 }
@@ -140,4 +145,52 @@ func mapDistanceMetric(metric string) (qdrant.Distance, error) {
 	default:
 		return qdrant.Distance_UnknownDistance, fmt.Errorf("unsupported similarity metric: %s (must be Cosine, Dot, or Euclidean)", metric)
 	}
+}
+
+// getCollectionDimensions retrieves the vector dimensions from a collection's configuration
+func (c *Client) getCollectionDimensions(ctx context.Context, name string) (int, error) {
+	info, err := c.GetCollectionInfo(ctx, name)
+	if err != nil {
+		return c.config.VectorDimensions, nil // Fall back to config default
+	}
+
+	// Extract dimensions from vector config
+	if info.Result != nil && info.Result.Config != nil && info.Result.Config.Params != nil {
+		vectorsConfig := info.Result.Config.Params.VectorsConfig
+		if vectorsConfig != nil && vectorsConfig.Config != nil {
+			if params, ok := vectorsConfig.Config.(*qdrant.VectorsConfig_Params); ok {
+				if params.Params != nil {
+					return int(params.Params.Size), nil
+				}
+			}
+		}
+	}
+
+	return c.config.VectorDimensions, nil // Fall back to config default
+}
+
+// getCollectionDistance retrieves the distance metric from a collection's configuration
+func (c *Client) getCollectionDistance(ctx context.Context, name string) (qdrant.Distance, error) {
+	info, err := c.GetCollectionInfo(ctx, name)
+	if err != nil {
+		// Fall back to config default
+		distance, _ := mapDistanceMetric(c.config.SimilarityMetric)
+		return distance, nil
+	}
+
+	// Extract distance from vector config
+	if info.Result != nil && info.Result.Config != nil && info.Result.Config.Params != nil {
+		vectorsConfig := info.Result.Config.Params.VectorsConfig
+		if vectorsConfig != nil && vectorsConfig.Config != nil {
+			if params, ok := vectorsConfig.Config.(*qdrant.VectorsConfig_Params); ok {
+				if params.Params != nil {
+					return params.Params.Distance, nil
+				}
+			}
+		}
+	}
+
+	// Fall back to config default
+	distance, _ := mapDistanceMetric(c.config.SimilarityMetric)
+	return distance, nil
 }

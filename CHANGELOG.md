@@ -25,10 +25,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Text output mode: Progress messages sent to stderr for clean piping
   - Works seamlessly with `--json`, `--output`, and `--verbose` flags
 
+- **Embedding Dimension Verification**
+  - All vector databases now verify embedding dimensions before queries
+  - Prevents dimension mismatch errors when querying with different models
+  - Automatically retrieves collection/index dimension metadata at query time
+  - Provides helpful error messages with solutions when mismatches occur
+  - Supports all VDBs: Qdrant, MongoDB, Supabase, Pinecone, Neo4j,
+    Elasticsearch, OpenSearch, and others
+  - Graceful fallback to configured dimensions if metadata unavailable
+
 ### Changed
 
 - Agent execution now supports all vector database types
 - Progress reporting provides better user feedback during long-running queries
+
+### Fixed
+
+- **Vector Database Dimension Mismatch Errors**
+  - Qdrant: Now retrieves vector dimensions from collection config
+  - MongoDB: Stores/retrieves embedding metadata in `_weave_metadata` document
+  - Supabase: Creates `weave_collection_metadata` table for dimension tracking
+  - Pinecone: Retrieves dimensions from index description API
+  - Neo4j: Extracts dimensions from vector index options
+  - Elasticsearch: Retrieves dimensions from index mappings (dense_vector field)
+  - OpenSearch: Retrieves dimensions from index mappings (knn_vector field)
+  - All VDBs now provide clear error messages when dimension mismatches occur
 
 ## [0.9.0] - 2026-01-11
 

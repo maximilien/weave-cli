@@ -5,6 +5,7 @@ package opensearch
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -84,6 +85,52 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 	}
 
 	return nil
+}
+
+// getIndexDimensions retrieves the vector dimensions from index mappings
+func (a *Adapter) getIndexDimensions(ctx context.Context, name string) (int, error) {
+	// Use Indices.Get which returns all index information including mappings
+	resp, err := a.client.Indices.Get(
+		ctx,
+		opensearchapi.IndicesGetReq{
+			Indices: []string{name},
+		},
+	)
+	if err != nil {
+		// Fall back to config default
+		if a.config.VectorDimensions > 0 {
+			return a.config.VectorDimensions, nil
+		}
+		return 384, nil // Default
+	}
+
+	// Parse response to extract dimensions from mappings
+	if resp.Indices != nil {
+		if indexInfo, ok := resp.Indices[name]; ok {
+			if indexInfo.Mappings != nil {
+				// Unmarshal the mappings RawMessage
+				var mappings struct {
+					Properties map[string]interface{} `json:"properties"`
+				}
+				if err := json.Unmarshal(indexInfo.Mappings, &mappings); err == nil {
+					if props, ok := mappings.Properties["vector"].(map[string]interface{}); ok {
+						if dim, ok := props["dimension"].(float64); ok {
+							return int(dim), nil
+						}
+						if dim, ok := props["dimension"].(int); ok {
+							return dim, nil
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Fall back to config default
+	if a.config.VectorDimensions > 0 {
+		return a.config.VectorDimensions, nil
+	}
+	return 384, nil // Default
 }
 
 // DeleteCollection deletes an index

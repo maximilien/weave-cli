@@ -191,3 +191,33 @@ func (c *Client) GetCollectionInfo(ctx context.Context, name string) (map[string
 
 	return info, nil
 }
+
+// getIndexDimensions retrieves the vector dimensions from a Neo4j vector index
+func (c *Client) getIndexDimensions(ctx context.Context, name string) (int, error) {
+	info, err := c.GetCollectionInfo(ctx, name)
+	if err != nil {
+		// Fall back to config default
+		if c.config.VectorDimensions > 0 {
+			return c.config.VectorDimensions, nil
+		}
+		return 1536, nil // OpenAI default
+	}
+
+	// Extract dimensions from options
+	if options, ok := info["options"].(map[string]interface{}); ok {
+		if indexConfig, ok := options["indexConfig"].(map[string]interface{}); ok {
+			if dims, ok := indexConfig["vector.dimensions"].(int64); ok {
+				return int(dims), nil
+			}
+			if dims, ok := indexConfig["vector.dimensions"].(int); ok {
+				return dims, nil
+			}
+		}
+	}
+
+	// Fall back to config default
+	if c.config.VectorDimensions > 0 {
+		return c.config.VectorDimensions, nil
+	}
+	return 1536, nil // OpenAI default
+}

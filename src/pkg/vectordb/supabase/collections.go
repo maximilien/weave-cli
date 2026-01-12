@@ -6,6 +6,7 @@ package supabase
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -20,7 +21,18 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 		return err
 	}
 
+	// Ensure metadata table exists
+	if err := a.ensureMetadataTable(ctx); err != nil {
+		return err
+	}
+
 	tableName := a.getTableName(name)
+
+	// Get vector dimensions from config (default 1536 for OpenAI)
+	vectorDims := a.config.VectorDimensions
+	if vectorDims == 0 {
+		vectorDims = 1536
+	}
 
 	// Build CREATE TABLE query based on schema
 	var columns []string
@@ -31,7 +43,7 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 	columns = append(columns, "image_data TEXT")
 	columns = append(columns, "url TEXT")
 	columns = append(columns, "metadata JSONB")
-	columns = append(columns, "embedding vector(1536)") // Default OpenAI embedding dimension
+	columns = append(columns, fmt.Sprintf("embedding vector(%d)", vectorDims))
 
 	// Track fixed column names to avoid duplicates
 	fixedColumns := map[string]bool{
@@ -73,6 +85,24 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 			// Log warning but don't fail - indexes are optional
 			continue
 		}
+	}
+
+	// Store embedding configuration in metadata table
+	similarityMetric := a.config.SimilarityMetric
+	if similarityMetric == "" {
+		similarityMetric = "cosine"
+	}
+
+	metadataQuery := `
+		INSERT INTO weave_collection_metadata (collection_name, vector_dimensions, similarity_metric)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (collection_name) DO UPDATE
+		SET vector_dimensions = $2, similarity_metric = $3
+	`
+	_, err = a.db.ExecContext(ctx, metadataQuery, name, vectorDims, similarityMetric)
+	if err != nil {
+		// Don't fail collection creation if metadata insert fails
+		fmt.Fprintf(os.Stderr, "Warning: Failed to store embedding metadata: %v\n", err)
 	}
 
 	return nil
@@ -226,4 +256,44 @@ func (a *Adapter) convertDataTypeToPostgreSQL(dataTypes []string) string {
 	default:
 		return "TEXT" // Default to TEXT for unknown types
 	}
+}
+
+// ensureMetadataTable creates the metadata table if it doesn't exist
+func (a *Adapter) ensureMetadataTable(ctx context.Context) error {
+	createTableQuery := `
+		CREATE TABLE IF NOT EXISTS weave_collection_metadata (
+			collection_name TEXT PRIMARY KEY,
+			vector_dimensions INTEGER NOT NULL,
+			similarity_metric TEXT NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)
+	`
+
+	_, err := a.db.ExecContext(ctx, createTableQuery)
+	if err != nil {
+		return fmt.Errorf("failed to create metadata table: %w", err)
+	}
+
+	return nil
+}
+
+// getCollectionDimensions retrieves the vector dimensions from collection metadata
+func (a *Adapter) getCollectionDimensions(ctx context.Context, name string) (int, error) {
+	query := `
+		SELECT vector_dimensions
+		FROM weave_collection_metadata
+		WHERE collection_name = $1
+	`
+
+	var dimensions int
+	err := a.db.QueryRowContext(ctx, query, name).Scan(&dimensions)
+	if err != nil {
+		// If metadata doesn't exist, fall back to config default
+		if a.config.VectorDimensions > 0 {
+			return a.config.VectorDimensions, nil
+		}
+		return 1536, nil // OpenAI default
+	}
+
+	return dimensions, nil
 }

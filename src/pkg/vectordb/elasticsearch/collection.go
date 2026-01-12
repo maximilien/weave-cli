@@ -90,6 +90,38 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 	return nil
 }
 
+// getIndexDimensions retrieves the vector dimensions from index mappings
+func (a *Adapter) getIndexDimensions(ctx context.Context, name string) (int, error) {
+	resp, err := a.client.Indices.GetMapping().Index(name).Do(ctx)
+	if err != nil {
+		// Fall back to config default
+		if a.config.VectorDimensions > 0 {
+			return a.config.VectorDimensions, nil
+		}
+		return 1536, nil // OpenAI default
+	}
+
+	// Extract dimensions from mapping
+	if indexMapping, ok := resp[name]; ok {
+		mappings := indexMapping.Mappings
+		if props := mappings.Properties; props != nil {
+			if vectorField, ok := props["vector_field"]; ok {
+				if denseVector, ok := vectorField.(*types.DenseVectorProperty); ok {
+					if denseVector.Dims != nil {
+						return *denseVector.Dims, nil
+					}
+				}
+			}
+		}
+	}
+
+	// Fall back to config default
+	if a.config.VectorDimensions > 0 {
+		return a.config.VectorDimensions, nil
+	}
+	return 1536, nil // OpenAI default
+}
+
 // DeleteCollection deletes an Elasticsearch index
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))

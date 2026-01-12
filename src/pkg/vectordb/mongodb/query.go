@@ -23,12 +23,29 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
+	// Get the collection's actual dimensions to verify compatibility
+	collectionDims, err := a.Client.getCollectionDimensions(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection dimensions: %w", err)
+	}
+
 	collection := a.getCollection(collectionName)
 
 	// Generate embedding for query using LLM client
 	queryEmbedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	}
+
+	// Verify dimensions match
+	if len(queryEmbedding) != collectionDims {
+		return nil, fmt.Errorf("embedding dimension mismatch: collection has %d dimensions but query embedding has %d dimensions\n\n"+
+			"This usually means the collection was created with a different embedding model.\n"+
+			"Solutions:\n"+
+			"  1. Use the same embedding model that was used to create the collection\n"+
+			"  2. Recreate the collection with the current embedding model configuration\n"+
+			"  3. Configure MONGODB_VECTOR_DIMENSIONS=%d in your .env file",
+			collectionDims, len(queryEmbedding), collectionDims)
 	}
 
 	// Build vector search aggregation pipeline

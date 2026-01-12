@@ -53,6 +53,25 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 		return fmt.Errorf("failed to create text index: %w", err)
 	}
 
+	// Store embedding model metadata as a special document
+	// MongoDB doesn't have collection-level metadata, so we use a reserved document
+	metadataDoc := bson.M{
+		"document_id":       "_weave_metadata",
+		"vector_dimensions": c.config.VectorDimensions,
+		"similarity_metric": c.config.SimilarityMetric,
+		"is_metadata":       true,
+	}
+
+	// Insert or update metadata document
+	filter := bson.M{"document_id": "_weave_metadata"}
+	update := bson.M{"$set": metadataDoc}
+	opts := options.Update().SetUpsert(true)
+	_, err = collection.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		// Don't fail collection creation if metadata insert fails
+		fmt.Printf("Warning: Failed to store embedding metadata: %v\n", err)
+	}
+
 	// Create vector search index
 	// Note: This requires MongoDB Atlas and must be done via Atlas UI or Admin API
 	// We'll document this requirement and provide instructions
@@ -124,10 +143,35 @@ func (c *Client) GetCollectionCount(ctx context.Context, name string) (int64, er
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
-	count, err := c.getCollection(name).CountDocuments(ctx, bson.D{})
+	// Exclude metadata document from count
+	filter := bson.M{"document_id": bson.M{"$ne": "_weave_metadata"}}
+	count, err := c.getCollection(name).CountDocuments(ctx, filter)
 	if err != nil {
 		return 0, fmt.Errorf("failed to get collection count: %w", err)
 	}
 
 	return count, nil
+}
+
+// getCollectionDimensions retrieves the vector dimensions from collection metadata
+func (c *Client) getCollectionDimensions(ctx context.Context, name string) (int, error) {
+	collection := c.getCollection(name)
+
+	// Try to find the metadata document
+	filter := bson.M{"document_id": "_weave_metadata"}
+	var result struct {
+		VectorDimensions int `bson:"vector_dimensions"`
+	}
+
+	err := collection.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
+		// If metadata document doesn't exist, fall back to config default
+		return c.config.VectorDimensions, nil
+	}
+
+	if result.VectorDimensions > 0 {
+		return result.VectorDimensions, nil
+	}
+
+	return c.config.VectorDimensions, nil
 }

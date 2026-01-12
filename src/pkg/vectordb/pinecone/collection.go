@@ -25,11 +25,24 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 		return fmt.Errorf("invalid schema: %w", err)
 	}
 
-	// Use default dimension for OpenAI embeddings
-	dimension := int32(1536)
+	// Get dimension from config (default 1536 for OpenAI)
+	dimension := int32(a.config.VectorDimensions)
+	if dimension == 0 {
+		dimension = 1536 // OpenAI text-embedding-3-small default
+	}
 
-	// Use cosine metric by default
-	metric := pinecone.Cosine
+	// Map similarity metric from config
+	metric := pinecone.Cosine // Default
+	if a.config.SimilarityMetric != "" {
+		switch a.config.SimilarityMetric {
+		case "cosine":
+			metric = pinecone.Cosine
+		case "euclidean", "l2":
+			metric = pinecone.Euclidean
+			// Pinecone SDK may not have DotProduct in older versions
+			// Default to Cosine for unsupported metrics
+		}
+	}
 
 	// Create serverless index (default for Pinecone)
 	_, err := a.client.CreateServerlessIndex(ctx, &pinecone.CreateServerlessIndexRequest{
@@ -243,4 +256,18 @@ func (a *Adapter) ValidateSchema(s *vectordb.CollectionSchema) error {
 	}
 
 	return nil
+}
+
+// getIndexDimensions retrieves the vector dimensions from a Pinecone index
+func (a *Adapter) getIndexDimensions(ctx context.Context, name string) (int, error) {
+	idx, err := a.client.DescribeIndex(ctx, name)
+	if err != nil {
+		// Fall back to config default
+		if a.config.VectorDimensions > 0 {
+			return a.config.VectorDimensions, nil
+		}
+		return 1536, nil // OpenAI default
+	}
+
+	return int(idx.Dimension), nil
 }

@@ -236,10 +236,27 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("OpenAI client not configured - cannot generate embeddings")
 	}
 
+	// Get the collection's actual dimensions to verify compatibility
+	collectionDims, err := a.Client.getCollectionDimensions(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection dimensions: %w", err)
+	}
+
 	// Generate embedding for query
 	embedding64, err := a.llmClient.GenerateEmbedding(ctx, query, "text-embedding-3-small")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	}
+
+	// Verify dimensions match
+	if len(embedding64) != collectionDims {
+		return nil, fmt.Errorf("embedding dimension mismatch: collection has %d dimensions but query embedding has %d dimensions\n\n"+
+			"This usually means the collection was created with a different embedding model.\n"+
+			"Solutions:\n"+
+			"  1. Use the same embedding model that was used to create the collection\n"+
+			"  2. Recreate the collection with the current embedding model configuration\n"+
+			"  3. Configure QDRANT_VECTOR_DIMENSIONS=%d in your .env file",
+			collectionDims, len(embedding64), collectionDims)
 	}
 
 	// Convert []float64 to []float32

@@ -287,9 +287,26 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("LLM client not available for generating query embeddings")
 	}
 
+	// Get the index's actual dimensions to verify compatibility
+	indexDims, err := a.client.getIndexDimensions(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get index dimensions: %w", err)
+	}
+
 	embedding, err := a.llmClient.GenerateEmbedding(ctx, query, "text-embedding-3-small")
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	}
+
+	// Verify dimensions match
+	if len(embedding) != indexDims {
+		return nil, fmt.Errorf("embedding dimension mismatch: index has %d dimensions but query embedding has %d dimensions\n\n"+
+			"This usually means the index was created with a different embedding model.\n"+
+			"Solutions:\n"+
+			"  1. Use the same embedding model that was used to create the index\n"+
+			"  2. Recreate the index with the current embedding model configuration\n"+
+			"  3. Configure NEO4J_VECTOR_DIMENSIONS=%d in your .env file",
+			indexDims, len(embedding), indexDims)
 	}
 
 	// Convert []float64 to []float32
