@@ -72,12 +72,13 @@ func TestFactory_ValidateConfig(t *testing.T) {
 			errMsg:  "unsupported Weaviate type",
 		},
 		{
-			name: "Cloud config with API key",
+			name: "Cloud config with both API keys",
 			config: &vectordb.Config{
-				Type:    vectordb.VectorDBTypeWeaviateCloud,
-				URL:     "https://xyz.weaviate.network",
-				APIKey:  "test-key",
-				Timeout: 30,
+				Type:         vectordb.VectorDBTypeWeaviateCloud,
+				URL:          "https://xyz.weaviate.network",
+				APIKey:       "test-key",
+				OpenAIAPIKey: "openai-key",
+				Timeout:      30,
 			},
 			wantErr: false,
 		},
@@ -89,7 +90,18 @@ func TestFactory_ValidateConfig(t *testing.T) {
 				Timeout: 30,
 			},
 			wantErr: true,
-			errMsg:  "requires an API key",
+			errMsg:  "API key is required",
+		},
+		{
+			name: "Cloud config with API key but no OpenAI key",
+			config: &vectordb.Config{
+				Type:    vectordb.VectorDBTypeWeaviateCloud,
+				URL:     "https://xyz.weaviate.network",
+				APIKey:  "test-key",
+				Timeout: 30,
+			},
+			wantErr: true,
+			errMsg:  "OpenAI API key is required",
 		},
 	}
 

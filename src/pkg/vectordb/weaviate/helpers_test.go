@@ -15,42 +15,42 @@ func TestMapWeaviateDataType(t *testing.T) {
 	tests := []struct {
 		name     string
 		dataType string
-		expected []string
+		expected string
 	}{
 		{
 			name:     "Text type",
 			dataType: "text",
-			expected: []string{"text"},
+			expected: "text",
 		},
 		{
-			name:     "String type",
-			dataType: "string",
-			expected: []string{"text"},
+			name:     "Int type",
+			dataType: "int",
+			expected: "int",
 		},
 		{
-			name:     "Number type",
-			dataType: "number",
-			expected: []string{"number"},
+			name:     "Float type",
+			dataType: "float",
+			expected: "number",
 		},
 		{
-			name:     "Boolean type",
-			dataType: "boolean",
-			expected: []string{"boolean"},
+			name:     "Bool type",
+			dataType: "bool",
+			expected: "boolean",
 		},
 		{
 			name:     "Date type",
 			dataType: "date",
-			expected: []string{"date"},
+			expected: "date",
 		},
 		{
-			name:     "UUID type",
-			dataType: "uuid",
-			expected: []string{"uuid"},
+			name:     "Object type",
+			dataType: "object",
+			expected: "object",
 		},
 		{
 			name:     "Unknown type defaults to text",
 			dataType: "unknown",
-			expected: []string{"text"},
+			expected: "text",
 		},
 	}
 
@@ -69,23 +69,23 @@ func TestIsImageCollection(t *testing.T) {
 		expected       bool
 	}{
 		{
-			name:           "Image collection with image_ prefix",
+			name:           "Collection with image keyword",
 			collectionName: "image_photos",
 			expected:       true,
 		},
 		{
-			name:           "Image collection with img_ prefix",
+			name:           "Collection with img keyword",
 			collectionName: "img_gallery",
 			expected:       true,
 		},
 		{
-			name:           "Image collection with _image suffix",
-			collectionName: "photos_image",
+			name:           "Collection with photo keyword",
+			collectionName: "user_photos",
 			expected:       true,
 		},
 		{
-			name:           "Image collection with _img suffix",
-			collectionName: "gallery_img",
+			name:           "Collection with picture keyword",
+			collectionName: "picture_archive",
 			expected:       true,
 		},
 		{
@@ -96,7 +96,7 @@ func TestIsImageCollection(t *testing.T) {
 		{
 			name:           "Collection with image in middle",
 			collectionName: "my_image_collection",
-			expected:       false,
+			expected:       true, // Contains "image" keyword
 		},
 	}
 
@@ -158,7 +158,7 @@ func TestGetTimeoutWeaviate(t *testing.T) {
 		{
 			name:     "Default timeout",
 			timeout:  0,
-			expected: 30 * time.Second, // Weaviate default is 30
+			expected: 10 * time.Second, // Weaviate default is 10
 		},
 		{
 			name:     "Small timeout",

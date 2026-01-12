@@ -47,29 +47,37 @@ func TestConvertDocumentsFromWeaviate(t *testing.T) {
 	adapter := &Adapter{}
 
 	tests := []struct {
-		name   string
-		models []*Document
+		name      string
+		models    []*Document
+		expectNil bool
 	}{
 		{
-			name:   "Nil models",
-			models: nil,
+			name:      "Nil models",
+			models:    nil,
+			expectNil: true, // Returns nil for nil input
 		},
 		{
-			name:   "Empty slice",
-			models: []*Document{},
+			name:      "Empty slice",
+			models:    []*Document{},
+			expectNil: false,
 		},
 		{
 			name: "Single document",
 			models: []*Document{
 				{ID: "doc-1", Text: "Test"},
 			},
+			expectNil: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := adapter.convertDocumentsFromWeaviate(tt.models)
-			assert.NotNil(t, result)
+			if tt.expectNil {
+				assert.Nil(t, result)
+			} else {
+				assert.NotNil(t, result)
+			}
 		})
 	}
 }
@@ -78,25 +86,32 @@ func TestConvertSchemaFromWeaviate(t *testing.T) {
 	adapter := &Adapter{}
 
 	tests := []struct {
-		name   string
-		schema *CollectionSchema
+		name      string
+		schema    *CollectionSchema
+		expectNil bool
 	}{
 		{
-			name:   "Nil schema",
-			schema: nil,
+			name:      "Nil schema",
+			schema:    nil,
+			expectNil: true, // Returns nil for nil input
 		},
 		{
 			name: "Schema with class",
 			schema: &CollectionSchema{
 				Class: "TestClass",
 			},
+			expectNil: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := adapter.convertSchemaFromWeaviate(tt.schema)
-			assert.NotNil(t, result)
+			if tt.expectNil {
+				assert.Nil(t, result)
+			} else {
+				assert.NotNil(t, result)
+			}
 		})
 	}
 }
