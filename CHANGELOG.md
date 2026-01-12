@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Summary
 
-Bug fix release addressing embedding dimension mismatch errors across all vector databases. Adds automatic dimension verification and helpful error messages when querying collections created with different embedding models.
+Bug fix release addressing embedding dimension mismatch errors across all
+vector databases. Adds automatic dimension verification and helpful error
+messages when querying collections created with different embedding models.
 
 ### Added
 

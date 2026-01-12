@@ -9,6 +9,7 @@ This directory contains mock implementations for testing Weave CLI components.
 Mock implementation of `vectordb.VectorDBClient` interface.
 
 **Usage:**
+
 ```go
 import (
     "testing"
@@ -37,9 +38,11 @@ func TestYourFunction(t *testing.T) {
 
 ### MockLLMClient
 
-Mock implementation of `llm.Client` interface for testing embedding generation and LLM interactions.
+Mock implementation of `llm.Client` interface for testing embedding
+generation and LLM interactions.
 
 **Usage:**
+
 ```go
 func TestEmbeddingGeneration(t *testing.T) {
     mockLLM := new(mocks.MockLLMClient)
@@ -60,12 +63,14 @@ func TestEmbeddingGeneration(t *testing.T) {
 ## Mock Patterns
 
 ### Basic Mock Setup
+
 ```go
 mock := new(mocks.MockVectorDBClient)
 mock.On("MethodName", arg1, arg2).Return(returnValue, error)
 ```
 
 ### Argument Matchers
+
 ```go
 // Any argument
 mock.On("Method", mock.Anything).Return(nil)
@@ -80,6 +85,7 @@ mock.On("Method", mock.MatchedBy(func(arg string) bool {
 ```
 
 ### Return Values
+
 ```go
 // Simple return
 mock.On("Method").Return(value, nil)
@@ -93,6 +99,7 @@ mock.On("Method").Return(value2, nil).Once()
 ```
 
 ### Verification
+
 ```go
 // Assert specific method was called
 mock.AssertCalled(t, "MethodName", arg1, arg2)
@@ -108,9 +115,11 @@ mock.AssertExpectations(t)
 
 1. **Isolate Units**: Use mocks to test components in isolation
 2. **Test Error Paths**: Mock error returns to test error handling
-3. **Verify Interactions**: Always call `AssertExpectations()` to verify mocks were used correctly
+3. **Verify Interactions**: Always call `AssertExpectations()` to verify
+   mocks were used correctly
 4. **Clean Setup**: Use test helpers to reduce mock setup boilerplate
-5. **Meaningful Assertions**: Assert on important behaviors, not implementation details
+5. **Meaningful Assertions**: Assert on important behaviors, not
+   implementation details
 
 ## Adding New Mocks
 
@@ -125,10 +134,12 @@ When adding new mocks:
 ## Dependencies
 
 This package requires:
+
 - `github.com/stretchr/testify/mock` - Mock framework
 - `github.com/stretchr/testify/assert` - Assertions
 
 Install with:
+
 ```bash
 go get github.com/stretchr/testify
 ```
