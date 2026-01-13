@@ -1,0 +1,279 @@
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 dr.max
+
+# Vector Database Test Infrastructure
+#
+# This docker-compose file provides local instances of vector databases
+# for integration testing. Services are organized into tiers based on
+# resource requirements and startup complexity.
+#
+# Usage:
+#   # Start all Tier 1 services (recommended)
+#   docker-compose -f docker-compose.test.yml up -d qdrant chroma mongodb
+#
+#   # Start all services
+#   docker-compose -f docker-compose.test.yml up -d
+#
+#   # Stop and remove volumes (clean state)
+#   docker-compose -f docker-compose.test.yml down -v
+#
+# Run integration tests:
+#   go test -tags=integration -v ./src/pkg/vectordb/qdrant/...
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # Tier 1: Easy Wins (~1.3GB RAM, ~20s startup)
+  # ============================================================================
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: weave-test-qdrant
+    ports:
+      - "6333:6333"  # HTTP API
+      - "6334:6334"  # gRPC
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - weave-test
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: weave-test-chroma
+    ports:
+      - "8000:8000"  # HTTP API
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    volumes:
+      - chroma-data:/chroma/chroma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - weave-test
+
+  mongodb:
+    image: mongo:7
+    container_name: weave-test-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - weave-test
+
+  # ============================================================================
+  # Tier 2: Standard (~3GB additional, ~45s cumulative startup)
+  # ============================================================================
+
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: weave-test-milvus-etcd
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - milvus-etcd-data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - weave-test
+
+  milvus-minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: weave-test-milvus-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - milvus-minio-data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - weave-test
+
+  milvus:
+    image: milvusdb/milvus:latest
+    container_name: weave-test-milvus
+    depends_on:
+      - milvus-etcd
+      - milvus-minio
+    ports:
+      - "19530:19530"  # gRPC
+      - "9091:9091"    # Metrics
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+    volumes:
+      - milvus-data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - weave-test
+
+  weaviate:
+    image: semitechnologies/weaviate:latest
+    container_name: weave-test-weaviate
+    ports:
+      - "8080:8080"   # HTTP API
+      - "50051:50051" # gRPC
+    environment:
+      - QUERY_DEFAULTS_LIMIT=25
+      - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
+      - PERSISTENCE_DATA_PATH=/var/lib/weaviate
+      - DEFAULT_VECTORIZER_MODULE=none
+      - ENABLE_MODULES=
+      - CLUSTER_HOSTNAME=node1
+    volumes:
+      - weaviate-data:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
+    networks:
+      - weave-test
+
+  neo4j:
+    image: neo4j:latest
+    container_name: weave-test-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7474"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    networks:
+      - weave-test
+
+  # ============================================================================
+  # Tier 3: Complex (~4GB additional, ~90s cumulative startup)
+  # ============================================================================
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: weave-test-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - weave-test
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: weave-test-opensearch
+    ports:
+      - "9201:9200"  # Different port to avoid conflict with Elasticsearch
+    environment:
+      - discovery.type=single-node
+      - plugins.security.disabled=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - weave-test
+
+  postgres:
+    image: ankane/pgvector:latest
+    container_name: weave-test-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=vectordb
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+    networks:
+      - weave-test
+
+networks:
+  weave-test:
+    driver: bridge
+
+volumes:
+  # Tier 1
+  qdrant-data:
+  chroma-data:
+  mongodb-data:
+
+  # Tier 2
+  milvus-etcd-data:
+  milvus-minio-data:
+  milvus-data:
+  weaviate-data:
+  neo4j-data:
+
+  # Tier 3
+  elasticsearch-data:
+  opensearch-data:
+  postgres-data:
