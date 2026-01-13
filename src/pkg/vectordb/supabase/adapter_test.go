@@ -12,11 +12,11 @@ import (
 
 func TestPrepareConnectionString(t *testing.T) {
 	tests := []struct {
-		name              string
-		dbURL             string
-		expectError       bool
-		expectedContains  []string
-		expectedSSLMode   string
+		name             string
+		dbURL            string
+		expectError      bool
+		expectedContains []string
+		expectedSSLMode  string
 	}{
 		{
 			name:             "Localhost disables SSL",
