@@ -188,42 +188,64 @@ func TestGetTimeoutWeaviate(t *testing.T) {
 }
 
 func TestGetTimeoutForWeaviate(t *testing.T) {
-	config := &Config{
-		URL:     "http://localhost:8080",
-		Timeout: 30,
-	}
-
-	client, err := NewClient(config)
-	if err != nil {
-		t.Skip("Skipping test that requires Weaviate connection")
-	}
-
 	tests := []struct {
 		name          string
+		apiKey        string
+		timeout       int
 		operationType vectordb.OperationType
-		minExpected   time.Duration
+		expected      time.Duration
 	}{
 		{
-			name:          "Collection operation",
+			name:          "Local health operation with default timeout",
+			apiKey:        "",
+			timeout:       0,
+			operationType: vectordb.OperationTypeHealth,
+			expected:      10 * time.Second, // Local default for health
+		},
+		{
+			name:          "Cloud health operation with default timeout",
+			apiKey:        "test-api-key",
+			timeout:       0,
+			operationType: vectordb.OperationTypeHealth,
+			expected:      20 * time.Second, // Cloud default for health
+		},
+		{
+			name:          "Local collection operation with default timeout",
+			apiKey:        "",
+			timeout:       0,
 			operationType: vectordb.OperationTypeCollection,
-			minExpected:   30 * time.Second,
+			expected:      20 * time.Second, // Local default for collection
 		},
 		{
-			name:          "Document operation",
-			operationType: vectordb.OperationTypeDocument,
-			minExpected:   30 * time.Second,
+			name:          "Cloud collection operation with default timeout",
+			apiKey:        "test-api-key",
+			timeout:       0,
+			operationType: vectordb.OperationTypeCollection,
+			expected:      40 * time.Second, // Cloud default for collection
 		},
 		{
-			name:          "Query operation",
+			name:          "Custom timeout overrides defaults",
+			apiKey:        "",
+			timeout:       45,
 			operationType: vectordb.OperationTypeQuery,
-			minExpected:   30 * time.Second,
+			expected:      45 * time.Second,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				URL:     "http://localhost:8080",
+				APIKey:  tt.apiKey,
+				Timeout: tt.timeout,
+			}
+
+			client, err := NewClient(config)
+			assert.NoError(t, err)
+			assert.NotNil(t, client)
+
 			result := client.getTimeoutFor(tt.operationType)
-			assert.GreaterOrEqual(t, result, tt.minExpected)
+			assert.Equal(t, tt.expected, result)
 		})
 	}
 }
