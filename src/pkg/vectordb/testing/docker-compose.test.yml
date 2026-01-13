@@ -20,6 +20,7 @@
 # Run integration tests:
 #   go test -tags=integration -v ./src/pkg/vectordb/qdrant/...
 
+---
 version: '3.8'
 
 services:
@@ -38,7 +39,13 @@ services:
     volumes:
       - qdrant-data:/qdrant/storage
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:6333/health"]
+      test:
+        - "CMD"
+        - "wget"
+        - "--no-verbose"
+        - "--tries=1"
+        - "--spider"
+        - "http://localhost:6333/health"
       interval: 5s
       timeout: 3s
       retries: 12
@@ -98,7 +105,13 @@ services:
       - ETCD_SNAPSHOT_COUNT=50000
     volumes:
       - milvus-etcd-data:/etcd
-    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    command:
+      - etcd
+      - -advertise-client-urls=http://127.0.0.1:2379
+      - -listen-client-urls
+      - http://0.0.0.0:2379
+      - --data-dir
+      - /etcd
     healthcheck:
       test: ["CMD", "etcdctl", "endpoint", "health"]
       interval: 5s
@@ -151,8 +164,8 @@ services:
     image: semitechnologies/weaviate:latest
     container_name: weave-test-weaviate
     ports:
-      - "8080:8080"   # HTTP API
-      - "50051:50051" # gRPC
+      - "8080:8080"    # HTTP API
+      - "50051:50051"  # gRPC
     environment:
       - QUERY_DEFAULTS_LIMIT=25
       - AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true
@@ -184,7 +197,13 @@ services:
     volumes:
       - neo4j-data:/data
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:7474"]
+      test:
+        - "CMD"
+        - "wget"
+        - "--no-verbose"
+        - "--tries=1"
+        - "--spider"
+        - "http://localhost:7474"
       interval: 5s
       timeout: 3s
       retries: 12
@@ -208,7 +227,9 @@ services:
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test:
+        - "CMD-SHELL"
+        - "curl -f http://localhost:9200/_cluster/health || exit 1"
       interval: 10s
       timeout: 5s
       retries: 12
@@ -228,7 +249,9 @@ services:
     volumes:
       - opensearch-data:/usr/share/opensearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test:
+        - "CMD-SHELL"
+        - "curl -f http://localhost:9200/_cluster/health || exit 1"
       interval: 10s
       timeout: 5s
       retries: 12
