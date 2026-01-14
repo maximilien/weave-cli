@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Enhanced Progress Reporting**
+  - Progress bar visualization with percentage display
+    - Example: `[========>           ]  40% (4/10, ETA: 2s)`
+  - Estimated Time of Arrival (ETA) for long-running operations
+  - Throughput metrics (items/sec) in JSON output
+  - Support for tracking current/total items
+  - New methods: `SetTotal()`, `UpdateProgress()`, `UpdateWithCount()`
+  - JSON output now includes: `progress`, `current`, `total`, `eta`, `throughput`
+  - Works with all `--progress` flags across commands
+  - Human-readable duration formatting (e.g., "2m30s", "1h15m")
+
 - **Multi-VDB Agent Support**
   - RAG agents now work with **all vector databases**, not just Weaviate
   - Enabled `--agent` flag for: Qdrant, Milvus, Chroma, MongoDB, Neo4j,
