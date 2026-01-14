@@ -2553,19 +2553,8 @@ func QueryCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, c
 		reporter.Update(fmt.Sprintf("Found %d results", len(results)))
 	}
 
-	// Convert vectordb.QueryResult to weaviate.QueryResult format for agent
-	weaviateResults := make([]weaviate.QueryResult, len(results))
-	for i, r := range results {
-		weaviateResults[i] = weaviate.QueryResult{
-			ID:       r.Document.ID,
-			Content:  r.Document.Content,
-			Metadata: r.Document.Metadata,
-			Score:    r.Score,
-		}
-	}
-
-	// Execute through agent
-	ExecuteQueryWithAgent(ctx, agentName, queryText, weaviateResults, outputFormat, showProgress)
+	// Execute through agent (results are already in vectordb.QueryResult format)
+	ExecuteQueryWithAgent(ctx, agentName, queryText, results, outputFormat, showProgress)
 }
 
 // QueryMockCollection performs semantic search on a mock collection
@@ -2609,8 +2598,21 @@ func QueryMockCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfi
 		reporter.Update(fmt.Sprintf("Found %d results", len(results)))
 	}
 
+	// Convert weaviate.QueryResult to vectordb.QueryResult
+	vdbResults := make([]*vectordb.QueryResult, len(results))
+	for i, result := range results {
+		vdbResults[i] = &vectordb.QueryResult{
+			Document: vectordb.Document{
+				ID:       result.ID,
+				Content:  result.Content,
+				Metadata: result.Metadata,
+			},
+			Score: result.Score,
+		}
+	}
+
 	// Execute through agent
-	ExecuteQueryWithAgent(ctx, agentName, queryText, results, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentName, queryText, vdbResults, outputFormat, showProgress)
 }
 
 // Generic collection operations for VectorDB interface (Milvus, etc.)

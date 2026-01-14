@@ -17,7 +17,7 @@ import (
 )
 
 // ExecuteQueryWithAgent executes a query and processes results through an agent
-func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, results []weaviate.QueryResult, outputFormat string, showProgress bool) {
+func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, results []*vectordb.QueryResult, outputFormat string, showProgress bool) {
 	// Create progress reporter (use JSON reporter if output format is JSON)
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -65,24 +65,11 @@ func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, 
 		os.Exit(1)
 	}
 
-	// Convert weaviate.QueryResult to vectordb.QueryResult
-	vdbResults := make([]*vectordb.QueryResult, len(results))
-	for i, result := range results {
-		vdbResults[i] = &vectordb.QueryResult{
-			Document: vectordb.Document{
-				ID:       result.ID,
-				Content:  result.Content,
-				Metadata: result.Metadata,
-			},
-			Score: result.Score,
-		}
-	}
-
 	// Execute agent
-	reporter.Update(fmt.Sprintf("Building context from %d sources...", len(vdbResults)))
+	reporter.Update(fmt.Sprintf("Building context from %d sources...", len(results)))
 	input := &agents.RAGInput{
 		Query:   query,
-		Results: vdbResults,
+		Results: results,
 	}
 
 	reporter.Update("Generating response...")
@@ -135,6 +122,19 @@ func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBC
 
 	reporter.Update(fmt.Sprintf("Found %d results", len(results)))
 
+	// Convert weaviate.QueryResult to vectordb.QueryResult
+	vdbResults := make([]*vectordb.QueryResult, len(results))
+	for i, result := range results {
+		vdbResults[i] = &vectordb.QueryResult{
+			Document: vectordb.Document{
+				ID:       result.ID,
+				Content:  result.Content,
+				Metadata: result.Metadata,
+			},
+			Score: result.Score,
+		}
+	}
+
 	// Execute through agent
-	ExecuteQueryWithAgent(ctx, agentName, queryText, results, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentName, queryText, vdbResults, outputFormat, showProgress)
 }
