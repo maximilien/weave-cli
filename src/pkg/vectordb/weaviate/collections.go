@@ -102,10 +102,10 @@ func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, e
 	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
-	// Use the WeaveClient to count documents
-	docs, err := a.weaveClient.ListDocuments(ctx, name, 1000000) // Large limit to get all
+	// Use Weaviate's GraphQL Aggregate API to get count without pagination limits
+	count, err := a.client.GetCollectionCount(ctx, name)
 	if err != nil {
 		return 0, a.wrapError(err, "get collection count")
 	}
-	return int64(len(docs)), nil
+	return count, nil
 }

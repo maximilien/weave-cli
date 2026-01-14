@@ -708,6 +708,12 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 	}
 	url := fmt.Sprintf("%s/v1/objects", baseURL)
 
+	// Serialize metadata as JSON string (Weaviate schema expects text type)
+	metadataJSON, err := json.Marshal(document.Metadata)
+	if err != nil {
+		return fmt.Errorf("Weaviate: failed to marshal metadata: %w", err)
+	}
+
 	// Create the document payload
 	payload := map[string]interface{}{
 		"class": collectionName,
@@ -716,7 +722,7 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 			"image":      document.Image,
 			"image_data": document.ImageData,
 			"url":        document.URL,
-			"metadata":   document.Metadata,
+			"metadata":   string(metadataJSON),
 		},
 	}
 

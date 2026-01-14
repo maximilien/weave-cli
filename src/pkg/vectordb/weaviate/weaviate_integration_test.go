@@ -80,10 +80,7 @@ func getTestSchema(collectionName string) *vectordb.CollectionSchema {
 				Name:     "content",
 				DataType: []string{"text"},
 			},
-			{
-				Name:     "metadata",
-				DataType: []string{"object"},
-			},
+			// Note: metadata will be added as default text type from schema
 		},
 	}
 }

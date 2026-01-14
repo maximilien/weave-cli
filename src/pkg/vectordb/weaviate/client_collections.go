@@ -11,6 +11,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/weaviate/weaviate-go-client/v4/weaviate/graphql"
 )
 
 // ListCollections returns a list of all collections
@@ -57,6 +59,55 @@ func (c *Client) DeleteCollectionSchema(ctx context.Context, collectionName stri
 	}
 
 	return weaveClient.DeleteCollectionSchema(ctx, collectionName)
+}
+
+// GetCollectionCount returns the number of objects in a collection using GraphQL Aggregate
+func (c *Client) GetCollectionCount(ctx context.Context, collectionName string) (int64, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
+	defer cancel()
+
+	// Use Weaviate's GraphQL Aggregate API to get count without pagination limits
+	result, err := c.client.GraphQL().Aggregate().
+		WithClassName(collectionName).
+		WithFields(graphql.Field{Name: "meta { count }"}).
+		Do(ctx)
+
+	if err != nil {
+		return 0, fmt.Errorf("Weaviate: failed to aggregate count: %w", err)
+	}
+
+	// Parse the result
+	if result.Data == nil {
+		return 0, nil
+	}
+
+	// Extract count from aggregate result
+	aggregateData, ok := result.Data["Aggregate"].(map[string]interface{})
+	if !ok {
+		return 0, nil
+	}
+
+	classData, ok := aggregateData[collectionName].([]interface{})
+	if !ok || len(classData) == 0 {
+		return 0, nil
+	}
+
+	metaData, ok := classData[0].(map[string]interface{})
+	if !ok {
+		return 0, nil
+	}
+
+	meta, ok := metaData["meta"].(map[string]interface{})
+	if !ok {
+		return 0, nil
+	}
+
+	count, ok := meta["count"].(float64)
+	if !ok {
+		return 0, nil
+	}
+
+	return int64(count), nil
 }
 
 // CreateCollection creates a new collection with the specified schema
@@ -303,20 +354,21 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 			},
 			{
 				"name":     "metadata",
-				"dataType": []string{"text"}, // Store as JSON string for compatibility
+				"dataType": []string{"text"}, // Store as JSON string
 			},
 		}
 	}
 
-	// Add custom fields if provided (skip fields that already exist in default schema)
+	// Add custom fields if provided
 	existingProps := make(map[string]bool)
 	for _, prop := range classSchema["properties"].([]map[string]interface{}) {
 		existingProps[prop["name"].(string)] = true
 	}
 
 	for _, field := range customFields {
-		// Skip if property already exists in the default schema
-		if existingProps[field.Name] {
+		// Allow overriding existing properties if explicitly provided
+		// This enables custom metadata types (object vs text)
+		if existingProps[field.Name] && field.Name != "metadata" {
 			continue
 		}
 		property := map[string]interface{}{
