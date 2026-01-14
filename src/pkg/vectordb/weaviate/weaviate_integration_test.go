@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -229,9 +230,9 @@ func TestIntegration_Weaviate_CreateDocument(t *testing.T) {
 	// Wait for collection
 	time.Sleep(500 * time.Millisecond)
 
-	// Create document
+	// Create document with UUID
 	doc := &vectordb.Document{
-		ID:      "doc-1",
+		ID:      uuid.New().String(),
 		Text:    "Test document content",
 		Content: "Full test document content",
 		Metadata: map[string]interface{}{
@@ -268,10 +269,10 @@ func TestIntegration_Weaviate_CreateDocuments(t *testing.T) {
 	// Wait for collection
 	time.Sleep(500 * time.Millisecond)
 
-	// Create multiple documents
+	// Create multiple documents with UUIDs
 	docs := []*vectordb.Document{
 		{
-			ID:      "bulk-1",
+			ID:      uuid.New().String(),
 			Text:    "Bulk document 1",
 			Content: "Full content for bulk document 1",
 			Metadata: map[string]interface{}{
@@ -280,7 +281,7 @@ func TestIntegration_Weaviate_CreateDocuments(t *testing.T) {
 			},
 		},
 		{
-			ID:      "bulk-2",
+			ID:      uuid.New().String(),
 			Text:    "Bulk document 2",
 			Content: "Full content for bulk document 2",
 			Metadata: map[string]interface{}{
@@ -289,7 +290,7 @@ func TestIntegration_Weaviate_CreateDocuments(t *testing.T) {
 			},
 		},
 		{
-			ID:      "bulk-3",
+			ID:      uuid.New().String(),
 			Text:    "Bulk document 3",
 			Content: "Full content for bulk document 3",
 			Metadata: map[string]interface{}{
@@ -326,9 +327,10 @@ func TestIntegration_Weaviate_GetDocument(t *testing.T) {
 	// Wait for collection
 	time.Sleep(500 * time.Millisecond)
 
-	// Create document
+	// Create document with UUID
+	docID := uuid.New().String()
 	expectedDoc := &vectordb.Document{
-		ID:      "get-test-1",
+		ID:      docID,
 		Text:    "Document to retrieve",
 		Content: "Full content to retrieve",
 		Metadata: map[string]interface{}{
@@ -366,9 +368,10 @@ func TestIntegration_Weaviate_UpdateDocument(t *testing.T) {
 	// Wait for collection
 	time.Sleep(500 * time.Millisecond)
 
-	// Create initial document
+	// Create initial document with UUID
+	docID := uuid.New().String()
 	doc := &vectordb.Document{
-		ID:      "update-test-1",
+		ID:      docID,
 		Text:    "Original content",
 		Content: "Original full content",
 		Metadata: map[string]interface{}{
@@ -384,7 +387,7 @@ func TestIntegration_Weaviate_UpdateDocument(t *testing.T) {
 
 	// Update document
 	updatedDoc := &vectordb.Document{
-		ID:      "update-test-1",
+		ID:      docID,
 		Text:    "Updated content",
 		Content: "Updated full content",
 		Metadata: map[string]interface{}{
@@ -422,9 +425,9 @@ func TestIntegration_Weaviate_DeleteDocument(t *testing.T) {
 	// Wait for collection
 	time.Sleep(500 * time.Millisecond)
 
-	// Create document
+	// Create document with UUID
 	doc := &vectordb.Document{
-		ID:      "delete-test-1",
+		ID:      uuid.New().String(),
 		Text:    "Document to delete",
 		Content: "Content to delete",
 		Metadata: map[string]interface{}{
@@ -477,10 +480,10 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 	require.NoError(t, err, "Step 2: Failed to check existence")
 	require.True(t, exists, "Step 2: Collection should exist")
 
-	// 3. Insert documents
+	// 3. Insert documents with UUIDs
 	docs := []*vectordb.Document{
 		{
-			ID:      "e2e-1",
+			ID:      uuid.New().String(),
 			Text:    "E2E test document 1",
 			Content: "Full content 1",
 			Metadata: map[string]interface{}{
@@ -489,7 +492,7 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 			},
 		},
 		{
-			ID:      "e2e-2",
+			ID:      uuid.New().String(),
 			Text:    "E2E test document 2",
 			Content: "Full content 2",
 			Metadata: map[string]interface{}{
@@ -498,7 +501,7 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 			},
 		},
 		{
-			ID:      "e2e-3",
+			ID:      uuid.New().String(),
 			Text:    "E2E test document 3",
 			Content: "Full content 3",
 			Metadata: map[string]interface{}{

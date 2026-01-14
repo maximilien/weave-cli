@@ -291,7 +291,27 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 
 					for key, value := range itemMap {
 						if key != "_additional" {
-							doc.Metadata[key] = value
+							// Special handling for metadata field: deserialize JSON string back to map
+							if key == "metadata" {
+								if metadataStr, ok := value.(string); ok && metadataStr != "" {
+									// Deserialize JSON string to map
+									var metadataMap map[string]interface{}
+									if err := json.Unmarshal([]byte(metadataStr), &metadataMap); err == nil {
+										// Merge deserialized metadata into doc.Metadata
+										for k, v := range metadataMap {
+											doc.Metadata[k] = v
+										}
+									} else {
+										// If deserialization fails, store as-is (might be object type)
+										doc.Metadata[key] = value
+									}
+								} else {
+									// If not a string, store as-is (object type from schema)
+									doc.Metadata[key] = value
+								}
+							} else {
+								doc.Metadata[key] = value
+							}
 
 							// Try to find content in common field names
 							for _, field := range contentFields {
@@ -479,7 +499,27 @@ func (c *Client) listDocumentsWithSimpleMetadata(ctx context.Context, collection
 								if doc.Metadata == nil {
 									doc.Metadata = make(map[string]interface{})
 								}
-								doc.Metadata[prop] = value
+								// Special handling for metadata field: deserialize JSON string back to map
+								if prop == "metadata" {
+									if metadataStr, ok := value.(string); ok && metadataStr != "" {
+										// Deserialize JSON string to map
+										var metadataMap map[string]interface{}
+										if err := json.Unmarshal([]byte(metadataStr), &metadataMap); err == nil {
+											// Merge deserialized metadata into doc.Metadata
+											for k, v := range metadataMap {
+												doc.Metadata[k] = v
+											}
+										} else {
+											// If deserialization fails, store as-is (might be object type)
+											doc.Metadata[prop] = value
+										}
+									} else {
+										// If not a string, store as-is (object type from schema)
+										doc.Metadata[prop] = value
+									}
+								} else {
+									doc.Metadata[prop] = value
+								}
 							}
 						}
 					}
@@ -573,114 +613,122 @@ func (c *Client) listDocumentsSimple(ctx context.Context, collectionName string,
 	return documents, nil
 }
 
-// GetDocument retrieves a specific document by ID
+// GetDocument retrieves a specific document by ID using REST API
 func (c *Client) GetDocument(ctx context.Context, collectionName, documentID string) (*Document, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	// First, get the schema to know what fields are available
-	properties, err := c.GetCollectionSchema(ctx, collectionName)
+	// Use REST API to get document by ID: GET /v1/objects/{className}/{id}
+	baseURL := strings.TrimSuffix(c.config.URL, "/")
+	url := fmt.Sprintf("%s/v1/objects/%s/%s", baseURL, collectionName, documentID)
+
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		// If we can't get schema, fall back to a simple ID-only query
-		return c.getDocumentSimple(ctx, collectionName, documentID)
+		return nil, fmt.Errorf("Weaviate: failed to create request: %w", err)
 	}
 
-	// Build a query with the actual properties from the schema
-	query := fmt.Sprintf(`
-		{
-			Get {
-				%s(where: {
-					path: ["id"]
-					operator: Equal
-					valueString: "%s"
-				}) {
-					_additional {
-						id
-					}
-	`, collectionName, documentID)
-
-	// Add all available properties to the query
-	for _, prop := range properties {
-		if prop == "metadata" {
-			// Dynamically discover metadata schema and build appropriate query
-			metadataQuery, err := c.buildMetadataQuery(ctx, collectionName)
-			if err != nil {
-				// If we can't discover the schema, use simple field
-				query += fmt.Sprintf("\n\t\t\t\t%s", prop)
-			} else {
-				query += metadataQuery
-			}
-		} else {
-			query += fmt.Sprintf("\n\t\t\t\t%s", prop)
-		}
+	// Add authorization header
+	if c.config.APIKey != "" {
+		req.Header.Set("Authorization", "Bearer "+c.config.APIKey)
 	}
+	req.Header.Set("Content-Type", "application/json")
 
-	query += `
-				}
-			}
-		}
-	`
-
-	result, err := c.client.GraphQL().Raw().WithQuery(query).Do(ctx)
+	// Make the request
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
 	if err != nil {
-		// If the schema-based query fails, fall back to simple query
-		return c.getDocumentSimple(ctx, collectionName, documentID)
+		return nil, fmt.Errorf("Weaviate: failed to get document: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Weaviate: failed to read response: %w", err)
 	}
 
-	var document *Document
-	if data, ok := result.Data["Get"].(map[string]interface{}); ok {
-		if collectionData, ok := data[collectionName].([]interface{}); ok {
-			if len(collectionData) > 0 {
-				if itemMap, ok := collectionData[0].(map[string]interface{}); ok {
-					doc := Document{}
-
-					// Extract ID
-					if additional, ok := itemMap["_additional"].(map[string]interface{}); ok {
-						if id, ok := additional["id"].(string); ok {
-							doc.ID = id
-						}
-					}
-
-					// Extract all properties as metadata
-					doc.Metadata = make(map[string]interface{})
-					doc.Metadata["id"] = doc.ID
-
-					// Extract content from common field names
-					contentFields := []string{"text", "content", "body", "description", "title", "name", "chunk", "pageContent", "document"}
-					doc.Content = ""
-
-					for key, value := range itemMap {
-						if key != "_additional" {
-							doc.Metadata[key] = value
-
-							// Try to find content in common field names
-							for _, field := range contentFields {
-								if key == field {
-									if str, ok := value.(string); ok && str != "" {
-										doc.Content = str
-										break
-									}
-								}
-							}
-						}
-					}
-
-					// If no content found, create a summary
-					if doc.Content == "" {
-						doc.Content = fmt.Sprintf("Document ID: %s", doc.ID)
-					}
-
-					document = &doc
-				}
-			}
-		}
-	}
-
-	if document == nil {
+	// Check response status
+	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("Weaviate: document with ID %s not found in collection %s", documentID, collectionName)
 	}
 
-	return document, nil
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("Weaviate: failed to get document: HTTP %d - %s", resp.StatusCode, string(body))
+	}
+
+	// Parse the response
+	var result struct {
+		ID         string                 `json:"id"`
+		Class      string                 `json:"class"`
+		Properties map[string]interface{} `json:"properties"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("Weaviate: failed to parse response: %w", err)
+	}
+
+	// Build Document from response
+	doc := Document{
+		ID:       result.ID,
+		Metadata: make(map[string]interface{}),
+	}
+
+	// Extract properties
+	for key, value := range result.Properties {
+		switch key {
+		case "text":
+			if str, ok := value.(string); ok {
+				doc.Text = str
+				if doc.Content == "" {
+					doc.Content = str
+				}
+			}
+		case "content":
+			if str, ok := value.(string); ok {
+				doc.Content = str
+			}
+		case "url":
+			if str, ok := value.(string); ok {
+				doc.URL = str
+			}
+		case "image":
+			if str, ok := value.(string); ok {
+				doc.Image = str
+			}
+		case "image_data":
+			if str, ok := value.(string); ok {
+				doc.ImageData = str
+			}
+		case "metadata":
+			// Special handling for metadata field: deserialize JSON string back to map
+			if metadataStr, ok := value.(string); ok && metadataStr != "" {
+				// Deserialize JSON string to map
+				var metadataMap map[string]interface{}
+				if err := json.Unmarshal([]byte(metadataStr), &metadataMap); err == nil {
+					// Merge deserialized metadata into doc.Metadata
+					for k, v := range metadataMap {
+						doc.Metadata[k] = v
+					}
+				} else {
+					// If deserialization fails, store as-is (might be object type)
+					doc.Metadata[key] = value
+				}
+			} else {
+				// If not a string, store as-is (object type from schema)
+				doc.Metadata[key] = value
+			}
+		default:
+			// Store all other properties in metadata
+			doc.Metadata[key] = value
+		}
+	}
+
+	// If no content found, create a summary
+	if doc.Content == "" {
+		doc.Content = fmt.Sprintf("Document ID: %s", doc.ID)
+	}
+
+	return &doc, nil
 }
 
 // getDocumentSimple is a fallback method that only gets IDs

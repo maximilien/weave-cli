@@ -717,7 +717,9 @@ func (wc *WeaveClient) CreateDocument(ctx context.Context, collectionName string
 	// Create the document payload
 	payload := map[string]interface{}{
 		"class": collectionName,
+		"id":    document.ID, // Specify the document ID
 		"properties": map[string]interface{}{
+			"text":       document.Text,
 			"content":    document.Content,
 			"image":      document.Image,
 			"image_data": document.ImageData,
