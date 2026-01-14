@@ -308,7 +308,8 @@ weave cols ls --local -S         # Local collections summary
 
 ### RAG Agents (All Vector Databases)
 
-Enhance query results with AI-powered RAG (Retrieval-Augmented Generation) agents. Now works with **all supported vector databases**, not just Weaviate!
+Enhance query results with AI-powered RAG (Retrieval-Augmented Generation)
+agents. Now works with **all supported vector databases**, not just Weaviate!
 
 ```bash
 # Use RAG agent with any vector database
@@ -329,13 +330,16 @@ weave cols q MyDocs "query" --agent rag-agent --json --progress
 ```
 
 **Available Agents:**
+
 - `rag-agent` - Comprehensive answers with source citations
 - `summarize-agent` - Concise summaries of retrieved content
 - `qa-agent` - Precise question answering
 
 **Requirements:**
+
 - `OPENAI_API_KEY` environment variable must be set
-- Works with: Qdrant, Milvus, Chroma, MongoDB, Neo4j, Weaviate, Supabase, and more
+- Works with: Qdrant, Milvus, Chroma, MongoDB, Neo4j, Weaviate, Supabase,
+  and more
 
 See [User Guide](docs/USER_GUIDE.md#rag-agents) for custom agent configuration.
 
@@ -456,7 +460,8 @@ Comprehensive integration tests ensure reliability across all supported vector d
 | **Neo4j** | 3.9% | - | Deferred |
 | **Supabase** | - | 1/1 ✅ (system) | Partial |
 
-**Total**: 55 integration tests covering CRUD operations, collections, and end-to-end workflows.
+**Total**: 55 integration tests covering CRUD operations, collections, and
+end-to-end workflows.
 
 ### Running Tests
 
@@ -474,7 +479,8 @@ go test -tags=integration ./src/pkg/vectordb/...
 go test -tags=integration -run TestIntegration_Milvus ./src/pkg/vectordb/milvus/
 ```
 
-See [Integration Test Plan](docs/planning/INTEGRATION_TEST_PLAN.md) for detailed testing strategy.
+See [Integration Test Plan](docs/planning/INTEGRATION_TEST_PLAN.md) for
+detailed testing strategy.
 
 ## Contributing
 

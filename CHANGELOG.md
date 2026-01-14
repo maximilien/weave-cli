@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Multi-VDB Agent Support**
   - RAG agents now work with **all vector databases**, not just Weaviate
-  - Enabled `--agent` flag for: Qdrant, Milvus, Chroma, MongoDB, Neo4j, Supabase, and more
+  - Enabled `--agent` flag for: Qdrant, Milvus, Chroma, MongoDB, Neo4j,
+    Supabase, and more
   - Examples:
     - `weave cols query MyDocs "What is AI?" --agent rag-agent --db qdrant`
     - `weave cols q MyDocs "Summarize" --agent summarize-agent --milvus-local`
