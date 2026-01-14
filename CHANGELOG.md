@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Supabase Integration Tests**
+  - Added comprehensive integration test suite for Supabase vector database
+  - 11 standard integration tests covering all core operations
+  - Tests include: Health, CreateCollection, DeleteCollection, ListCollections,
+    CollectionExists, CreateDocument, CreateDocuments, GetDocument,
+    UpdateDocument, DeleteDocument, E2E_Workflow
+  - Uses UUID for document IDs and unique collection names for test isolation
+  - Proper handling of Supabase collection name normalization
+    (underscores → hyphens)
+  - Follows same pattern as Neo4j integration tests for consistency
+  - Located at: `src/pkg/vectordb/supabase/supabase_integration_test.go`
+
 - **Enhanced Progress Reporting**
   - Progress bar visualization with percentage display
     - Example: `[========>           ]  40% (4/10, ETA: 2s)`
