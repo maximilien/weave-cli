@@ -407,6 +407,42 @@ implementation details and adding new database support.
 
 See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 
+## Testing & Quality
+
+### Test Coverage
+
+Comprehensive integration tests ensure reliability across all supported vector databases:
+
+| VectorDB | Coverage | Integration Tests | Status |
+|----------|----------|-------------------|--------|
+| **MongoDB** | 59.1% | 11/11 ✅ | Production Ready |
+| **Milvus** | 51.5% | 11/11 ✅ | Production Ready |
+| **Chroma** | 49.1% | 11/11 ✅ | Production Ready |
+| **Qdrant** | 45.8% | 11/11 ✅ | Production Ready |
+| **Weaviate** | 23.6% | 11/11 ✅ | Production Ready |
+| **Neo4j** | 3.9% | - | Deferred |
+| **Supabase** | - | 1/1 ✅ (system) | Partial |
+
+**Total**: 55 integration tests covering CRUD operations, collections, and end-to-end workflows.
+
+### Running Tests
+
+```bash
+# Unit tests only (fast)
+go test ./...
+
+# Integration tests (requires Docker)
+go test -tags=integration ./src/pkg/vectordb/...
+
+# Full test suite with coverage
+./test.sh integration
+
+# Specific VDB tests
+go test -tags=integration -run TestIntegration_Milvus ./src/pkg/vectordb/milvus/
+```
+
+See [Integration Test Plan](docs/planning/INTEGRATION_TEST_PLAN.md) for detailed testing strategy.
+
 ## Contributing
 
 Contributions welcome! Please:

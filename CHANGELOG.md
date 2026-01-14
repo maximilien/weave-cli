@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Integration Test Suite - Tier 2 Complete**
+  - **Milvus**: 51.5% coverage (+36.2%), 11/11 tests passing
+    - Fixed dimension mismatch (384 → 1536 for OpenAI embeddings)
+    - Added zero-vector fallback for documents without embeddings
+    - MVCC-aware delete verification
+    - Proper UUID support
+  - **Weaviate**: 23.6% coverage (+17.8%), 11/11 tests passing
+    - Fixed document ID preservation (UUIDs now retained)
+    - Switched GetDocument from GraphQL to REST API
+    - Fixed metadata JSON serialization/deserialization
+    - DeleteCollection now properly removes schema
+    - UpdateDocument handles separate text/content fields
+  - **Total**: 55 integration tests across 5 vector databases
+  - All CRUD operations tested: Create, Read, Update, Delete
+  - End-to-end workflow tests for each database
+
+### Changed
+
+- **Test Infrastructure Improvements**
+  - UUID support standardized across all VectorDBs
+  - Metadata JSON serialization now consistent
+  - Zero-vector fallbacks for LLM-free testing
+  - Proper text/content field separation in documents
+  - Unique collection names using UnixNano timestamps
+  - MVCC/eventual consistency handling for distributed databases
+
+### Fixed
+
+- **Weaviate Integration**
+  - Document IDs now preserved when creating documents (UUID support)
+  - GetDocument now uses REST API (`GET /v1/objects/{class}/{id}`) instead of GraphQL
+  - DeleteCollection properly removes schema, not just objects
+  - UpdateDocument correctly handles both text and content fields separately
+  - Metadata properly serialized/deserialized as JSON strings
+
+- **Milvus Integration**
+  - Fixed dimension mismatch between test expectations and actual embeddings
+  - Added zero-vector fallback when LLM client unavailable
+  - Delete verification now MVCC-aware (checks document retrieval instead of count)
+  - Document creation now properly handles embeddings with correct dimensions
+
 ## [0.9.1] - 2026-01-12
 
 ### Summary
