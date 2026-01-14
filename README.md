@@ -452,16 +452,17 @@ Comprehensive integration tests ensure reliability across all supported vector d
 
 | VectorDB | Coverage | Integration Tests | Status |
 |----------|----------|-------------------|--------|
-| **MongoDB** | 59.1% | 11/11 ✅ | Production Ready |
-| **Milvus** | 51.5% | 11/11 ✅ | Production Ready |
-| **Chroma** | 49.1% | 11/11 ✅ | Production Ready |
-| **Qdrant** | 45.8% | 11/11 ✅ | Production Ready |
-| **Weaviate** | 23.6% | 11/11 ✅ | Production Ready |
-| **Neo4j** | 3.9% | - | Deferred |
-| **Supabase** | - | 1/1 ✅ (system) | Partial |
+| **Milvus** | 51.5% | 15/15 ✅ | Production Ready |
+| **Qdrant** | 45.8% | 14/14 ✅ | Production Ready |
+| **MongoDB** | 59.1% | 13/13 ✅ | Production Ready |
+| **Weaviate** | 23.6% | 13/13 ✅ | Production Ready |
+| **Neo4j** | 37.9% | 13/13 ✅ | Production Ready |
+| **Chroma** | 49.1% | 12/12 ✅ | Production Ready |
+| **Supabase** | 30%+ | 11/11 ✅ | Production Ready |
 
-**Total**: 55 integration tests covering CRUD operations, collections, and
-end-to-end workflows.
+**Total**: 91 integration tests covering CRUD operations, collections,
+search functionality (semantic, BM25, hybrid, metadata), and end-to-end
+workflows.
 
 ### Running Tests
 
