@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Multi-VDB Agent Support**
+  - RAG agents now work with **all vector databases**, not just Weaviate
+  - Enabled `--agent` flag for: Qdrant, Milvus, Chroma, MongoDB, Neo4j, Supabase, and more
+  - Examples:
+    - `weave cols query MyDocs "What is AI?" --agent rag-agent --db qdrant`
+    - `weave cols q MyDocs "Summarize" --agent summarize-agent --milvus-local`
+    - `weave cols q MyDocs "Answer" --agent qa-agent --chroma-local`
+  - Unified agent interface: `ExecuteQueryWithAgent` now uses generic `vectordb.QueryResult`
+  - Previously agents only worked with Weaviate; now universally available
+
+- **Neo4j Integration Tests**
+  - **Neo4j**: 37.9% coverage (+34.0%), 11/11 tests passing
+    - Health check, collection management, document CRUD, bulk operations
+    - UUID support throughout all operations
+    - Proper handling of Neo4j's single content field (maps to both Text and Content)
+    - E2E workflow validation
+
 - **Integration Test Suite - Tier 2 Complete**
   - **Milvus**: 51.5% coverage (+36.2%), 11/11 tests passing
     - Fixed dimension mismatch (384 → 1536 for OpenAI embeddings)

@@ -306,6 +306,39 @@ weave cols ls --local -S         # Local collections summary
 - **Consistent UX**: Same behavior across `cols ls`, `health check`,
   and `config list`
 
+### RAG Agents (All Vector Databases)
+
+Enhance query results with AI-powered RAG (Retrieval-Augmented Generation) agents. Now works with **all supported vector databases**, not just Weaviate!
+
+```bash
+# Use RAG agent with any vector database
+weave cols query MyDocs "What is machine learning?" --agent rag-agent
+weave cols query MyDocs "Summarize main topics" --agent summarize-agent --db qdrant
+weave cols query MyDocs "Answer this question" --agent qa-agent --db milvus
+
+# Combine with database selection
+weave cols q MyDocs "AI overview" --agent rag-agent --qdrant-local
+weave cols q MyDocs "Quick summary" --agent summarize-agent --chroma-local
+weave cols q MyDocs "Detailed analysis" --agent rag-agent --mongodb
+
+# Show progress during agent execution
+weave cols q MyDocs "complex query" --agent rag-agent --progress
+
+# JSON output with progress (JSON Lines format)
+weave cols q MyDocs "query" --agent rag-agent --json --progress
+```
+
+**Available Agents:**
+- `rag-agent` - Comprehensive answers with source citations
+- `summarize-agent` - Concise summaries of retrieved content
+- `qa-agent` - Precise question answering
+
+**Requirements:**
+- `OPENAI_API_KEY` environment variable must be set
+- Works with: Qdrant, Milvus, Chroma, MongoDB, Neo4j, Weaviate, Supabase, and more
+
+See [User Guide](docs/USER_GUIDE.md#rag-agents) for custom agent configuration.
+
 ### More Examples
 
 ```bash
