@@ -88,9 +88,15 @@ func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, e
 // CreateDocument creates a new document in the specified collection
 func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
 	// Convert vectordb.Document to Neo4j Document
+	// Prefer Content over Text if both are set
+	content := document.Content
+	if content == "" {
+		content = document.Text
+	}
+
 	doc := &Document{
 		ID:       document.ID,
-		Content:  document.Text, // Use Text field as content
+		Content:  content,
 		Metadata: document.Metadata,
 	}
 
@@ -115,9 +121,15 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	// Convert documents
 	docs := make([]*Document, len(documents))
 	for i, document := range documents {
+		// Prefer Content over Text if both are set
+		content := document.Content
+		if content == "" {
+			content = document.Text
+		}
+
 		doc := &Document{
 			ID:       document.ID,
-			Content:  document.Text,
+			Content:  content,
 			Metadata: document.Metadata,
 		}
 
@@ -150,15 +162,22 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 	return &vectordb.Document{
 		ID:       doc.ID,
 		Text:     doc.Content,
+		Content:  doc.Content, // Neo4j has single content field, map to both
 		Metadata: doc.Metadata,
 	}, nil
 }
 
 // UpdateDocument updates an existing document
 func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	// Prefer Content over Text if both are set
+	content := document.Content
+	if content == "" {
+		content = document.Text
+	}
+
 	doc := &Document{
 		ID:       document.ID,
-		Content:  document.Text,
+		Content:  content,
 		Metadata: document.Metadata,
 	}
 
@@ -258,6 +277,7 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 		if val, ok := record.Get("content"); ok {
 			if content, ok := val.(string); ok {
 				doc.Text = content
+				doc.Content = content // Neo4j has single content field, map to both
 			}
 		}
 		// Skip vector - not included in vectordb.Document
