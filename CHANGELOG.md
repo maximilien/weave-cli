@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Search Functionality Tests**
+  - Added comprehensive search tests to Neo4j integration test suite
+  - Added comprehensive search tests to Milvus integration test suite
+  - Tests cover: SearchSemantic (vector similarity), SearchByMetadata
+    (metadata filtering)
+  - Graceful handling when OpenAI API key not available (tests skip)
+  - Validates result sorting, score ranges, and metadata filtering accuracy
+  - Improves test coverage for critical search operations across vector databases
+
 - **Supabase Integration Tests**
   - Added comprehensive integration test suite for Supabase vector database
   - 11 standard integration tests covering all core operations

@@ -461,6 +461,140 @@ func TestIntegration_Milvus_DeleteDocument(t *testing.T) {
 	assert.True(t, err != nil || retrievedDoc == nil, "Document should not be retrievable after deletion")
 }
 
+// TestIntegration_Milvus_SearchSemantic tests vector similarity search
+func TestIntegration_Milvus_SearchSemantic(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close()
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_search")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	time.Sleep(1 * time.Second)
+
+	// Create test documents with varied content
+	docs := []*vectordb.Document{
+		{
+			ID:      "search-1",
+			Content: "Artificial intelligence and machine learning",
+			Metadata: map[string]interface{}{
+				"category": "technology",
+			},
+		},
+		{
+			ID:      "search-2",
+			Content: "Natural language processing and transformers",
+			Metadata: map[string]interface{}{
+				"category": "technology",
+			},
+		},
+		{
+			ID:      "search-3",
+			Content: "Cooking recipes and culinary arts",
+			Metadata: map[string]interface{}{
+				"category": "food",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	// Test semantic search
+	results, err := adapter.SearchSemantic(ctx, collectionName, "tell me about AI", &vectordb.QueryOptions{TopK: 2})
+
+	if err != nil && (err.Error() == "LLM client not initialized" || err.Error() == "LLM client not available for generating query embeddings") {
+		t.Skip("Skipping semantic search test: OpenAI API key not available")
+	}
+
+	assert.NoError(t, err, "Failed to perform semantic search")
+	assert.NotNil(t, results)
+
+	if len(results) > 0 {
+		// Verify results are sorted by score
+		for i := 1; i < len(results); i++ {
+			assert.GreaterOrEqual(t, results[i-1].Score, results[i].Score,
+				"Results should be sorted by score descending")
+		}
+
+		// Verify result structure
+		assert.NotEmpty(t, results[0].Document.ID, "Result should have ID")
+		assert.GreaterOrEqual(t, results[0].Score, float64(0), "Score should be non-negative")
+	}
+}
+
+// TestIntegration_Milvus_SearchByMetadata tests metadata filtering
+func TestIntegration_Milvus_SearchByMetadata(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close()
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_metadata_search")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	time.Sleep(1 * time.Second)
+
+	// Create documents with different metadata
+	docs := []*vectordb.Document{
+		{
+			ID:      "meta-1",
+			Content: "Active document 1",
+			Metadata: map[string]interface{}{
+				"status":   "active",
+				"priority": int64(1),
+			},
+		},
+		{
+			ID:      "meta-2",
+			Content: "Active document 2",
+			Metadata: map[string]interface{}{
+				"status":   "active",
+				"priority": int64(2),
+			},
+		},
+		{
+			ID:      "meta-3",
+			Content: "Inactive document",
+			Metadata: map[string]interface{}{
+				"status":   "inactive",
+				"priority": int64(1),
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	// Search for active documents
+	metadata := map[string]interface{}{
+		"status": "active",
+	}
+
+	results, err := adapter.SearchByMetadata(ctx, collectionName, metadata, &vectordb.QueryOptions{TopK: 10})
+	assert.NoError(t, err, "Failed to search by metadata")
+	assert.NotNil(t, results)
+
+	// Should find 2 active documents
+	assert.Equal(t, 2, len(results), "Should find 2 active documents")
+
+	// Verify all results have status=active
+	for _, result := range results {
+		status, ok := result.Document.Metadata["status"].(string)
+		assert.True(t, ok, "Metadata should contain status field")
+		assert.Equal(t, "active", status, "All results should have status=active")
+	}
+}
+
 // TestIntegration_Milvus_E2E_Workflow tests complete end-to-end workflow
 func TestIntegration_Milvus_E2E_Workflow(t *testing.T) {
 	adapter := getTestAdapter(t)

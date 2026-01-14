@@ -460,6 +460,146 @@ func TestIntegration_Neo4j_DeleteDocument(t *testing.T) {
 	assert.Equal(t, int64(0), count, "Collection should have 0 documents after deletion")
 }
 
+// TestIntegration_Neo4j_SearchSemantic tests vector similarity search
+func TestIntegration_Neo4j_SearchSemantic(t *testing.T) {
+	adapter := getTestAdapter(t)
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_search")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	// Wait for collection
+	time.Sleep(1 * time.Second)
+
+	// Create test documents with varied content
+	docs := []*vectordb.Document{
+		{
+			ID:      uuid.New().String(),
+			Content: "Artificial intelligence and machine learning",
+			Metadata: map[string]interface{}{
+				"category": "technology",
+			},
+		},
+		{
+			ID:      uuid.New().String(),
+			Content: "Natural language processing and transformers",
+			Metadata: map[string]interface{}{
+				"category": "technology",
+			},
+		},
+		{
+			ID:      uuid.New().String(),
+			Content: "Cooking recipes and culinary arts",
+			Metadata: map[string]interface{}{
+				"category": "food",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	// Wait for indexing
+	time.Sleep(2 * time.Second)
+
+	// Test semantic search
+	// Note: This requires OPENAI_API_KEY to be set for embedding generation
+	results, err := adapter.SearchSemantic(ctx, collectionName, "tell me about AI", &vectordb.QueryOptions{TopK: 2})
+
+	if err != nil && err.Error() == "LLM client not initialized" {
+		t.Skip("Skipping semantic search test: OpenAI API key not available")
+	}
+
+	assert.NoError(t, err, "Failed to perform semantic search")
+	assert.NotNil(t, results)
+
+	// Should return results
+	if len(results) > 0 {
+		// Verify results are sorted by score (descending)
+		for i := 1; i < len(results); i++ {
+			assert.GreaterOrEqual(t, results[i-1].Score, results[i].Score,
+				"Results should be sorted by score descending")
+		}
+
+		// Verify result structure
+		assert.NotEmpty(t, results[0].Document.ID, "Result should have ID")
+		// Neo4j returns content in Text field
+		assert.NotEmpty(t, results[0].Document.Text, "Result should have text content")
+		assert.GreaterOrEqual(t, results[0].Score, float64(0), "Score should be non-negative")
+	}
+}
+
+// TestIntegration_Neo4j_SearchByMetadata tests metadata filtering
+func TestIntegration_Neo4j_SearchByMetadata(t *testing.T) {
+	adapter := getTestAdapter(t)
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_metadata_search")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	// Wait for collection
+	time.Sleep(1 * time.Second)
+
+	// Create documents with different metadata
+	docs := []*vectordb.Document{
+		{
+			ID:      uuid.New().String(),
+			Content: "Active document 1",
+			Metadata: map[string]interface{}{
+				"status":   "active",
+				"priority": int64(1),
+			},
+		},
+		{
+			ID:      uuid.New().String(),
+			Content: "Active document 2",
+			Metadata: map[string]interface{}{
+				"status":   "active",
+				"priority": int64(2),
+			},
+		},
+		{
+			ID:      uuid.New().String(),
+			Content: "Inactive document",
+			Metadata: map[string]interface{}{
+				"status":   "inactive",
+				"priority": int64(1),
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	// Wait for indexing
+	time.Sleep(2 * time.Second)
+
+	// Search for active documents
+	metadata := map[string]interface{}{
+		"status": "active",
+	}
+
+	results, err := adapter.SearchByMetadata(ctx, collectionName, metadata, &vectordb.QueryOptions{TopK: 10})
+	assert.NoError(t, err, "Failed to search by metadata")
+	assert.NotNil(t, results)
+
+	// Should find 2 active documents
+	assert.Equal(t, 2, len(results), "Should find 2 active documents")
+
+	// Verify all results have status=active
+	for _, result := range results {
+		status, ok := result.Document.Metadata["status"].(string)
+		assert.True(t, ok, "Metadata should contain status field")
+		assert.Equal(t, "active", status, "All results should have status=active")
+	}
+}
+
 // TestIntegration_Neo4j_E2E_Workflow tests complete end-to-end workflow
 func TestIntegration_Neo4j_E2E_Workflow(t *testing.T) {
 	adapter := getTestAdapter(t)
