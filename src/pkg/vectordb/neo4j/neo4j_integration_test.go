@@ -107,7 +107,6 @@ func TestIntegration_Neo4j_Health(t *testing.T) {
 // TestIntegration_Neo4j_CreateCollection tests collection creation
 func TestIntegration_Neo4j_CreateCollection(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_create")
@@ -129,7 +128,6 @@ func TestIntegration_Neo4j_CreateCollection(t *testing.T) {
 // TestIntegration_Neo4j_DeleteCollection tests collection deletion
 func TestIntegration_Neo4j_DeleteCollection(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_delete")
@@ -158,7 +156,6 @@ func TestIntegration_Neo4j_DeleteCollection(t *testing.T) {
 // TestIntegration_Neo4j_ListCollections tests listing collections
 func TestIntegration_Neo4j_ListCollections(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName1 := getUniqueCollectionName("test_list_1")
@@ -198,7 +195,6 @@ func TestIntegration_Neo4j_ListCollections(t *testing.T) {
 // TestIntegration_Neo4j_CollectionExists tests collection existence check
 func TestIntegration_Neo4j_CollectionExists(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	existingCollection := getUniqueCollectionName("test_exists")
@@ -226,7 +222,6 @@ func TestIntegration_Neo4j_CollectionExists(t *testing.T) {
 // TestIntegration_Neo4j_CreateDocument tests single document insertion
 func TestIntegration_Neo4j_CreateDocument(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_create_doc")
@@ -265,7 +260,6 @@ func TestIntegration_Neo4j_CreateDocument(t *testing.T) {
 // TestIntegration_Neo4j_CreateDocuments tests bulk document insertion
 func TestIntegration_Neo4j_CreateDocuments(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_bulk_create")
@@ -324,7 +318,6 @@ func TestIntegration_Neo4j_CreateDocuments(t *testing.T) {
 func TestIntegration_Neo4j_GetDocument(t *testing.T) {
 	adapter := getTestAdapter(t)
 
-
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_get_doc")
 	defer adapter.DeleteCollection(ctx, collectionName)
@@ -365,7 +358,6 @@ func TestIntegration_Neo4j_GetDocument(t *testing.T) {
 // TestIntegration_Neo4j_UpdateDocument tests document update
 func TestIntegration_Neo4j_UpdateDocument(t *testing.T) {
 	adapter := getTestAdapter(t)
-
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_update_doc")
@@ -422,7 +414,6 @@ func TestIntegration_Neo4j_UpdateDocument(t *testing.T) {
 // TestIntegration_Neo4j_DeleteDocument tests document deletion by ID
 func TestIntegration_Neo4j_DeleteDocument(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_delete_doc")
@@ -472,7 +463,6 @@ func TestIntegration_Neo4j_DeleteDocument(t *testing.T) {
 // TestIntegration_Neo4j_E2E_Workflow tests complete end-to-end workflow
 func TestIntegration_Neo4j_E2E_Workflow(t *testing.T) {
 	adapter := getTestAdapter(t)
-	
 
 	ctx := context.Background()
 	collectionName := getUniqueCollectionName("test_e2e")
