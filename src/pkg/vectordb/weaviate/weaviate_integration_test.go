@@ -481,9 +481,13 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 	require.True(t, exists, "Step 2: Collection should exist")
 
 	// 3. Insert documents with UUIDs
+	docID1 := uuid.New().String()
+	docID2 := uuid.New().String()
+	docID3 := uuid.New().String()
+
 	docs := []*vectordb.Document{
 		{
-			ID:      uuid.New().String(),
+			ID:      docID1,
 			Text:    "E2E test document 1",
 			Content: "Full content 1",
 			Metadata: map[string]interface{}{
@@ -492,7 +496,7 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 			},
 		},
 		{
-			ID:      uuid.New().String(),
+			ID:      docID2,
 			Text:    "E2E test document 2",
 			Content: "Full content 2",
 			Metadata: map[string]interface{}{
@@ -501,7 +505,7 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 			},
 		},
 		{
-			ID:      uuid.New().String(),
+			ID:      docID3,
 			Text:    "E2E test document 3",
 			Content: "Full content 3",
 			Metadata: map[string]interface{}{
@@ -523,20 +527,20 @@ func TestIntegration_Weaviate_E2E_Workflow(t *testing.T) {
 	assert.Equal(t, int64(3), count, "Step 4: Should have 3 documents")
 
 	// 5. Retrieve specific document
-	doc, err := adapter.GetDocument(ctx, collectionName, "e2e-2")
+	doc, err := adapter.GetDocument(ctx, collectionName, docID2)
 	require.NoError(t, err, "Step 5: Failed to retrieve document")
 	assert.NotNil(t, doc, "Step 5: Document should not be nil")
-	assert.Equal(t, "e2e-2", doc.ID, "Step 5: Document ID should match")
+	assert.Equal(t, docID2, doc.ID, "Step 5: Document ID should match")
 
 	// 6. Delete one document
-	err = adapter.DeleteDocument(ctx, collectionName, "e2e-1")
+	err = adapter.DeleteDocument(ctx, collectionName, docID1)
 	require.NoError(t, err, "Step 6: Failed to delete document")
 
 	// Wait for deletion
 	time.Sleep(1 * time.Second)
 
 	// 7. Verify deletion by trying to retrieve
-	deletedDoc, err := adapter.GetDocument(ctx, collectionName, "e2e-1")
+	deletedDoc, err := adapter.GetDocument(ctx, collectionName, docID1)
 	assert.True(t, err != nil || deletedDoc == nil, "Step 7: Deleted document should not be retrievable")
 
 	// 8. Clean up - delete collection

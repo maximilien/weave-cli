@@ -367,18 +367,9 @@ func (wc *WeaveClient) DeleteCollection(ctx context.Context, collectionName stri
 	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
-	// First try GraphQL deletion
-	err := wc.deleteCollectionViaGraphQL(ctx, collectionName)
-	if err == nil {
-		return nil
-	}
-
-	// If GraphQL fails (e.g., mutations disabled), try REST API
-	if strings.Contains(err.Error(), "mutations") || strings.Contains(err.Error(), "Schema is not configured") {
-		return wc.deleteCollectionViaREST(ctx, collectionName)
-	}
-
-	return err
+	// Delete the collection schema completely (which also removes all objects)
+	// This is the proper way to delete a collection in Weaviate
+	return wc.DeleteCollectionSchema(ctx, collectionName)
 }
 
 // DeleteCollectionSchema deletes the collection schema completely

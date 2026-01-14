@@ -1285,16 +1285,48 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName, documentID,
 				}
 			}
 
+			// Update both fields if both exist in schema
+			if hasText {
+				properties["text"] = content
+			}
 			if hasContent {
 				properties["content"] = content
-			} else if hasText {
-				properties["text"] = content
 			}
 		}
 	}
 
 	// Update metadata fields if provided
 	if len(metadata) > 0 {
+		// Check for special update fields for text and content
+		if textUpdate, ok := metadata["_update_text"]; ok {
+			if str, ok := textUpdate.(string); ok && str != "" {
+				schema, err := c.GetCollectionSchema(ctx, collectionName)
+				if err == nil {
+					for _, field := range schema {
+						if field == "text" {
+							properties["text"] = str
+							break
+						}
+					}
+				}
+			}
+			delete(metadata, "_update_text") // Remove special key
+		}
+		if contentUpdate, ok := metadata["_update_content"]; ok {
+			if str, ok := contentUpdate.(string); ok && str != "" {
+				schema, err := c.GetCollectionSchema(ctx, collectionName)
+				if err == nil {
+					for _, field := range schema {
+						if field == "content" {
+							properties["content"] = str
+							break
+						}
+					}
+				}
+			}
+			delete(metadata, "_update_content") // Remove special key
+		}
+
 		// Preserve existing metadata and merge with updates
 		if currentDoc.Metadata != nil {
 			for key, value := range currentDoc.Metadata {

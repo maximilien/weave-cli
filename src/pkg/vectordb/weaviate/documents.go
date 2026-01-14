@@ -40,11 +40,22 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 
 // UpdateDocument updates an existing document
 func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
-	content := document.Content
-	if content == "" {
-		content = document.Text
+	// Create metadata that includes text and content as separate fields
+	metadata := make(map[string]interface{})
+	for k, v := range document.Metadata {
+		metadata[k] = v
 	}
-	if err := a.weaveClient.UpdateDocument(ctx, collectionName, document.ID, content, document.Metadata); err != nil {
+
+	// Add text and content as metadata fields so UpdateDocument can handle them separately
+	if document.Text != "" {
+		metadata["_update_text"] = document.Text
+	}
+	if document.Content != "" {
+		metadata["_update_content"] = document.Content
+	}
+
+	// Pass empty string as content since we're using metadata fields
+	if err := a.weaveClient.UpdateDocument(ctx, collectionName, document.ID, "", metadata); err != nil {
 		return a.wrapError(err, "update document")
 	}
 	return nil
