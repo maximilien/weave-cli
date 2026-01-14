@@ -137,15 +137,20 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 		}
 	} else {
 		// Text collections: Single named vector for text search
-		classSchema["vectorConfig"] = map[string]interface{}{
-			"default": map[string]interface{}{
-				"vectorizer": map[string]interface{}{
-					"text2vec-openai": map[string]interface{}{
-						"model": embeddingModel,
+		// Check if vectorizer is disabled
+		if embeddingModel == "none" {
+			classSchema["vectorizer"] = "none"
+		} else {
+			classSchema["vectorConfig"] = map[string]interface{}{
+				"default": map[string]interface{}{
+					"vectorizer": map[string]interface{}{
+						"text2vec-openai": map[string]interface{}{
+							"model": embeddingModel,
+						},
 					},
+					"vectorIndexType": "hnsw",
 				},
-				"vectorIndexType": "hnsw",
-			},
+			}
 		}
 	}
 

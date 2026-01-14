@@ -42,6 +42,11 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		}
 	}
 
+	// If no embedding was generated, create zero vector with correct dimensions
+	if mdoc.Embedding == nil {
+		mdoc.Embedding = make([]float32, a.config.VectorDimensions)
+	}
+
 	// Prepare image data as JSON (supports large base64 strings unlike VARCHAR)
 	// NOTE: Milvus JSON fields have a 65,536 byte (64KB) limit
 	// For images larger than this, we store empty ImageData and rely on Image URL
@@ -129,6 +134,11 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 					mdoc.Embedding[j] = float32(v)
 				}
 			}
+		}
+
+		// If no embedding was generated, create zero vector with correct dimensions
+		if mdoc.Embedding == nil {
+			mdoc.Embedding = make([]float32, a.config.VectorDimensions)
 		}
 
 		documentIDs[i] = mdoc.DocumentID
