@@ -595,6 +595,138 @@ func TestIntegration_Milvus_SearchByMetadata(t *testing.T) {
 	}
 }
 
+// TestIntegration_Milvus_SearchBM25 tests BM25 keyword search
+func TestIntegration_Milvus_SearchBM25(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close()
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_bm25")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	time.Sleep(1 * time.Second)
+
+	// Create test documents with keyword-rich content
+	docs := []*vectordb.Document{
+		{
+			ID:      "bm25-1",
+			Content: "Python programming language tutorial for beginners",
+			Metadata: map[string]interface{}{
+				"topic": "programming",
+			},
+		},
+		{
+			ID:      "bm25-2",
+			Content: "Advanced Python features and best practices",
+			Metadata: map[string]interface{}{
+				"topic": "programming",
+			},
+		},
+		{
+			ID:      "bm25-3",
+			Content: "JavaScript web development guide",
+			Metadata: map[string]interface{}{
+				"topic": "webdev",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	// Test BM25 search for keyword "Python"
+	results, err := adapter.SearchBM25(ctx, collectionName, "Python", &vectordb.QueryOptions{TopK: 3})
+
+	// Milvus may not support BM25 depending on configuration
+	if err != nil && (err.Error() == "BM25 search not supported" || err.Error() == "BM25 search is not supported by Milvus") {
+		t.Skip("Skipping BM25 search test: Not supported by Milvus configuration")
+	}
+
+	assert.NoError(t, err, "Failed to perform BM25 search")
+	assert.NotNil(t, results)
+
+	// Results should prioritize documents with "Python" keyword
+	if len(results) > 0 {
+		assert.GreaterOrEqual(t, results[0].Score, float64(0), "Score should be non-negative")
+	}
+}
+
+// TestIntegration_Milvus_SearchHybrid tests hybrid search (vector + keyword)
+func TestIntegration_Milvus_SearchHybrid(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close()
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_hybrid")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	time.Sleep(1 * time.Second)
+
+	// Create test documents
+	docs := []*vectordb.Document{
+		{
+			ID:      "hybrid-1",
+			Content: "Machine learning algorithms and neural networks",
+			Metadata: map[string]interface{}{
+				"category": "ai",
+			},
+		},
+		{
+			ID:      "hybrid-2",
+			Content: "Deep learning with neural networks and GPUs",
+			Metadata: map[string]interface{}{
+				"category": "ai",
+			},
+		},
+		{
+			ID:      "hybrid-3",
+			Content: "Database optimization techniques",
+			Metadata: map[string]interface{}{
+				"category": "databases",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	time.Sleep(2 * time.Second)
+
+	// Test hybrid search combining semantic and keyword matching
+	results, err := adapter.SearchHybrid(ctx, collectionName, "neural networks", &vectordb.QueryOptions{TopK: 2})
+
+	// Hybrid search requires OpenAI API key and may not be supported
+	if err != nil {
+		if err.Error() == "LLM client not initialized" || err.Error() == "LLM client not available for generating query embeddings" {
+			t.Skip("Skipping hybrid search test: OpenAI API key not available")
+		}
+		if err.Error() == "hybrid search not supported" || err.Error() == "hybrid search is not supported by Milvus" {
+			t.Skip("Skipping hybrid search test: Not supported by Milvus configuration")
+		}
+	}
+
+	assert.NoError(t, err, "Failed to perform hybrid search")
+	assert.NotNil(t, results)
+
+	if len(results) > 0 {
+		// Verify results are sorted by score
+		for i := 1; i < len(results); i++ {
+			assert.GreaterOrEqual(t, results[i-1].Score, results[i].Score,
+				"Results should be sorted by score descending")
+		}
+
+		assert.GreaterOrEqual(t, results[0].Score, float64(0), "Score should be non-negative")
+	}
+}
+
 // TestIntegration_Milvus_E2E_Workflow tests complete end-to-end workflow
 func TestIntegration_Milvus_E2E_Workflow(t *testing.T) {
 	adapter := getTestAdapter(t)
