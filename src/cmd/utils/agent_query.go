@@ -16,6 +16,105 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
+// QueryMultipleCollectionsWithAgent queries multiple collections and processes aggregated results through an agent
+func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+	// Create progress reporter
+	var reporter *progress.Reporter
+	if showProgress && outputFormat == "json" {
+		reporter = progress.NewJSONReporter(true)
+	} else {
+		reporter = progress.NewReporter(showProgress)
+	}
+
+	reporter.Start(fmt.Sprintf("Querying %d collections...", len(collectionNames)))
+	reporter.SetTotal(len(collectionNames))
+
+	// Aggregate results from all collections
+	var allResults []*vectordb.QueryResult
+
+	// Query each collection
+	for _, collectionName := range collectionNames {
+		reporter.UpdateProgress(fmt.Sprintf("Querying collection '%s'...", collectionName))
+
+		// Query the collection based on database type
+		var results []*vectordb.QueryResult
+		var err error
+
+		switch cfg.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			// Weaviate
+			client, clientErr := CreateWeaviateClient(cfg)
+			if clientErr != nil {
+				PrintError(fmt.Sprintf("Failed to create Weaviate client for collection '%s': %v", collectionName, clientErr))
+				continue
+			}
+			weaviateResults, queryErr := client.Query(ctx, collectionName, queryText, options)
+			if queryErr != nil {
+				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, queryErr))
+				continue
+			}
+			// Convert weaviate.QueryResult to vectordb.QueryResult
+			results = make([]*vectordb.QueryResult, len(weaviateResults))
+			for j, result := range weaviateResults {
+				results[j] = &vectordb.QueryResult{
+					Document: vectordb.Document{
+						ID:       result.ID,
+						Content:  result.Content,
+						Metadata: result.Metadata,
+					},
+					Score: result.Score,
+				}
+			}
+		default:
+			// All other VDBs: use generic interface
+			client, clientErr := CreateVectorDBClient(cfg)
+			if clientErr != nil {
+				PrintError(fmt.Sprintf("Failed to create client for collection '%s': %v", collectionName, clientErr))
+				continue
+			}
+			vdbOptions := &vectordb.QueryOptions{
+				TopK:           options.TopK,
+				Distance:       options.Distance,
+				SearchMetadata: options.SearchMetadata,
+				NoTruncate:     options.NoTruncate,
+				UseBM25:        options.UseBM25,
+			}
+			if vdbOptions.UseBM25 {
+				results, err = client.SearchBM25(ctx, collectionName, queryText, vdbOptions)
+			} else {
+				results, err = client.SearchSemantic(ctx, collectionName, queryText, vdbOptions)
+			}
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, err))
+				continue
+			}
+		}
+
+		// Add collection name to metadata for context
+		for _, result := range results {
+			if result.Document.Metadata == nil {
+				result.Document.Metadata = make(map[string]interface{})
+			}
+			result.Document.Metadata["_collection"] = collectionName
+		}
+
+		// Aggregate results
+		allResults = append(allResults, results...)
+		reporter.Update(fmt.Sprintf("Found %d results from '%s' (total: %d)", len(results), collectionName, len(allResults)))
+	}
+
+	if len(allResults) == 0 {
+		reporter.Complete("No results found")
+		PrintError("No results found from any collection")
+		return
+	}
+
+	reporter.Update(fmt.Sprintf("Aggregated %d results from %d collections", len(allResults), len(collectionNames)))
+
+	// Execute through agent with all aggregated results
+	ExecuteQueryWithAgent(ctx, agentName, queryText, allResults, outputFormat, showProgress)
+}
+
 // ExecuteQueryWithAgent executes a query and processes results through an agent
 func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, results []*vectordb.QueryResult, outputFormat string, showProgress bool) {
 	// Create progress reporter (use JSON reporter if output format is JSON)

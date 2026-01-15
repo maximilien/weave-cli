@@ -125,7 +125,7 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - 📦 **Batch Processing** - Parallel processing of entire directories
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
-  language
+  language, including multi-collection queries
 - 🧠 **AI Schema & Chunking** - Analyze documents and get AI-powered schema and
   optimal chunk size recommendations
 - 📊 **Embeddings** - List and explore available embedding models
@@ -327,6 +327,25 @@ weave cols q MyDocs "complex query" --agent rag-agent --progress
 
 # JSON output with progress (JSON Lines format)
 weave cols q MyDocs "query" --agent rag-agent --json --progress
+
+# Multi-collection queries (query multiple collections at once)
+weave cols query WeaveDocs WeaveImages "weave cli" --agent rag-agent --top_k 3
+weave cols query AuctionsDocs AuctionsImages AuctionResults "vintage cars" --agent rag-agent
+```
+
+**Multi-Collection Queries:**
+
+Query multiple collections simultaneously and aggregate results. The command
+returns top K results from EACH collection, which are then combined and passed
+to the agent for processing. Each result includes `_collection` metadata to
+track its source.
+
+```bash
+# Query 2 collections (returns top 3 from EACH)
+weave cols query Collection1 Collection2 "search query" --agent rag-agent --top_k 3
+
+# Query 3+ collections (useful for multi-modal data)
+weave cols query Docs Images Audio "query" --agent summarize-agent --top_k 5
 ```
 
 **Available Agents:**

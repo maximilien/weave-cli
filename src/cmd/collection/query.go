@@ -16,13 +16,19 @@ import (
 
 // QueryCmd represents the collection query command
 var QueryCmd = &cobra.Command{
-	Use:     "query COLLECTION \"query text\"",
+	Use:     "query COLLECTION [COLLECTION...] \"query text\"",
 	Aliases: []string{"q"},
-	Short:   "Perform semantic search on a collection",
-	Long: `Perform semantic search on a collection using natural language queries.
+	Short:   "Perform semantic search on one or more collections",
+	Long: `Perform semantic search on one or more collections using natural language queries.
 
-This command uses Weaviate's vector search capabilities to find the most relevant
+This command uses vector search capabilities to find the most relevant
 documents based on semantic similarity to your query text.
+
+Multi-Collection Queries:
+  Query multiple collections at once and aggregate results. Each collection
+  returns its top K results, which are then combined and passed to the agent.
+  This is useful for searching across different data types (e.g., documents,
+  images, metadata) in a unified way.
 
 For image collections with multi-vector support, you can search by:
   - Text metadata (captions, OCR, context) using --search-type text (default)
@@ -43,9 +49,13 @@ RAG Agents:
   Requires: OPENAI_API_KEY environment variable
 
 Examples:
-  # Text document search
+  # Single collection search
   weave cols query MyDocs "machine learning algorithms"
   weave cols q MyDocs "artificial intelligence" --top_k 10
+
+  # Multi-collection search (returns top K from EACH collection)
+  weave cols query WeaveDocs WeaveImages "weave cli" --agent rag-agent --top_k 3
+  weave cols query AuctionListings AuctionResults AuctionImages "vintage cars" --agent rag-agent
 
   # RAG agent query with comprehensive answer
   weave cols query MyDocs "What is machine learning?" --agent rag-agent
@@ -68,7 +78,7 @@ Examples:
   # Keyword search
   weave cols q MyDocs "exact keywords" --bm25
   weave cols q MyDocs "search term" --search-metadata --bm25`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.MinimumNArgs(2),
 	Run:  runCollectionQuery,
 }
 
@@ -87,8 +97,10 @@ func init() {
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
-	collectionName := args[0]
-	queryText := args[1]
+	// Parse collection names and query text
+	// Last arg is always the query text, all previous args are collection names
+	collectionNames := args[:len(args)-1]
+	queryText := args[len(args)-1]
 	topK, _ := cmd.Flags().GetInt("top_k")
 	distance, _ := cmd.Flags().GetFloat64("distance")
 	searchMetadata, _ := cmd.Flags().GetBool("search-metadata")
@@ -194,6 +206,22 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		utils.PrintError("No database configuration available")
 		os.Exit(1)
 	}
+
+	// Handle multi-collection queries
+	if len(collectionNames) > 1 {
+		// Multi-collection query path
+		if agentName != "" {
+			// Multi-collection query with agent
+			utils.QueryMultipleCollectionsWithAgent(ctx, dbConfig, collectionNames, queryText, options, agentName, outputFormat, progress)
+		} else {
+			// Multi-collection query without agent
+			utils.QueryMultipleCollections(ctx, dbConfig, collectionNames, queryText, options)
+		}
+		return
+	}
+
+	// Single collection query (existing logic)
+	collectionName := collectionNames[0]
 
 	// If agent is specified, use agent-enabled query path
 	if agentName != "" {
