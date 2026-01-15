@@ -237,3 +237,114 @@ func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBC
 	// Execute through agent
 	ExecuteQueryWithAgent(ctx, agentName, queryText, vdbResults, outputFormat, showProgress)
 }
+
+// QueryMultipleCollectionsWithAgentCrossVDB queries multiple collections across different VDBs and processes aggregated results through an agent
+func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSpecs []CollectionSpec, vdbConfigs map[string]*config.VectorDBConfig, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+	// Create progress reporter
+	var reporter *progress.Reporter
+	if showProgress && outputFormat == "json" {
+		reporter = progress.NewJSONReporter(true)
+	} else {
+		reporter = progress.NewReporter(showProgress)
+	}
+
+	reporter.Start(fmt.Sprintf("Querying %d collections across multiple VDBs...", len(collectionSpecs)))
+	reporter.SetTotal(len(collectionSpecs))
+
+	// Aggregate results from all collections
+	var allResults []*vectordb.QueryResult
+
+	// Query each collection from its respective VDB
+	for _, spec := range collectionSpecs {
+		reporter.UpdateProgress(fmt.Sprintf("Querying collection '%s' from %s...", spec.Name, spec.VDBKey))
+
+		vdbConfig := vdbConfigs[spec.Name]
+		if vdbConfig == nil {
+			PrintError(fmt.Sprintf("No VDB configuration found for collection '%s'", spec.Name))
+			continue
+		}
+
+		// Query the collection based on database type
+		var results []*vectordb.QueryResult
+		var err error
+
+		switch vdbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			// Weaviate
+			client, clientErr := CreateWeaviateClient(vdbConfig)
+			if clientErr != nil {
+				PrintError(fmt.Sprintf("Failed to create Weaviate client for collection '%s': %v", spec.Name, clientErr))
+				continue
+			}
+			weaviateResults, queryErr := client.Query(ctx, spec.Name, queryText, options)
+			if queryErr != nil {
+				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", spec.Name, queryErr))
+				continue
+			}
+			// Convert weaviate.QueryResult to vectordb.QueryResult
+			results = make([]*vectordb.QueryResult, len(weaviateResults))
+			for j, result := range weaviateResults {
+				results[j] = &vectordb.QueryResult{
+					Document: vectordb.Document{
+						ID:       result.ID,
+						Content:  result.Content,
+						Metadata: result.Metadata,
+					},
+					Score: result.Score,
+				}
+			}
+		default:
+			// All other VDBs: use generic interface
+			client, clientErr := CreateVectorDBClient(vdbConfig)
+			if clientErr != nil {
+				PrintError(fmt.Sprintf("Failed to create client for collection '%s': %v", spec.Name, clientErr))
+				continue
+			}
+			vdbOptions := &vectordb.QueryOptions{
+				TopK:           options.TopK,
+				Distance:       options.Distance,
+				SearchMetadata: options.SearchMetadata,
+				NoTruncate:     options.NoTruncate,
+				UseBM25:        options.UseBM25,
+			}
+			if vdbOptions.UseBM25 {
+				results, err = client.SearchBM25(ctx, spec.Name, queryText, vdbOptions)
+			} else {
+				results, err = client.SearchSemantic(ctx, spec.Name, queryText, vdbOptions)
+			}
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", spec.Name, err))
+				continue
+			}
+		}
+
+		// Add collection name and VDB info to metadata for context
+		vdbKey := spec.VDBKey
+		if vdbKey == "" {
+			vdbKey = string(vdbConfig.Type)
+		}
+		for _, result := range results {
+			if result.Document.Metadata == nil {
+				result.Document.Metadata = make(map[string]interface{})
+			}
+			result.Document.Metadata["_collection"] = spec.Name
+			result.Document.Metadata["_vdb"] = vdbKey
+			result.Document.Metadata["_vdb_type"] = string(vdbConfig.Type)
+		}
+
+		// Aggregate results
+		allResults = append(allResults, results...)
+		reporter.Update(fmt.Sprintf("Found %d results from '%s' (%s) (total: %d)", len(results), spec.Name, vdbKey, len(allResults)))
+	}
+
+	if len(allResults) == 0 {
+		reporter.Complete("No results found")
+		PrintError("No results found from any collection")
+		return
+	}
+
+	reporter.Update(fmt.Sprintf("Aggregated %d results from %d collections across multiple VDBs", len(allResults), len(collectionSpecs)))
+
+	// Execute through agent with all aggregated results
+	ExecuteQueryWithAgent(ctx, agentName, queryText, allResults, outputFormat, showProgress)
+}

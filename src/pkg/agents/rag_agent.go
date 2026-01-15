@@ -319,16 +319,22 @@ func (a *RAGAgent) formatMarkdown(output *RAGOutput) (string, error) {
 	if len(output.Sources) > 0 && a.config.Output.ShowSources {
 		builder.WriteString("## Sources\n\n")
 		for _, source := range output.Sources {
-			// Extract collection name if available
+			// Extract collection name and VDB info if available
 			collectionName := ""
+			vdbName := ""
 			if source.Metadata != nil {
 				if col, ok := source.Metadata["_collection"].(string); ok {
 					collectionName = col
 				}
+				if vdb, ok := source.Metadata["_vdb"].(string); ok {
+					vdbName = vdb
+				}
 			}
 
-			// Format citation with collection name
-			if collectionName != "" {
+			// Format citation with collection name and VDB
+			if collectionName != "" && vdbName != "" {
+				builder.WriteString(fmt.Sprintf("**[%d]** %s (%s) - Score: %.1f%%\n", source.Index, collectionName, vdbName, source.Score*100))
+			} else if collectionName != "" {
 				builder.WriteString(fmt.Sprintf("**[%d]** %s (Score: %.1f%%)\n", source.Index, collectionName, source.Score*100))
 			} else {
 				builder.WriteString(fmt.Sprintf("**[%d]** (Score: %.1f%%)\n", source.Index, source.Score*100))
@@ -372,16 +378,22 @@ func (a *RAGAgent) formatText(output *RAGOutput) (string, error) {
 	if len(output.Sources) > 0 && a.config.Output.ShowSources {
 		builder.WriteString("Sources:\n")
 		for _, source := range output.Sources {
-			// Extract collection name if available
+			// Extract collection name and VDB info if available
 			collectionName := ""
+			vdbName := ""
 			if source.Metadata != nil {
 				if col, ok := source.Metadata["_collection"].(string); ok {
 					collectionName = col
 				}
+				if vdb, ok := source.Metadata["_vdb"].(string); ok {
+					vdbName = vdb
+				}
 			}
 
-			// Format with collection name
-			if collectionName != "" {
+			// Format with collection name and VDB
+			if collectionName != "" && vdbName != "" {
+				builder.WriteString(fmt.Sprintf("[%d] %s (%s) - Score: %.1f%%", source.Index, collectionName, vdbName, source.Score*100))
+			} else if collectionName != "" {
 				builder.WriteString(fmt.Sprintf("[%d] %s - Score: %.1f%%", source.Index, collectionName, source.Score*100))
 			} else {
 				builder.WriteString(fmt.Sprintf("[%d] Score: %.1f%%", source.Index, source.Score*100))

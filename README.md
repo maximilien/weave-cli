@@ -348,6 +348,33 @@ weave cols query Collection1 Collection2 "search query" --agent rag-agent --top_
 weave cols query Docs Images Audio "query" --agent summarize-agent --top_k 5
 ```
 
+**Cross-VDB Queries:**
+
+Query collections from different vector databases in a single command. Use the
+`Collection:vdb-key` syntax to specify which VDB each collection resides in.
+Results include both collection name and VDB information in citations.
+
+```bash
+# Query collections from different VDBs
+weave cols query WeaveDocs:weaviate-local WeaveImages:milvus-local "weave cli" --agent rag-agent
+
+# AuctionsMax.ai example: Query across MongoDB, Weaviate, and Milvus
+weave cols query \
+  AuctionListings:mongodb-cloud \
+  AuctionResults:weaviate-cloud \
+  AuctionImages:milvus-cloud \
+  "vintage Leica cameras" \
+  --agent rag-agent --top_k 3
+
+# Mixed: explicit VDB + default from flags
+weave cols query WeaveDocs WeaveImages:milvus-local "query" --weaviate-local --agent rag-agent
+```
+
+Supported VDB keys: `weaviate-local`, `weaviate-cloud`, `milvus-local`,
+`milvus-cloud`, `mongodb-cloud`, `qdrant-local`, `qdrant-cloud`,
+`neo4j-local`, `neo4j-cloud`, `chroma-local`, `chroma-cloud`,
+`supabase-cloud`, etc.
+
 **Available Agents:**
 
 - `rag-agent` - Comprehensive answers with source citations

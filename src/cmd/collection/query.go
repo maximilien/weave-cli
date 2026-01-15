@@ -30,6 +30,14 @@ Multi-Collection Queries:
   This is useful for searching across different data types (e.g., documents,
   images, metadata) in a unified way.
 
+Cross-VDB Queries:
+  Query collections from different vector databases in a single command using
+  the "Collection:vdb-key" syntax (e.g., "Docs:weaviate-local Images:milvus-cloud").
+  Supported VDB keys: weaviate-local, weaviate-cloud, milvus-local, milvus-cloud,
+  mongodb-cloud, qdrant-local, qdrant-cloud, neo4j-local, neo4j-cloud,
+  chroma-local, chroma-cloud, supabase-cloud, etc.
+  Results include collection name and VDB information in citations.
+
 For image collections with multi-vector support, you can search by:
   - Text metadata (captions, OCR, context) using --search-type text (default)
   - Visual similarity using --search-type visual (requires multi2vec-clip)
@@ -56,6 +64,10 @@ Examples:
   # Multi-collection search (returns top K from EACH collection)
   weave cols query WeaveDocs WeaveImages "weave cli" --agent rag-agent --top_k 3
   weave cols query AuctionListings AuctionResults AuctionImages "vintage cars" --agent rag-agent
+
+  # Cross-VDB queries (query collections from different VDBs)
+  weave cols query WeaveDocs:weaviate-local WeaveImages:milvus-local "weave cli" --agent rag-agent
+  weave cols query AuctionDocs:mongodb AuctionImages:weaviate-cloud "vintage" --agent rag-agent --top_k 3
 
   # RAG agent query with comprehensive answer
   weave cols query MyDocs "What is machine learning?" --agent rag-agent
@@ -97,10 +109,17 @@ func init() {
 }
 
 func runCollectionQuery(cmd *cobra.Command, args []string) {
-	// Parse collection names and query text
-	// Last arg is always the query text, all previous args are collection names
-	collectionNames := args[:len(args)-1]
+	// Parse collection specs and query text
+	// Last arg is always the query text, all previous args are collection specs
+	collectionSpecStrings := args[:len(args)-1]
 	queryText := args[len(args)-1]
+
+	// Parse collection specs (supports "Collection" or "Collection:vdb-key" syntax)
+	collectionSpecs, err := utils.ParseCollectionSpecs(collectionSpecStrings)
+	if err != nil {
+		utils.PrintError(fmt.Sprintf("Invalid collection specification: %v", err))
+		os.Exit(1)
+	}
 	topK, _ := cmd.Flags().GetInt("top_k")
 	distance, _ := cmd.Flags().GetFloat64("distance")
 	searchMetadata, _ := cmd.Flags().GetBool("search-metadata")
@@ -207,21 +226,59 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// Check for cross-VDB multi-collection queries
+	hasExplicitVDBs := utils.HasExplicitVDBs(collectionSpecs)
+
 	// Handle multi-collection queries
-	if len(collectionNames) > 1 {
-		// Multi-collection query path
-		if agentName != "" {
-			// Multi-collection query with agent
-			utils.QueryMultipleCollectionsWithAgent(ctx, dbConfig, collectionNames, queryText, options, agentName, outputFormat, progress)
+	if len(collectionSpecs) > 1 {
+		if hasExplicitVDBs {
+			// Cross-VDB multi-collection query
+			resolver := utils.NewVDBConfigResolver(cfg, dbConfig)
+			vdbConfigs, err := resolver.ResolveConfigs(collectionSpecs)
+			if err != nil {
+				utils.PrintError(fmt.Sprintf("Failed to resolve VDB configurations: %v", err))
+				os.Exit(1)
+			}
+
+			if agentName != "" {
+				// Cross-VDB query with agent
+				utils.QueryMultipleCollectionsWithAgentCrossVDB(ctx, collectionSpecs, vdbConfigs, queryText, options, agentName, outputFormat, progress)
+			} else {
+				// Cross-VDB query without agent
+				utils.QueryMultipleCollectionsCrossVDB(ctx, collectionSpecs, vdbConfigs, queryText, options)
+			}
 		} else {
-			// Multi-collection query without agent
-			utils.QueryMultipleCollections(ctx, dbConfig, collectionNames, queryText, options)
+			// Same-VDB multi-collection query (existing behavior)
+			collectionNames := make([]string, len(collectionSpecs))
+			for i, spec := range collectionSpecs {
+				collectionNames[i] = spec.Name
+			}
+
+			if agentName != "" {
+				// Multi-collection query with agent
+				utils.QueryMultipleCollectionsWithAgent(ctx, dbConfig, collectionNames, queryText, options, agentName, outputFormat, progress)
+			} else {
+				// Multi-collection query without agent
+				utils.QueryMultipleCollections(ctx, dbConfig, collectionNames, queryText, options)
+			}
 		}
 		return
 	}
 
 	// Single collection query (existing logic)
-	collectionName := collectionNames[0]
+	collectionSpec := collectionSpecs[0]
+	collectionName := collectionSpec.Name
+
+	// If collection has explicit VDB, resolve it
+	if collectionSpec.VDBKey != "" {
+		resolver := utils.NewVDBConfigResolver(cfg, dbConfig)
+		vdbConfigs, err := resolver.ResolveConfigs(collectionSpecs)
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to resolve VDB configuration: %v", err))
+			os.Exit(1)
+		}
+		dbConfig = vdbConfigs[collectionName]
+	}
 
 	// If agent is specified, use agent-enabled query path
 	if agentName != "" {

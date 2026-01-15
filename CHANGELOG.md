@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Cross-VDB Multi-Collection Query Support**
+  - Query collections from different vector databases in a single command
+  - Syntax: `weave cols query Col1:vdb1 Col2:vdb2 "query" --agent`
+  - Example: `weave cols query Docs:weaviate-local Images:milvus-local "q"`
+  - Supports explicit VDB specification per collection using `:vdb-key`
+  - VDB keys: weaviate-local, weaviate-cloud, milvus-local, milvus-cloud,
+    mongodb-cloud, qdrant-local, qdrant-cloud, neo4j-local, neo4j-cloud, etc.
+  - Results include both `_collection` and `_vdb` metadata for full context
+  - Citations: `[1] AuctionDocs (mongodb-cloud) - Score: 85.2%`
+  - Mixed mode: Collections without `:vdb` use default from command flags
+  - Created `CollectionSpec` parser and `VDBConfigResolver` infrastructure
+  - New functions: `QueryMultipleCollectionsWithAgentCrossVDB()` and
+    `QueryMultipleCollectionsCrossVDB()`
+  - Critical for apps with collections across multiple VDBs (AuctionsMax.ai)
+  - Full backward compatibility with existing multi-collection queries
+  - Unit tests for collection spec parser and VDB resolver
+
 - **Multi-Collection Query Support**
   - Query multiple collections in a single command and aggregate results
   - Command: `weave cols query Collection1 Collection2 ... "query"`

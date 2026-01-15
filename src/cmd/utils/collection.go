@@ -2560,6 +2560,115 @@ func QueryMultipleCollections(ctx context.Context, cfg *config.VectorDBConfig, c
 	DisplayQueryResults(allResults, fmt.Sprintf("Multiple Collections (%d)", len(collectionNames)), queryText, options.NoTruncate, options.JSONOutput)
 }
 
+// QueryMultipleCollectionsCrossVDB queries multiple collections across different VDBs and displays aggregated results
+func QueryMultipleCollectionsCrossVDB(ctx context.Context, collectionSpecs []CollectionSpec, vdbConfigs map[string]*config.VectorDBConfig, queryText string, options weaviate.QueryOptions) {
+	fmt.Printf("Querying %d collections across multiple VDBs...\n", len(collectionSpecs))
+
+	// Aggregate results from all collections
+	var allResults []weaviate.QueryResult
+
+	// Query each collection from its respective VDB
+	for _, spec := range collectionSpecs {
+		vdbConfig := vdbConfigs[spec.Name]
+		if vdbConfig == nil {
+			PrintError(fmt.Sprintf("No VDB configuration found for collection '%s'", spec.Name))
+			continue
+		}
+
+		vdbKey := spec.VDBKey
+		if vdbKey == "" {
+			vdbKey = string(vdbConfig.Type)
+		}
+		fmt.Printf("Querying collection '%s' from %s...\n", spec.Name, vdbKey)
+
+		// Query the collection based on database type
+		var results []*vectordb.QueryResult
+		var err error
+
+		switch vdbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			// Weaviate
+			client, clientErr := CreateWeaviateClient(vdbConfig)
+			if clientErr != nil {
+				PrintError(fmt.Sprintf("Failed to create Weaviate client for collection '%s': %v", spec.Name, clientErr))
+				continue
+			}
+			weaviateResults, queryErr := client.Query(ctx, spec.Name, queryText, options)
+			if queryErr != nil {
+				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", spec.Name, queryErr))
+				continue
+			}
+			// Convert to vectordb.QueryResult for consistency
+			results = make([]*vectordb.QueryResult, len(weaviateResults))
+			for j, result := range weaviateResults {
+				results[j] = &vectordb.QueryResult{
+					Document: vectordb.Document{
+						ID:       result.ID,
+						Content:  result.Content,
+						Metadata: result.Metadata,
+					},
+					Score: result.Score,
+				}
+			}
+		default:
+			// All other VDBs: use generic interface
+			client, clientErr := CreateVectorDBClient(vdbConfig)
+			if clientErr != nil {
+				PrintError(fmt.Sprintf("Failed to create client for collection '%s': %v", spec.Name, clientErr))
+				continue
+			}
+			vdbOptions := &vectordb.QueryOptions{
+				TopK:           options.TopK,
+				Distance:       options.Distance,
+				SearchMetadata: options.SearchMetadata,
+				NoTruncate:     options.NoTruncate,
+				UseBM25:        options.UseBM25,
+			}
+			if vdbOptions.UseBM25 {
+				results, err = client.SearchBM25(ctx, spec.Name, queryText, vdbOptions)
+			} else {
+				results, err = client.SearchSemantic(ctx, spec.Name, queryText, vdbOptions)
+			}
+			if err != nil {
+				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", spec.Name, err))
+				continue
+			}
+		}
+
+		// Add collection name and VDB info to metadata for context
+		for _, result := range results {
+			if result.Document.Metadata == nil {
+				result.Document.Metadata = make(map[string]interface{})
+			}
+			result.Document.Metadata["_collection"] = spec.Name
+			result.Document.Metadata["_vdb"] = vdbKey
+			result.Document.Metadata["_vdb_type"] = string(vdbConfig.Type)
+		}
+
+		// Convert to weaviate.QueryResult for display
+		for _, r := range results {
+			allResults = append(allResults, weaviate.QueryResult{
+				ID:       r.Document.ID,
+				Content:  r.Document.Content,
+				Score:    r.Score,
+				Metadata: r.Document.Metadata,
+			})
+		}
+
+		fmt.Printf("Found %d results from '%s' (%s)\n", len(results), spec.Name, vdbKey)
+	}
+
+	if len(allResults) == 0 {
+		PrintError("No results found from any collection")
+		return
+	}
+
+	fmt.Printf("\nAggregated %d results from %d collections across multiple VDBs\n\n", len(allResults), len(collectionSpecs))
+
+	// Display aggregated results
+	DisplayQueryResults(allResults, fmt.Sprintf("Multiple Collections Cross-VDB (%d)", len(collectionSpecs)), queryText, options.NoTruncate, options.JSONOutput)
+}
+
 // QueryCollection performs semantic search on a collection using the vectordb abstraction (works for all DB types)
 func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions) {
 	client, err := CreateVectorDBClient(cfg)
