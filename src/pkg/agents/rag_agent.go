@@ -319,7 +319,21 @@ func (a *RAGAgent) formatMarkdown(output *RAGOutput) (string, error) {
 	if len(output.Sources) > 0 && a.config.Output.ShowSources {
 		builder.WriteString("## Sources\n\n")
 		for _, source := range output.Sources {
-			builder.WriteString(fmt.Sprintf("**[%d]** (Score: %.1f%%)\n", source.Index, source.Score*100))
+			// Extract collection name if available
+			collectionName := ""
+			if source.Metadata != nil {
+				if col, ok := source.Metadata["_collection"].(string); ok {
+					collectionName = col
+				}
+			}
+
+			// Format citation with collection name
+			if collectionName != "" {
+				builder.WriteString(fmt.Sprintf("**[%d]** %s (Score: %.1f%%)\n", source.Index, collectionName, source.Score*100))
+			} else {
+				builder.WriteString(fmt.Sprintf("**[%d]** (Score: %.1f%%)\n", source.Index, source.Score*100))
+			}
+
 			if source.Content != "" {
 				builder.WriteString(fmt.Sprintf("- %s\n", source.Content))
 			}
@@ -358,7 +372,21 @@ func (a *RAGAgent) formatText(output *RAGOutput) (string, error) {
 	if len(output.Sources) > 0 && a.config.Output.ShowSources {
 		builder.WriteString("Sources:\n")
 		for _, source := range output.Sources {
-			builder.WriteString(fmt.Sprintf("[%d] Score: %.1f%%", source.Index, source.Score*100))
+			// Extract collection name if available
+			collectionName := ""
+			if source.Metadata != nil {
+				if col, ok := source.Metadata["_collection"].(string); ok {
+					collectionName = col
+				}
+			}
+
+			// Format with collection name
+			if collectionName != "" {
+				builder.WriteString(fmt.Sprintf("[%d] %s - Score: %.1f%%", source.Index, collectionName, source.Score*100))
+			} else {
+				builder.WriteString(fmt.Sprintf("[%d] Score: %.1f%%", source.Index, source.Score*100))
+			}
+
 			if source.DocID != "" {
 				builder.WriteString(fmt.Sprintf(" (ID: %s)", source.DocID))
 			}

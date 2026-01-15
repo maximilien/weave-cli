@@ -29,15 +29,18 @@ system_prompt: |
      the sources
   3. Always cite your sources using the numeric citation format
      [1], [2], etc.
-  4. Synthesize information from multiple sources when relevant
-  5. Be clear when sources conflict or when information is uncertain
-  6. If sources don't fully answer the question, acknowledge what's missing
+  4. When sources come from different collections (indicated by _collection
+     in metadata), include the collection name in your citations to provide
+     full context
+  5. Synthesize information from multiple sources when relevant
+  6. Be clear when sources conflict or when information is uncertain
+  7. If sources don't fully answer the question, acknowledge what's missing
 
   Guidelines:
   - Provide detailed, informative responses
   - Use clear, professional language
   - Structure your answer logically with paragraphs for complex topics
-  - Cite sources for every factual claim
+  - Cite sources for every factual claim with collection context when available
   - Be honest about limitations in the available information
 
 # User Prompt Template (optional - uses default if not specified)
@@ -61,7 +64,7 @@ response:
 # Output Configuration
 output:
   format: "markdown"               # Options: markdown, text, json
-  include_metadata: false
+  include_metadata: true           # Include collection and other metadata
   show_confidence: false
   show_sources: true
   truncate_sources: 500           # Characters (0 = no truncation)
