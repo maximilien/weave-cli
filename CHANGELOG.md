@@ -12,15 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Epsilon-Based Random Shuffling for Equal Scores Across VDBs**
-  - When aggregating results from multiple VDBs, documents with equal or nearly-equal scores are now randomly shuffled
+  - When aggregating results from multiple VDBs, documents with equal or
+    nearly-equal scores are now randomly shuffled
   - Eliminates bias toward first VDB in aggregation order
   - Uses epsilon threshold (0.001) to detect approximately equal scores
   - Ensures fair distribution across VDBs when scores are similar
-  - Example: 3 VDBs with score 0.80 each → 33.3% distribution for each VDB over time
-  - Without this: First VDB would always win ties (100% for first VDB, 0% for others)
+  - Example: 3 VDBs with score 0.80 each → 33.3% distribution for each
+    VDB over time
+  - Without this: First VDB would always win ties (100% for first VDB,
+    0% for others)
   - Implementation: Assigns random tiebreaker values to each result
-  - Sorts by score if difference > epsilon, shuffles randomly if difference ≤ epsilon
-  - Tests: `TestSortByRelevance_RandomTieBreaking`, `TestSortByRelevance_CrossVDBFairness`, `TestSortByRelevance_EpsilonBasedShuffling`
+  - Sorts by score if difference > epsilon, shuffles randomly if
+    difference ≤ epsilon
+  - Tests: `TestSortByRelevance_RandomTieBreaking`,
+    `TestSortByRelevance_CrossVDBFairness`,
+    `TestSortByRelevance_EpsilonBasedShuffling`
   - Location: `src/pkg/agents/context_builder.go:157-196`
 
 - **Multi-Agent Orchestration Planning Documentation**
@@ -41,9 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - "Last agent wins" response handling (merge in Phase 2)
   - All documents cross-linked for easy navigation
   - Updated `docs/planning/README.md` with multi-agent section
-  - Location: `docs/planning/DECISION_POINTS.md`, `MULTI_AGENT_ORCHESTRATION.md`, `MULTI_AGENT_EXAMPLES.md`
-
-### Added
+  - Location: `docs/planning/DECISION_POINTS.md`,
+    `MULTI_AGENT_ORCHESTRATION.md`, `MULTI_AGENT_EXAMPLES.md`
 
 - **Enhanced RAG Agent Citation Format with Human-Friendly Order**
   - Citations show comprehensive metadata in order of human importance:
