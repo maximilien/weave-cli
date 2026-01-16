@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Multi-Modal RAG Support for Image Collections (Phase 1)** 🚨 BLOCKER FIX
+  - Image collections now work with rag-agent and other agents
+  - Fixed critical issue where image collections returned zero results
+  - Context builder now extracts content from image documents:
+    - OCR text (`ocr_text`) - text extracted from images
+    - Descriptions (`description`, `alt_text`, `caption`)
+    - Tags for categorization
+    - Image URLs for reference
+  - Maintains content priority: Content > Text > Image > URL
+  - Example image document:
+    ```json
+    {
+      "image": "https://cdn.example.com/car.jpg",
+      "metadata": {
+        "ocr_text": "1967 Ford Mustang",
+        "description": "Vintage red Mustang",
+        "tags": ["vintage", "car", "mustang"]
+      }
+    }
+    ```
+  - Example output:
+    ```
+    Text in image: 1967 Ford Mustang
+    Description: Vintage red Mustang
+    Tags: vintage, car, mustang
+    Image URL: https://cdn.example.com/car.jpg
+    ```
+  - Tests: 9 comprehensive unit tests, all 66 agent tests pass
+  - Test data: Added `tests/data/pdfs/2024-tamarkin-auction-catalogue.pdf`
+  - Functions: `extractImageContent()` in `context_builder.go`
+  - Unblocks production deployment of multi-modal RAG use cases
+
 ## [0.9.3] - 2026-01-16
 
 ### Added
