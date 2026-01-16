@@ -62,9 +62,9 @@ func ParseCollectionSpecs(specs []string) ([]CollectionSpec, error) {
 
 // VDBConfigResolver resolves VDB configurations for collection specs
 type VDBConfigResolver struct {
-	config         *config.Config
-	defaultConfig  *config.VectorDBConfig
-	resolvedCache  map[string]*config.VectorDBConfig
+	config        *config.Config
+	defaultConfig *config.VectorDBConfig
+	resolvedCache map[string]*config.VectorDBConfig
 }
 
 // NewVDBConfigResolver creates a new VDB config resolver
