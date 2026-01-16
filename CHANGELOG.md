@@ -9,6 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Enhanced Image Citations for Multi-Modal RAG (Phase 2)**
+  - Visual distinction for image results in RAG agent output
+  - Markdown: 🖼️ emoji indicator for image sources
+  - Plain text: [IMAGE] text indicator for image sources
+  - Clickable [View Image](url) links in markdown citations
+  - Automatic image URL extraction from content
+  - Redundant "Image URL:" line removed from content display
+  - Example markdown output:
+
+    ```markdown
+    **[1] 🖼️ Image** - [View Image](https://cdn.../car.jpg) -
+      ProductImages (weaviate-cloud) - Score: 87.3%
+
+    Text in image: 1967 Ford Mustang
+    Description: Vintage red Mustang in excellent condition
+    Tags: vintage, car, mustang, 1967
+    ```
+
+  - Example plain text output:
+
+    ```text
+    [1] [IMAGE] ProductImages (weaviate-cloud) - Score: 87.3%
+    ```
+
+  - Helper functions: `isImageSource()`, `extractImageURL()`
+  - All 66 agent tests pass
+
 - **Multi-Modal RAG Support for Image Collections (Phase 1)** 🚨 BLOCKER FIX
   - Image collections now work with rag-agent and other agents
   - Fixed critical issue where image collections returned zero results
