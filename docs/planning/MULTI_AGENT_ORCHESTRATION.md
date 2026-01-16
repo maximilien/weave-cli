@@ -278,6 +278,8 @@ type HandoffTrigger struct {
 
 **Hybrid Approach (Approach 3)** with phased implementation:
 
+AGREED!
+
 ### Phase 1: Inline Agent Chain (Simple)
 Start with simple sequential execution:
 
@@ -633,6 +635,8 @@ weave cols query WeaveDocs "query" \
 ```
 
 Router agent analyzes query and picks best agent to handle it.
+
+NOTE: I like this idea and wondering if we can add it to the plan with a smart-router.yaml agent example. This can be added at the end after the config multiagent if it makes sense.
 
 ---
 
