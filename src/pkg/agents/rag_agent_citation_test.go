@@ -86,19 +86,19 @@ func TestRAGAgent_FormatOutput_CrossVDBCitations(t *testing.T) {
 
 	t.Logf("Formatted output:\n%s", formatted)
 
-	// Verify the new citation format includes all components
-	// Expected format: [1] ID: doc-001, Score: 82.3%, VDB: weaviate-cloud, Collection: WeaveDocs
+	// Verify the new citation format with human-friendly order
+	// Expected format: [1] WeaveDocs (weaviate-cloud) - Score: 82.3% - ID: doc-001
 
 	// Check first citation
-	assert.Contains(t, formatted, "[1] ID: doc-001, Score: 82.3%, VDB: weaviate-cloud, Collection: WeaveDocs",
-		"Citation should include ID, score, VDB, and collection")
+	assert.Contains(t, formatted, "[1] WeaveDocs (weaviate-cloud) - Score: 82.3% - ID: doc-001",
+		"Citation should show collection, VDB, score, then ID last")
 
 	// Check second citation
-	assert.Contains(t, formatted, "[2] ID: doc-002, Score: 78.9%, VDB: milvus-cloud, Collection: WeaveDocs",
+	assert.Contains(t, formatted, "[2] WeaveDocs (milvus-cloud) - Score: 78.9% - ID: doc-002",
 		"Second citation should show different VDB")
 
 	// Check third citation with different collection
-	assert.Contains(t, formatted, "[3] ID: doc-003, Score: 71.2%, VDB: mongodb-cloud, Collection: AuctionDocs",
+	assert.Contains(t, formatted, "[3] AuctionDocs (mongodb-cloud) - Score: 71.2% - ID: doc-003",
 		"Third citation should show different collection and VDB")
 
 	// Verify all citations show different VDBs (proving cross-VDB query)
@@ -162,9 +162,9 @@ func TestRAGAgent_FormatOutput_MarkdownCrossVDBCitations(t *testing.T) {
 
 	t.Logf("Markdown formatted output:\n%s", formatted)
 
-	// Verify markdown format with backticks for ID
-	assert.Contains(t, formatted, "**[1]** ID: `abc-123`, Score: 85.6%, VDB: weaviate-cloud, Collection: TechDocs",
-		"Markdown citation should include ID with backticks, score, VDB, and collection")
+	// Verify markdown format with ID last, collection and VDB first
+	assert.Contains(t, formatted, "**[1]** TechDocs (weaviate-cloud) - Score: 85.6% - ID: `abc-123`",
+		"Markdown citation should show collection, VDB, score, then ID last with backticks")
 
 	// Verify content is shown on separate line
 	assert.Contains(t, formatted, "- Weaviate is a cloud-native vector database",
@@ -221,10 +221,13 @@ func TestRAGAgent_FormatOutput_CitationWithoutDocID(t *testing.T) {
 	formatted, err := agent.FormatOutput(output)
 	require.NoError(t, err)
 
-	// Should show citation without ID field
-	assert.Contains(t, formatted, "[1] Score: 75.0%, VDB: test-vdb, Collection: TestDocs",
-		"Citation without DocID should still show score, VDB, and collection")
+	// Should show citation without ID field (collection, VDB, score only)
+	assert.Contains(t, formatted, "[1] TestDocs (test-vdb) - Score: 75.0%",
+		"Citation without DocID should show collection, VDB, and score")
 
 	// Should NOT contain "ID:" when no DocID
 	assert.False(t, strings.Contains(formatted, "ID:"), "Should not show ID field when DocID is empty")
+
+	// Should NOT have trailing " - " when no ID
+	assert.False(t, strings.Contains(formatted, "75.0% - \n"), "Should not have trailing dash when no ID")
 }

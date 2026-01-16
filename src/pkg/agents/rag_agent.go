@@ -331,23 +331,27 @@ func (a *RAGAgent) formatMarkdown(output *RAGOutput) (string, error) {
 				}
 			}
 
-			// Format citation with ID, score, VDB, and collection
+			// Format citation with collection, VDB, score first (most useful to humans)
+			// ID last (mainly for debugging/tracing)
 			builder.WriteString(fmt.Sprintf("**[%d]** ", source.Index))
 
-			// Add document ID if available
-			if source.DocID != "" {
-				builder.WriteString(fmt.Sprintf("ID: `%s`, ", source.DocID))
+			// Add collection name if available
+			if collectionName != "" {
+				builder.WriteString(collectionName)
+				if vdbName != "" {
+					builder.WriteString(fmt.Sprintf(" (%s)", vdbName))
+				}
+				builder.WriteString(" - ")
+			} else if vdbName != "" {
+				builder.WriteString(fmt.Sprintf("%s - ", vdbName))
 			}
 
 			// Add score
 			builder.WriteString(fmt.Sprintf("Score: %.1f%%", source.Score*100))
 
-			// Add VDB and collection if available
-			if vdbName != "" {
-				builder.WriteString(fmt.Sprintf(", VDB: %s", vdbName))
-			}
-			if collectionName != "" {
-				builder.WriteString(fmt.Sprintf(", Collection: %s", collectionName))
+			// Add document ID last (if available)
+			if source.DocID != "" {
+				builder.WriteString(fmt.Sprintf(" - ID: `%s`", source.DocID))
 			}
 			builder.WriteString("\n")
 
@@ -399,23 +403,27 @@ func (a *RAGAgent) formatText(output *RAGOutput) (string, error) {
 				}
 			}
 
-			// Format citation with ID, score, VDB, and collection
+			// Format citation with collection, VDB, score first (most useful to humans)
+			// ID last (mainly for debugging/tracing)
 			builder.WriteString(fmt.Sprintf("[%d] ", source.Index))
 
-			// Add document ID if available
-			if source.DocID != "" {
-				builder.WriteString(fmt.Sprintf("ID: %s, ", source.DocID))
+			// Add collection name if available
+			if collectionName != "" {
+				builder.WriteString(collectionName)
+				if vdbName != "" {
+					builder.WriteString(fmt.Sprintf(" (%s)", vdbName))
+				}
+				builder.WriteString(" - ")
+			} else if vdbName != "" {
+				builder.WriteString(fmt.Sprintf("%s - ", vdbName))
 			}
 
 			// Add score
 			builder.WriteString(fmt.Sprintf("Score: %.1f%%", source.Score*100))
 
-			// Add VDB and collection if available
-			if vdbName != "" {
-				builder.WriteString(fmt.Sprintf(", VDB: %s", vdbName))
-			}
-			if collectionName != "" {
-				builder.WriteString(fmt.Sprintf(", Collection: %s", collectionName))
+			// Add document ID last (if available)
+			if source.DocID != "" {
+				builder.WriteString(fmt.Sprintf(" - ID: %s", source.DocID))
 			}
 			builder.WriteString("\n")
 		}

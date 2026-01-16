@@ -22,8 +22,8 @@ func TestBuildContext_CrossVDB_DeduplicationKeepsHighestScore(t *testing.T) {
 		Response: CustomAgentResponseConfig{
 			MaxContextChunks:   5,
 			MinRelevanceScore:  0.3,
-			DeduplicateSources: true,  // Enable deduplication
-			SortByRelevance:    true,  // Enable sorting
+			DeduplicateSources: true, // Enable deduplication
+			SortByRelevance:    true, // Enable sorting
 		},
 	}
 
@@ -242,8 +242,8 @@ func TestBuildContext_CrossVDB_SameIDDifferentVDBs(t *testing.T) {
 		Response: CustomAgentResponseConfig{
 			MaxContextChunks:   5,
 			MinRelevanceScore:  0.0,
-			DeduplicateSources: true,  // Enable deduplication
-			SortByRelevance:    true,  // Enable sorting
+			DeduplicateSources: true, // Enable deduplication
+			SortByRelevance:    true, // Enable sorting
 		},
 	}
 
@@ -384,4 +384,3 @@ func TestBuildContext_CrossVDB_SameIDDifferentVDBs(t *testing.T) {
 	assert.False(t, len(vdbs) == 1 && vdbs["mongodb-cloud"],
 		"Should NOT have only mongodb results (the bug!)")
 }
-
