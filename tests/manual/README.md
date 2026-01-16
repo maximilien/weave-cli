@@ -102,7 +102,7 @@ Tests various metadata levels:
 
 **Expected Output**:
 
-```
+```text
 [1] TestVintageCars (weaviate-cloud) - Score: 87.3%
 Text in image: 1967 Ford Mustang
 Description: Vintage red Mustang in excellent condition
@@ -131,6 +131,7 @@ Text in image: 1969 Chevrolet Camaro SS
 **Expected Output**: Mix of text documents and image results, sorted by relevance
 
 ✅ **Success Criteria**:
+
 - Results include both text (from TestCarDocs) and images (from TestVintageCars)
 - Sorted by score regardless of source type
 - Image results show metadata (OCR, description, etc.)
@@ -148,7 +149,7 @@ Text in image: 1969 Chevrolet Camaro SS
 
 **Expected Output**:
 
-```
+```text
 [1] TestImageMetadata - Score: X%
 Text in image: Complete OCR text from image
 Description: Full description with all details
@@ -168,6 +169,7 @@ Image URL: https://cdn.example.com/no-metadata.jpg
 ```
 
 ✅ **Success Criteria**:
+
 - Full metadata: Shows all fields
 - OCR-only: Shows OCR + URL
 - Description-only: Shows description + URL
@@ -190,6 +192,7 @@ Image URL: https://cdn.example.com/no-metadata.jpg
 **Expected Output**: Results from both Weaviate and MongoDB image collections
 
 ✅ **Success Criteria**:
+
 - Results from both VDBs
 - Citations show correct VDB names (weaviate-cloud, mongodb-cloud)
 - Images from both sources properly formatted
@@ -221,6 +224,7 @@ Image URL: https://cdn.example.com/no-metadata.jpg
 ```
 
 ✅ **Success Criteria**:
+
 - `image` field present
 - Metadata includes ocr_text, description, tags
 - Collection and VDB metadata auto-added
@@ -254,11 +258,13 @@ When done testing, remove test collections:
 **Check**:
 
 1. Verify collection exists:
+
    ```bash
    ./bin/weave cols list --weaviate-cloud
    ```
 
 2. Verify documents exist:
+
    ```bash
    ./bin/weave docs get TestVintageCars car-001 --weaviate-cloud
    ```
@@ -266,6 +272,7 @@ When done testing, remove test collections:
 3. Check if image field is present in document
 
 4. Try query without agent first:
+
    ```bash
    ./bin/weave cols query TestVintageCars "vintage" --top_k 3 --weaviate-cloud
    ```
@@ -277,11 +284,13 @@ When done testing, remove test collections:
 **Verify**:
 
 1. Check you're using the latest build:
+
    ```bash
    ./bin/weave --version
    ```
 
 2. Rebuild:
+
    ```bash
    ./build.sh
    ```
@@ -293,6 +302,7 @@ When done testing, remove test collections:
 **Check**:
 
 1. Verify image collection has data:
+
    ```bash
    ./bin/weave cols list --weaviate-cloud
    ```
@@ -315,6 +325,7 @@ After running `./tests/manual/test-image-collections.sh`, you should be able to:
 ✅ Query images across multiple VDBs
 
 ❌ Should NOT see:
+
 - "[Empty document]" for images
 - Zero results from image collections
 - Missing metadata (OCR, descriptions) in output
@@ -331,7 +342,8 @@ Once Phase 2 is implemented, you should see:
 - Better visual distinction between text and image sources
 
 Example:
-```
+
+```text
 [1] 🖼️ Image - TestVintageCars (weaviate-cloud) - Score: 87.3%
 [View Image](https://cdn.example.com/1967-mustang.jpg)
 

@@ -41,7 +41,8 @@ add_image_doc() {
     echo "   Adding: $id"
 
     # Build metadata JSON
-    local metadata=$(cat <<EOF
+    local metadata
+    metadata=$(cat <<EOF
 {
   "ocr_text": "$ocr_text",
   "description": "$description",
