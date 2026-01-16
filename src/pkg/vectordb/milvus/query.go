@@ -209,10 +209,17 @@ func (a *Adapter) parseSearchResults(results []client.SearchResult) ([]*vectordb
 		// Extract image data from JSON field
 		var imageData string
 		if imageDataCol := result.Fields.GetColumn(FieldImageData); imageDataCol != nil {
-			imageDataBytes := imageDataCol.(*entity.ColumnJSONBytes).Data()[i]
-			imageDataMap := mustUnmarshalJSON(imageDataBytes)
-			if data, ok := imageDataMap["data"].(string); ok {
-				imageData = data
+			// Try JSONBytes first, fallback to VarChar
+			switch col := imageDataCol.(type) {
+			case *entity.ColumnJSONBytes:
+				imageDataBytes := col.Data()[i]
+				imageDataMap := mustUnmarshalJSON(imageDataBytes)
+				if data, ok := imageDataMap["data"].(string); ok {
+					imageData = data
+				}
+			case *entity.ColumnVarChar:
+				// If stored as VarChar, use directly
+				imageData = col.Data()[i]
 			}
 		}
 
@@ -220,8 +227,18 @@ func (a *Adapter) parseSearchResults(results []client.SearchResult) ([]*vectordb
 
 		var metadata map[string]interface{}
 		if metadataCol := result.Fields.GetColumn(FieldMetadata); metadataCol != nil {
-			metadataBytes := metadataCol.(*entity.ColumnJSONBytes).Data()[i]
-			metadata = mustUnmarshalJSON(metadataBytes)
+			// Try JSONBytes first, fallback to VarChar
+			switch col := metadataCol.(type) {
+			case *entity.ColumnJSONBytes:
+				metadataBytes := col.Data()[i]
+				metadata = mustUnmarshalJSON(metadataBytes)
+			case *entity.ColumnVarChar:
+				// If stored as VarChar, parse JSON string
+				metadataStr := col.Data()[i]
+				if metadataStr != "" {
+					metadata = mustUnmarshalJSON([]byte(metadataStr))
+				}
+			}
 		}
 
 		queryResults = append(queryResults, &vectordb.QueryResult{
