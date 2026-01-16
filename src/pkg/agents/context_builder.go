@@ -5,8 +5,10 @@ package agents
 
 import (
 	"fmt"
+	"math/rand"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
@@ -153,9 +155,43 @@ func (cb *ContextBuilder) contentHash(content string) string {
 }
 
 // sortByRelevance sorts results by score in descending order
+// For scores within epsilon (approximately equal), randomly shuffles them
+// to avoid bias toward first VDB in aggregation
 func (cb *ContextBuilder) sortByRelevance(results []*vectordb.QueryResult) {
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Score > results[j].Score
+	if len(results) <= 1 {
+		return
+	}
+
+	// Epsilon for floating-point score comparison
+	// Scores within this threshold are considered "equal" for fairness
+	const epsilon = 0.001
+
+	// Create random tiebreaker values for each result
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	tiebreakers := make([]float64, len(results))
+	for i := range tiebreakers {
+		tiebreakers[i] = rng.Float64()
+	}
+
+	// Sort by score descending, then by random tiebreaker for approximately equal scores
+	sort.SliceStable(results, func(i, j int) bool {
+		scoreI := results[i].Score
+		scoreJ := results[j].Score
+
+		// Calculate difference
+		diff := scoreI - scoreJ
+
+		// If scores differ by more than epsilon, sort by score
+		if diff > epsilon {
+			return true // i is significantly higher
+		}
+		if diff < -epsilon {
+			return false // j is significantly higher
+		}
+
+		// Scores are approximately equal (within epsilon): shuffle randomly
+		// This prevents bias toward whichever VDB was queried first
+		return tiebreakers[i] > tiebreakers[j]
 	})
 }
 
