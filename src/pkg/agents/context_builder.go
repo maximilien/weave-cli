@@ -215,17 +215,91 @@ func (cb *ContextBuilder) buildSourceContext(index int, result *vectordb.QueryRe
 
 // extractContent extracts the primary content from a document
 func (cb *ContextBuilder) extractContent(doc vectordb.Document) string {
-	// Priority: Content > Text > URL
+	// Priority: Content > Text > Image Metadata > Image URL > URL
+
+	// 1. Text content (existing)
 	if doc.Content != "" {
 		return doc.Content
 	}
 	if doc.Text != "" {
 		return doc.Text
 	}
+
+	// 2. Image metadata (NEW - for multi-modal support)
+	if doc.Image != "" || doc.ImageData != "" {
+		return cb.extractImageContent(doc)
+	}
+
+	// 3. URL fallback (existing)
 	if doc.URL != "" {
 		return fmt.Sprintf("[Document URL: %s]", doc.URL)
 	}
+
 	return "[Empty document]"
+}
+
+// extractImageContent extracts content from image documents
+// This enables multi-modal RAG by using OCR text, descriptions, and metadata
+func (cb *ContextBuilder) extractImageContent(doc vectordb.Document) string {
+	var parts []string
+
+	// Check for OCR text in metadata (most important for searchability)
+	if ocrText, ok := doc.Metadata["ocr_text"].(string); ok && ocrText != "" {
+		parts = append(parts, fmt.Sprintf("Text in image: %s", ocrText))
+	}
+
+	// Check for human-provided description
+	if desc, ok := doc.Metadata["description"].(string); ok && desc != "" {
+		parts = append(parts, fmt.Sprintf("Description: %s", desc))
+	}
+
+	// Check for alt text (accessibility)
+	if alt, ok := doc.Metadata["alt_text"].(string); ok && alt != "" {
+		parts = append(parts, fmt.Sprintf("Alt text: %s", alt))
+	}
+
+	// Check for caption
+	if caption, ok := doc.Metadata["caption"].(string); ok && caption != "" {
+		parts = append(parts, fmt.Sprintf("Caption: %s", caption))
+	}
+
+	// Check for tags (important for categorization)
+	if tags, ok := doc.Metadata["tags"].([]interface{}); ok && len(tags) > 0 {
+		tagStrs := make([]string, 0, len(tags))
+		for _, tag := range tags {
+			if tagStr, ok := tag.(string); ok {
+				tagStrs = append(tagStrs, tagStr)
+			}
+		}
+		if len(tagStrs) > 0 {
+			parts = append(parts, fmt.Sprintf("Tags: %s", strings.Join(tagStrs, ", ")))
+		}
+	}
+
+	// Also handle tags as string slice (some VDBs may store it this way)
+	if tagsSlice, ok := doc.Metadata["tags"].([]string); ok && len(tagsSlice) > 0 {
+		parts = append(parts, fmt.Sprintf("Tags: %s", strings.Join(tagsSlice, ", ")))
+	}
+
+	// Include image URL for reference
+	if doc.Image != "" {
+		parts = append(parts, fmt.Sprintf("Image URL: %s", doc.Image))
+	}
+
+	// If we have content, join it
+	if len(parts) > 0 {
+		return strings.Join(parts, "\n")
+	}
+
+	// Fallback: just indicate it's an image
+	if doc.Image != "" {
+		return fmt.Sprintf("[Image: %s]", doc.Image)
+	}
+	if doc.ImageData != "" {
+		return "[Image data (base64)]"
+	}
+
+	return "[Image document without metadata]"
 }
 
 // FormatContextForPrompt formats the context into a string suitable for LLM prompts
