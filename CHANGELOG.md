@@ -9,6 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Enhanced RAG Agent Citation Format**
+  - Citations now show comprehensive metadata: Document ID, Score, VDB, and
+    Collection
+  - New format: `[1] ID: doc-001, Score: 82.3%, VDB: weaviate-cloud,
+    Collection: WeaveDocs`
+  - Markdown format: `**[1]** ID: `abc-123`, Score: 85.6%, VDB:
+    weaviate-cloud, Collection: TechDocs`
+  - Old format: `[1] WeaveDocs (weaviate-cloud) - Score: 82.3%`
+  - Benefits: Document IDs visible for debugging, clear VDB indication,
+    better traceability
+  - Gracefully handles missing DocID (omits "ID:" field when not available)
+  - Tests added: `TestRAGAgent_FormatOutput_CrossVDBCitations`,
+    `TestRAGAgent_FormatOutput_MarkdownCrossVDBCitations`,
+    `TestRAGAgent_FormatOutput_CitationWithoutDocID`
+
 - **Metadata Type Safety Regression Tests**
   - Added comprehensive test suite to prevent type conversion panics
   - General test template:
