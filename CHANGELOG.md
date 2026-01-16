@@ -40,6 +40,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **RAG Agent Only Using First VDB in Cross-VDB Queries**
+  - Fixed critical bug where RAG agent only showed results from first VDB
+    when querying same collection across multiple databases
+  - Example query affected: `weave cols query WeaveDocs:mongodb-cloud
+    WeaveDocs:weaviate-cloud WeaveDocs:milvus-cloud "query" --agent rag-agent`
+  - Previously showed only mongodb citations despite aggregating 9 results
+    from all 3 VDBs
+  - Root cause: Deduplication happened before sorting by score
+  - Deduplication kept first occurrence (mongodb), discarded higher-scored
+    duplicates (weaviate, milvus)
+  - Fix: Changed order to sort first, then deduplicate
+  - Now keeps highest-scored version of each document regardless of
+    aggregation order
+  - Citations now show mix of VDBs based on score: weaviate (82.3%),
+    weaviate (78.9%), milvus (71.2%)
+  - Instead of all mongodb: mongodb (45.6%), mongodb (44.1%), mongodb (43.0%)
+  - Regression tests added: `TestBuildContext_CrossVDB_SameIDDifferentVDBs`,
+    `TestBuildContext_CrossVDB_DeduplicationKeepsHighestScore`,
+    `TestBuildContext_CrossVDB_SortingOrder`
+
 - **Milvus Type Conversion Panic in Cross-VDB Queries**
   - Fixed panic: `interface conversion: entity.Column is
     *entity.ColumnVarChar, not *entity.ColumnJSONBytes`
