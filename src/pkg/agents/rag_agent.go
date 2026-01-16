@@ -331,20 +331,29 @@ func (a *RAGAgent) formatMarkdown(output *RAGOutput) (string, error) {
 				}
 			}
 
-			// Format citation with collection name and VDB
-			if collectionName != "" && vdbName != "" {
-				builder.WriteString(fmt.Sprintf("**[%d]** %s (%s) - Score: %.1f%%\n", source.Index, collectionName, vdbName, source.Score*100))
-			} else if collectionName != "" {
-				builder.WriteString(fmt.Sprintf("**[%d]** %s (Score: %.1f%%)\n", source.Index, collectionName, source.Score*100))
-			} else {
-				builder.WriteString(fmt.Sprintf("**[%d]** (Score: %.1f%%)\n", source.Index, source.Score*100))
+			// Format citation with ID, score, VDB, and collection
+			builder.WriteString(fmt.Sprintf("**[%d]** ", source.Index))
+
+			// Add document ID if available
+			if source.DocID != "" {
+				builder.WriteString(fmt.Sprintf("ID: `%s`, ", source.DocID))
 			}
 
+			// Add score
+			builder.WriteString(fmt.Sprintf("Score: %.1f%%", source.Score*100))
+
+			// Add VDB and collection if available
+			if vdbName != "" {
+				builder.WriteString(fmt.Sprintf(", VDB: %s", vdbName))
+			}
+			if collectionName != "" {
+				builder.WriteString(fmt.Sprintf(", Collection: %s", collectionName))
+			}
+			builder.WriteString("\n")
+
+			// Add content preview if available
 			if source.Content != "" {
 				builder.WriteString(fmt.Sprintf("- %s\n", source.Content))
-			}
-			if source.DocID != "" {
-				builder.WriteString(fmt.Sprintf("- Document ID: `%s`\n", source.DocID))
 			}
 			builder.WriteString("\n")
 		}
@@ -390,17 +399,23 @@ func (a *RAGAgent) formatText(output *RAGOutput) (string, error) {
 				}
 			}
 
-			// Format with collection name and VDB
-			if collectionName != "" && vdbName != "" {
-				builder.WriteString(fmt.Sprintf("[%d] %s (%s) - Score: %.1f%%", source.Index, collectionName, vdbName, source.Score*100))
-			} else if collectionName != "" {
-				builder.WriteString(fmt.Sprintf("[%d] %s - Score: %.1f%%", source.Index, collectionName, source.Score*100))
-			} else {
-				builder.WriteString(fmt.Sprintf("[%d] Score: %.1f%%", source.Index, source.Score*100))
+			// Format citation with ID, score, VDB, and collection
+			builder.WriteString(fmt.Sprintf("[%d] ", source.Index))
+
+			// Add document ID if available
+			if source.DocID != "" {
+				builder.WriteString(fmt.Sprintf("ID: %s, ", source.DocID))
 			}
 
-			if source.DocID != "" {
-				builder.WriteString(fmt.Sprintf(" (ID: %s)", source.DocID))
+			// Add score
+			builder.WriteString(fmt.Sprintf("Score: %.1f%%", source.Score*100))
+
+			// Add VDB and collection if available
+			if vdbName != "" {
+				builder.WriteString(fmt.Sprintf(", VDB: %s", vdbName))
+			}
+			if collectionName != "" {
+				builder.WriteString(fmt.Sprintf(", Collection: %s", collectionName))
 			}
 			builder.WriteString("\n")
 		}
