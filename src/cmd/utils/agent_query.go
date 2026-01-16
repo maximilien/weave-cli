@@ -18,44 +18,52 @@ import (
 )
 
 // isImageCollectionBySchema checks if a collection contains image documents
-// by checking for image-related fields in the schema or first few documents
+// by checking collection name first, then documents, then schema
+// Priority: Name > Documents > Schema (most to least reliable)
 func isImageCollectionBySchema(ctx context.Context, client interface{}, collectionName string) bool {
-	// Try weaviate client first
+	// PRIORITY 1: Check collection name (most reliable indicator of user intent)
+	nameLower := strings.ToLower(collectionName)
+	imageKeywords := []string{"image", "img", "photo", "picture", "visual", "media"}
+	for _, keyword := range imageKeywords {
+		if strings.Contains(nameLower, keyword) {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via name keyword: %s\n", collectionName, keyword)
+			return true
+		}
+	}
+
+	// PRIORITY 2: Sample documents to check for actual image data
+	// (more reliable than schema which can have image fields in text collections)
+	if vdbClient, ok := client.(vectordb.VectorDBClient); ok {
+		docs, err := vdbClient.ListDocuments(ctx, collectionName, 3, 0)
+		if err == nil && len(docs) > 0 {
+			for _, doc := range docs {
+				if doc.Image != "" || doc.ImageData != "" {
+					fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via document fields\n", collectionName)
+					return true
+				}
+			}
+		}
+	}
+
+	// PRIORITY 3: Check schema (least reliable - multi-modal collections can have image fields)
+	// Only use this as last resort
 	if weaviateClient, ok := client.(*weaviate.Client); ok {
 		schema, err := weaviateClient.GetCollectionSchema(ctx, collectionName)
 		if err == nil && len(schema) > 0 {
 			// Check for image-related fields
 			for _, field := range schema {
 				fieldLower := strings.ToLower(field)
-				if fieldLower == "image" || fieldLower == "imagedata" || fieldLower == "image_url" {
+				// Only consider it an image collection if it has imagedata or image_url
+				// (not just "image" which can be present in text collections)
+				if fieldLower == "imagedata" || fieldLower == "image_url" {
+					fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via schema field: %s\n", collectionName, field)
 					return true
 				}
 			}
 		}
 	}
 
-	// Try generic vectordb client
-	if vdbClient, ok := client.(vectordb.VectorDBClient); ok {
-		// Sample a few documents to check for image fields
-		docs, err := vdbClient.ListDocuments(ctx, collectionName, 3, 0)
-		if err == nil && len(docs) > 0 {
-			for _, doc := range docs {
-				if doc.Image != "" || doc.ImageData != "" {
-					return true
-				}
-			}
-		}
-	}
-
-	// Fallback: check collection name
-	nameLower := strings.ToLower(collectionName)
-	imageKeywords := []string{"image", "img", "photo", "picture", "visual", "media"}
-	for _, keyword := range imageKeywords {
-		if strings.Contains(nameLower, keyword) {
-			return true
-		}
-	}
-
+	fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as TEXT (no image indicators found)\n", collectionName)
 	return false
 }
 
@@ -96,8 +104,17 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 			}
 
 			// Check if this is an image collection and use topKImages if specified
-			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, collectionName) {
+			isImage := isImageCollectionBySchema(ctx, client, collectionName)
+			if options.Verbose {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s': isImage=%v, topK=%d, topKImages=%d\n",
+					collectionName, isImage, options.TopK, options.TopKImages)
+			}
+			if options.TopKImages > 0 && isImage {
 				collectionTopK = options.TopKImages
+				if options.Verbose {
+					fmt.Fprintf(os.Stderr, "[DEBUG] Using topKImages=%d for image collection '%s'\n",
+						collectionTopK, collectionName)
+				}
 			}
 
 			// Create collection-specific options with adjusted topK
@@ -158,6 +175,12 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 				result.Document.Metadata = make(map[string]interface{})
 			}
 			result.Document.Metadata["_collection"] = collectionName
+		}
+
+		// Log results for debugging
+		if options.Verbose {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' returned %d results (requested topK=%d)\n",
+				collectionName, len(results), collectionTopK)
 		}
 
 		// Aggregate results
@@ -343,8 +366,17 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 			}
 
 			// Check if this is an image collection and use topKImages if specified
-			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, spec.Name) {
+			isImage := isImageCollectionBySchema(ctx, client, spec.Name)
+			if options.Verbose {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' (%s): isImage=%v, topK=%d, topKImages=%d\n",
+					spec.Name, spec.VDBKey, isImage, options.TopK, options.TopKImages)
+			}
+			if options.TopKImages > 0 && isImage {
 				collectionTopK = options.TopKImages
+				if options.Verbose {
+					fmt.Fprintf(os.Stderr, "[DEBUG] Using topKImages=%d for image collection '%s'\n",
+						collectionTopK, spec.Name)
+				}
 			}
 
 			// Create collection-specific options with adjusted topK
@@ -411,6 +443,12 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 			result.Document.Metadata["_collection"] = spec.Name
 			result.Document.Metadata["_vdb"] = vdbKey
 			result.Document.Metadata["_vdb_type"] = string(vdbConfig.Type)
+		}
+
+		// Log results for debugging
+		if options.Verbose {
+			fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' (%s) returned %d results (requested topK=%d)\n",
+				spec.Name, vdbKey, len(results), collectionTopK)
 		}
 
 		// Aggregate results
