@@ -24,6 +24,7 @@ type QueryResult struct {
 // QueryOptions holds options for semantic search queries
 type QueryOptions struct {
 	TopK           int     `json:"top_k"`
+	TopKImages     int     `json:"top_k_images"`     // Number of results from image collections (0 = use TopK)
 	Distance       float64 `json:"distance"`
 	SearchMetadata bool    `json:"search_metadata"`
 	NoTruncate     bool    `json:"no_truncate"`

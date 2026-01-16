@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/maximilien/weave-cli/src/pkg/config"
@@ -15,6 +16,48 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
+
+// isImageCollectionBySchema checks if a collection contains image documents
+// by checking for image-related fields in the schema or first few documents
+func isImageCollectionBySchema(ctx context.Context, client interface{}, collectionName string) bool {
+	// Try weaviate client first
+	if weaviateClient, ok := client.(*weaviate.Client); ok {
+		schema, err := weaviateClient.GetCollectionSchema(ctx, collectionName)
+		if err == nil && len(schema) > 0 {
+			// Check for image-related fields
+			for _, field := range schema {
+				fieldLower := strings.ToLower(field)
+				if fieldLower == "image" || fieldLower == "imagedata" || fieldLower == "image_url" {
+					return true
+				}
+			}
+		}
+	}
+
+	// Try generic vectordb client
+	if vdbClient, ok := client.(vectordb.VectorDBClient); ok {
+		// Sample a few documents to check for image fields
+		docs, err := vdbClient.ListDocuments(ctx, collectionName, 3, 0)
+		if err == nil && len(docs) > 0 {
+			for _, doc := range docs {
+				if doc.Image != "" || doc.ImageData != "" {
+					return true
+				}
+			}
+		}
+	}
+
+	// Fallback: check collection name
+	nameLower := strings.ToLower(collectionName)
+	imageKeywords := []string{"image", "img", "photo", "picture", "visual", "media"}
+	for _, keyword := range imageKeywords {
+		if strings.Contains(nameLower, keyword) {
+			return true
+		}
+	}
+
+	return false
+}
 
 // QueryMultipleCollectionsWithAgent queries multiple collections and processes aggregated results through an agent
 func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
@@ -36,6 +79,9 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 	for _, collectionName := range collectionNames {
 		reporter.UpdateProgress(fmt.Sprintf("Querying collection '%s'...", collectionName))
 
+		// Determine top_k for this collection based on whether it's an image collection
+		collectionTopK := options.TopK
+
 		// Query the collection based on database type
 		var results []*vectordb.QueryResult
 		var err error
@@ -48,7 +94,17 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 				PrintError(fmt.Sprintf("Failed to create Weaviate client for collection '%s': %v", collectionName, clientErr))
 				continue
 			}
-			weaviateResults, queryErr := client.Query(ctx, collectionName, queryText, options)
+
+			// Check if this is an image collection and use topKImages if specified
+			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, collectionName) {
+				collectionTopK = options.TopKImages
+			}
+
+			// Create collection-specific options with adjusted topK
+			collectionOptions := options
+			collectionOptions.TopK = collectionTopK
+
+			weaviateResults, queryErr := client.Query(ctx, collectionName, queryText, collectionOptions)
 			if queryErr != nil {
 				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", collectionName, queryErr))
 				continue
@@ -72,8 +128,14 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 				PrintError(fmt.Sprintf("Failed to create client for collection '%s': %v", collectionName, clientErr))
 				continue
 			}
+
+			// Check if this is an image collection and use topKImages if specified
+			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, collectionName) {
+				collectionTopK = options.TopKImages
+			}
+
 			vdbOptions := &vectordb.QueryOptions{
-				TopK:           options.TopK,
+				TopK:           collectionTopK,
 				Distance:       options.Distance,
 				SearchMetadata: options.SearchMetadata,
 				NoTruncate:     options.NoTruncate,
@@ -264,6 +326,9 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 			continue
 		}
 
+		// Determine top_k for this collection based on whether it's an image collection
+		collectionTopK := options.TopK
+
 		// Query the collection based on database type
 		var results []*vectordb.QueryResult
 		var err error
@@ -276,7 +341,17 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 				PrintError(fmt.Sprintf("Failed to create Weaviate client for collection '%s': %v", spec.Name, clientErr))
 				continue
 			}
-			weaviateResults, queryErr := client.Query(ctx, spec.Name, queryText, options)
+
+			// Check if this is an image collection and use topKImages if specified
+			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, spec.Name) {
+				collectionTopK = options.TopKImages
+			}
+
+			// Create collection-specific options with adjusted topK
+			collectionOptions := options
+			collectionOptions.TopK = collectionTopK
+
+			weaviateResults, queryErr := client.Query(ctx, spec.Name, queryText, collectionOptions)
 			if queryErr != nil {
 				PrintError(fmt.Sprintf("Failed to query collection '%s': %v", spec.Name, queryErr))
 				continue
@@ -300,8 +375,14 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 				PrintError(fmt.Sprintf("Failed to create client for collection '%s': %v", spec.Name, clientErr))
 				continue
 			}
+
+			// Check if this is an image collection and use topKImages if specified
+			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, spec.Name) {
+				collectionTopK = options.TopKImages
+			}
+
 			vdbOptions := &vectordb.QueryOptions{
-				TopK:           options.TopK,
+				TopK:           collectionTopK,
 				Distance:       options.Distance,
 				SearchMetadata: options.SearchMetadata,
 				NoTruncate:     options.NoTruncate,

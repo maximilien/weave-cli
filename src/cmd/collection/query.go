@@ -30,6 +30,13 @@ Multi-Collection Queries:
   This is useful for searching across different data types (e.g., documents,
   images, metadata) in a unified way.
 
+  For multi-modal queries (text + images), use --top_k_images to ensure image
+  results are included. By default, text documents often have higher similarity
+  scores than images, causing images to be filtered out. The --top_k_images flag
+  guarantees that image collections return their top K results:
+    weave cols query WeaveDocs WeaveImages "screenshot" --top_k 5 --top_k_images 2
+  This returns top 5 from WeaveDocs + top 2 from WeaveImages, merged by score.
+
 Cross-VDB Queries:
   Query collections from different vector databases in a single command using
   the "Collection:vdb-key" syntax (e.g., "Docs:weaviate-local Images:milvus-cloud").
@@ -65,6 +72,10 @@ Examples:
   weave cols query WeaveDocs WeaveImages "weave cli" --agent rag-agent --top_k 3
   weave cols query AuctionListings AuctionResults AuctionImages "vintage cars" --agent rag-agent
 
+  # Multi-modal queries with guaranteed image results
+  weave cols query WeaveDocs WeaveImages "screenshot" --agent rag-agent --top_k 5 --top_k_images 2
+  weave cols query ProductDocs ProductImages "red vintage car" --agent rag-agent --top_k 10 --top_k_images 3
+
   # Cross-VDB queries (query collections from different VDBs)
   weave cols query WeaveDocs:weaviate-local WeaveImages:milvus-local "weave cli" --agent rag-agent
   weave cols query AuctionDocs:mongodb AuctionImages:weaviate-cloud "vintage" --agent rag-agent --top_k 3
@@ -96,6 +107,7 @@ Examples:
 
 func init() {
 	QueryCmd.Flags().IntP("top_k", "k", 5, "Number of top results to return (default: 5)")
+	QueryCmd.Flags().Int("top_k_images", 0, "Number of top results from image collections (0 = use top_k)")
 	QueryCmd.Flags().Float64P("distance", "d", 0.0, "Maximum distance threshold for results")
 	QueryCmd.Flags().BoolP("search-metadata", "m", false, "Also search in metadata fields (default: false)")
 	QueryCmd.Flags().Bool("bm25", false, "Use BM25 keyword search instead of semantic search (default: false)")
@@ -121,6 +133,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 	topK, _ := cmd.Flags().GetInt("top_k")
+	topKImages, _ := cmd.Flags().GetInt("top_k_images")
 	distance, _ := cmd.Flags().GetFloat64("distance")
 	searchMetadata, _ := cmd.Flags().GetBool("search-metadata")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
@@ -188,6 +201,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	// Create query options
 	options := weaviate.QueryOptions{
 		TopK:           topK,
+		TopKImages:     topKImages,
 		Distance:       distance,
 		SearchMetadata: searchMetadata,
 		NoTruncate:     noTruncate,
