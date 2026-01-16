@@ -10,14 +10,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Multi-Modal Query Diversification with --top_k_images Flag**
-  - New `--top_k_images` flag for multi-collection queries to ensure image results are included
-  - Addresses issue where text documents have higher similarity scores than images, causing images to be filtered out
-  - Automatically detects image collections by schema fields (`image`, `imageData`, `image_url`)
+  - New `--top_k_images` flag for multi-collection queries to ensure
+    image results are included
+  - Addresses issue where text documents have higher similarity scores
+    than images, causing images to be filtered out
+  - Automatically detects image collections by schema fields
+    (`image`, `imageData`, `image_url`)
   - Uses separate top_k values for text and image collections
-  - Example: `weave cols query WeaveDocs WeaveImages "screenshot" --top_k 5 --top_k_images 2`
-    - Returns top 5 from WeaveDocs + top 2 from WeaveImages, merged by score
-  - Works with cross-VDB queries: `weave cols query Docs:weaviate Images:milvus "query" --top_k 5 --top_k_images 2`
-  - Helper function: `isImageCollectionBySchema()` checks schema and documents
+  - Example: `weave cols query WeaveDocs WeaveImages "screenshot"`
+    `--top_k 5 --top_k_images 2`
+    - Returns top 5 from WeaveDocs + top 2 from WeaveImages,
+      merged by score
+  - Works with cross-VDB queries:
+    `weave cols query Docs:weaviate Images:milvus "query"`
+    `--top_k 5 --top_k_images 2`
+  - Helper function: `isImageCollectionBySchema()` checks schema
+    and documents
   - All unit tests pass
 
 - **Enhanced Image Citations for Multi-Modal RAG (Phase 2)**
