@@ -69,14 +69,16 @@ func (cb *ContextBuilder) BuildContext(query string, results []*vectordb.QueryRe
 	// Filter by minimum relevance score
 	filteredResults := cb.filterByRelevance(results)
 
-	// Deduplicate if enabled
-	if cb.config.Response.DeduplicateSources {
-		filteredResults = cb.deduplicate(filteredResults)
-	}
-
-	// Sort by relevance if enabled (otherwise keep original order)
+	// Sort by relevance FIRST if enabled (before deduplication)
+	// This ensures we keep the highest-scored version of each document
+	// when querying the same collection across multiple VDBs
 	if cb.config.Response.SortByRelevance {
 		cb.sortByRelevance(filteredResults)
+	}
+
+	// Deduplicate AFTER sorting (so highest-scored duplicates are kept)
+	if cb.config.Response.DeduplicateSources {
+		filteredResults = cb.deduplicate(filteredResults)
 	}
 
 	// Limit to max context chunks
