@@ -306,6 +306,48 @@ func (a *RAGAgent) formatJSON(output *RAGOutput) (string, error) {
 	return string(data), nil
 }
 
+// isImageSource checks if a source is an image document
+// An image source contains Image URL in content or has image-related metadata
+func (a *RAGAgent) isImageSource(source SourceCitation) bool {
+	// Check if content contains "Image URL:" indicator from extractImageContent()
+	if strings.Contains(source.Content, "Image URL:") {
+		return true
+	}
+
+	// Check if content starts with "Text in image:" from extractImageContent()
+	if strings.HasPrefix(source.Content, "Text in image:") {
+		return true
+	}
+
+	// Check for image-specific metadata
+	if source.Metadata != nil {
+		if _, hasImage := source.Metadata["image_url"]; hasImage {
+			return true
+		}
+	}
+
+	return false
+}
+
+// extractImageURL extracts the image URL from image source content
+// Returns empty string if no URL found
+func (a *RAGAgent) extractImageURL(content string) string {
+	// Look for "Image URL: <url>" pattern
+	if idx := strings.Index(content, "Image URL: "); idx != -1 {
+		urlStart := idx + len("Image URL: ")
+		remaining := content[urlStart:]
+
+		// Find end of URL (newline or end of string)
+		endIdx := strings.Index(remaining, "\n")
+		if endIdx == -1 {
+			return strings.TrimSpace(remaining)
+		}
+		return strings.TrimSpace(remaining[:endIdx])
+	}
+
+	return ""
+}
+
 // formatMarkdown formats output as Markdown
 func (a *RAGAgent) formatMarkdown(output *RAGOutput) (string, error) {
 	var builder strings.Builder
@@ -331,33 +373,69 @@ func (a *RAGAgent) formatMarkdown(output *RAGOutput) (string, error) {
 				}
 			}
 
+			// Check if this is an image source (Phase 2 enhancement)
+			isImage := a.isImageSource(source)
+
 			// Format citation with collection, VDB, score first (most useful to humans)
 			// ID last (mainly for debugging/tracing)
-			builder.WriteString(fmt.Sprintf("**[%d]** ", source.Index))
+			builder.WriteString("**[")
+			builder.WriteString(fmt.Sprintf("%d", source.Index))
+			builder.WriteString("]")
+
+			// Add image emoji for image sources (Phase 2)
+			if isImage {
+				builder.WriteString(" 🖼️ Image**")
+			} else {
+				builder.WriteString("**")
+			}
+
+			// Extract and add clickable image link if available (Phase 2)
+			if isImage {
+				imageURL := a.extractImageURL(source.Content)
+				if imageURL != "" {
+					builder.WriteString(fmt.Sprintf(" - [View Image](%s)", imageURL))
+				}
+			}
 
 			// Add collection name if available
 			if collectionName != "" {
+				builder.WriteString(" - ")
 				builder.WriteString(collectionName)
 				if vdbName != "" {
 					builder.WriteString(fmt.Sprintf(" (%s)", vdbName))
 				}
-				builder.WriteString(" - ")
 			} else if vdbName != "" {
-				builder.WriteString(fmt.Sprintf("%s - ", vdbName))
+				builder.WriteString(fmt.Sprintf(" - %s", vdbName))
 			}
 
 			// Add score
-			builder.WriteString(fmt.Sprintf("Score: %.1f%%", source.Score*100))
+			builder.WriteString(fmt.Sprintf(" - Score: %.1f%%", source.Score*100))
 
 			// Add document ID last (if available)
 			if source.DocID != "" {
 				builder.WriteString(fmt.Sprintf(" - ID: `%s`", source.DocID))
 			}
-			builder.WriteString("\n")
+			builder.WriteString("\n\n")
 
 			// Add content preview if available
+			// For images, remove the "Image URL:" line since we already have clickable link
 			if source.Content != "" {
-				builder.WriteString(fmt.Sprintf("- %s\n", source.Content))
+				content := source.Content
+				if isImage && strings.Contains(content, "Image URL:") {
+					// Remove "Image URL: ..." line from content
+					lines := strings.Split(content, "\n")
+					var filteredLines []string
+					for _, line := range lines {
+						if !strings.HasPrefix(strings.TrimSpace(line), "Image URL:") {
+							filteredLines = append(filteredLines, line)
+						}
+					}
+					content = strings.Join(filteredLines, "\n")
+					content = strings.TrimSpace(content)
+				}
+				if content != "" {
+					builder.WriteString(fmt.Sprintf("%s\n", content))
+				}
 			}
 			builder.WriteString("\n")
 		}
@@ -403,19 +481,32 @@ func (a *RAGAgent) formatText(output *RAGOutput) (string, error) {
 				}
 			}
 
+			// Check if this is an image source (Phase 2 enhancement)
+			isImage := a.isImageSource(source)
+
 			// Format citation with collection, VDB, score first (most useful to humans)
 			// ID last (mainly for debugging/tracing)
-			builder.WriteString(fmt.Sprintf("[%d] ", source.Index))
+			builder.WriteString("[")
+			builder.WriteString(fmt.Sprintf("%d", source.Index))
+			builder.WriteString("]")
+
+			// Add [IMAGE] indicator for image sources (Phase 2)
+			if isImage {
+				builder.WriteString(" [IMAGE]")
+			}
 
 			// Add collection name if available
 			if collectionName != "" {
+				builder.WriteString(" ")
 				builder.WriteString(collectionName)
 				if vdbName != "" {
 					builder.WriteString(fmt.Sprintf(" (%s)", vdbName))
 				}
 				builder.WriteString(" - ")
 			} else if vdbName != "" {
-				builder.WriteString(fmt.Sprintf("%s - ", vdbName))
+				builder.WriteString(fmt.Sprintf(" %s - ", vdbName))
+			} else {
+				builder.WriteString(" ")
 			}
 
 			// Add score

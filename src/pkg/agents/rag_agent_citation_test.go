@@ -163,12 +163,12 @@ func TestRAGAgent_FormatOutput_MarkdownCrossVDBCitations(t *testing.T) {
 	t.Logf("Markdown formatted output:\n%s", formatted)
 
 	// Verify markdown format with ID last, collection and VDB first
-	assert.Contains(t, formatted, "**[1]** TechDocs (weaviate-cloud) - Score: 85.6% - ID: `abc-123`",
+	assert.Contains(t, formatted, "**[1]** - TechDocs (weaviate-cloud) - Score: 85.6% - ID: `abc-123`",
 		"Markdown citation should show collection, VDB, score, then ID last with backticks")
 
 	// Verify content is shown on separate line
-	assert.Contains(t, formatted, "- Weaviate is a cloud-native vector database",
-		"Content should be shown as a bullet point")
+	assert.Contains(t, formatted, "Weaviate is a cloud-native vector database",
+		"Content should be shown")
 }
 
 // TestRAGAgent_FormatOutput_CitationWithoutDocID tests citation when DocID is missing
