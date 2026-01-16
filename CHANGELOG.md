@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Metadata Type Safety Regression Tests**
+  - Added comprehensive test suite to prevent type conversion panics
+  - General test template: `src/pkg/vectordb/metadata_type_safety_test.go`
+  - Milvus-specific regression test: `src/pkg/vectordb/milvus/metadata_type_safety_test.go`
+  - Tests cover VARCHAR, JSON/JSONB, nil, empty, and malformed metadata
+  - Verified all VDB adapters (MongoDB, Neo4j, Qdrant, OpenSearch, Elasticsearch, Pinecone) use safe type handling
+  - Only Milvus required the fix; all others already used safe type assertions
+
 - **Cross-VDB Multi-Collection Query Support**
   - Query collections from different vector databases in a single command
   - Syntax: `weave cols query Col1:vdb1 Col2:vdb2 "query" --agent`
@@ -25,6 +33,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Critical for apps with collections across multiple VDBs (AuctionsMax.ai)
   - Full backward compatibility with existing multi-collection queries
   - Unit tests for collection spec parser and VDB resolver
+
+### Fixed
+
+- **Milvus Type Conversion Panic in Cross-VDB Queries**
+  - Fixed panic: `interface conversion: entity.Column is *entity.ColumnVarChar, not *entity.ColumnJSONBytes`
+  - Occurred when querying Milvus collections with VARCHAR metadata columns
+  - Root cause: `parseSearchResults()` and `parseQueryResults()` assumed metadata was always `*entity.ColumnJSONBytes`
+  - Fix: Added type switches to handle both `*entity.ColumnJSONBytes` and `*entity.ColumnVarChar`
+  - Applies to both `metadata` and `image_data` fields
+  - Changes in `src/pkg/vectordb/milvus/query.go:209-242` and `query.go:267-300`
+  - Regression tests added to prevent future type conversion panics
 
 - **Multi-Collection Query Support**
   - Query multiple collections in a single command and aggregate results
