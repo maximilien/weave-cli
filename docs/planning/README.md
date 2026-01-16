@@ -8,6 +8,21 @@
 
 ## Active Plans
 
+### Multi-Agent Orchestration (NEW - Jan 16, 2026)
+
+🤖 **Multi-Agent Feature Planning**
+- **Status**: Planning & Design
+- **Priority**: ⭐⭐ Medium-High
+- **Goal**: Enable agent chaining (e.g., RAG → web search if no docs)
+- **Documents**:
+  - **[DECISION_POINTS.md](./DECISION_POINTS.md)** - Quick reference for key decisions ⭐ **Start here**
+  - **[MULTI_AGENT_ORCHESTRATION.md](./MULTI_AGENT_ORCHESTRATION.md)** - Detailed analysis and implementation plan
+  - **[MULTI_AGENT_EXAMPLES.md](./MULTI_AGENT_EXAMPLES.md)** - Real-world use cases and examples
+- **Implementation**: 3 phases (2-3 weeks total)
+  - Phase 1: Basic sequential chaining (2-3 days)
+  - Phase 2: Smart handoff conditions (3-4 days)
+  - Phase 3: Declarative configs (5-7 days)
+
 ### This Week (Jan 13-17, 2026)
 
 📋 **[WEEK_OF_2026-01-13.md](./WEEK_OF_2026-01-13.md)**
