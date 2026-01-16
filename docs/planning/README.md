@@ -8,6 +8,22 @@
 
 ## Active Plans
 
+### 🚨 Multi-Modal RAG Support (NEW - Jan 16, 2026) - BLOCKER
+
+**Multi-Modal RAG for Image Collections**
+- **Status**: Planning - Ready for Implementation
+- **Priority**: ⭐⭐⭐ HIGHEST - BLOCKER for production deployment
+- **Issue**: Image collections not returning results with rag-agent
+- **Impact**: Critical - blocks client deployment of multi-modal RAG
+- **Document**: **[MULTIMODAL_RAG_SUPPORT.md](./MULTIMODAL_RAG_SUPPORT.md)** ⭐⭐⭐
+  **READ THIS FIRST**
+- **Root Cause**: Context builder ignores `Image` and `ImageData` fields
+- **Emergency Fix**: 2-3 hours (update `context_builder.go`)
+- **Implementation Plan**:
+  - Phase 1: Emergency fix (TODAY - 2-3 hours) - unblock production
+  - Phase 2: Enhanced image citations (Next week - 1-2 days)
+  - Phase 3: Multi-modal embeddings with CLIP (Future - 2-3 weeks)
+
 ### Multi-Agent Orchestration (NEW - Jan 16, 2026)
 
 🤖 **Multi-Agent Feature Planning**

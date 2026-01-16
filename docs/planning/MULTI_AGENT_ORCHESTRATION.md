@@ -8,7 +8,7 @@
 
 When performing RAG queries, if no relevant documents are found, the user gets a "no information available" response. However, the question might still be answerable by other means (e.g., web search, API calls, general knowledge).
 
-**Goal**: Allow multiple agents to work together in sequence, where one agent can hand off to another based on results or conditions.
+**Goal**: Allow multiple agents to work together in sequence or in a graph since the handoff can skip to an agent in different position to the agents listed, where one agent can hand off to another based on results or conditions.
 
 **Example Use Case**:
 ```bash
@@ -37,7 +37,8 @@ weave cols query WeaveDocs "query" --agents rag-agent search-agent fallback-agen
 **Behavior**:
 - Execute agents in order specified
 - Each agent's prompt contains handoff logic
-- Agent decides whether to hand off based on its own results
+- Agent decides whether to hand off based on its own results and which agent it prefers to handoff too
+- Since agents' names are unique the handoff can be done with names
 
 **Handoff Logic in Prompt**:
 ```yaml
@@ -130,6 +131,8 @@ conditions:
     max_score_below: 0.5
     min_sources: 1
 ```
+
+NOTE: Should we have a schema for this YAML definition since we'd want to make sure we can parse and make sense of it? Perhaps also a command to generate it using AI?
 
 **Implementation**:
 ```go
