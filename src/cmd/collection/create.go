@@ -10,6 +10,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
 )
@@ -26,19 +27,12 @@ You can use the --text or --image flags for standard schemas, use a named
 schema from config.yaml/schemas_dir, specify a schema file, or use custom
 fields and embedding model.
 
-For --text and --image collections, you must specify how to handle metadata:
-- --flat-metadata: Flatten metadata fields into individual properties
-- --json-metadata: Keep metadata as a single JSON field
-
 Examples:
-  # Create text collection with flattened metadata (recommended)
-  weave collection create MyDocsCol --text --flat-metadata
+  # Create text collection (uses default schema)
+  weave collection create MyDocsCol --text
 
-  # Create text collection with JSON metadata
-  weave collection create MyDocsCol --text --json-metadata
-
-  # Create image collection with flattened metadata
-  weave collection create MyImagesCol --image --flat-metadata
+  # Create image collection (uses default schema)
+  weave collection create MyImagesCol --image
 
   # Create collection using a named schema from config.yaml or schemas_dir
   weave collection create MyDocsCol --schema RagMeDocs
@@ -65,10 +59,10 @@ func init() {
 	CreateCmd.Flags().StringP("fields", "f", "", "Custom fields (format: field1:type1,field2:type2)")
 	CreateCmd.Flags().StringP("schema-yaml-file", "", "", "Create collection from YAML schema file")
 	CreateCmd.Flags().String("schema", "", "Use a named schema from config.yaml or schemas_dir (e.g., RagMeDocs, WeaveDocs, WeaveImages)")
-	CreateCmd.Flags().Bool("text", false, "Create text collection using WeaveDocs schema (same as --schema WeaveDocs)")
-	CreateCmd.Flags().Bool("image", false, "Create image collection using WeaveImages schema (same as --schema WeaveImages)")
-	CreateCmd.Flags().Bool("flat-metadata", false, "Flatten metadata fields into individual properties (requires --text or --image)")
-	CreateCmd.Flags().Bool("json-metadata", false, "Keep metadata as a single JSON field (requires --text or --image)")
+	CreateCmd.Flags().Bool("text", false, "Create text collection with default schema")
+	CreateCmd.Flags().Bool("image", false, "Create image collection with default schema")
+	CreateCmd.Flags().Bool("flat-metadata", false, "Flatten metadata fields into individual properties (optional, used with --text or --image)")
+	CreateCmd.Flags().Bool("json-metadata", false, "Keep metadata as a single JSON field (optional, used with --text or --image)")
 	CreateCmd.Flags().Bool("json", false, "Output in JSON format")
 }
 
@@ -141,11 +135,8 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	// Require metadata flag when using --text or --image
-	if (useTextSchema || useImageSchema) && !useFlatMetadata && !useJsonMetadata {
-		utils.PrintError("--text and --image collections require either --flat-metadata or --json-metadata")
-		os.Exit(1)
-	}
+	// Note: --text and --image use default schema which already includes metadata
+	// The --flat-metadata and --json-metadata flags are optional for these
 
 	// Handle named schema from config.yaml or schemas_dir
 	if schemaName != "" {
@@ -154,7 +145,12 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			// For Weaviate with --text or --image, use simple collection creation (no config.yaml schema needed)
 			if useTextSchema || useImageSchema {
-				err = utils.CreateGenericCollection(ctx, dbConfig, collectionName, embeddingModel)
+				// Determine schema type
+				schemaType := vectordb.SchemaTypeText
+				if useImageSchema {
+					schemaType = vectordb.SchemaTypeImage
+				}
+				err = utils.CreateGenericCollectionWithSchemaType(ctx, dbConfig, collectionName, embeddingModel, schemaType)
 				if err != nil {
 					utils.PrintError(utils.FormatCreationError(fmt.Sprintf("collection '%s'", collectionName), err))
 					os.Exit(1)

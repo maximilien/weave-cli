@@ -145,6 +145,11 @@ func CreateWeaviateCollectionFromSchemaFile(ctx context.Context, cfg *config.Vec
 // CreateGenericCollection creates a collection using the generic VectorDB interface
 // Works for any database that implements the VectorDBClient interface (Milvus, etc.)
 func CreateGenericCollection(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string) error {
+	return CreateGenericCollectionWithSchemaType(ctx, cfg, collectionName, embeddingModel, vectordb.SchemaTypeText)
+}
+
+// CreateGenericCollectionWithSchemaType creates a collection with a specific schema type
+func CreateGenericCollectionWithSchemaType(ctx context.Context, cfg *config.VectorDBConfig, collectionName, embeddingModel string, schemaType vectordb.SchemaType) error {
 	// Create client using the factory
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
@@ -152,7 +157,7 @@ func CreateGenericCollection(ctx context.Context, cfg *config.VectorDBConfig, co
 	}
 
 	// Get default schema for the database type
-	schema := client.GetDefaultSchema(vectordb.SchemaTypeText, collectionName)
+	schema := client.GetDefaultSchema(schemaType, collectionName)
 	if embeddingModel != "" {
 		schema.Vectorizer = embeddingModel
 	}

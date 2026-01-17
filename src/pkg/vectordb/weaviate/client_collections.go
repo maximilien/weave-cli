@@ -160,27 +160,15 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 
 	// Configure vectorizer using named vectors (required in Weaviate v1.25+)
 	if isImage {
-		// Image collections: Use dual named vectors for text + visual search
-		// 1. text_vector: Vectorizes text metadata (captions, OCR, filenames) via text2vec-openai
-		// 2. image_vector: Vectorizes actual image pixels via multi2vec-clip
+		// Image collections: Use text2vec-openai for text-based semantic search
+		// This vectorizes searchable text content (descriptions, OCR, captions)
+		// Note: For true multimodal search with actual image pixels, use multi2vec-clip
+		// but that requires the CLIP module to be enabled on your Weaviate cluster
 		classSchema["vectorConfig"] = map[string]interface{}{
-			"text_vector": map[string]interface{}{
+			"default": map[string]interface{}{
 				"vectorizer": map[string]interface{}{
 					"text2vec-openai": map[string]interface{}{
 						"model": embeddingModel,
-					},
-				},
-				"vectorIndexType": "hnsw",
-			},
-			"image_vector": map[string]interface{}{
-				"vectorizer": map[string]interface{}{
-					"multi2vec-clip": map[string]interface{}{
-						"imageFields": []string{"image_data"}, // Vectorize the actual image
-						"textFields":  []string{"url"},        // Include filename for context
-						"weights": map[string]interface{}{
-							"imageFields": []float64{0.9}, // Prioritize visual content
-							"textFields":  []float64{0.1}, // Minor boost from filename
-						},
 					},
 				},
 				"vectorIndexType": "hnsw",
@@ -208,6 +196,7 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	// Create schema based on type
 	if isImage {
 		// RagMeImages schema: url, image, metadata, image_data
+		// Optimized for text-based semantic search of image metadata (captions, OCR, descriptions)
 		classSchema["properties"] = []map[string]interface{}{
 			{
 				"name":     "url",
@@ -216,9 +205,6 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 					"text2vec-openai": map[string]interface{}{
 						"skip": false, // Vectorize URL for text search
 					},
-					"multi2vec-clip": map[string]interface{}{
-						"skip": false, // Include filename in CLIP vector
-					},
 				},
 			},
 			{
@@ -226,7 +212,7 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 				"dataType": []string{"text"},
 				"moduleConfig": map[string]interface{}{
 					"text2vec-openai": map[string]interface{}{
-						"skip": true, // Skip binary image data
+						"skip": true, // Skip binary image URL
 					},
 				},
 			},
@@ -235,10 +221,7 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 				"dataType": []string{"text"}, // Base64 encoded image data
 				"moduleConfig": map[string]interface{}{
 					"text2vec-openai": map[string]interface{}{
-						"skip": true, // Skip for text vectorization
-					},
-					"multi2vec-clip": map[string]interface{}{
-						"skip": false, // Use for visual vectorization
+						"skip": true, // Skip base64 data (not searchable text)
 					},
 				},
 			},
@@ -366,9 +349,9 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	}
 
 	for _, field := range customFields {
-		// Allow overriding existing properties if explicitly provided
-		// This enables custom metadata types (object vs text)
-		if existingProps[field.Name] && field.Name != "metadata" {
+		// Skip fields that already exist in the hardcoded schema
+		// This prevents duplicate property definitions
+		if existingProps[field.Name] {
 			continue
 		}
 		property := map[string]interface{}{
