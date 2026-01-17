@@ -20,13 +20,15 @@ import (
 // isImageCollectionBySchema checks if a collection contains image documents
 // by checking collection name first, then documents, then schema
 // Priority: Name > Documents > Schema (most to least reliable)
-func isImageCollectionBySchema(ctx context.Context, client interface{}, collectionName string) bool {
+func isImageCollectionBySchema(ctx context.Context, client interface{}, collectionName string, verbose bool) bool {
 	// PRIORITY 1: Check collection name (most reliable indicator of user intent)
 	nameLower := strings.ToLower(collectionName)
 	imageKeywords := []string{"image", "img", "photo", "picture", "visual", "media"}
 	for _, keyword := range imageKeywords {
 		if strings.Contains(nameLower, keyword) {
-			fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via name keyword: %s\n", collectionName, keyword)
+			if verbose {
+				fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via name keyword: %s\n", collectionName, keyword)
+			}
 			return true
 		}
 	}
@@ -38,7 +40,9 @@ func isImageCollectionBySchema(ctx context.Context, client interface{}, collecti
 		if err == nil && len(docs) > 0 {
 			for _, doc := range docs {
 				if doc.Image != "" || doc.ImageData != "" {
-					fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via document fields\n", collectionName)
+					if verbose {
+						fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via document fields\n", collectionName)
+					}
 					return true
 				}
 			}
@@ -56,14 +60,18 @@ func isImageCollectionBySchema(ctx context.Context, client interface{}, collecti
 				// Only consider it an image collection if it has imagedata or image_url
 				// (not just "image" which can be present in text collections)
 				if fieldLower == "imagedata" || fieldLower == "image_url" {
-					fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via schema field: %s\n", collectionName, field)
+					if verbose {
+						fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as IMAGE via schema field: %s\n", collectionName, field)
+					}
 					return true
 				}
 			}
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as TEXT (no image indicators found)\n", collectionName)
+	if verbose {
+		fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' detected as TEXT (no image indicators found)\n", collectionName)
+	}
 	return false
 }
 
@@ -104,7 +112,7 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 			}
 
 			// Check if this is an image collection and use topKImages if specified
-			isImage := isImageCollectionBySchema(ctx, client, collectionName)
+			isImage := isImageCollectionBySchema(ctx, client, collectionName, options.Verbose)
 			if options.Verbose {
 				fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s': isImage=%v, topK=%d, topKImages=%d\n",
 					collectionName, isImage, options.TopK, options.TopKImages)
@@ -147,7 +155,7 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 			}
 
 			// Check if this is an image collection and use topKImages if specified
-			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, collectionName) {
+			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, collectionName, options.Verbose) {
 				collectionTopK = options.TopKImages
 			}
 
@@ -366,7 +374,7 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 			}
 
 			// Check if this is an image collection and use topKImages if specified
-			isImage := isImageCollectionBySchema(ctx, client, spec.Name)
+			isImage := isImageCollectionBySchema(ctx, client, spec.Name, options.Verbose)
 			if options.Verbose {
 				fmt.Fprintf(os.Stderr, "[DEBUG] Collection '%s' (%s): isImage=%v, topK=%d, topKImages=%d\n",
 					spec.Name, spec.VDBKey, isImage, options.TopK, options.TopKImages)
@@ -409,7 +417,7 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 			}
 
 			// Check if this is an image collection and use topKImages if specified
-			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, spec.Name) {
+			if options.TopKImages > 0 && isImageCollectionBySchema(ctx, client, spec.Name, options.Verbose) {
 				collectionTopK = options.TopKImages
 			}
 
