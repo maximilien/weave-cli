@@ -27,7 +27,8 @@ func (a *Adapter) UpdateSchema(ctx context.Context, collectionName string, schem
 // GetDefaultSchema returns a default schema for the given type
 func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionName string) *vectordb.CollectionSchema {
 	// Create a default schema based on the type
-	vectorizer := "text2vec-openai"
+	// Use a valid embedding model name instead of vectorizer type
+	embeddingModel := "text-embedding-3-small"
 	properties := []vectordb.SchemaProperty{
 		{
 			Name:     "text",
@@ -44,7 +45,7 @@ func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionNam
 	}
 
 	if schemaType == vectordb.SchemaTypeImage {
-		vectorizer = "none"
+		// Image collections also use text2vec-openai for text-based search of metadata
 		properties = append(properties, vectordb.SchemaProperty{
 			Name:     "image",
 			DataType: []string{"text"},
@@ -57,7 +58,7 @@ func (a *Adapter) GetDefaultSchema(schemaType vectordb.SchemaType, collectionNam
 
 	return &vectordb.CollectionSchema{
 		Class:      collectionName,
-		Vectorizer: vectorizer,
+		Vectorizer: embeddingModel,
 		Properties: properties,
 	}
 }

@@ -17,11 +17,21 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 	// Convert schema to field definitions
 	var fields []FieldDefinition
+	hasImageField := false
+	hasImageDataField := false
+
 	for _, prop := range schema.Properties {
 		fields = append(fields, FieldDefinition{
 			Name: prop.Name,
 			Type: strings.Join(prop.DataType, ","),
 		})
+		// Detect image schema by checking for image-specific fields
+		if prop.Name == "image" {
+			hasImageField = true
+		}
+		if prop.Name == "image_data" {
+			hasImageDataField = true
+		}
 	}
 
 	embeddingModel := "text-embedding-ada-002" // Default model
@@ -29,7 +39,15 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 		embeddingModel = schema.Vectorizer
 	}
 
-	if err := a.client.CreateCollection(ctx, name, embeddingModel, fields); err != nil {
+	// Determine schema type from properties
+	schemaType := ""
+	if hasImageField && hasImageDataField {
+		schemaType = "image"
+	} else {
+		schemaType = "text"
+	}
+
+	if err := a.client.CreateCollectionWithSchema(ctx, name, embeddingModel, fields, schemaType); err != nil {
 		return a.wrapError(err, "create collection")
 	}
 	return nil

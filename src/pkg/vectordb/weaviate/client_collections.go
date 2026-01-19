@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -366,6 +367,11 @@ func (c *Client) createCollectionViaREST(ctx context.Context, collectionName, em
 	if err != nil {
 		return fmt.Errorf("Weaviate: failed to marshal class schema: %w", err)
 	}
+
+	// DEBUG: Log the schema being sent
+	fmt.Fprintf(os.Stderr, "[DEBUG] Creating collection '%s' (isImage=%v)\n", collectionName, isImage)
+	fmt.Fprintf(os.Stderr, "[DEBUG] Embedding model: %s\n", embeddingModel)
+	fmt.Fprintf(os.Stderr, "[DEBUG] Schema JSON:\n%s\n", string(jsonData))
 
 	// Create HTTP request
 	url := c.config.URL + "/v1/schema"

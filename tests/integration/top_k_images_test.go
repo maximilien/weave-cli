@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/stretchr/testify/assert"
@@ -72,7 +73,7 @@ func TestTopKImagesFlag(t *testing.T) {
 		// Add text documents
 		textDocs := []*vectordb.Document{
 			{
-				ID:      "text-1",
+				ID:      uuid.New().String(),
 				Content: "Weave CLI is a command-line tool for managing vector databases",
 				Metadata: map[string]interface{}{
 					"type":  "documentation",
@@ -80,7 +81,7 @@ func TestTopKImagesFlag(t *testing.T) {
 				},
 			},
 			{
-				ID:      "text-2",
+				ID:      uuid.New().String(),
 				Content: "Vector databases enable semantic search using embeddings",
 				Metadata: map[string]interface{}{
 					"type":  "documentation",
@@ -88,7 +89,7 @@ func TestTopKImagesFlag(t *testing.T) {
 				},
 			},
 			{
-				ID:      "text-3",
+				ID:      uuid.New().String(),
 				Content: "RAG agents combine retrieval and generation for better answers",
 				Metadata: map[string]interface{}{
 					"type":  "documentation",
@@ -102,29 +103,18 @@ func TestTopKImagesFlag(t *testing.T) {
 			require.NoError(t, err, fmt.Sprintf("Failed to create text document %s", doc.ID))
 		}
 
-		// Add image documents (with searchable content in metadata/content)
+		// Add image documents (with searchable content in Text field)
+		// Note: Image schema has nested object metadata, so we use Text field for searchable content
 		imageDocs := []*vectordb.Document{
 			{
-				ID:      "image-1",
-				Image:   "https://example.com/screenshot.png",
-				Content: "Screenshot of Weave CLI terminal showing query results",
-				Metadata: map[string]interface{}{
-					"type":        "image",
-					"ocr_text":    "weave cols query WeaveDocs --agent rag-agent",
-					"description": "CLI screenshot with query command",
-					"tags":        []string{"screenshot", "cli", "terminal"},
-				},
+				ID:    uuid.New().String(),
+				Image: "https://example.com/screenshot.png",
+				Text:  "Screenshot of Weave CLI terminal showing query results with commands like weave cols query WeaveDocs agent rag-agent",
 			},
 			{
-				ID:      "image-2",
-				Image:   "https://example.com/diagram.png",
-				Content: "Architecture diagram showing vector database and RAG agent",
-				Metadata: map[string]interface{}{
-					"type":        "image",
-					"ocr_text":    "Client -> Vector DB -> RAG Agent -> LLM",
-					"description": "System architecture diagram",
-					"tags":        []string{"diagram", "architecture"},
-				},
+				ID:    uuid.New().String(),
+				Image: "https://example.com/diagram.png",
+				Text:  "Architecture diagram showing vector database and RAG agent Client Vector DB RAG Agent LLM system design",
 			},
 		}
 
@@ -158,15 +148,8 @@ func TestTopKImagesFlag(t *testing.T) {
 		allResults := append(textResults, imageResults...)
 		t.Logf("Total results without topKImages: %d", len(allResults))
 
-		// Check if we got any images
-		imageCount := 0
-		for _, result := range imageResults {
-			if result.Document.Metadata != nil {
-				if typ, ok := result.Document.Metadata["type"].(string); ok && typ == "image" {
-					imageCount++
-				}
-			}
-		}
+		// All results from image collection are images
+		imageCount := len(imageResults)
 		t.Logf("Image results: %d", imageCount)
 	})
 
