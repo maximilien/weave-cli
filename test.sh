@@ -796,6 +796,44 @@ run_integration_tests() {
         fi
     fi
 
+    # Run CLI integration tests (--top_k_images, multi-collection, etc.)
+    # These tests auto-detect available VDB and work with existing collections
+    if [ "$run_all" = true ]; then
+        print_status "Running CLI integration tests..."
+        total_suites=$((total_suites + 1))
+        vdb_names+=("CLI Tests")
+        # Run with live output
+        go test -v -tags=integration -timeout=10m -count=1 ./tests/integration/... 2>&1 | tee /tmp/cli_test_output.txt
+        exit_code=${PIPESTATUS[0]}
+        output=$(cat /tmp/cli_test_output.txt)
+        pass_count=$(echo "$output" | grep -c "^--- PASS:" 2>/dev/null || true)
+        fail_count=$(echo "$output" | grep -c "^--- FAIL:" 2>/dev/null || true)
+        [ -z "$pass_count" ] && pass_count=0
+        [ -z "$fail_count" ] && fail_count=0
+
+        if [ $exit_code -eq 0 ]; then
+            print_success "CLI integration tests passed!"
+            passed_suites=$((passed_suites + 1))
+            vdb_status+=("PASS")
+        else
+            # Check if all tests were skipped
+            skip_count=$(echo "$output" | grep -c "Skipping.*No vector database" 2>/dev/null || true)
+            if [ "$skip_count" -gt 0 ] && [ "$fail_count" -eq 0 ]; then
+                print_warning "CLI integration tests skipped - no VDB credentials configured"
+                skipped_suites=$((skipped_suites + 1))
+                vdb_status+=("SKIP")
+            else
+                print_warning "CLI integration tests failed"
+                failed_suites=$((failed_suites + 1))
+                vdb_status+=("FAIL")
+            fi
+        fi
+        vdb_passed+=("$pass_count")
+        vdb_failed+=("$fail_count")
+        # Clean up temp file
+        rm -f /tmp/cli_test_output.txt
+    fi
+
     # Call summary function
     print_integration_summary
 
