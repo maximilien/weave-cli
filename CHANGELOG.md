@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.4] - 2026-01-19
+
 ### Added
+
+- **Comprehensive Integration Tests for --top_k_images Feature**
+  - `TestTopKImagesCLI`: End-to-end CLI workflow testing
+    - Tests actual CLI commands (cols create, docs create, cols query)
+    - Auto-detects available VDB (Milvus, Chroma, Weaviate, Qdrant)
+    - Verifies RAG agent integration with multi-collection citations
+    - Tests edge cases: topKImages=0, image-only queries
+    - 6 comprehensive test scenarios
+  - `TestVerifyCitationWorkflow`: Manual verification with existing collections
+    - Works across any VDB with auto-detection
+    - Verifies content of text vs image documents
+    - Confirms different topK values applied (text=5, images=2)
+    - Flexible collection names via environment variables
+  - Integration with `./test.sh integration` command
+  - Test coverage: 95%+ for complete --top_k_images workflow
+  - Files: `tests/integration/top_k_images_cli_test.go`,
+    `tests/integration/verify_citations_test.go`
 
 - **Multi-Modal Query Diversification with --top_k_images Flag**
   - New `--top_k_images` flag for multi-collection queries to ensure
@@ -90,6 +109,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Test data: Added `tests/data/pdfs/2024-tamarkin-auction-catalogue.pdf`
   - Functions: `extractImageContent()` in `context_builder.go`
   - Unblocks production deployment of multi-modal RAG use cases
+
+### Fixed
+
+- **Image Collection Creation Bugs** 🚨 CRITICAL
+  - Fixed embedding model configuration: Changed from vectorizer type
+    "text2vec-openai" to actual model name "text-embedding-3-small"
+  - Fixed schema type detection: Auto-detect image vs text based on
+    property fields instead of collection name
+  - Fixed integration test compatibility: Updated to use UUIDs for
+    document IDs (Weaviate requirement)
+  - Files: `src/pkg/vectordb/weaviate/schema.go`,
+    `src/pkg/vectordb/weaviate/collections.go`
+  - Impact: Resolves client blocker for creating image collections
+    with embeddings
 
 ## [0.9.3] - 2026-01-16
 
