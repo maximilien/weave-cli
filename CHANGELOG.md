@@ -7,7 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-01-20
+
+### Fixed
+- **CRITICAL: Image Metadata Not Truncated in Milvus (v0.9.5 Hotfix)**
+  - **Root Cause**: The v0.9.5 fix truncated `image.SurroundingText`, `image.Caption`, and
+    `image.SectionHeading` fields correctly, BUT these truncated values were NOT being added
+    to the `image.Metadata` map that Milvus uses for storage
+  - **Impact**: Milvus still received full page text (15K-67K chars) in metadata, exceeding
+    the 2048 VARCHAR limit despite `--max-metadata-length` flag
+  - **Test Results (v0.9.5)**:
+    - Milvus: 0/253 images (0%) - Same failure as before!
+    - Weaviate: 28/253 images (11%) - Unchanged
+    - Error: "the length (15003) of 0th string exceeds max length (2048)"
+  - **The Fix**: `enrichImageWithContext()` now populates `image.Metadata` map with truncated values:
+    - `metadata["surrounding_text"]` = truncated to 2000 chars (was: full page text)
+    - `metadata["section_heading"]` = truncated to 200 chars (was: missing)
+    - `metadata["caption"]` = caption text (was: missing)
+    - `metadata["ocr_content"]` = truncated OCR to 2000 chars (was: missing)
+  - **Expected Results (v0.9.6)**:
+    - Milvus: 253/253 images (100%) - Metadata under 2048 limit ✅
+    - Weaviate: 253/253 images (100%) - Still works ✅
+    - All VDBs: Consistent metadata structure
+
+### Impact
+- Fixes blocking client deployment (AuctionsMax.ai)
+- Multi-modal RAG now fully functional across all VDBs
+- Same benefits as v0.9.5 (storage -87%, costs -87%) now actually work!
+
+### Technical Details
+**Code Flow Problem (v0.9.5)**:
+1. `enrichImageWithContext()` truncated field values correctly
+2. But Milvus uses `imgData.Metadata` map directly (not the field values)
+3. Metadata map only contained base fields from `processExtractedImage()`:
+   - `type`, `source_pdf`, `image_index`, `image_format`, `image_size`, `date_added`
+4. Missing: `surrounding_text`, `section_heading`, `caption`, `ocr_content`
+5. Result: No truncation applied to Milvus storage!
+
+**Code Flow Fix (v0.9.6)**:
+1. `enrichImageWithContext()` truncates AND adds to `image.Metadata` map
+2. Milvus now gets truncated values in metadata
+3. Weaviate continues to work (creates new metadata from field values)
+4. All VDBs have consistent, truncated metadata
+
+### Testing
+```bash
+# Before v0.9.6
+weave docs create AuctionListings catalog.pdf \
+  --image-collection AuctionImages \
+  --max-metadata-length 2000 \
+  --milvus-local
+# Result: ❌ 0/253 images (all failed with VARCHAR limit errors)
+
+# After v0.9.6
+weave docs create AuctionListings catalog.pdf \
+  --image-collection AuctionImages \
+  --max-metadata-length 2000 \
+  --milvus-local
+# Result: ✅ 253/253 images (metadata properly truncated)
+```
+
 ## [0.9.5] - 2026-01-20
+
+### NOTE
+⚠️ **v0.9.5 DID NOT FIX THE ISSUE** - Please use v0.9.6 instead!
+
+The `--max-metadata-length` flag was added but truncation was not applied to
+the Metadata map used by Milvus. See v0.9.6 for the actual fix.
 
 ### Fixed
 - **CRITICAL: Image Metadata Truncation Issue (Issue #23)**
