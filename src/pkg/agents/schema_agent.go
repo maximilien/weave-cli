@@ -212,8 +212,8 @@ func (a *SchemaAgent) extractDocumentSample(filePath string) *DocumentSample {
 
 // extractPDFSample extracts sample from PDF
 func (a *SchemaAgent) extractPDFSample(filePath string) *DocumentSample {
-	// Use existing PDF extractor
-	textData, _, err := pdf.ExtractPDFContent(filePath, 1000, false, 0, false)
+	// Use existing PDF extractor (with default 2000 char metadata limit)
+	textData, _, err := pdf.ExtractPDFContent(filePath, 1000, false, 0, 2000, false)
 	if err != nil || len(textData) == 0 {
 		return nil
 	}

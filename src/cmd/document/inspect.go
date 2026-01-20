@@ -81,7 +81,7 @@ func runInspect(cmd *cobra.Command, args []string) error {
 func inspectPDF(filePath string) error {
 	fmt.Println("📄 Extracting PDF content...")
 
-	textData, imageData, err := pdf.ExtractPDFContent(filePath, inspectChunkSize, false, 0, true)
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, inspectChunkSize, false, 0, 2000, true)
 	if err != nil {
 		return fmt.Errorf("failed to extract PDF content: %w", err)
 	}

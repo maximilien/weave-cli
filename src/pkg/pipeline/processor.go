@@ -190,8 +190,8 @@ func (p *Processor) processFile(ctx context.Context, file FileInfo) *ProcessingR
 
 // processPDF extracts text and creates documents from PDF
 func (p *Processor) processPDF(ctx context.Context, file FileInfo) ([]*vectordb.Document, error) {
-	// Extract PDF content (text only for now, images optional)
-	textData, _, err := pdf.ExtractPDFContent(file.Path, 1000, true, 100, true)
+	// Extract PDF content (text only for now, images optional) with 2000 char metadata limit
+	textData, _, err := pdf.ExtractPDFContent(file.Path, 1000, true, 100, 2000, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to extract PDF content: %w", err)
 	}

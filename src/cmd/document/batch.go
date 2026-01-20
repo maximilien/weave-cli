@@ -498,7 +498,7 @@ func processFileWithRetry(ctx context.Context, dbConfig *config.VectorDBConfig, 
 			ReportMode: "",
 		}
 
-		err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, "", "", "")
+		err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, 2000, "", "", "")
 		if err == nil {
 			// Success
 			status.Success = true

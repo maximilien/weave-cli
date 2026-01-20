@@ -357,7 +357,7 @@ func validateEmbeddingForCollection(ctx context.Context, client *weaviate.Client
 
 // CreateWeaviateDocument creates a Weaviate document
 // CreateDocument creates a document using the vectordb abstraction (works for all DB types)
-func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string, embeddingModel string) error {
+func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string) error {
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -376,7 +376,7 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 	switch ext {
 	case ".pdf":
 		// Process PDF file for generic vectordb client
-		return processPDFFileGeneric(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
+		return processPDFFileGeneric(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, maxMetadataLength)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		// Image processing not yet implemented for generic vectordb client
 		return fmt.Errorf("image processing not yet implemented for this database type")
@@ -453,13 +453,13 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 }
 
 // processPDFFileGeneric processes a PDF file for generic vectordb clients
-func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) error {
+func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, maxMetadataLength int) error {
 	fmt.Printf("📄 Processing PDF: %s\n", filepath.Base(filePath))
 
 	// Extract PDF content using the existing PDF processor
 	fmt.Println("🔍 Extracting content from PDF...")
 	noTips := viper.GetBool("no-tips")
-	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, noTips)
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, maxMetadataLength, noTips)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return err
@@ -562,7 +562,7 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 	return nil
 }
 
-func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string, embeddingModel string) error {
+func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string) error {
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -602,7 +602,7 @@ func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 	var processErr error
 	switch ext {
 	case ".pdf":
-		processErr = processPDFFile(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, report)
+		processErr = processPDFFile(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, report)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		processErr = processImageFile(ctx, client, collectionName, filePath)
 	default:
@@ -622,7 +622,7 @@ func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 }
 
 // CreateMockDocument creates a mock document
-func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, reportPath string, reportMode string) {
+func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string) {
 	client := CreateMockClient(cfg)
 
 	// Check if file exists
@@ -636,7 +636,7 @@ func CreateMockDocument(ctx context.Context, cfg *config.VectorDBConfig, collect
 
 	switch ext {
 	case ".pdf":
-		processPDFFileMock(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize)
+		processPDFFileMock(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, maxMetadataLength)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		processImageFileMock(ctx, client, collectionName, filePath)
 	default:
@@ -1634,13 +1634,13 @@ func processImageFile(ctx context.Context, client *weaviate.Client, collectionNa
 }
 
 // processPDFFile processes a PDF file and creates documents
-func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, report *ProcessingReport) error {
+func processPDFFile(ctx context.Context, client *weaviate.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, report *ProcessingReport) error {
 	fmt.Printf("📄 Processing PDF: %s\n", filepath.Base(filePath))
 
 	// Extract PDF content using the existing PDF processor
 	fmt.Println("🔍 Extracting content from PDF...")
 	noTips := viper.GetBool("no-tips")
-	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, noTips)
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, maxMetadataLength, noTips)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return err
@@ -2264,10 +2264,10 @@ func processImageFileMock(ctx context.Context, client *mock.Client, collectionNa
 	PrintSuccess(fmt.Sprintf("Successfully created image document: %s", filepath.Base(filePath)))
 }
 
-func processPDFFileMock(ctx context.Context, client *mock.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int) {
+func processPDFFileMock(ctx context.Context, client *mock.Client, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, maxMetadataLength int) {
 	// Extract PDF content using the existing PDF processor
 	noTips := viper.GetBool("no-tips")
-	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, noTips)
+	textData, imageData, err := pdf.ExtractPDFContent(filePath, chunkSize, skipSmallImages, minImageSize, maxMetadataLength, noTips)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to extract PDF content: %v", err))
 		return

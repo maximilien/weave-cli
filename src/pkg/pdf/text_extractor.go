@@ -430,9 +430,14 @@ func extractTextByPage(filePath string) (map[int]string, error) {
 }
 
 // enrichImageWithContext adds caption and surrounding text to image metadata
-func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string) {
+func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string, maxMetadataLength int) {
 	if image == nil {
 		return
+	}
+
+	// Use default 2000 if maxMetadataLength is 0 (unlimited not recommended for metadata)
+	if maxMetadataLength == 0 {
+		maxMetadataLength = 2000
 	}
 
 	// Get text from the page where this image appears
@@ -441,7 +446,7 @@ func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string) {
 		// No page text available, use OCR text if available
 		if image.OCRText != "" {
 			image.Caption = extractCaptionFromOCR(image.OCRText)
-			image.SurroundingText = truncateText(image.OCRText, 500)
+			image.SurroundingText = truncateText(image.OCRText, maxMetadataLength)
 		}
 		return
 	}
@@ -449,11 +454,11 @@ func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string) {
 	// Extract caption (look for "Figure", "Fig.", "Image", "Diagram", etc.)
 	image.Caption = extractCaptionFromText(pageText, image.ImageIndex)
 
-	// Extract surrounding text (first ~500 chars as context)
-	image.SurroundingText = truncateText(pageText, 500)
+	// Extract surrounding text using configurable max length
+	image.SurroundingText = truncateText(pageText, maxMetadataLength)
 
-	// Extract section heading (first line or heading-like text)
-	image.SectionHeading = extractSectionHeading(pageText)
+	// Extract section heading (first line or heading-like text) - limit to 200 chars
+	image.SectionHeading = truncateText(extractSectionHeading(pageText), 200)
 }
 
 // extractCaptionFromText tries to find a caption related to the image
