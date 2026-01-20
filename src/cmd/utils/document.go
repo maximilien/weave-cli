@@ -520,6 +520,12 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 		imageSuccessCount := 0
 
 		for i, imgData := range imageData {
+			// DEBUG: Log metadata field lengths to diagnose truncation issue
+			if md, ok := imgData.Metadata["surrounding_text"].(string); ok {
+				fmt.Printf("DEBUG: Image %d surrounding_text length: %d chars\n", i+1, len(md))
+			}
+			fmt.Printf("DEBUG: Image %d Image field length: %d chars\n", i+1, len(imgData.Image))
+
 			doc := &vectordb.Document{
 				ID:        imgData.ID,
 				Text:      imgData.OCRText,
