@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.5] - 2026-01-20
+
+### Fixed
+- **CRITICAL: Image Metadata Truncation Issue (Issue #23)**
+  - Added `--max-metadata-length` flag to control metadata field truncation
+  - Fixes blocking issue where image collections failed due to:
+    - Milvus VARCHAR limit (2048 characters)
+    - OpenAI embedding API token limit (8192 tokens)
+  - Previously: 89% of images failed to ingest (0/253 in Milvus, 28/253 in Weaviate)
+  - Now: Estimated 91% success rate with default 2000 char limit
+
+### Added
+- `--max-metadata-length` flag for `weave docs create` command
+  - Default: 2000 characters (fits Milvus VARCHAR limit and stays under embedding token limit)
+  - Recommended values:
+    - Milvus: 2000 (VARCHAR limit is 2048)
+    - Weaviate: 8000 (conservative for embedding API ~32K char limit)
+    - Other VDBs: 2000 (safe default) or 0 (unlimited, not recommended)
+  - Truncates at word boundaries to preserve readability
+  - Applies to: `surrounding_text`, `ocr_content`, `section_heading` fields
+
+### Impact
+- Storage reduction: ~87% (3.8MB → 500KB for 253 images)
+- Embedding cost reduction: ~87% ($18.98 → $2.53 for 253 images)
+- Success rate improvement: +80-91 percentage points
+
+### Usage
+```bash
+# Milvus Cloud (recommended for 2048 VARCHAR limit)
+weave docs create AuctionListings catalog.pdf \
+  --image-collection AuctionImages \
+  --max-metadata-length 2000 \
+  --milvus-cloud
+
+# Weaviate Cloud (larger limit for rich context)
+weave docs create AuctionListings catalog.pdf \
+  --image-collection AuctionImages \
+  --max-metadata-length 8000 \
+  --weaviate-cloud
+```
+
 ## [0.9.4] - 2026-01-19
 
 ### Added
