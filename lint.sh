@@ -175,7 +175,7 @@ if find . -name "*.md" -not -path "./src/vendor/*" -not -path "./node_modules/*"
             ./tools/fix_markdown_lint.sh > /dev/null 2>&1
         fi
 
-        if markdownlint "**/*.md" --ignore node_modules --ignore src/vendor --ignore docs --ignore "WORK_PLAN*.md" --ignore "SESSION_SUMMARY_*.md" --ignore "TODOs.md" --ignore "TODOs-*.md" --ignore "NEXT_STEPS*.md" --ignore "BUG_FIX_PLAN.md" --ignore "EOD_REVIEW.md" --ignore "PDF_FIX_SUMMARY.md"; then
+        if markdownlint "**/*.md" --ignore node_modules --ignore src/vendor --ignore docs --ignore "WORK_PLAN*.md" --ignore "SESSION_SUMMARY_*.md" --ignore "TODOs.md" --ignore "TODOs-*.md"; then
             print_success "Markdown linting passed!"
         else
             print_warning "Markdown linting issues found"

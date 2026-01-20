@@ -730,10 +730,10 @@ production blocker and increases readiness score from 95 to 98.
   - Elasticsearch (Beta)
 
 - **Comprehensive Documentation**
-  - `PDF_FIX_SUMMARY.md` - Complete implementation documentation
-  - Updated `NEXT_STEPS.md` with PDF support status
+  - `docs/PDF_FIX_SUMMARY.md` - Complete implementation documentation
+  - Updated `docs/NEXT_STEPS.md` with PDF support status
   - Updated `docs/PRODUCTION_READY.md` with new readiness score
-  - `EOD_REVIEW.md` - End of day session summary
+  - `docs/EOD_REVIEW.md` - End of day session summary
 
 ### Changed
 
@@ -856,7 +856,7 @@ comprehensive test coverage, and version 0.8.3 release with YAML linting fixes.
   - Linked from README.md under Guides section
 
 - **Updated Documentation**
-  - NEXT_STEPS.md: 6 sessions documented (4h10m total)
+  - docs/NEXT_STEPS.md: 6 sessions documented (4h10m total)
   - VDB_SUPPORT_MATRIX.md: Added AI feature rows
   - README.md: Added AI configuration examples and MCP tools link
   - configs/README.md: Documented weave-agents.yaml
@@ -929,7 +929,7 @@ test verification critical for production pipelining workflows.
   - Network/firewall troubleshooting steps for common scenarios
 
 - **Test Quality** - Complete batch create verification audit
-  - Documented test patterns in NEXT_STEPS.md (Task 4.4)
+  - Documented test patterns in docs/NEXT_STEPS.md (Task 4.4)
   - Tier 1 (thorough): Qdrant, MongoDB with individual retrieval
   - Tier 2 (enhanced): All remaining VDBs with count or retrieval checks
   - 100% batch operation test coverage ensures production readiness
@@ -1020,7 +1020,7 @@ been promoted to Beta status with full documentation.
   - All test coverage metrics updated to 100%
   - Platform compatibility notes refreshed
 
-- **NEXT_STEPS.md** - Updated with session accomplishments
+- **docs/NEXT_STEPS.md** - Updated with session accomplishments
   - Documented test completion milestone
   - Updated VDB status summaries
   - Marked completed cleanup tasks

@@ -28,10 +28,11 @@ This directory contains historical planning documents from the Weave CLI develop
 
 ## Current Planning Documents
 
-For active planning documents, see the root directory:
-- `WORK_PLAN-chroma.md` - Current priority: Fix Chroma integration test failures
-- `WORK_PLAN-current.md` - Current day's work plan
-- `ROADMAP.md` - Long-term feature roadmap
+For active planning documents, see:
+- Root directory work plans (if any)
+- `docs/ROADMAP.md` - Long-term feature roadmap
+- `docs/NEXT_STEPS.md` - Current planning and next actions
+- `docs/NEXT_ACTIONS.md` - Detailed action items
 
 ## Archive Policy
 
