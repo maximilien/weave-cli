@@ -22,6 +22,22 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 
 	mdoc := a.toMilvusDocument(document)
 
+	// CRITICAL FIX (v0.9.7): Truncate Image field if it exceeds VARCHAR limit
+	// The Image field stores data URLs like "data:image/jpeg;base64,..."
+	// which can be 15KB-96KB for typical PDF images, but Milvus VARCHAR
+	// limit is 2048 chars. Store only URL reference in Image field.
+	// The full base64 data is stored in ImageData JSON field (64KB limit).
+	const milvusImageVarCharLimit = 2048
+	if len(mdoc.Image) > milvusImageVarCharLimit {
+		// Store URL reference instead of full data URL
+		mdoc.Image = mdoc.URL
+
+		// If URL is also too long (edge case), truncate it
+		if len(mdoc.Image) > milvusImageVarCharLimit {
+			mdoc.Image = mdoc.Image[:milvusImageVarCharLimit]
+		}
+	}
+
 	// Generate embedding if LLM client is available and document has content
 	if a.llmClient != nil && (document.Content != "" || document.Text != "") {
 		textToEmbed := document.Content
@@ -115,6 +131,18 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 
 	for i, doc := range documents {
 		mdoc := a.toMilvusDocument(doc)
+
+		// CRITICAL FIX (v0.9.7): Truncate Image field if it exceeds VARCHAR limit
+		const milvusImageVarCharLimit = 2048
+		if len(mdoc.Image) > milvusImageVarCharLimit {
+			// Store URL reference instead of full data URL
+			mdoc.Image = mdoc.URL
+
+			// If URL is also too long (edge case), truncate it
+			if len(mdoc.Image) > milvusImageVarCharLimit {
+				mdoc.Image = mdoc.Image[:milvusImageVarCharLimit]
+			}
+		}
 
 		// Generate embedding if LLM client is available and document has content
 		if a.llmClient != nil && (doc.Content != "" || doc.Text != "") {
