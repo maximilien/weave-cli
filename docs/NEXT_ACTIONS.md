@@ -14,6 +14,7 @@
 **Priority**: HIGH
 
 **Commands:**
+
 ```bash
 # Push commits and tag
 git push origin main
@@ -27,12 +28,14 @@ git push origin v0.9.4
 ```
 
 **Commits Included:**
+
 - `81eca30` - Bug fixes for image collection creation
 - `9228646` - CLI integration tests for --top_k_images
 - `b49458f` - Test infrastructure updates
 - `f976b22` - Changelog for v0.9.4
 
 **Verification:**
+
 - [ ] Commits pushed successfully
 - [ ] Tag pushed successfully
 - [ ] GitHub Actions workflow triggered
@@ -47,12 +50,14 @@ git push origin v0.9.4
 **Priority**: HIGH
 
 **Actions:**
+
 - [ ] Send release notification email
 - [ ] Share release URL: `https://github.com/maximilien/weave-cli/releases/tag/v0.9.4`
 - [ ] Provide deployment instructions
 - [ ] Share example commands for multi-modal RAG
 
 **Key Information to Share:**
+
 ```
 Subject: weave-cli v0.9.4 Released - Multi-Modal RAG Support
 
@@ -85,6 +90,7 @@ Let us know if you need any assistance with deployment!
 **Priority**: MEDIUM
 
 **Metrics to Monitor:**
+
 - [ ] Deployment success/failure
 - [ ] Query performance (latency)
 - [ ] `--top_k_images` usage patterns
@@ -92,12 +98,14 @@ Let us know if you need any assistance with deployment!
 - [ ] Error rates or issues
 
 **Data to Collect:**
+
 - Average query response time (text-only vs text+image)
 - Image collection sizes and search times
 - Client feedback on citation quality
 - Any edge cases or bugs discovered
 
 **Tools:**
+
 - Client can use `--verbose` for debug output
 - Monitor GitHub issues for any reported problems
 - Schedule check-in call with client
@@ -111,6 +119,7 @@ Let us know if you need any assistance with deployment!
 **Priority**: LOW
 
 **Actions:**
+
 - [ ] Create case study for AuctionsMax.ai (with permission)
 - [ ] Document real-world usage patterns
 - [ ] Add production examples to docs/examples/
@@ -130,12 +139,14 @@ New file: `docs/examples/auctionsmax-multimodal-rag.md` (if client approves)
 **Priority**: MEDIUM
 
 **Questions to Answer:**
+
 - Are multi-collection queries slow? (Need parallel queries?)
 - Are text results dominating? (Need better scoring?)
 - Are image results relevant? (Need visual embeddings?)
 - Is `--top_k_images` being used effectively?
 
 **Potential Optimizations:**
+
 - [ ] Parallel collection queries (if latency > 2s)
 - [ ] Result caching (if same queries repeated)
 - [ ] Smarter score normalization (if text dominates)
@@ -143,6 +154,7 @@ New file: `docs/examples/auctionsmax-multimodal-rag.md` (if client approves)
 
 **Decision Point:**
 Based on metrics, choose enhancement path:
+
 - **Path A**: Performance optimization (if slow)
 - **Path B**: Feature expansion (if working well)
 - **Path C**: Visual search (if text search limiting)
@@ -156,6 +168,7 @@ Based on metrics, choose enhancement path:
 **Priority**: LOW (unless client requests)
 
 **Tasks:**
+
 - [ ] Research CLIP integration options
   - OpenAI CLIP API
   - Hugging Face transformers
@@ -181,6 +194,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: LOW
 
 **Ideas:**
+
 - [ ] Image-specific prompts for RAG agent
 - [ ] Better image citation formatting (with thumbnails?)
 - [ ] Multi-modal reranking (better scoring across types)
@@ -188,6 +202,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 - [ ] Support for audio transcription collections
 
 **Depends On:**
+
 - Client feedback from AuctionsMax.ai deployment
 - Performance data from production usage
 
@@ -202,6 +217,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: HIGH (if issues arise)
 
 **Process:**
+
 1. Monitor GitHub issues
 2. Respond to client reports within 24 hours
 3. Reproduce bugs locally
@@ -209,6 +225,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 5. Release hotfix if critical
 
 **Current Known Issues:**
+
 - None (all tests passing)
 
 ---
@@ -220,12 +237,14 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: LOW
 
 **Areas to Expand:**
+
 - [ ] Performance benchmarks for multi-collection queries
 - [ ] Load testing with large image collections
 - [ ] Edge cases (empty collections, malformed images)
 - [ ] Error handling tests (network failures, API errors)
 
 **Deliverable:**
+
 - `tests/performance/multimodal_benchmark_test.go`
 - Documentation in `tests/integration/README.md`
 
@@ -240,12 +259,14 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: MEDIUM
 
 **Tasks:**
+
 - [ ] Update README.md with v0.9.4 features
 - [ ] Add multi-modal RAG examples to USER_GUIDE.md
 - [ ] Create video demo (if time permits)
 - [ ] Update ARCHITECTURE.md with detection logic
 
 **Files to Update:**
+
 - `README.md` - Add v0.9.4 highlights
 - `docs/USER_GUIDE.md` - Multi-modal workflows
 - `docs/ARCHITECTURE.md` - Schema type detection
@@ -259,12 +280,14 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: LOW
 
 **Ideas:**
+
 - [ ] Blog post about multi-modal RAG implementation
 - [ ] Tweet about v0.9.4 release
 - [ ] Share on relevant forums (r/MachineLearning, r/golang)
 - [ ] Update project showcase sites
 
 **Depends On:**
+
 - Successful AuctionsMax.ai deployment
 - Positive client feedback
 
@@ -279,6 +302,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: MEDIUM
 
 **Criteria for v1.0:**
+
 - [ ] All 10 VDBs fully tested in production
 - [ ] Multi-modal RAG proven with real clients
 - [ ] Performance optimized for large-scale use
@@ -286,6 +310,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 - [ ] Stable API (no breaking changes)
 
 **Features to Consider:**
+
 - Visual search with CLIP
 - Video/audio collection support
 - Advanced reranking algorithms
@@ -293,6 +318,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 - Cloud-native deployment options
 
 **Timeline:**
+
 - v0.9.x series: Iterate on multi-modal RAG
 - v1.0: When ready for enterprise adoption (est. 4-6 weeks)
 
@@ -305,6 +331,7 @@ Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
 **Priority**: LOW
 
 **Topics:**
+
 - **Hybrid Search**: Combine dense (embeddings) + sparse (BM25) + visual
 - **Reranking**: Use cross-encoders for better result ordering
 - **Multi-Modal Agents**: Specialized agents for different modalities
@@ -329,6 +356,7 @@ Research notes in `docs/planning/ADVANCED_FEATURES.md`
 - ✅ Prepared commits and tagged release
 
 **Archived Documentation:**
+
 - `docs/archive/STATUS_TOP_K_IMAGES.md`
 - `docs/archive/MULTIMODAL_RAG_SUPPORT.md`
 
@@ -337,20 +365,24 @@ Research notes in `docs/planning/ADVANCED_FEATURES.md`
 ## 📅 Timeline Summary
 
 **Week 1 (Current)**:
+
 - ⏳ Push v0.9.4 to GitHub
 - ⏳ AuctionsMax.ai deployment
 - ⏳ Monitor production usage
 
 **Week 2**:
+
 - Analyze performance data
 - Address any production issues
 - Plan enhancements based on feedback
 
 **Weeks 3-4**:
+
 - Implement priority enhancements
 - Prepare for v1.0 planning
 
 **Beyond**:
+
 - Visual search integration (if needed)
 - Advanced multi-modal features
 - v1.0 release preparation

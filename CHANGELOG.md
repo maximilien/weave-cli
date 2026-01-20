@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.7] - 2026-01-20
 
 ### Fixed
+
 - **CRITICAL: Image VARCHAR Field Exceeds Milvus Limit (v0.9.6 Hotfix)**
   - **Root Cause (Confirmed via Debug Build)**: The `Image` VARCHAR field stores base64 data URLs
     like `data:image/jpeg;base64,...` which can be 15KB-96KB for typical PDF images, but Milvus
@@ -33,12 +34,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - All VDBs: No data loss (base64 in ImageData JSON, URL in Image VARCHAR)
 
 ### Impact
+
 - **Fixes blocking client deployment (AuctionsMax.ai)** - Multi-modal RAG fully unblocked
 - Success rate: 0% → 100% (253/253 images expected)
 - No data loss: Full base64 stored in ImageData JSON field
 - Backward compatible: Weaviate and other VDBs continue to work
 
 ### Debug Analysis
+
 Debug build v0.9.6-1 confirmed the root cause:
 
 | Field | Status | Length |
@@ -47,6 +50,7 @@ Debug build v0.9.6-1 confirmed the root cause:
 | `Image` VARCHAR | ❌ Failing | 15,000-96,000 chars (base64 data URL) |
 
 Error pattern (253 images):
+
 ```
 DEBUG: Image 1 surrounding_text length: 2000 chars  ✅
 DEBUG: Image 1 Image field length: 96831 chars      ❌
@@ -54,6 +58,7 @@ DEBUG: Image 1 Image field length: 96831 chars      ❌
 ```
 
 ### Testing
+
 ```bash
 # Before v0.9.7 (v0.9.5/v0.9.6)
 weave docs create AuctionListings catalog.pdf \
@@ -71,12 +76,15 @@ weave docs create AuctionListings catalog.pdf \
 ```
 
 ### Technical Details
+
 **Why Base64 Data URLs Are Huge**:
+
 - Original image: 10KB → Base64: 13KB+ (~13,000 chars)
 - Typical PDF images: 20-70KB → Base64: 27,000-93,000+ chars
 - Milvus VARCHAR limit: 2,048 chars
 
 **The Solution**:
+
 ```go
 // In Milvus adapter CreateDocument()
 const milvusImageVarCharLimit = 2048
@@ -90,6 +98,7 @@ if len(mdoc.Image) > milvusImageVarCharLimit {
 ## [0.9.6] - 2026-01-20
 
 ### NOTE
+
 ⚠️ **v0.9.6 ALSO DID NOT FIX THE ISSUE** - Please use v0.9.7 instead!
 
 The metadata truncation worked correctly, but the `Image` VARCHAR field
@@ -97,6 +106,7 @@ storing base64 data URLs still exceeded the 2048 char limit. See v0.9.7 for
 the complete fix.
 
 ### Fixed
+
 - **CRITICAL: Image Metadata Not Truncated in Milvus (v0.9.5 Hotfix)**
   - **Root Cause**: The v0.9.5 fix truncated `image.SurroundingText`, `image.Caption`, and
     `image.SectionHeading` fields correctly, BUT these truncated values were NOT being added
@@ -118,12 +128,15 @@ the complete fix.
     - All VDBs: Consistent metadata structure
 
 ### Impact
+
 - Fixes blocking client deployment (AuctionsMax.ai)
 - Multi-modal RAG now fully functional across all VDBs
 - Same benefits as v0.9.5 (storage -87%, costs -87%) now actually work!
 
 ### Technical Details
+
 **Code Flow Problem (v0.9.5)**:
+
 1. `enrichImageWithContext()` truncated field values correctly
 2. But Milvus uses `imgData.Metadata` map directly (not the field values)
 3. Metadata map only contained base fields from `processExtractedImage()`:
@@ -132,12 +145,14 @@ the complete fix.
 5. Result: No truncation applied to Milvus storage!
 
 **Code Flow Fix (v0.9.6)**:
+
 1. `enrichImageWithContext()` truncates AND adds to `image.Metadata` map
 2. Milvus now gets truncated values in metadata
 3. Weaviate continues to work (creates new metadata from field values)
 4. All VDBs have consistent, truncated metadata
 
 ### Testing
+
 ```bash
 # Before v0.9.6
 weave docs create AuctionListings catalog.pdf \
@@ -157,12 +172,14 @@ weave docs create AuctionListings catalog.pdf \
 ## [0.9.5] - 2026-01-20
 
 ### NOTE
+
 ⚠️ **v0.9.5 DID NOT FIX THE ISSUE** - Please use v0.9.6 instead!
 
 The `--max-metadata-length` flag was added but truncation was not applied to
 the Metadata map used by Milvus. See v0.9.6 for the actual fix.
 
 ### Fixed
+
 - **CRITICAL: Image Metadata Truncation Issue (Issue #23)**
   - Added `--max-metadata-length` flag to control metadata field truncation
   - Fixes blocking issue where image collections failed due to:
@@ -172,6 +189,7 @@ the Metadata map used by Milvus. See v0.9.6 for the actual fix.
   - Now: Estimated 91% success rate with default 2000 char limit
 
 ### Added
+
 - `--max-metadata-length` flag for `weave docs create` command
   - Default: 2000 characters (fits Milvus VARCHAR limit and stays under embedding token limit)
   - Recommended values:
@@ -182,11 +200,13 @@ the Metadata map used by Milvus. See v0.9.6 for the actual fix.
   - Applies to: `surrounding_text`, `ocr_content`, `section_heading` fields
 
 ### Impact
+
 - Storage reduction: ~87% (3.8MB → 500KB for 253 images)
 - Embedding cost reduction: ~87% ($18.98 → $2.53 for 253 images)
 - Success rate improvement: +80-91 percentage points
 
 ### Usage
+
 ```bash
 # Milvus Cloud (recommended for 2048 VARCHAR limit)
 weave docs create AuctionListings catalog.pdf \
