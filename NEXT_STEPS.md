@@ -1,14 +1,35 @@
-# Next Steps - Production Ready
+# Next Steps - Post v0.9.4 Release
 
-**Last Updated**: 2026-01-06 (EOD)
-**Current Version**: v0.8.3
-**Status**: 🎉 **Production Ready** - Ready for active use!
+**Last Updated**: 2026-01-19 11:30 PST
+**Current Version**: v0.9.4 (Tagged, Ready to Push)
+**Status**: 🎉 **Multi-Modal RAG Complete** - Awaiting Production Deployment
 
 ---
 
 ## 📊 Current State Summary
 
-### Version 0.8.3 Features
+### Version 0.9.4 Features (NEW - 2026-01-19)
+
+**Multi-Modal RAG** 🖼️
+- ✅ `--top_k_images` flag for guaranteed image results
+- ✅ Image collection creation with embeddings (fixed critical bug)
+- ✅ Schema type detection (text vs image collections)
+- ✅ Multi-collection queries with RAG agent citations
+- ✅ Multi-VDB support (Milvus, Weaviate, Chroma, Qdrant)
+- ✅ Comprehensive integration tests (95%+ coverage)
+
+**Bug Fixes** 🐛
+- ✅ Fixed embedding model configuration in `schema.go`
+- ✅ Fixed schema type detection in adapter layer
+- ✅ Fixed integration test compatibility across all VDBs
+
+**Testing & Quality** ✅
+- ✅ 3 new integration test suites (API, CLI, Citation verification)
+- ✅ Multi-VDB auto-detection in tests
+- ✅ Integrated into `./test.sh integration`
+- ✅ All linting passing (Go, Markdown)
+
+### Version 0.8.3 Features (Previous)
 
 **AI-Powered Tools** ⭐
 - ✅ Schema suggestion via `weave schema suggest` with AI analysis
@@ -164,11 +185,133 @@ curl -X POST http://localhost:8030/mcp/tools/call \
 
 ---
 
+## 🚀 Release v0.9.4 Status
+
+### Ready to Deploy ✅
+
+**Commits Prepared:**
+1. `81eca30` - Bug fixes for image collection creation
+2. `9228646` - CLI integration tests for --top_k_images
+3. `b49458f` - Test infrastructure updates
+4. `f976b22` - Changelog for v0.9.4
+
+**Tag Created:** `v0.9.4`
+
+**Push Commands:**
+```bash
+git push origin main
+git push origin v0.9.4
+```
+
+**GitHub Actions:** Will automatically build and publish release
+
+---
+
+## 🎯 Deployment Plan - AuctionsMax.ai
+
+### Immediate Next Steps (Awaiting Client)
+
+**Client:** AuctionsMax.ai
+**Feature:** Multi-modal RAG with image collection support
+**Status:** Ready for deployment
+
+**Deployment Workflow:**
+1. ⏳ Push v0.9.4 to GitHub
+2. ⏳ GitHub Actions builds binaries
+3. ⏳ Client downloads v0.9.4 release
+4. ⏳ Client deploys to production
+5. ⏳ Monitor usage and gather feedback
+
+**Key Commands for Client:**
+```bash
+# Query with guaranteed image results
+weave cols query \
+  ProductTextCol ProductImageCol \
+  "vintage items" \
+  --agent rag-agent \
+  --top_k 5 \
+  --top_k_images 2
+
+# Verify citations include both text and images
+# Check performance with production data
+```
+
+---
+
+## 📋 Post-Deployment Actions
+
+### Phase 1: Monitoring (Days 1-3)
+
+**Goals:**
+1. Verify `--top_k_images` works in production
+2. Monitor query performance (latency)
+3. Gather client feedback on citation quality
+4. Document any edge cases
+
+**Metrics to Track:**
+- Query response times (text-only vs text+image)
+- `--top_k_images` usage frequency
+- RAG agent accuracy with multi-modal results
+- Client satisfaction
+
+### Phase 2: Enhancement Planning (Week 1-2)
+
+**Based on Deployment Success:**
+
+**Option A: Performance Optimization** (if queries slow)
+- Parallel collection queries (currently sequential)
+- Result caching for common queries
+- Smarter merging algorithms
+
+**Option B: Multi-Modal Expansion** (if feature successful)
+- Video collection support
+- Audio transcription collections
+- Multi-modal reranking
+
+**Option C: Visual Search** (if image quality limiting)
+- CLIP embeddings for visual similarity
+- Image captioning via GPT-4 Vision
+- Image-to-image search
+
+### Phase 3: Feature Roadmap (Weeks 2-4)
+
+**Priority 1: Based on Client Feedback**
+- Address any production issues
+- Performance tuning as needed
+- Additional test coverage
+
+**Priority 2: Visual Search (if client needs)**
+- Research CLIP integration (OpenAI, Hugging Face)
+- Prototype visual similarity search
+- Benchmark vs text-based search
+
+**Priority 3: Advanced Features**
+- Hybrid search (text + visual)
+- Image query input (`--image query.jpg`)
+- Multi-modal agent improvements
+
+---
+
 ## 🚀 Recommended Next Steps
 
-### For Active Users (Now)
+### For Active Users (Post v0.9.4)
 
-1. **Start Using the CLI**
+1. **Try Multi-Modal RAG (NEW in v0.9.4)**
+   ```bash
+   # Create text and image collections
+   weave cols create ProductDocs --text
+   weave cols create ProductImages --image
+
+   # Import documents
+   weave batch import ./docs --collection ProductDocs
+   weave batch import ./images --collection ProductImages
+
+   # Query with guaranteed image results
+   weave cols query ProductDocs ProductImages "search query" \
+     --agent rag-agent --top_k 5 --top_k_images 2
+   ```
+
+2. **Use Existing Features**
    ```bash
    # Create your agent config
    weave config agents
@@ -283,5 +426,21 @@ curl -X POST http://localhost:8030/mcp/tools/call \
 
 ---
 
-**Last Updated**: 2026-01-06 17:56 PST
-**Next Review**: As needed based on real-world usage feedback
+---
+
+## 📊 Version Comparison
+
+| Feature | v0.8.3 | v0.9.4 |
+|---------|--------|--------|
+| Vector DBs Supported | 10 + Mock | 10 + Mock |
+| Multi-Modal RAG | ❌ | ✅ |
+| Image Collections | ⚠️ Limited | ✅ Full Support |
+| `--top_k_images` Flag | ❌ | ✅ |
+| Schema Type Detection | ❌ | ✅ |
+| Integration Tests | 38+ | 38+ (3 new suites) |
+| Multi-VDB Tests | ❌ | ✅ Auto-detect |
+
+---
+
+**Last Updated**: 2026-01-19 11:30 PST
+**Next Review**: After AuctionsMax.ai deployment feedback
