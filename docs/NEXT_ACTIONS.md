@@ -1,89 +1,161 @@
-# TODOs - Post v0.9.4 Release
+# TODOs - Post v0.9.7 Release
 
-**Last Updated**: 2026-01-19 11:30 PST
-**Current Status**: v0.9.4 Complete - Ready for Production Deployment
-
----
-
-## 🚀 Immediate Actions (Today)
-
-### 1. Release v0.9.4 to GitHub ⏳
-
-**Status**: Ready to push
-**Owner**: Maintainer
-**Priority**: HIGH
-
-**Commands:**
-
-```bash
-# Push commits and tag
-git push origin main
-git push origin v0.9.4
-
-# GitHub Actions will automatically:
-# - Build binaries for all platforms
-# - Generate checksums
-# - Create GitHub Release
-# - Publish release notes
-```
-
-**Commits Included:**
-
-- `81eca30` - Bug fixes for image collection creation
-- `9228646` - CLI integration tests for --top_k_images
-- `b49458f` - Test infrastructure updates
-- `f976b22` - Changelog for v0.9.4
-
-**Verification:**
-
-- [ ] Commits pushed successfully
-- [ ] Tag pushed successfully
-- [ ] GitHub Actions workflow triggered
-- [ ] Release published with binaries
+**Last Updated**: 2026-01-20 13:40 PST
+**Current Status**: v0.9.7 Complete - Image Metadata Issue FIXED
 
 ---
 
-### 2. Notify AuctionsMax.ai Client ⏳
+## 🎯 Critical Path (Next 24-48 Hours)
 
-**Status**: Waiting for GitHub release
+### 1. Update GitHub Issue #23 with v0.9.7 Solution ✅ TODO
+
+**Status**: Ready to update
 **Owner**: Maintainer
 **Priority**: HIGH
 
 **Actions:**
 
-- [ ] Send release notification email
-- [ ] Share release URL: `https://github.com/maximilien/weave-cli/releases/tag/v0.9.4`
-- [ ] Provide deployment instructions
-- [ ] Share example commands for multi-modal RAG
+- [ ] Comment on Issue #23 with v0.9.7 fix details
+- [ ] Explain the 3-iteration fix process (v0.9.5 → v0.9.6 → v0.9.7)
+- [ ] Provide test instructions for AuctionsMax.ai
+- [ ] Link to CHANGELOG.md v0.9.7 section
 
-**Key Information to Share:**
+**Comment Template:**
 
+```markdown
+## v0.9.7 Released - Image Metadata Issue FIXED
+
+After 3 iterations, the image metadata truncation issue is now fully resolved:
+
+**v0.9.5** (Attempt 1): Added `--max-metadata-length` flag
+- ❌ Metadata truncation didn't apply to Milvus storage map
+
+**v0.9.6** (Attempt 2): Populated metadata map with truncated values
+- ❌ Image VARCHAR field (base64 data URLs) still exceeded 2048 chars
+
+**v0.9.7** (THE FIX): Truncate Image VARCHAR field to URL reference
+- ✅ Stores URL reference instead of full base64 data URL when > 2048 chars
+- ✅ Full base64 remains in ImageData JSON field (no data loss)
+- ✅ Expected: 253/253 images (100% success)
+
+**Testing Instructions:**
+
+bash
+# Download v0.9.7
+# Then test with your 253-image catalog
+weave docs create AuctionListings catalog.pdf \
+  --image-collection AuctionImages \
+  --max-metadata-length 2000 \
+  --milvus-local
+
+# Expected: 253/253 images created successfully
+
+
+See [CHANGELOG.md v0.9.7](link) for full technical details.
 ```
-Subject: weave-cli v0.9.4 Released - Multi-Modal RAG Support
 
-Hi AuctionsMax.ai team,
+---
 
-We're excited to announce v0.9.4 with full multi-modal RAG support:
+### 2. AuctionsMax.ai Testing & Deployment ⏳
 
-✅ Image collection support with embeddings
-✅ --top_k_images flag for guaranteed image results
-✅ Multi-collection queries with RAG agent citations
-✅ Support for Milvus, Weaviate, Chroma, and Qdrant
+**Status**: Waiting for client to test v0.9.7
+**Owner**: AuctionsMax.ai + Maintainer
+**Priority**: CRITICAL
 
-Download: https://github.com/maximilien/weave-cli/releases/tag/v0.9.4
+**Test Plan:**
 
-Example usage:
-weave cols query ProductDocs ProductImages "vintage items" \
-  --agent rag-agent --top_k 5 --top_k_images 2
+1. **Pre-Test Cleanup**:
+   - Drop existing AuctionImages collection
+   - Verify Milvus is running and healthy
 
-Let us know if you need any assistance with deployment!
-```
+2. **v0.9.7 Testing**:
+   ```bash
+   # Test with 253-image PDF catalog
+   weave docs create AuctionListings catalog.pdf \
+     --image-collection AuctionImages \
+     --max-metadata-length 2000 \
+     --milvus-local
+
+   # Verify all 253 images created
+   weave cols count AuctionImages
+
+   # Test multi-modal query
+   weave cols query AuctionListings AuctionImages "vintage items" \
+     --agent rag-agent --top_k 5 --top_k_images 2
+   ```
+
+3. **Success Criteria**:
+   - ✅ 253/253 images created (100%)
+   - ✅ No VARCHAR limit errors
+   - ✅ Multi-modal RAG returns both text + image results
+   - ✅ Image citations include URLs
+
+**Expected Timeline:**
+
+- Today/Tomorrow: AuctionsMax.ai tests v0.9.7
+- Within 48 hours: Feedback on success/failure
+- If successful: Close Issue #23, plan v1.0
+- If issues: Debug and release v0.9.8
+
+---
+
+## 🔨 Work for Tomorrow/Thursday (While Waiting for Client Feedback)
+
+### 3. Code Quality & Documentation Improvements ⏳
+
+**Status**: Can start immediately
+**Owner**: Maintainer
+**Priority**: MEDIUM
+
+**Quick Wins:**
+
+- [ ] Add unit tests for Image VARCHAR truncation logic
+  - Test case: Image field > 2048 chars → stores URL
+  - Test case: Image field < 2048 chars → keeps as-is
+  - Location: `src/pkg/vectordb/milvus/document_test.go`
+
+- [ ] Update USER_GUIDE.md with multi-modal RAG examples
+  - Add section: "Working with Image Collections"
+  - Include `--max-metadata-length` flag documentation
+  - Add troubleshooting section for Milvus VARCHAR limits
+
+- [ ] Document the 3-iteration debugging process
+  - Create `docs/DEBUGGING_GUIDE.md` or add to existing docs
+  - Capture lessons learned from v0.9.5 → v0.9.6 → v0.9.7
+  - Useful for future debugging of similar issues
+
+**Estimated Time:** 2-3 hours
+
+---
+
+### 4. Prepare v1.0 Planning (If v0.9.7 Succeeds) ⏳
+
+**Status**: Contingent on v0.9.7 success
+**Owner**: Maintainer
+**Priority**: LOW (becomes HIGH if v0.9.7 works)
+
+**Pre-Work:**
+
+- [ ] Review all open GitHub issues
+- [ ] Audit VDB feature parity across all 10 databases
+- [ ] List any breaking changes needed before v1.0
+- [ ] Document v1.0 stability guarantees
+
+**Deliverable:**
+
+- `docs/planning/V1_0_ROADMAP.md` with:
+  - Feature freeze criteria
+  - API stability guarantees
+  - Migration guide from v0.9.x
+  - Target release date
+
+**Estimated Time:** 3-4 hours
 
 ---
 
 ## 📊 Monitoring (Days 1-3)
 
-### 3. Track AuctionsMax.ai Deployment ⏳
+### 5. Track AuctionsMax.ai Deployment ⏳
 
 **Status**: Pending client deployment
 **Owner**: Maintainer + Client
@@ -343,7 +415,47 @@ Research notes in `docs/planning/ADVANCED_FEATURES.md`
 
 ---
 
-## ✅ Completed Tasks (Reference)
+## ✅ Completed Tasks (2026-01-20)
+
+### v0.9.7 Release - Image Metadata Truncation Fix (CRITICAL)
+
+**Problem:** 89% of images failed to ingest (0/253 in Milvus) due to:
+- Metadata exceeding VARCHAR limits (2048 chars)
+- Base64 image data URLs exceeding VARCHAR limits (15KB-96KB)
+
+**Solution Path (3 Iterations):**
+
+- ✅ **v0.9.5**: Added `--max-metadata-length` flag
+  - Truncated text fields correctly
+  - But didn't apply to Milvus storage map
+  - Result: 0/253 images still failed
+
+- ✅ **v0.9.6**: Populated metadata map with truncated values
+  - Fixed metadata truncation for Milvus
+  - But Image VARCHAR field (base64 data URLs) still too long
+  - Result: 0/253 images still failed
+
+- ✅ **v0.9.7**: Truncate Image VARCHAR field to URL reference
+  - Stores URL instead of base64 when > 2048 chars
+  - Full base64 preserved in ImageData JSON field (no data loss)
+  - Expected Result: 253/253 images (100% success)
+
+**Commits:**
+
+- `43c33c2` - CRITICAL fix: Image VARCHAR truncation
+- `15b887f` - Prepare release v0.9.7
+- `d14b89d` - Fix markdown linting and organize documentation
+- `25a141e` - Update references to moved documentation files
+- `1d7236a` - Resolve all markdown linting warnings
+
+**Documentation:**
+
+- Updated CHANGELOG.md with v0.9.7 technical details
+- Moved planning docs to docs/ directory
+- Fixed all markdown linting warnings
+- Organized archive documentation
+
+---
 
 ### v0.9.4 Release (Completed 2026-01-19)
 
@@ -352,43 +464,56 @@ Research notes in `docs/planning/ADVANCED_FEATURES.md`
 - ✅ Added schema type detection
 - ✅ Created comprehensive integration tests
 - ✅ Multi-VDB support (Milvus, Weaviate, Chroma, Qdrant)
-- ✅ Updated documentation
-- ✅ Prepared commits and tagged release
-
-**Archived Documentation:**
-
-- `docs/archive/STATUS_TOP_K_IMAGES.md`
-- `docs/archive/MULTIMODAL_RAG_SUPPORT.md`
 
 ---
 
 ## 📅 Timeline Summary
 
-**Week 1 (Current)**:
+**Today (2026-01-20)**:
 
-- ⏳ Push v0.9.4 to GitHub
-- ⏳ AuctionsMax.ai deployment
-- ⏳ Monitor production usage
+- ✅ v0.9.7 released with Image VARCHAR truncation fix
+- ⏳ Update GitHub Issue #23 with solution
+- ⏳ Await AuctionsMax.ai testing
 
-**Week 2**:
+**Tomorrow/Thursday (2026-01-21/22)**:
 
-- Analyze performance data
-- Address any production issues
-- Plan enhancements based on feedback
+- Work on code quality & documentation (while waiting for feedback)
+- Add unit tests for Image VARCHAR truncation
+- Update USER_GUIDE.md with multi-modal examples
+- If v0.9.7 succeeds: Start v1.0 planning
+
+**Week 2 (2026-01-27)**:
+
+- If successful: Close Issue #23, finalize v1.0 roadmap
+- If issues: Debug and release v0.9.8
+- Monitor AuctionsMax.ai production usage
 
 **Weeks 3-4**:
 
-- Implement priority enhancements
-- Prepare for v1.0 planning
-
-**Beyond**:
-
-- Visual search integration (if needed)
-- Advanced multi-modal features
-- v1.0 release preparation
+- Implement v1.0 features (based on roadmap)
+- Prepare for v1.0 release
 
 ---
 
-**Next Action**: Push v0.9.4 to GitHub and notify AuctionsMax.ai
+## 🎯 Immediate Next Actions
+
+**Priority 1 (High):**
+
+1. Update GitHub Issue #23 with v0.9.7 solution details
+2. Wait for AuctionsMax.ai test results (expected: 24-48 hours)
+
+**Priority 2 (Medium - Tomorrow/Thursday):**
+
+3. Add unit tests for Image VARCHAR truncation logic
+4. Update USER_GUIDE.md with multi-modal RAG workflows
+5. Document debugging process (v0.9.5 → v0.9.6 → v0.9.7 iterations)
+
+**Priority 3 (Low - If v0.9.7 Succeeds):**
+
+6. Start v1.0 planning and roadmap
+7. Review open GitHub issues for v1.0 blockers
+8. Audit VDB feature parity
+
+---
 
 **Questions?** Open a GitHub issue or discussion.
