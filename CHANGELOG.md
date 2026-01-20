@@ -12,18 +12,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **CRITICAL: Image VARCHAR Field Exceeds Milvus Limit (v0.9.6 Hotfix)**
-  - **Root Cause (Confirmed via Debug Build)**: The `Image` VARCHAR field stores base64 data URLs
-    like `data:image/jpeg;base64,...` which can be 15KB-96KB for typical PDF images, but Milvus
-    VARCHAR limit is 2048 chars
+  - **Root Cause (Confirmed via Debug Build)**: The `Image` VARCHAR field
+    stores base64 data URLs like `data:image/jpeg;base64,...` which can be
+    15KB-96KB for typical PDF images, but Milvus VARCHAR limit is
+    2048 chars
   - **Test Results (v0.9.6)**:
     - Milvus: 0/253 images (0%) - **v0.9.6 also failed!**
     - Debug output confirmed: `Image` field lengths 5,000-96,000 chars
     - Error messages matched exactly: `"length (96831) exceeds max length (2048)"`
   - **What v0.9.5/v0.9.6 Fixed (Correctly)**:
-    - ✅ Metadata truncation IS working (surrounding_text, caption, section_heading all ≤2000 chars)
+    - ✅ Metadata truncation IS working (surrounding_text, caption,
+      section_heading all ≤2000 chars)
     - ✅ Those fixes were correct - just incomplete
   - **What v0.9.7 Fixes**:
-    - When `Image` field > 2048 chars: store URL reference instead of full base64 data URL
+    - When `Image` field > 2048 chars: store URL reference instead of full
+      base64 data URL
     - Full base64 data remains in `ImageData` JSON field (64KB limit)
     - Code changes in `src/pkg/vectordb/milvus/document.go`:
       - `CreateDocument()`: Truncate Image field if > 2048 chars
@@ -51,7 +54,7 @@ Debug build v0.9.6-1 confirmed the root cause:
 
 Error pattern (253 images):
 
-```
+```text
 DEBUG: Image 1 surrounding_text length: 2000 chars  ✅
 DEBUG: Image 1 Image field length: 96831 chars      ❌
 ❌ Failed: the length (96831) exceeds max length (2048)
@@ -108,17 +111,21 @@ the complete fix.
 ### Fixed
 
 - **CRITICAL: Image Metadata Not Truncated in Milvus (v0.9.5 Hotfix)**
-  - **Root Cause**: The v0.9.5 fix truncated `image.SurroundingText`, `image.Caption`, and
-    `image.SectionHeading` fields correctly, BUT these truncated values were NOT being added
-    to the `image.Metadata` map that Milvus uses for storage
-  - **Impact**: Milvus still received full page text (15K-67K chars) in metadata, exceeding
-    the 2048 VARCHAR limit despite `--max-metadata-length` flag
+  - **Root Cause**: The v0.9.5 fix truncated `image.SurroundingText`,
+    `image.Caption`, and `image.SectionHeading` fields correctly, BUT these
+    truncated values were NOT being added to the `image.Metadata` map that
+    Milvus uses for storage
+  - **Impact**: Milvus still received full page text (15K-67K chars) in
+    metadata, exceeding the 2048 VARCHAR limit despite
+    `--max-metadata-length` flag
   - **Test Results (v0.9.5)**:
     - Milvus: 0/253 images (0%) - Same failure as before!
     - Weaviate: 28/253 images (11%) - Unchanged
     - Error: "the length (15003) of 0th string exceeds max length (2048)"
-  - **The Fix**: `enrichImageWithContext()` now populates `image.Metadata` map with truncated values:
-    - `metadata["surrounding_text"]` = truncated to 2000 chars (was: full page text)
+  - **The Fix**: `enrichImageWithContext()` now populates `image.Metadata`
+    map with truncated values:
+    - `metadata["surrounding_text"]` = truncated to 2000 chars
+      (was: full page text)
     - `metadata["section_heading"]` = truncated to 200 chars (was: missing)
     - `metadata["caption"]` = caption text (was: missing)
     - `metadata["ocr_content"]` = truncated OCR to 2000 chars (was: missing)
@@ -191,7 +198,8 @@ the Metadata map used by Milvus. See v0.9.6 for the actual fix.
 ### Added
 
 - `--max-metadata-length` flag for `weave docs create` command
-  - Default: 2000 characters (fits Milvus VARCHAR limit and stays under embedding token limit)
+  - Default: 2000 characters (fits Milvus VARCHAR limit and stays under
+    embedding token limit)
   - Recommended values:
     - Milvus: 2000 (VARCHAR limit is 2048)
     - Weaviate: 8000 (conservative for embedding API ~32K char limit)
