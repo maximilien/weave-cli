@@ -447,6 +447,18 @@ func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string, maxMe
 		if image.OCRText != "" {
 			image.Caption = extractCaptionFromOCR(image.OCRText)
 			image.SurroundingText = truncateText(image.OCRText, maxMetadataLength)
+
+			// Add truncated values to Metadata map
+			if image.Metadata == nil {
+				image.Metadata = make(map[string]interface{})
+			}
+			if image.Caption != "" {
+				image.Metadata["caption"] = image.Caption
+			}
+			if image.SurroundingText != "" {
+				image.Metadata["surrounding_text"] = image.SurroundingText
+			}
+			image.Metadata["ocr_content"] = image.SurroundingText // Already truncated above
 		}
 		return
 	}
@@ -459,6 +471,26 @@ func enrichImageWithContext(image *PDFImageData, pageTexts map[int]string, maxMe
 
 	// Extract section heading (first line or heading-like text) - limit to 200 chars
 	image.SectionHeading = truncateText(extractSectionHeading(pageText), 200)
+
+	// CRITICAL FIX: Add truncated text values to Metadata map
+	// This ensures Milvus and other VDBs (which use Metadata map directly)
+	// get the truncated values instead of the original full page text
+	if image.Metadata == nil {
+		image.Metadata = make(map[string]interface{})
+	}
+	if image.Caption != "" {
+		image.Metadata["caption"] = image.Caption
+	}
+	if image.SurroundingText != "" {
+		image.Metadata["surrounding_text"] = image.SurroundingText
+	}
+	if image.SectionHeading != "" {
+		image.Metadata["section_heading"] = image.SectionHeading
+	}
+	// Also truncate OCR text if present
+	if image.OCRText != "" {
+		image.Metadata["ocr_content"] = truncateText(image.OCRText, maxMetadataLength)
+	}
 }
 
 // extractCaptionFromText tries to find a caption related to the image
