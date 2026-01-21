@@ -427,10 +427,17 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 		// Extract image data from JSON field
 		var imageData string
 		if imageDataCol := result.GetColumn(FieldImageData); imageDataCol != nil {
-			imageDataBytes := imageDataCol.(*entity.ColumnJSONBytes).Data()[i]
-			imageDataMap := mustUnmarshalJSON(imageDataBytes)
-			if data, ok := imageDataMap["data"].(string); ok {
-				imageData = data
+			// Handle both JSONBytes and VarChar types
+			switch col := imageDataCol.(type) {
+			case *entity.ColumnJSONBytes:
+				imageDataBytes := col.Data()[i]
+				imageDataMap := mustUnmarshalJSON(imageDataBytes)
+				if data, ok := imageDataMap["data"].(string); ok {
+					imageData = data
+				}
+			case *entity.ColumnVarChar:
+				// If stored as VARCHAR, use directly
+				imageData = col.Data()[i]
 			}
 		}
 
@@ -438,8 +445,18 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 
 		var metadata map[string]interface{}
 		if metadataCol := result.GetColumn(FieldMetadata); metadataCol != nil {
-			metadataBytes := metadataCol.(*entity.ColumnJSONBytes).Data()[i]
-			metadata = mustUnmarshalJSON(metadataBytes)
+			// Handle both JSONBytes and VarChar types
+			switch col := metadataCol.(type) {
+			case *entity.ColumnJSONBytes:
+				metadataBytes := col.Data()[i]
+				metadata = mustUnmarshalJSON(metadataBytes)
+			case *entity.ColumnVarChar:
+				// If stored as VARCHAR, parse as JSON
+				metadataStr := col.Data()[i]
+				if metadataStr != "" {
+					metadata = mustUnmarshalJSON([]byte(metadataStr))
+				}
+			}
 		}
 
 		documents[i] = c.fromMilvusDocument(docID, text, content, image, imageData, url, metadata)
