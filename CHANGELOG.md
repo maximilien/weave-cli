@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.8] - 2026-01-21
+
+### Fixed
+
+- **CRITICAL: Multi-Collection Query Panic with 3+ Collections**
+  - **Error**: `panic: interface conversion: entity.Column is
+    *entity.ColumnVarChar, not *entity.ColumnJSONBytes`
+  - **Root Cause**: `ListDocuments()` function assumed metadata and imageData
+    columns were always `*entity.ColumnJSONBytes`, but after v0.9.7 fixes
+    they can be `*entity.ColumnVarChar`
+  - **Impact**: Multi-collection queries with 3+ collections crashed before
+    execution
+  - **The Fix**: Added type switches to handle both VARCHAR and JSONBytes
+    (same pattern as v0.9.3 fix for parseSearchResults/parseQueryResults)
+  - **Location**: `src/pkg/vectordb/milvus/document.go` lines 430-460
+  - **Result**: Multi-collection queries now work with any number of
+    collections
+
+### Testing
+
+```bash
+# Before v0.9.8
+weave cols query AuctionListings AuctionImages AuctionResults "leica m3" \
+  --agent rag-agent --top_k 5 --top_k_images 2 --milvus-local
+# Result: ❌ Panic before query execution
+
+# After v0.9.8
+weave cols query AuctionListings AuctionImages AuctionResults "leica m3" \
+  --agent rag-agent --top_k 5 --top_k_images 2 --milvus-local
+# Result: ✅ Returns results from all 3 collections successfully
+```
+
+### Impact
+
+- No collection number limit (supports 1, 2, 3, 10+ collections)
+- Multi-modal RAG queries work across any number of collections
+- Type safety consistent across all Milvus operations
+- Discovered during AuctionsMax.ai production testing
+
+---
+
 ## [0.9.7] - 2026-01-20
 
 ### Fixed
