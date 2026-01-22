@@ -74,8 +74,8 @@ func TestFormatter_FormatJSON(t *testing.T) {
 			contains: []string{`"items"`, `"one"`, `"two"`, `"three"`},
 		},
 		{
-			name: "Empty map",
-			data: map[string]interface{}{},
+			name:     "Empty map",
+			data:     map[string]interface{}{},
 			contains: []string{`{}`},
 		},
 	}
@@ -461,8 +461,8 @@ func TestFormatter_FormatYAML_IndentedOutput(t *testing.T) {
 
 func TestFormatter_FormatTable_KeyAlignment(t *testing.T) {
 	data := map[string]interface{}{
-		"x":            "value1",
-		"medium_key":   "value2",
+		"x":             "value1",
+		"medium_key":    "value2",
 		"very_long_key": "value3",
 	}
 

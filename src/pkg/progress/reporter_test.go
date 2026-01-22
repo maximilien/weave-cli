@@ -257,17 +257,17 @@ func TestReporter_JSONWithProgress(t *testing.T) {
 
 func TestFormatProgressBar(t *testing.T) {
 	tests := []struct {
-		name        string
-		total       int
-		current     int
-		expectBar   bool
+		name          string
+		total         int
+		current       int
+		expectBar     bool
 		expectPercent string
 	}{
 		{
-			name:          "No total (no bar)",
-			total:         0,
-			current:       5,
-			expectBar:     false,
+			name:      "No total (no bar)",
+			total:     0,
+			current:   5,
+			expectBar: false,
 		},
 		{
 			name:          "0%",
@@ -413,13 +413,13 @@ func TestProgressBar_VisualFormat(t *testing.T) {
 
 	// Test different progress levels
 	tests := []struct {
-		current     int
+		current      int
 		expectFilled int // Approximate number of '=' characters
 	}{
 		{0, 0},
-		{25, 5},  // 25% of 20-char bar = 5 chars
-		{50, 10}, // 50% of 20-char bar = 10 chars
-		{75, 15}, // 75% of 20-char bar = 15 chars
+		{25, 5},   // 25% of 20-char bar = 5 chars
+		{50, 10},  // 50% of 20-char bar = 10 chars
+		{75, 15},  // 75% of 20-char bar = 15 chars
 		{100, 20}, // 100% of 20-char bar = 20 chars
 	}
 

@@ -169,8 +169,8 @@ func TestIsRelease(t *testing.T) {
 	defer func() { Version = origVersion }()
 
 	tests := []struct {
-		version    string
-		isRelease  bool
+		version     string
+		isRelease   bool
 		description string
 	}{
 		{"0.9.8", true, "Release version"},
@@ -283,7 +283,7 @@ func TestGitCommitShortening(t *testing.T) {
 	}{
 		{"abc1234567890", "abc1234"},
 		{"0e3a9807a1e8170b67aa47e6b682420d953c91bc", "0e3a980"},
-		{"abc", "abc"}, // Less than 7 chars
+		{"abc", "abc"},         // Less than 7 chars
 		{"1234567", "1234567"}, // Exactly 7 chars
 	}
 
