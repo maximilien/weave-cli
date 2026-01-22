@@ -387,10 +387,10 @@ func TestInterpolateString(t *testing.T) {
 
 func TestGetDefaultDatabase(t *testing.T) {
 	tests := []struct {
-		name           string
-		config         *Config
-		expectedName   string
-		shouldError    bool
+		name         string
+		config       *Config
+		expectedName string
+		shouldError  bool
 	}{
 		{
 			name: "No databases configured",
