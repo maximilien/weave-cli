@@ -247,3 +247,209 @@ func TestFormatList(t *testing.T) {
 		})
 	}
 }
+
+func TestSimplifyCommonErrors(t *testing.T) {
+	tests := []struct {
+		name     string
+		errMsg   string
+		expected string
+	}{
+		{
+			name:     "HTTP status code removal",
+			errMsg:   "HTTP 422 - Invalid request",
+			expected: "Invalid request",
+		},
+		{
+			name:     "Nested error wrapping",
+			errMsg:   "operation: failed to: failed to connect",
+			expected: "operation:: connect",
+		},
+		{
+			name:     "Milvus collection not found with name",
+			errMsg:   "can't find collection [collection=WeaveDocs]",
+			expected: "Collection 'WeaveDocs' not found",
+		},
+		{
+			name:     "Milvus collection not found generic",
+			errMsg:   "can't find collection",
+			expected: "Collection not found",
+		},
+		{
+			name:     "Excessive colons with spaces",
+			errMsg:   "error: : :  something failed",
+			expected: "error: : something failed",
+		},
+		{
+			name:     "Multiple HTTP codes",
+			errMsg:   "HTTP 500 - Internal error: HTTP 422 - Bad request",
+			expected: "Internal error: Bad request",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := simplifyCommonErrors(tt.errMsg)
+
+			if result != tt.expected {
+				t.Errorf("simplifyCommonErrors() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatWeaviateMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		msg      string
+		expected string
+	}{
+		{
+			name:     "OpenAI model error",
+			msg:      "module 'text2vec-openai': wrong OpenAI model name, available model names are: [ada babbage]",
+			expected: "Invalid OpenAI embedding model",
+		},
+		{
+			name:     "Module error with quotes",
+			msg:      "module 'text2vec-cohere': invalid API key",
+			expected: "text2vec-cohere: invalid API key",
+		},
+		{
+			name:     "Regular message",
+			msg:      "Collection already exists",
+			expected: "Collection already exists",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatWeaviateMessage(tt.msg)
+
+			if !strings.Contains(result, tt.expected) {
+				t.Errorf("formatWeaviateMessage() = %q, want to contain %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestFormatOpenAIModelError(t *testing.T) {
+	tests := []struct {
+		name     string
+		msg      string
+		contains []string
+	}{
+		{
+			name: "Model error with available models",
+			msg:  "wrong OpenAI model name, available model names are: [ada babbage curie davinci text-embedding-3-small text-embedding-3-large]",
+			contains: []string{
+				"Invalid OpenAI embedding model",
+				"ada",
+				"babbage",
+				"text-embedding-3-small",
+				"--embedding-model",
+			},
+		},
+		{
+			name:     "Model error without models list",
+			msg:      "wrong OpenAI model name",
+			contains: []string{"wrong OpenAI model name"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := formatOpenAIModelError(tt.msg)
+
+			for _, expected := range tt.contains {
+				if !strings.Contains(result, expected) {
+					t.Errorf("formatOpenAIModelError() = %q, want to contain %q", result, expected)
+				}
+			}
+		})
+	}
+}
+
+func TestFormatQueryError(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected string
+	}{
+		{
+			name:     "Collection not found",
+			err:      errors.New("collection 'WeaveDocs' not found"),
+			expected: "collection 'WeaveDocs' not found",
+		},
+		{
+			name:     "Generic query error",
+			err:      errors.New("connection timeout"),
+			expected: "Query failed: connection timeout",
+		},
+		{
+			name:     "Complex error",
+			err:      errors.New("failed to execute query: HTTP 500 - Internal server error"),
+			expected: "Query failed:",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FormatQueryError(tt.err)
+
+			if !strings.Contains(result, tt.expected) {
+				t.Errorf("FormatQueryError() = %q, want to contain %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+// Real-world error scenarios
+func TestErrorFormatting_RealWorldScenarios(t *testing.T) {
+	t.Run("AuctionsMax.ai Weaviate OpenAI model error", func(t *testing.T) {
+		// This was a real error encountered during AuctionsMax.ai development
+		err := errors.New(`failed to create collection: HTTP 422 - {"error":[{"message":"module 'text2vec-openai': wrong OpenAI model name, available model names are: [ada babbage curie davinci text-embedding-3-small text-embedding-3-large text-embedding-ada-002]"}]}`)
+
+		result := SimplifyError(err)
+
+		// Should extract and format the OpenAI model error
+		if !strings.Contains(result, "Invalid OpenAI embedding model") {
+			t.Errorf("Expected 'Invalid OpenAI embedding model', got: %s", result)
+		}
+		if !strings.Contains(result, "text-embedding-3-small") {
+			t.Errorf("Expected available models list, got: %s", result)
+		}
+		if !strings.Contains(result, "--embedding-model") {
+			t.Errorf("Expected usage hint, got: %s", result)
+		}
+
+		// Should NOT contain HTTP codes or module quotes
+		if strings.Contains(result, "HTTP 422") {
+			t.Errorf("Should not contain HTTP status code, got: %s", result)
+		}
+		if strings.Contains(result, "module '") {
+			t.Errorf("Should not contain module quotes, got: %s", result)
+		}
+	})
+
+	t.Run("Milvus collection not found error", func(t *testing.T) {
+		err := errors.New("failed to query collection: can't find collection [collection=WeaveDocs]")
+
+		result := SimplifyError(err)
+
+		expected := "Collection 'WeaveDocs' not found"
+		if result != expected {
+			t.Errorf("Expected %q, got %q", expected, result)
+		}
+	})
+
+	t.Run("Nested redundant prefixes", func(t *testing.T) {
+		err := errors.New("failed to create collection: failed to create collection: failed to create collection 'TestCol': permission denied")
+
+		result := SimplifyError(err)
+
+		// Should keep only one "failed to create collection"
+		count := strings.Count(result, "failed to create collection")
+		if count > 1 {
+			t.Errorf("Expected at most 1 'failed to create collection', got %d in: %s", count, result)
+		}
+	})
+}
