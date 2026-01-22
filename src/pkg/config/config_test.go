@@ -244,3 +244,379 @@ func TestGetAllSchemas(t *testing.T) {
 		t.Error("Schema names don't match expected values")
 	}
 }
+func TestParseTimeoutToSeconds(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected int
+	}{
+		{
+			name:     "Empty string returns default",
+			input:    "",
+			expected: DefaultTimeout,
+		},
+		{
+			name:     "Duration string 5s",
+			input:    "5s",
+			expected: 5,
+		},
+		{
+			name:     "Duration string 10s",
+			input:    "10s",
+			expected: 10,
+		},
+		{
+			name:     "Duration string 1m",
+			input:    "1m",
+			expected: 60,
+		},
+		{
+			name:     "Duration string 2m30s",
+			input:    "2m30s",
+			expected: 150,
+		},
+		{
+			name:     "Integer seconds as string",
+			input:    "30",
+			expected: 30,
+		},
+		{
+			name:     "Integer seconds large value",
+			input:    "120",
+			expected: 120,
+		},
+		{
+			name:     "Zero duration returns default",
+			input:    "0s",
+			expected: DefaultTimeout,
+		},
+		{
+			name:     "Negative duration returns default",
+			input:    "-5s",
+			expected: DefaultTimeout,
+		},
+		{
+			name:     "Invalid string returns default",
+			input:    "invalid",
+			expected: DefaultTimeout,
+		},
+		{
+			name:     "Zero integer returns default",
+			input:    "0",
+			expected: DefaultTimeout,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := parseTimeoutToSeconds(tt.input)
+			if result != tt.expected {
+				t.Errorf("parseTimeoutToSeconds(%q) = %d, expected %d", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestInterpolateString(t *testing.T) {
+	// Set up environment variables for testing
+	os.Setenv("TEST_VAR", "test_value")
+	os.Setenv("PORT", "8080")
+	os.Setenv("HOST", "localhost")
+	defer func() {
+		os.Unsetenv("TEST_VAR")
+		os.Unsetenv("PORT")
+		os.Unsetenv("HOST")
+	}()
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "No interpolation",
+			input:    "plain string",
+			expected: "plain string",
+		},
+		{
+			name:     "Simple variable",
+			input:    "${TEST_VAR}",
+			expected: "test_value",
+		},
+		{
+			name:     "Variable with default (var exists)",
+			input:    "${TEST_VAR:-default}",
+			expected: "test_value",
+		},
+		{
+			name:     "Variable with default (var doesn't exist)",
+			input:    "${NONEXISTENT:-default_value}",
+			expected: "default_value",
+		},
+		{
+			name:     "Variable in middle of string",
+			input:    "http://${HOST}:${PORT}/api",
+			expected: "http://localhost:8080/api",
+		},
+		{
+			name:     "Multiple variables",
+			input:    "${HOST} and ${PORT} and ${TEST_VAR}",
+			expected: "localhost and 8080 and test_value",
+		},
+		{
+			name:     "Empty default value",
+			input:    "${NONEXISTENT:-}",
+			expected: "",
+		},
+		{
+			name:     "No closing brace",
+			input:    "${TEST_VAR",
+			expected: "${TEST_VAR",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := InterpolateString(tt.input)
+			if result != tt.expected {
+				t.Errorf("InterpolateString(%q) = %q, expected %q", tt.input, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetDefaultDatabase(t *testing.T) {
+	tests := []struct {
+		name           string
+		config         *Config
+		expectedName   string
+		shouldError    bool
+	}{
+		{
+			name: "No databases configured",
+			config: &Config{
+				Databases: DatabasesConfig{
+					VectorDatabases: []VectorDBConfig{},
+				},
+			},
+			shouldError: true,
+		},
+		{
+			name: "Single database (no default specified)",
+			config: &Config{
+				Databases: DatabasesConfig{
+					VectorDatabases: []VectorDBConfig{
+						{Name: "weaviate-cloud"},
+					},
+				},
+			},
+			expectedName: "weaviate-cloud",
+			shouldError:  false,
+		},
+		{
+			name: "Multiple databases with default specified",
+			config: &Config{
+				Databases: DatabasesConfig{
+					Default: "milvus-cloud",
+					VectorDatabases: []VectorDBConfig{
+						{Name: "weaviate-cloud"},
+						{Name: "milvus-cloud"},
+						{Name: "qdrant-cloud"},
+					},
+				},
+			},
+			expectedName: "milvus-cloud",
+			shouldError:  false,
+		},
+		{
+			name: "Default not found (returns first)",
+			config: &Config{
+				Databases: DatabasesConfig{
+					Default: "nonexistent",
+					VectorDatabases: []VectorDBConfig{
+						{Name: "weaviate-cloud"},
+						{Name: "milvus-cloud"},
+					},
+				},
+			},
+			expectedName: "weaviate-cloud",
+			shouldError:  false,
+		},
+		{
+			name: "Empty default string (returns first)",
+			config: &Config{
+				Databases: DatabasesConfig{
+					Default: "",
+					VectorDatabases: []VectorDBConfig{
+						{Name: "qdrant-cloud"},
+					},
+				},
+			},
+			expectedName: "qdrant-cloud",
+			shouldError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, err := tt.config.GetDefaultDatabase()
+
+			if tt.shouldError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if db == nil {
+				t.Error("Expected database, got nil")
+				return
+			}
+
+			if db.Name != tt.expectedName {
+				t.Errorf("Expected database name %q, got %q", tt.expectedName, db.Name)
+			}
+		})
+	}
+}
+
+func TestGetDatabase(t *testing.T) {
+	config := &Config{
+		Databases: DatabasesConfig{
+			VectorDatabases: []VectorDBConfig{
+				{Name: "weaviate-cloud"},
+				{Name: "weaviate-local"},
+				{Name: "milvus-cloud"},
+				{Name: "qdrant-local"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name         string
+		searchName   string
+		expectedName string
+		shouldError  bool
+	}{
+		{
+			name:         "Exact match",
+			searchName:   "weaviate-cloud",
+			expectedName: "weaviate-cloud",
+			shouldError:  false,
+		},
+		{
+			name:         "Shortcut to cloud variant",
+			searchName:   "weaviate",
+			expectedName: "weaviate-cloud",
+			shouldError:  false,
+		},
+		{
+			name:         "Shortcut to cloud variant (milvus)",
+			searchName:   "milvus",
+			expectedName: "milvus-cloud",
+			shouldError:  false,
+		},
+		{
+			name:        "Not found",
+			searchName:  "chroma",
+			shouldError: true,
+		},
+		{
+			name:         "Local variant (exact match takes precedence)",
+			searchName:   "weaviate-local",
+			expectedName: "weaviate-local",
+			shouldError:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, err := config.GetDatabase(tt.searchName)
+
+			if tt.shouldError {
+				if err == nil {
+					t.Error("Expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Errorf("Unexpected error: %v", err)
+				return
+			}
+
+			if db == nil {
+				t.Error("Expected database, got nil")
+				return
+			}
+
+			if db.Name != tt.expectedName {
+				t.Errorf("Expected database name %q, got %q", tt.expectedName, db.Name)
+			}
+		})
+	}
+}
+
+func TestListDatabases(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *Config
+		expected []string
+	}{
+		{
+			name: "No databases",
+			config: &Config{
+				Databases: DatabasesConfig{
+					VectorDatabases: []VectorDBConfig{},
+				},
+			},
+			expected: []string{},
+		},
+		{
+			name: "Single database",
+			config: &Config{
+				Databases: DatabasesConfig{
+					VectorDatabases: []VectorDBConfig{
+						{Name: "weaviate-cloud"},
+					},
+				},
+			},
+			expected: []string{"weaviate-cloud"},
+		},
+		{
+			name: "Multiple databases",
+			config: &Config{
+				Databases: DatabasesConfig{
+					VectorDatabases: []VectorDBConfig{
+						{Name: "weaviate-cloud"},
+						{Name: "milvus-cloud"},
+						{Name: "qdrant-local"},
+					},
+				},
+			},
+			expected: []string{"weaviate-cloud", "milvus-cloud", "qdrant-local"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.config.ListDatabases()
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("Expected %d databases, got %d", len(tt.expected), len(result))
+				return
+			}
+
+			for i, name := range result {
+				if name != tt.expected[i] {
+					t.Errorf("Expected database[%d] = %q, got %q", i, tt.expected[i], name)
+				}
+			}
+		})
+	}
+}
