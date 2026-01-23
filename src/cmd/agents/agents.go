@@ -288,19 +288,29 @@ Available agent types:
   summarize - Document summarization agent
   custom    - Start with minimal template
 
+The default output directory depends on the environment:
+  Development (repo): configs/agents/
+  Deployed (binary):  ~/.weave-cli/agents/
+
 Examples:
   weave agents create my-medical-agent --type rag
   weave agents create legal-qa --type qa --interactive
-  weave agents create custom-agent --type custom --output ~/.weave-cli/agents`,
+  weave agents create custom-agent --type custom --output ~/my-agents`,
 		Args: cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
 			runCreateAgent(args[0], agentType, interactive, outputDir)
 		},
 	}
 
+	// Get smart default for output directory
+	defaultOutputDir, err := agents.GetDefaultAgentDir()
+	if err != nil {
+		defaultOutputDir = "configs/agents" // Fallback
+	}
+
 	cmd.Flags().StringVar(&agentType, "type", "rag", "Agent type: rag, qa, summarize, custom")
 	cmd.Flags().BoolVar(&interactive, "interactive", false, "Interactive wizard for configuration")
-	cmd.Flags().StringVar(&outputDir, "output", "configs/agents", "Output directory")
+	cmd.Flags().StringVar(&outputDir, "output", defaultOutputDir, "Output directory")
 
 	return cmd
 }
@@ -393,70 +403,28 @@ func runCreateAgent(name, agentType string, interactive bool, outputDir string) 
 		os.Exit(1)
 	}
 
-	var templateName string
+	var config *agents.CustomAgentConfig
+
+	// Get template configuration based on type
 	switch agentType {
 	case "rag":
-		templateName = "rag-agent"
+		config = agents.GetRAGTemplate()
 	case "qa":
-		templateName = "qa-agent"
+		config = agents.GetQATemplate()
 	case "summarize":
-		templateName = "summarize-agent"
+		config = agents.GetSummarizeTemplate()
 	case "custom":
-		templateName = ""
+		config = agents.GetCustomTemplate()
 	default:
 		fmt.Fprintf(os.Stderr, "Error: Unknown agent type '%s'\n", agentType)
 		fmt.Fprintf(os.Stderr, "Valid types: rag, qa, summarize, custom\n")
 		os.Exit(1)
 	}
 
-	var config *agents.CustomAgentConfig
-	var err error
-
-	if templateName != "" {
-		// Load template from existing agent
-		config, err = agents.LoadAgent(templateName)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error loading template '%s': %v\n", templateName, err)
-			os.Exit(1)
-		}
-
-		// Update name and metadata
-		config.Name = name
-		config.Version = "1.0.0"
-		config.Author = ""
-	} else {
-		// Create minimal custom template
-		config = &agents.CustomAgentConfig{
-			Name:        name,
-			Type:        "custom",
-			Version:     "1.0.0",
-			Description: "Custom agent configuration",
-			LLM: agents.CustomAgentLLMConfig{
-				Provider:    "openai",
-				Model:       "gpt-4o",
-				Temperature: 0.7,
-				MaxTokens:   2000,
-				TopP:        1.0,
-			},
-			SystemPrompt: "You are a helpful AI assistant.",
-			Response: agents.CustomAgentResponseConfig{
-				IncludeReferences:  true,
-				CitationFormat:     "numeric",
-				MaxContextChunks:   5,
-				MinRelevanceScore:  0.3,
-				DeduplicateSources: true,
-				SortByRelevance:    true,
-				StrictMode:         false,
-			},
-			Output: agents.CustomAgentOutputConfig{
-				Format:          "markdown",
-				IncludeMetadata: true,
-				ShowConfidence:  false,
-				ShowSources:     true,
-				TruncateSources: 500,
-			},
-		}
-	}
+	// Update name
+	config.Name = name
+	config.Version = "1.0.0"
+	config.Author = ""
 
 	// Interactive mode
 	if interactive {

@@ -24,6 +24,10 @@ func NewAgentLoader() *AgentLoader {
 		cache:       make(map[string]*CustomAgentConfig),
 	}
 
+	// Ensure agents are initialized (for deployed mode)
+	// This is safe to call multiple times and is a no-op in development mode
+	_ = EnsureAgentsInitialized()
+
 	// Add standard search paths
 	loader.AddStandardSearchPaths()
 
