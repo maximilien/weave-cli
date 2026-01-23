@@ -420,8 +420,8 @@ func createInteractiveDataset(name string, fullInteractive bool) *evaluation.Dat
 		// Minimal mode - create basic structure
 		dataset.Description = "Evaluation dataset for " + name
 		dataset.Config = evaluation.DatasetConfig{
-			MinAccuracyScore:  0.7,
-			MinCitationScore:  0.8,
+			MinAccuracyScore:   0.7,
+			MinCitationScore:   0.8,
 			AllowHallucination: false,
 		}
 

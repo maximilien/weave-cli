@@ -1,3 +1,4 @@
+---
 name: medical-qa
 description: Medical and healthcare knowledge evaluation dataset
 version: 1.0.0
@@ -18,7 +19,10 @@ test_cases:
   - id: med-001
     description: Basic medical terminology
     query: "What is hypertension?"
-    expected_answer: "Hypertension is high blood pressure, a condition where the force of blood against artery walls is consistently too high. It's typically defined as blood pressure above 140/90 mmHg."
+    expected_answer: |
+      Hypertension is high blood pressure, a condition where the
+      force of blood against artery walls is consistently too high.
+      It's typically defined as blood pressure above 140/90 mmHg.
     expected_citations:
       - "hypertension"
       - "blood pressure"
@@ -32,7 +36,11 @@ test_cases:
   - id: med-002
     description: Medication information
     query: "What are the common side effects of statins?"
-    expected_answer: "Common side effects of statins include muscle pain and weakness, digestive problems, increased blood sugar levels, and in rare cases, liver damage. Most people tolerate statins well."
+    expected_answer: |
+      Common side effects of statins include muscle pain and
+      weakness, digestive problems, increased blood sugar levels,
+      and in rare cases, liver damage. Most people tolerate statins
+      well.
     required_concepts:
       - "muscle"
       - "side effects"
@@ -43,7 +51,11 @@ test_cases:
   - id: med-003
     description: Diagnostic procedures
     query: "How is diabetes diagnosed?"
-    expected_answer: "Diabetes is diagnosed through blood tests measuring glucose levels. Common tests include fasting plasma glucose (FPG), HbA1c test, and oral glucose tolerance test (OGTT). A diagnosis requires elevated results on two separate occasions."
+    expected_answer: |
+      Diabetes is diagnosed through blood tests measuring glucose
+      levels. Common tests include fasting plasma glucose (FPG),
+      HbA1c test, and oral glucose tolerance test (OGTT). A
+      diagnosis requires elevated results on two separate occasions.
     required_concepts:
       - "blood test"
       - "glucose"
@@ -54,7 +66,12 @@ test_cases:
   - id: med-004
     description: Treatment protocols with multiple citations
     query: "What are the first-line treatments for type 2 diabetes?"
-    expected_answer: "First-line treatments for type 2 diabetes typically include lifestyle modifications such as diet and exercise, along with metformin as the initial medication. Blood glucose monitoring, weight management, and patient education are also essential components of treatment."
+    expected_answer: |
+      First-line treatments for type 2 diabetes typically include
+      lifestyle modifications such as diet and exercise, along with
+      metformin as the initial medication. Blood glucose monitoring,
+      weight management, and patient education are also essential
+      components of treatment.
     required_concepts:
       - "diabetes"
       - "treatment"
@@ -65,8 +82,16 @@ test_cases:
 
   - id: med-005
     description: Complex multi-concept query
-    query: "Explain the relationship between obesity, insulin resistance, and type 2 diabetes."
-    expected_answer: "Obesity is a major risk factor for type 2 diabetes through its effect on insulin resistance. Excess body fat, especially visceral fat, causes cells to become less responsive to insulin. This insulin resistance forces the pancreas to produce more insulin, eventually leading to pancreatic exhaustion and type 2 diabetes."
+    query: |
+      Explain the relationship between obesity, insulin resistance,
+      and type 2 diabetes.
+    expected_answer: |
+      Obesity is a major risk factor for type 2 diabetes through
+      its effect on insulin resistance. Excess body fat, especially
+      visceral fat, causes cells to become less responsive to
+      insulin. This insulin resistance forces the pancreas to produce
+      more insulin, eventually leading to pancreatic exhaustion and
+      type 2 diabetes.
     required_concepts:
       - "obesity"
       - "insulin"

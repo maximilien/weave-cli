@@ -1,3 +1,4 @@
+---
 name: simple-qa
 description: Simple question-answering evaluation dataset for getting started
 version: 1.0.0
@@ -27,7 +28,11 @@ test_cases:
   - id: qa-002
     description: Definition question
     query: "What is machine learning?"
-    expected_answer: "Machine learning is a subset of artificial intelligence that enables systems to learn and improve from experience without being explicitly programmed. It uses algorithms to identify patterns in data and make predictions."
+    expected_answer: |
+      Machine learning is a subset of artificial intelligence that
+      enables systems to learn and improve from experience without
+      being explicitly programmed. It uses algorithms to identify
+      patterns in data and make predictions.
     required_concepts:
       - "machine learning"
       - "data"
@@ -38,7 +43,11 @@ test_cases:
   - id: qa-003
     description: How-to question
     query: "How do you make coffee?"
-    expected_answer: "To make coffee, grind coffee beans, add hot water (around 195-205°F), let it steep or brew, then filter or strain the grounds. The exact method varies by brewing technique (drip, French press, espresso, etc.)."
+    expected_answer: |
+      To make coffee, grind coffee beans, add hot water (around
+      195-205°F), let it steep or brew, then filter or strain the
+      grounds. The exact method varies by brewing technique (drip,
+      French press, espresso, etc.).
     required_concepts:
       - "coffee"
       - "water"
@@ -49,7 +58,11 @@ test_cases:
   - id: qa-004
     description: Comparison question
     query: "What's the difference between a vector and an array?"
-    expected_answer: "In programming, an array is a fixed-size data structure, while a vector is typically a dynamic array that can resize. Vectors provide more flexibility but may have slightly more overhead. In mathematics, vectors represent magnitude and direction."
+    expected_answer: |
+      In programming, an array is a fixed-size data structure, while
+      a vector is typically a dynamic array that can resize. Vectors
+      provide more flexibility but may have slightly more overhead.
+      In mathematics, vectors represent magnitude and direction.
     required_concepts:
       - "array"
       - "vector"
