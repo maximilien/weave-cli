@@ -1,0 +1,81 @@
+---
+# Baseline Evaluation Dataset
+# This dataset provides basic test cases for RAG agent evaluation
+
+name: baseline
+description: Baseline evaluation dataset for RAG agents with general knowledge test cases
+version: 1.0.0
+author: Weave CLI
+
+tags:
+  - baseline
+  - general
+  - rag
+
+config:
+  default_agent: rag-agent
+  min_accuracy_score: 0.7
+  min_citation_score: 0.8
+  allow_hallucination: false
+
+test_cases:
+  - id: test-001
+    description: Basic factual question with citation requirement
+    query: "What is a vector database?"
+    expected_answer: "A vector database is a specialized database designed to store and efficiently query high-dimensional vector embeddings for similarity search."
+    expected_citations:
+      - "vector database"
+      - "embeddings"
+    required_concepts:
+      - "database"
+      - "vector"
+      - "similarity search"
+    must_cite: true
+    min_relevance_score: 0.7
+
+  - id: test-002
+    description: Multi-concept question
+    query: "How does semantic search work with vector databases?"
+    expected_answer: "Semantic search uses vector embeddings to represent the meaning of queries and documents, then performs similarity search in vector databases to find semantically similar content."
+    required_concepts:
+      - "vector"
+      - "embeddings"
+      - "similarity"
+      - "semantic"
+    must_cite: true
+    min_relevance_score: 0.6
+
+  - id: test-003
+    description: Comparison question
+    query: "What is the difference between vector search and keyword search?"
+    expected_answer: "Vector search finds semantically similar content using embeddings and distance metrics, while keyword search matches exact terms. Vector search understands meaning and context."
+    required_concepts:
+      - "vector"
+      - "keyword"
+      - "semantic"
+      - "embeddings"
+    must_cite: true
+    min_relevance_score: 0.6
+
+  - id: test-004
+    description: Technical specification question
+    query: "What embedding dimensions does OpenAI use?"
+    expected_answer: "OpenAI uses 1536 dimensions for text-embedding-ada-002 and 3072 dimensions for text-embedding-3-large."
+    required_concepts:
+      - "1536"
+      - "dimensions"
+      - "OpenAI"
+    must_cite: true
+    min_relevance_score: 0.7
+
+  - id: test-005
+    description: Process explanation question
+    query: "Explain the RAG pipeline"
+    expected_answer: "The RAG pipeline involves chunking documents, generating embeddings, storing in a vector database, retrieving relevant chunks via semantic search, and using an LLM to generate answers with citations."
+    required_concepts:
+      - "chunking"
+      - "embeddings"
+      - "retrieval"
+      - "LLM"
+    must_cite: true
+    min_relevance_score: 0.5
