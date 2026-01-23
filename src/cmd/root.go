@@ -197,13 +197,18 @@ func init() {
 	rootCmd.Flags().IntVar(&mcpTimeout, "mcp-timeout", 30, "MCP client timeout in seconds")
 
 	// Environment variable override flags (highest priority)
-	rootCmd.PersistentFlags().StringVarP(&vectorDBType, "vector-db-type", "", "", "override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)")
+	rootCmd.PersistentFlags().StringVarP(&vectorDBType, "vector-db-type", "", "", "select vector database type\n"+
+		"                              Options: weaviate-cloud, weaviate-local, supabase-cloud, supabase-local,\n"+
+		"                              mongodb-cloud, mongodb-local, milvus-cloud, milvus-local, chroma-cloud,\n"+
+		"                              chroma-local, qdrant-cloud, qdrant-local, neo4j-cloud, neo4j-local,\n"+
+		"                              opensearch-cloud, opensearch-local, mock\n"+
+		"                              (see 'weave -h' for individual --<vdb> flags)")
 	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vdb", "", "alias for --vector-db-type")
 	rootCmd.PersistentFlags().StringVar(&weaviateAPIKey, "weaviate-api-key", "", "override WEAVIATE_API_KEY")
 	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
 	rootCmd.PersistentFlags().StringVar(&timeout, "timeout", "", "timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)")
 
-	// Vector database type selection flags
+	// Vector database type selection flags (hidden - use --vector-db-type instead)
 	rootCmd.PersistentFlags().BoolVar(&useWeaviate, "weaviate", false, "use Weaviate vector database (weaviate-cloud or weaviate-local)")
 	rootCmd.PersistentFlags().BoolVar(&useWeaviateLocal, "weaviate-local", false, "use Weaviate local vector database")
 	rootCmd.PersistentFlags().BoolVar(&useWeaviateCloud, "weaviate-cloud", false, "use Weaviate cloud vector database")
@@ -225,6 +230,23 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&useOpenSearchCloud, "opensearch-cloud", false, "use OpenSearch cloud/AWS vector database")
 	rootCmd.PersistentFlags().BoolVar(&useMock, "mock", false, "use mock vector database")
 	rootCmd.PersistentFlags().BoolVar(&useAll, "all", false, "operate on all configured vector databases")
+
+	// Hide individual database flags from subcommand help (still available, just not cluttering help)
+	// They're still documented in the main help: weave -h or weave --help
+	hideFlags := []string{
+		"weaviate", "weaviate-local", "weaviate-cloud",
+		"supabase", "supabase-local", "supabase-cloud",
+		"mongodb", "mongodb-local", "mongodb-cloud",
+		"milvus-local", "milvus-cloud",
+		"chroma-local", "chroma-cloud",
+		"qdrant-local", "qdrant-cloud",
+		"neo4j-local", "neo4j-cloud",
+		"opensearch-local", "opensearch-cloud",
+		"mock", "all",
+	}
+	for _, flagName := range hideFlags {
+		rootCmd.PersistentFlags().MarkHidden(flagName)
+	}
 
 	// Set custom usage template with grouped flags
 	rootCmd.SetUsageTemplate(getGroupedUsageTemplate())
@@ -386,11 +408,13 @@ Flags:
       --qdrant-cloud              use Qdrant cloud vector database
       --neo4j-local               use Neo4j local vector database
       --neo4j-cloud               use Neo4j cloud (Aura) vector database
+      --opensearch-local          use OpenSearch local vector database
+      --opensearch-cloud          use OpenSearch cloud/AWS vector database
       --mock                      use mock vector database
       --all                       operate on all configured vector databases
 
-  Database Override:
-      --vector-db-type string     override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)
+  Vector Database Configuration:
+      --vector-db-type string     override VECTOR_DB_TYPE
       --vdb string                alias for --vector-db-type
       --weaviate-api-key string   override WEAVIATE_API_KEY
       --weaviate-url string       override WEAVIATE_URL
@@ -424,7 +448,7 @@ Flags:
 {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{end}}{{if .HasAvailableInheritedFlags}}
 
 Global Flags:
-
+{{if eq .Name "weave"}}
   Database Selection:
       --weaviate                  use Weaviate vector database (weaviate-cloud or weaviate-local)
       --weaviate-local            use Weaviate local vector database
@@ -443,12 +467,24 @@ Global Flags:
       --qdrant-cloud              use Qdrant cloud vector database
       --neo4j-local               use Neo4j local vector database
       --neo4j-cloud               use Neo4j cloud (Aura) vector database
+      --opensearch-local          use OpenSearch local vector database
+      --opensearch-cloud          use OpenSearch cloud/AWS vector database
       --mock                      use mock vector database
       --all                       operate on all configured vector databases
 
-  Database Override:
-      --vector-db-type string     override VECTOR_DB_TYPE (weaviate-cloud|weaviate-local|milvus-local|milvus-cloud|mongodb|supabase|mock)
-      --vdb string                alias for --vector-db-type
+  Vector Database Configuration:
+      --vector-db-type string     override VECTOR_DB_TYPE
+      --vdb string                alias for --vector-db-type{{else}}
+  Database Selection:
+      --vector-db-type string     select vector database type
+                                  Options: weaviate-cloud, weaviate-local, supabase-cloud, supabase-local,
+                                  mongodb-cloud, mongodb-local, milvus-cloud, milvus-local, chroma-cloud,
+                                  chroma-local, qdrant-cloud, qdrant-local, neo4j-cloud, neo4j-local,
+                                  opensearch-cloud, opensearch-local, mock
+                                  (see 'weave -h' for individual --<vdb> flags)
+      --vdb string                alias for --vector-db-type{{end}}
+
+  Vector Database Options:
       --weaviate-api-key string   override WEAVIATE_API_KEY
       --weaviate-url string       override WEAVIATE_URL
       --timeout string            timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)
