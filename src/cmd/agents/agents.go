@@ -602,7 +602,8 @@ func promptForConfig(config *agents.CustomAgentConfig) *agents.CustomAgentConfig
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Println("\n🔧 Interactive Agent Configuration")
-	fmt.Println("Press Enter to keep default values shown in [brackets]\n")
+	fmt.Println("Press Enter to keep default values shown in [brackets]")
+	fmt.Println()
 
 	// Description
 	fmt.Printf("Description [%s]: ", config.Description)
