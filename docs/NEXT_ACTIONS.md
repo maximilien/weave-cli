@@ -1,518 +1,433 @@
-# TODOs - Post v0.9.7 Release
+# TODOs - Post v0.9.9 Release
 
-**Last Updated**: 2026-01-20 13:40 PST
-**Current Status**: v0.9.7 Complete - Image Metadata Issue FIXED
+**Last Updated**: 2026-01-23 13:15 PST
+**Current Status**: v0.9.9 Released - Agent Evaluation System Phase 1 Complete
 
 ---
 
-## 🎯 Critical Path (Next 24-48 Hours)
+## 🎯 Critical Path (Next 1-2 Weeks)
 
-### 1. Update GitHub Issue #23 with v0.9.7 Solution ✅ TODO
+### 1. Agent Evaluation System - Phase 2 (Advanced Evaluators & Benchmarking) 🚧
 
-**Status**: Ready to update
+**Status**: Ready to start
 **Owner**: Maintainer
 **Priority**: HIGH
 
-**Actions:**
+**Phase 2 Goals:**
+- Advanced evaluators (context relevance, faithfulness)
+- Benchmarking across different agents
+- Performance metrics and analysis
+- Comparative evaluation reports
 
-- [ ] Comment on Issue #23 with v0.9.7 fix details
-- [ ] Explain the 3-iteration fix process (v0.9.5 → v0.9.6 → v0.9.7)
-- [ ] Provide test instructions for AuctionsMax.ai
-- [ ] Link to CHANGELOG.md v0.9.7 section
+**Tasks:**
 
-**Comment Template:**
+- [ ] Implement Context Relevance Evaluator
+  - Measures how relevant retrieved context is to the query
+  - Uses LLM to score each retrieved chunk
+  - Detects retrieval failures
+
+- [ ] Implement Faithfulness Evaluator
+  - Verifies answer is supported by retrieved context
+  - Detects hallucinations more precisely than Phase 1
+  - Uses entailment checking
+
+- [ ] Add Benchmarking Command
+  - `weave eval benchmark --agents agent1,agent2 --dataset baseline`
+  - Compare multiple agents on same dataset
+  - Generate comparison report (table, charts)
+
+- [ ] Performance Metrics Collection
+  - Response time per test case
+  - Token usage tracking
+  - Cost estimation
+  - Memory usage
+
+- [ ] Results Visualization
+  - CLI tables with color coding
+  - Export to CSV/JSON for external analysis
+  - Generate markdown reports
+
+**Estimated Time:** 4-5 days
+
+---
+
+### 2. Multi-Agent Support (Phase 0 - Planning) 🔮
+
+**Status**: Planning phase
+**Owner**: Maintainer
+**Priority**: MEDIUM
+
+**Research Questions:**
+
+- What are the primary use cases for multi-agent systems in RAG?
+  - Sequential workflows (e.g., query → retrieval → synthesis → citation)
+  - Parallel workflows (e.g., query multiple domains simultaneously)
+  - Hierarchical workflows (e.g., coordinator → specialist agents)
+
+- How should agents communicate?
+  - Direct message passing
+  - Shared context/state
+  - Event-driven
+
+- What coordination patterns are needed?
+  - Sequential chains
+  - Parallel fan-out/fan-in
+  - Conditional routing
+  - Feedback loops
+
+**Deliverables:**
+
+- [ ] Create `docs/planning/MULTI_AGENT_DESIGN.md` with:
+  - Use cases and requirements
+  - Architecture proposals
+  - API design
+  - Implementation phases
+
+- [ ] Prototype simple multi-agent workflow
+  - Two-agent chain: retrieval agent → synthesis agent
+  - Test with baseline dataset
+  - Measure vs single-agent performance
+
+**Estimated Time:** 3-4 days for planning + prototype
+
+---
+
+### 3. Test Coverage Improvement 📊
+
+**Status**: Ongoing chore
+**Owner**: Maintainer
+**Priority**: MEDIUM
+
+**Current Coverage:**
+- Unit tests: Good coverage for core packages
+- Integration tests: VDB-specific tests complete
+- E2E tests: Basic scenarios covered
+
+**Areas to Improve:**
+
+- [ ] Evaluation System Coverage
+  - Edge cases (empty datasets, malformed YAML)
+  - Error handling (LLM API failures, timeouts)
+  - Concurrent evaluation runs
+  - Large datasets (100+ test cases)
+
+- [ ] Agent Management Coverage
+  - Agent validation edge cases
+  - Template rendering errors
+  - Concurrent agent operations
+
+- [ ] Cross-VDB Consistency Tests
+  - Same operations across all VDBs
+  - Verify consistent behavior
+  - Document VDB-specific quirks
+
+- [ ] Performance Benchmarks
+  - Query latency across VDBs
+  - Scaling tests (1K, 10K, 100K docs)
+  - Memory profiling
+
+**Deliverables:**
+- [ ] Add 20+ new integration tests
+- [ ] Create benchmark suite
+- [ ] Document coverage goals (target: 80%+)
+
+**Estimated Time:** 2-3 days
+
+---
+
+## 🔨 Work for Next Week (January 27-31)
+
+### 4. Agent Evaluation Phase 2 - Implementation ⏳
+
+**Detailed Breakdown:**
+
+**Day 1-2: Context Relevance Evaluator**
+```go
+// Pseudo-code structure
+type ContextRelevanceEvaluator struct {
+    llmClient LLMClient
+}
+
+func (e *ContextRelevanceEvaluator) Evaluate(
+    query string,
+    retrievedChunks []string,
+) (score float64, details map[string]interface{}) {
+    // Score each chunk for relevance to query
+    // Return average score + per-chunk breakdown
+}
+```
+
+**Day 3: Faithfulness Evaluator**
+```go
+type FaithfulnessEvaluator struct {
+    llmClient LLMClient
+}
+
+func (e *FaithfulnessEvaluator) Evaluate(
+    answer string,
+    context []string,
+) (score float64, unsupportedClaims []string) {
+    // Extract claims from answer
+    // Verify each claim is supported by context
+    // Return score + list of unsupported claims
+}
+```
+
+**Day 4: Benchmarking Command**
+```bash
+# CLI interface
+weave eval benchmark \
+  --agents rag-agent,qa-agent,summarize-agent \
+  --dataset baseline \
+  --output benchmark-results.json
+
+# Output: Comparison table
+AGENT         ACCURACY  CITATION  HALLUCINATION  AVG_TIME
+rag-agent     0.85      0.90      0.95          150ms
+qa-agent      0.88      0.85      0.92          120ms
+summarize     0.80      0.70      0.90          200ms
+```
+
+**Day 5: Results Visualization**
+- CLI table formatting with colors
+- Export to CSV/JSON
+- Generate markdown report
+
+---
+
+### 5. Multi-Agent Planning & Prototype ⏳
+
+**Day 1-2: Design Document**
+
+Create `docs/planning/MULTI_AGENT_DESIGN.md`:
 
 ```markdown
-## v0.9.7 Released - Image Metadata Issue FIXED
+# Multi-Agent System Design
 
-After 3 iterations, the image metadata truncation issue is now fully resolved:
+## Use Cases
 
-**v0.9.5** (Attempt 1): Added `--max-metadata-length` flag
-- ❌ Metadata truncation didn't apply to Milvus storage map
+### 1. Sequential RAG Pipeline
+- Agent 1: Query understanding & expansion
+- Agent 2: Retrieval from vector DB
+- Agent 3: Answer synthesis
+- Agent 4: Citation formatting
 
-**v0.9.6** (Attempt 2): Populated metadata map with truncated values
-- ❌ Image VARCHAR field (base64 data URLs) still exceeded 2048 chars
+### 2. Parallel Domain Experts
+- Medical agent queries medical docs
+- Technical agent queries API docs
+- Legal agent queries compliance docs
+- Coordinator aggregates results
 
-**v0.9.7** (THE FIX): Truncate Image VARCHAR field to URL reference
-- ✅ Stores URL reference instead of full base64 data URL when > 2048 chars
-- ✅ Full base64 remains in ImageData JSON field (no data loss)
-- ✅ Expected: 253/253 images (100% success)
+### 3. Iterative Refinement
+- Agent generates initial answer
+- Evaluator agent scores quality
+- If score < threshold, refine and retry
 
-**Testing Instructions:**
+## Architecture
 
-bash
-# Download v0.9.7
-# Then test with your 253-image catalog
-weave docs create AuctionListings catalog.pdf \
-  --image-collection AuctionImages \
-  --max-metadata-length 2000 \
-  --milvus-local
+### Option A: Sequential Chain
+```go
+type AgentChain struct {
+    agents []Agent
+}
 
-# Expected: 253/253 images created successfully
+func (c *AgentChain) Execute(query string) string {
+    result := query
+    for _, agent := range c.agents {
+        result = agent.Process(result)
+    }
+    return result
+}
+```
 
+### Option B: Coordinator Pattern
+```go
+type CoordinatorAgent struct {
+    specialists map[string]Agent
+}
 
-See [CHANGELOG.md v0.9.7](link) for full technical details.
+func (c *CoordinatorAgent) Execute(query string) string {
+    // Route to appropriate specialist
+    // Or fan out to multiple specialists
+    // Aggregate results
+}
+```
+
+## Implementation Phases
+
+Phase 0: Design (this doc)
+Phase 1: Sequential chains
+Phase 2: Parallel execution
+Phase 3: Advanced coordination
+```
+
+**Day 3-4: Prototype**
+
+Implement simple two-agent chain:
+```go
+// Example: Retrieval Agent → Synthesis Agent
+chain := &AgentChain{
+    agents: []Agent{
+        NewRetrievalAgent("search-docs"),
+        NewSynthesisAgent("rag-agent"),
+    },
+}
+
+result := chain.Execute("What is a vector database?")
 ```
 
 ---
 
-### 2. AuctionsMax.ai Testing & Deployment ⏳
+### 6. Test Coverage Improvements ⏳
 
-**Status**: Waiting for client to test v0.9.7
-**Owner**: AuctionsMax.ai + Maintainer
-**Priority**: CRITICAL
+**Priority Areas:**
 
-**Test Plan:**
+**Week 1:**
+- [ ] Evaluation system edge cases (15 tests)
+- [ ] Agent validation corner cases (10 tests)
+- [ ] Cross-VDB consistency (5 tests per VDB × 10 VDBs = 50 tests)
 
-1. **Pre-Test Cleanup**:
-   - Drop existing AuctionImages collection
-   - Verify Milvus is running and healthy
-
-2. **v0.9.7 Testing**:
-   ```bash
-   # Test with 253-image PDF catalog
-   weave docs create AuctionListings catalog.pdf \
-     --image-collection AuctionImages \
-     --max-metadata-length 2000 \
-     --milvus-local
-
-   # Verify all 253 images created
-   weave cols count AuctionImages
-
-   # Test multi-modal query
-   weave cols query AuctionListings AuctionImages "vintage items" \
-     --agent rag-agent --top_k 5 --top_k_images 2
-   ```
-
-3. **Success Criteria**:
-   - ✅ 253/253 images created (100%)
-   - ✅ No VARCHAR limit errors
-   - ✅ Multi-modal RAG returns both text + image results
-   - ✅ Image citations include URLs
-
-**Expected Timeline:**
-
-- Today/Tomorrow: AuctionsMax.ai tests v0.9.7
-- Within 48 hours: Feedback on success/failure
-- If successful: Close Issue #23, plan v1.0
-- If issues: Debug and release v0.9.8
+**Week 2:**
+- [ ] Performance benchmarks (query latency, scaling)
+- [ ] Memory profiling
+- [ ] Concurrent operations tests
 
 ---
 
-## 🔨 Work for Tomorrow/Thursday (While Waiting for Client Feedback)
+## 📊 Monitoring & Maintenance
 
-### 3. Code Quality & Documentation Improvements ⏳
+### 7. Track GitHub Issues ⏳
 
-**Status**: Can start immediately
+**Status**: Ongoing
 **Owner**: Maintainer
-**Priority**: MEDIUM
-
-**Quick Wins:**
-
-- [ ] Add unit tests for Image VARCHAR truncation logic
-  - Test case: Image field > 2048 chars → stores URL
-  - Test case: Image field < 2048 chars → keeps as-is
-  - Location: `src/pkg/vectordb/milvus/document_test.go`
-
-- [ ] Update USER_GUIDE.md with multi-modal RAG examples
-  - Add section: "Working with Image Collections"
-  - Include `--max-metadata-length` flag documentation
-  - Add troubleshooting section for Milvus VARCHAR limits
-
-- [ ] Document the 3-iteration debugging process
-  - Create `docs/DEBUGGING_GUIDE.md` or add to existing docs
-  - Capture lessons learned from v0.9.5 → v0.9.6 → v0.9.7
-  - Useful for future debugging of similar issues
-
-**Estimated Time:** 2-3 hours
-
----
-
-### 4. Prepare v1.0 Planning (If v0.9.7 Succeeds) ⏳
-
-**Status**: Contingent on v0.9.7 success
-**Owner**: Maintainer
-**Priority**: LOW (becomes HIGH if v0.9.7 works)
-
-**Pre-Work:**
-
-- [ ] Review all open GitHub issues
-- [ ] Audit VDB feature parity across all 10 databases
-- [ ] List any breaking changes needed before v1.0
-- [ ] Document v1.0 stability guarantees
-
-**Deliverable:**
-
-- `docs/planning/V1_0_ROADMAP.md` with:
-  - Feature freeze criteria
-  - API stability guarantees
-  - Migration guide from v0.9.x
-  - Target release date
-
-**Estimated Time:** 3-4 hours
-
----
-
-## 📊 Monitoring (Days 1-3)
-
-### 5. Track AuctionsMax.ai Deployment ⏳
-
-**Status**: Pending client deployment
-**Owner**: Maintainer + Client
-**Priority**: MEDIUM
-
-**Metrics to Monitor:**
-
-- [ ] Deployment success/failure
-- [ ] Query performance (latency)
-- [ ] `--top_k_images` usage patterns
-- [ ] RAG agent accuracy with multi-modal results
-- [ ] Error rates or issues
-
-**Data to Collect:**
-
-- Average query response time (text-only vs text+image)
-- Image collection sizes and search times
-- Client feedback on citation quality
-- Any edge cases or bugs discovered
-
-**Tools:**
-
-- Client can use `--verbose` for debug output
-- Monitor GitHub issues for any reported problems
-- Schedule check-in call with client
-
----
-
-### 4. Document Production Use Cases ⏳
-
-**Status**: To start after deployment
-**Owner**: Maintainer
-**Priority**: LOW
+**Priority**: HIGH
 
 **Actions:**
+- [ ] Review open issues weekly
+- [ ] Triage new issues within 48 hours
+- [ ] Label issues with priorities
+- [ ] Close stale issues
 
-- [ ] Create case study for AuctionsMax.ai (with permission)
-- [ ] Document real-world usage patterns
-- [ ] Add production examples to docs/examples/
-- [ ] Update USER_GUIDE.md with multi-modal workflows
-
-**Deliverable:**
-New file: `docs/examples/auctionsmax-multimodal-rag.md` (if client approves)
-
----
-
-## 🔧 Enhancement Planning (Week 1-2)
-
-### 5. Analyze Performance Data ⏳
-
-**Status**: Waiting for production metrics
-**Owner**: Maintainer
-**Priority**: MEDIUM
-
-**Questions to Answer:**
-
-- Are multi-collection queries slow? (Need parallel queries?)
-- Are text results dominating? (Need better scoring?)
-- Are image results relevant? (Need visual embeddings?)
-- Is `--top_k_images` being used effectively?
-
-**Potential Optimizations:**
-
-- [ ] Parallel collection queries (if latency > 2s)
-- [ ] Result caching (if same queries repeated)
-- [ ] Smarter score normalization (if text dominates)
-- [ ] Async query execution (if blocking UI)
-
-**Decision Point:**
-Based on metrics, choose enhancement path:
-
-- **Path A**: Performance optimization (if slow)
-- **Path B**: Feature expansion (if working well)
-- **Path C**: Visual search (if text search limiting)
-
----
-
-### 6. Plan Visual Search Integration ⏳
-
-**Status**: Research phase
-**Owner**: Maintainer
-**Priority**: LOW (unless client requests)
-
-**Tasks:**
-
-- [ ] Research CLIP integration options
-  - OpenAI CLIP API
-  - Hugging Face transformers
-  - Local CLIP models
-- [ ] Evaluate VDB support for visual embeddings
-  - Weaviate: img2vec-neural module
-  - Milvus: Manual CLIP embeddings
-  - Chroma: Manual integration
-- [ ] Design API for image query input
-  - `weave cols query ProductImages --image query.jpg`
-  - `weave cols query ProductImages "red car" --image similar.jpg`
-- [ ] Prototype hybrid search (text + visual)
-
-**Deliverable:**
-Planning doc: `docs/planning/VISUAL_SEARCH_INTEGRATION.md`
-
----
-
-### 7. Multi-Modal Agent Improvements ⏳
+### 8. Community Engagement ⏳
 
 **Status**: Backlog
 **Owner**: Maintainer
 **Priority**: LOW
 
 **Ideas:**
-
-- [ ] Image-specific prompts for RAG agent
-- [ ] Better image citation formatting (with thumbnails?)
-- [ ] Multi-modal reranking (better scoring across types)
-- [ ] Support for video collections
-- [ ] Support for audio transcription collections
-
-**Depends On:**
-
-- Client feedback from AuctionsMax.ai deployment
-- Performance data from production usage
+- [ ] Blog post about agent evaluation system
+- [ ] Twitter/social media updates
+- [ ] Share on r/golang, r/MachineLearning
+- [ ] Update project showcases
 
 ---
 
-## 🐛 Bug Fixes & Maintenance
+## 🔧 Enhancement Planning (Weeks 2-4)
 
-### 8. Address Any Production Issues ⏳
+### 9. Advanced Evaluation Features 🔮
 
-**Status**: Reactive (no known issues)
-**Owner**: Maintainer
-**Priority**: HIGH (if issues arise)
+**Ideas for Phase 3:**
 
-**Process:**
+- **Custom Evaluators**: Allow users to define their own evaluators
+  ```yaml
+  # custom-evaluator.yaml
+  name: domain-specific-accuracy
+  type: llm-as-judge
+  prompt: |
+    Evaluate the answer for medical accuracy...
+  scoring: 0.0-1.0
+  ```
 
-1. Monitor GitHub issues
-2. Respond to client reports within 24 hours
-3. Reproduce bugs locally
-4. Fix and test
-5. Release hotfix if critical
+- **Human-in-the-Loop**: Capture human feedback on evaluations
+  ```bash
+  weave eval review run-20260123-150405
+  # Opens interactive review UI
+  # Allows annotating test cases as correct/incorrect
+  ```
 
-**Current Known Issues:**
+- **Regression Testing**: Compare new agent versions vs baseline
+  ```bash
+  weave eval regression \
+    --baseline v1-agent \
+    --candidate v2-agent \
+    --dataset baseline \
+    --threshold 0.05  # Fail if accuracy drops > 5%
+  ```
 
-- None (all tests passing)
-
----
-
-### 9. Improve Test Coverage ⏳
-
-**Status**: Backlog
-**Owner**: Maintainer
-**Priority**: LOW
-
-**Areas to Expand:**
-
-- [ ] Performance benchmarks for multi-collection queries
-- [ ] Load testing with large image collections
-- [ ] Edge cases (empty collections, malformed images)
-- [ ] Error handling tests (network failures, API errors)
-
-**Deliverable:**
-
-- `tests/performance/multimodal_benchmark_test.go`
-- Documentation in `tests/integration/README.md`
-
----
-
-## 📚 Documentation & Communication
-
-### 10. Update User Documentation ⏳
-
-**Status**: Mostly complete
-**Owner**: Maintainer
-**Priority**: MEDIUM
-
-**Tasks:**
-
-- [ ] Update README.md with v0.9.4 features
-- [ ] Add multi-modal RAG examples to USER_GUIDE.md
-- [ ] Create video demo (if time permits)
-- [ ] Update ARCHITECTURE.md with detection logic
-
-**Files to Update:**
-
-- `README.md` - Add v0.9.4 highlights
-- `docs/USER_GUIDE.md` - Multi-modal workflows
-- `docs/ARCHITECTURE.md` - Schema type detection
-
----
-
-### 11. Community Engagement ⏳
-
-**Status**: Backlog
-**Owner**: Maintainer
-**Priority**: LOW
+### 10. Multi-Agent Advanced Features 🔮
 
 **Ideas:**
 
-- [ ] Blog post about multi-modal RAG implementation
-- [ ] Tweet about v0.9.4 release
-- [ ] Share on relevant forums (r/MachineLearning, r/golang)
-- [ ] Update project showcase sites
-
-**Depends On:**
-
-- Successful AuctionsMax.ai deployment
-- Positive client feedback
+- **Agent Marketplace**: Share agent configs
+- **Visual Workflow Editor**: Design multi-agent workflows
+- **Conditional Routing**: Route queries based on type
+- **Feedback Loops**: Iterative refinement
+- **Agent Monitoring**: Track agent performance in production
 
 ---
 
-## 🎯 Long-Term Goals (Weeks 2-4)
+## ✅ Completed Tasks (v0.9.9 - 2026-01-23)
 
-### 12. Plan v1.0 Release 🔮
+### Agent Evaluation System - Phase 1
+- ✅ Dataset management (YAML format)
+- ✅ Three evaluators: Accuracy, Citation, Hallucination
+- ✅ Results storage (JSON/YAML)
+- ✅ CLI commands: datasets, run, results
+- ✅ 5 example datasets (baseline, medical-qa, technical-docs, simple-qa, multi-collection)
+- ✅ Dataset creation tools (templates, interactive, copy modes)
+- ✅ Comprehensive integration tests (11 test cases)
 
-**Status**: Planning
-**Owner**: Maintainer
-**Priority**: MEDIUM
-
-**Criteria for v1.0:**
-
-- [ ] All 10 VDBs fully tested in production
-- [ ] Multi-modal RAG proven with real clients
-- [ ] Performance optimized for large-scale use
-- [ ] Comprehensive documentation
-- [ ] Stable API (no breaking changes)
-
-**Features to Consider:**
-
-- Visual search with CLIP
-- Video/audio collection support
-- Advanced reranking algorithms
-- Production monitoring/telemetry
-- Cloud-native deployment options
-
-**Timeline:**
-
-- v0.9.x series: Iterate on multi-modal RAG
-- v1.0: When ready for enterprise adoption (est. 4-6 weeks)
-
----
-
-### 13. Research Advanced Features 🔮
-
-**Status**: Exploration
-**Owner**: Maintainer
-**Priority**: LOW
-
-**Topics:**
-
-- **Hybrid Search**: Combine dense (embeddings) + sparse (BM25) + visual
-- **Reranking**: Use cross-encoders for better result ordering
-- **Multi-Modal Agents**: Specialized agents for different modalities
-- **Query Understanding**: Better parsing of user intent
-- **Result Explanation**: Why these results were selected?
-
-**Deliverable:**
-Research notes in `docs/planning/ADVANCED_FEATURES.md`
-
----
-
-## ✅ Completed Tasks (2026-01-20)
-
-### v0.9.7 Release - Image Metadata Truncation Fix (CRITICAL)
-
-**Problem:** 89% of images failed to ingest (0/253 in Milvus) due to:
-- Metadata exceeding VARCHAR limits (2048 chars)
-- Base64 image data URLs exceeding VARCHAR limits (15KB-96KB)
-
-**Solution Path (3 Iterations):**
-
-- ✅ **v0.9.5**: Added `--max-metadata-length` flag
-  - Truncated text fields correctly
-  - But didn't apply to Milvus storage map
-  - Result: 0/253 images still failed
-
-- ✅ **v0.9.6**: Populated metadata map with truncated values
-  - Fixed metadata truncation for Milvus
-  - But Image VARCHAR field (base64 data URLs) still too long
-  - Result: 0/253 images still failed
-
-- ✅ **v0.9.7**: Truncate Image VARCHAR field to URL reference
-  - Stores URL instead of base64 when > 2048 chars
-  - Full base64 preserved in ImageData JSON field (no data loss)
-  - Expected Result: 253/253 images (100% success)
-
-**Commits:**
-
-- `43c33c2` - CRITICAL fix: Image VARCHAR truncation
-- `15b887f` - Prepare release v0.9.7
-- `d14b89d` - Fix markdown linting and organize documentation
-- `25a141e` - Update references to moved documentation files
-- `1d7236a` - Resolve all markdown linting warnings
-
-**Documentation:**
-
-- Updated CHANGELOG.md with v0.9.7 technical details
-- Moved planning docs to docs/ directory
-- Fixed all markdown linting warnings
-- Organized archive documentation
-
----
-
-### v0.9.4 Release (Completed 2026-01-19)
-
-- ✅ Fixed image collection creation bug
-- ✅ Implemented `--top_k_images` flag
-- ✅ Added schema type detection
-- ✅ Created comprehensive integration tests
-- ✅ Multi-VDB support (Milvus, Weaviate, Chroma, Qdrant)
+### Code Quality
+- ✅ Simplified database flag help output
+- ✅ Fixed YAML linting issues
+- ✅ Moved debug scripts to tools/dev
+- ✅ Removed coverage files from root
 
 ---
 
 ## 📅 Timeline Summary
 
-**Today (2026-01-20)**:
+**Week of Jan 27** (Week 1):
+- Complete Phase 2 evaluation features
+- Multi-agent planning document
+- 30+ new integration tests
 
-- ✅ v0.9.7 released with Image VARCHAR truncation fix
-- ⏳ Update GitHub Issue #23 with solution
-- ⏳ Await AuctionsMax.ai testing
+**Week of Feb 3** (Week 2):
+- Multi-agent prototype
+- Performance benchmarks
+- Advanced evaluator prototypes
 
-**Tomorrow/Thursday (2026-01-21/22)**:
+**Week of Feb 10** (Week 3):
+- Polish Phase 2 features
+- Begin Phase 3 planning
+- Community engagement
 
-- Work on code quality & documentation (while waiting for feedback)
-- Add unit tests for Image VARCHAR truncation
-- Update USER_GUIDE.md with multi-modal examples
-- If v0.9.7 succeeds: Start v1.0 planning
-
-**Week 2 (2026-01-27)**:
-
-- If successful: Close Issue #23, finalize v1.0 roadmap
-- If issues: Debug and release v0.9.8
-- Monitor AuctionsMax.ai production usage
-
-**Weeks 3-4**:
-
-- Implement v1.0 features (based on roadmap)
-- Prepare for v1.0 release
+**Week of Feb 17** (Week 4):
+- Release v0.10.0 with Phase 2 complete
+- Start multi-agent Phase 1 implementation
 
 ---
 
 ## 🎯 Immediate Next Actions
 
-**Priority 1 (High):**
+**Today/Tomorrow (Jan 23-24):**
 
-1. Update GitHub Issue #23 with v0.9.7 solution details
-2. Wait for AuctionsMax.ai test results (expected: 24-48 hours)
+1. ✅ Release v0.9.9 with Phase 1 complete
+2. ✅ Update planning documents
+3. ⏳ Start Phase 2 design doc
 
-**Priority 2 (Medium - Tomorrow/Thursday):**
+**This Week (Jan 27-31):**
 
-3. Add unit tests for Image VARCHAR truncation logic
-4. Update USER_GUIDE.md with multi-modal RAG workflows
-5. Document debugging process (v0.9.5 → v0.9.6 → v0.9.7 iterations)
+4. Implement Context Relevance Evaluator
+5. Implement Faithfulness Evaluator
+6. Add benchmarking command
+7. Create multi-agent design document
 
-**Priority 3 (Low - If v0.9.7 Succeeds):**
+**Next Week (Feb 3-7):**
 
-6. Start v1.0 planning and roadmap
-7. Review open GitHub issues for v1.0 blockers
-8. Audit VDB feature parity
+8. Multi-agent prototype
+9. Add 30+ integration tests
+10. Performance benchmarks
 
 ---
 
