@@ -104,9 +104,9 @@ func TestDatasetValidate(t *testing.T) {
 			Description: "Test dataset",
 			Version:     "1.0.0",
 			Config: DatasetConfig{
-				DefaultAgent:      "agent",
-				MinAccuracyScore:  0.7,
-				MinCitationScore:  0.8,
+				DefaultAgent:       "agent",
+				MinAccuracyScore:   0.7,
+				MinCitationScore:   0.8,
 				AllowHallucination: false,
 			},
 			TestCases: []TestCase{
@@ -261,9 +261,9 @@ func TestSaveDataset(t *testing.T) {
 		Description: "Test dataset",
 		Version:     "1.0.0",
 		Config: DatasetConfig{
-			DefaultAgent:      "test-agent",
-			MinAccuracyScore:  0.7,
-			MinCitationScore:  0.8,
+			DefaultAgent:       "test-agent",
+			MinAccuracyScore:   0.7,
+			MinCitationScore:   0.8,
 			AllowHallucination: false,
 		},
 		TestCases: []TestCase{

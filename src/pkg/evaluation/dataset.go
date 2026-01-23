@@ -15,10 +15,10 @@ import (
 // Dataset represents an evaluation dataset with test cases
 type Dataset struct {
 	// Metadata
-	Name        string `yaml:"name"`
-	Description string `yaml:"description"`
-	Version     string `yaml:"version"`
-	Author      string `yaml:"author,omitempty"`
+	Name        string   `yaml:"name"`
+	Description string   `yaml:"description"`
+	Version     string   `yaml:"version"`
+	Author      string   `yaml:"author,omitempty"`
 	Tags        []string `yaml:"tags,omitempty"`
 
 	// Configuration
@@ -37,16 +37,16 @@ type DatasetConfig struct {
 	DefaultCollection string `yaml:"default_collection,omitempty"`
 
 	// Evaluation thresholds
-	MinAccuracyScore  float64 `yaml:"min_accuracy_score,omitempty"`
-	MinCitationScore  float64 `yaml:"min_citation_score,omitempty"`
-	AllowHallucination bool   `yaml:"allow_hallucination,omitempty"`
+	MinAccuracyScore   float64 `yaml:"min_accuracy_score,omitempty"`
+	MinCitationScore   float64 `yaml:"min_citation_score,omitempty"`
+	AllowHallucination bool    `yaml:"allow_hallucination,omitempty"`
 }
 
 // TestCase represents a single evaluation test case
 type TestCase struct {
 	// Identification
-	ID          string `yaml:"id"`
-	Description string `yaml:"description,omitempty"`
+	ID          string   `yaml:"id"`
+	Description string   `yaml:"description,omitempty"`
 	Tags        []string `yaml:"tags,omitempty"`
 
 	// Input
@@ -54,9 +54,9 @@ type TestCase struct {
 	Collection string `yaml:"collection,omitempty"` // Override default collection
 
 	// Expected output
-	ExpectedAnswer  string   `yaml:"expected_answer"`
+	ExpectedAnswer    string   `yaml:"expected_answer"`
 	ExpectedCitations []string `yaml:"expected_citations,omitempty"`
-	RequiredConcepts []string `yaml:"required_concepts,omitempty"`
+	RequiredConcepts  []string `yaml:"required_concepts,omitempty"`
 
 	// Evaluation criteria
 	MinRelevanceScore float64 `yaml:"min_relevance_score,omitempty"`

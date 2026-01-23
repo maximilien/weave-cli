@@ -1,0 +1,92 @@
+name: technical-docs
+description: Technical documentation and API reference evaluation dataset
+version: 1.0.0
+author: Weave Team
+tags:
+  - technical
+  - documentation
+  - api
+  - engineering
+
+config:
+  default_agent: rag-agent
+  default_collection: TechDocs
+  min_accuracy_score: 0.8
+  min_citation_score: 0.9
+  allow_hallucination: false
+
+test_cases:
+  - id: tech-001
+    description: API endpoint documentation
+    query: "How do I create a new collection using the API?"
+    expected_answer: "To create a new collection, send a POST request to /api/collections with a JSON body containing the collection name, schema definition, and optional configuration parameters. The API returns the created collection ID and metadata."
+    required_concepts:
+      - "POST"
+      - "collection"
+      - "API"
+      - "schema"
+    must_cite: true
+    min_relevance_score: 0.8
+
+  - id: tech-002
+    description: Configuration parameters
+    query: "What embedding models are supported?"
+    expected_answer: "Supported embedding models include OpenAI's text-embedding-3-small and text-embedding-3-large, as well as open-source alternatives like all-MiniLM-L6-v2 and BGE-base-en-v1.5. The default model is text-embedding-3-small with 1536 dimensions."
+    required_concepts:
+      - "embedding"
+      - "model"
+      - "OpenAI"
+      - "dimensions"
+    must_cite: true
+    min_relevance_score: 0.75
+
+  - id: tech-003
+    description: Error handling and troubleshooting
+    query: "What does error code 429 mean and how do I fix it?"
+    expected_answer: "Error code 429 indicates rate limiting - too many requests in a short time period. To fix this, implement exponential backoff, reduce request frequency, or upgrade your API plan for higher rate limits."
+    required_concepts:
+      - "error"
+      - "429"
+      - "rate limit"
+      - "backoff"
+    must_cite: true
+    min_relevance_score: 0.8
+
+  - id: tech-004
+    description: Performance optimization
+    query: "How can I optimize vector search performance?"
+    expected_answer: "Optimize vector search by using approximate nearest neighbor (ANN) algorithms like HNSW, reducing embedding dimensions, implementing result caching, batching queries, and choosing appropriate similarity metrics (cosine vs euclidean) based on your use case."
+    required_concepts:
+      - "vector"
+      - "search"
+      - "performance"
+      - "ANN"
+      - "HNSW"
+    must_cite: true
+    min_relevance_score: 0.8
+
+  - id: tech-005
+    description: Integration and deployment
+    query: "What are the steps to deploy a RAG application to production?"
+    expected_answer: "Deploy a RAG application by: 1) Setting up vector database with proper indexing, 2) Configuring API keys and environment variables, 3) Implementing monitoring and logging, 4) Setting up rate limiting and caching, 5) Testing with production-like data, 6) Configuring auto-scaling and load balancing."
+    required_concepts:
+      - "deployment"
+      - "production"
+      - "vector database"
+      - "monitoring"
+      - "scaling"
+    must_cite: true
+    min_relevance_score: 0.75
+
+  - id: tech-006
+    description: Security and authentication
+    query: "How do I secure my vector database API endpoints?"
+    expected_answer: "Secure API endpoints using API key authentication, implement HTTPS/TLS encryption, add IP whitelisting, use role-based access control (RBAC), enable audit logging, and regularly rotate credentials. Consider using OAuth 2.0 for user authentication."
+    required_concepts:
+      - "security"
+      - "authentication"
+      - "API key"
+      - "HTTPS"
+      - "encryption"
+    must_cite: true
+    min_relevance_score: 0.8

@@ -50,12 +50,12 @@ type TestCaseResult struct {
 	ResponseTime    float64  `json:"response_time_ms" yaml:"response_time_ms"`
 
 	// Evaluation scores
-	AccuracyScore    float64 `json:"accuracy_score" yaml:"accuracy_score"`
-	CitationScore    float64 `json:"citation_score" yaml:"citation_score"`
+	AccuracyScore      float64 `json:"accuracy_score" yaml:"accuracy_score"`
+	CitationScore      float64 `json:"citation_score" yaml:"citation_score"`
 	HallucinationScore float64 `json:"hallucination_score" yaml:"hallucination_score"`
 
 	// Pass/fail
-	Passed bool `json:"passed" yaml:"passed"`
+	Passed bool     `json:"passed" yaml:"passed"`
 	Errors []string `json:"errors,omitempty" yaml:"errors,omitempty"`
 
 	// Details
@@ -70,13 +70,13 @@ type EvaluationSummary struct {
 	PassRate    float64 `json:"pass_rate" yaml:"pass_rate"`
 
 	// Average scores
-	AvgAccuracy     float64 `json:"avg_accuracy" yaml:"avg_accuracy"`
-	AvgCitation     float64 `json:"avg_citation" yaml:"avg_citation"`
+	AvgAccuracy      float64 `json:"avg_accuracy" yaml:"avg_accuracy"`
+	AvgCitation      float64 `json:"avg_citation" yaml:"avg_citation"`
 	AvgHallucination float64 `json:"avg_hallucination" yaml:"avg_hallucination"`
 
 	// Performance
-	TotalTime   float64 `json:"total_time_ms" yaml:"total_time_ms"`
-	AvgTime     float64 `json:"avg_time_ms" yaml:"avg_time_ms"`
+	TotalTime float64 `json:"total_time_ms" yaml:"total_time_ms"`
+	AvgTime   float64 `json:"avg_time_ms" yaml:"avg_time_ms"`
 
 	// Duration
 	StartTime time.Time     `json:"start_time" yaml:"start_time"`
