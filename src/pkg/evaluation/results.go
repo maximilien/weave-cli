@@ -226,6 +226,31 @@ func ListResults() ([]*EvaluationRun, error) {
 	return runs, nil
 }
 
+// SaveResultsToFile saves evaluation results to a specific file path
+func SaveResultsToFile(run *EvaluationRun, filePath, format string) error {
+	var data []byte
+	var err error
+
+	switch format {
+	case "json":
+		data, err = json.MarshalIndent(run, "", "  ")
+	case "yaml":
+		data, err = yaml.Marshal(run)
+	default:
+		return fmt.Errorf("unsupported format: %s", format)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to marshal results: %w", err)
+	}
+
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write results file: %w", err)
+	}
+
+	return nil
+}
+
 // GetDefaultResultsDir returns the default directory for evaluation results
 func GetDefaultResultsDir() string {
 	// Check if in development mode
