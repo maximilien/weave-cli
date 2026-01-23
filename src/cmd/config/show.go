@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/cmd/utils"
+	"github.com/maximilien/weave-cli/src/pkg/agents"
 	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -130,5 +131,35 @@ func runShow(cobraCmd *cobra.Command, args []string) {
 		color.New(color.FgCyan).Printf("💡 Use 'weave config show-schema <name>' to view schema details\n")
 	} else {
 		fmt.Printf("Configured schemas: 0\n")
+	}
+
+	// Display agent configuration
+	fmt.Println()
+	printHeader("Agent Configuration")
+
+	loader := agents.GetDefaultAgentLoader()
+	searchPaths := loader.GetSearchPaths()
+
+	fmt.Println("Search paths (in order):")
+	for i, path := range searchPaths {
+		fmt.Printf("  %d. %s\n", i+1, path)
+	}
+
+	// List available agents
+	registry := agents.GetDefaultAgentRegistry()
+	agentList, err := registry.ListAgents()
+	if err == nil && len(agentList) > 0 {
+		fmt.Printf("\nConfigured agents: %d\n", len(agentList))
+		fmt.Println()
+		for i, agent := range agentList {
+			fmt.Printf("  %d. %s (%s) - %s\n", i+1, agent.Name, agent.Type, agent.FilePath)
+		}
+		fmt.Println()
+		color.New(color.FgCyan).Printf("💡 Use 'weave agents show <name>' to view agent details\n")
+		color.New(color.FgCyan).Printf("💡 Use 'weave agents create <name>' to create a new agent\n")
+	} else {
+		fmt.Printf("\nConfigured agents: 0\n")
+		fmt.Println()
+		color.New(color.FgCyan).Printf("💡 Use 'weave agents create <name> --type rag' to create your first agent\n")
 	}
 }
