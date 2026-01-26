@@ -427,12 +427,14 @@ weave eval run --agent rag-agent --dataset baseline --use-opik
 ```
 
 **Local Evaluators (Default):**
+
 - ✅ Works offline
 - ✅ Fast iteration during development
 - ✅ Direct OpenAI/Claude API calls
 - ✅ No additional setup required
 
 **Opik Evaluators (`--use-opik`):**
+
 - ✅ Rich dashboard visualization
 - ✅ Automatic cost tracking
 - ✅ Historical trend analysis
@@ -451,7 +453,7 @@ Weave CLI evaluates agents on 5 key dimensions:
 
 **Example Output:**
 
-```
+```text
 === Evaluation Summary ===
 Provider:      local
 Total Tests:   25
@@ -477,7 +479,7 @@ View results: weave eval show eval-20260126-143022
 
 When using `--use-opik`, get additional insights:
 
-```
+```text
 === Evaluation Summary ===
 Provider:      opik
 ...
