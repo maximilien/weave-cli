@@ -32,9 +32,9 @@ type CustomEvaluatorDef struct {
 
 // ScoringConfig defines how to score the evaluation
 type ScoringConfig struct {
-	Type      string  `yaml:"type"`      // llm_judge, regex, exact_match, contains
-	Threshold float64 `yaml:"threshold"` // Minimum passing score
-	Weight    float64 `yaml:"weight"`    // Weight in overall evaluation (default 1.0)
+	Type      string  `yaml:"type"`              // llm_judge, regex, exact_match, contains
+	Threshold float64 `yaml:"threshold"`         // Minimum passing score
+	Weight    float64 `yaml:"weight"`            // Weight in overall evaluation (default 1.0)
 	Pattern   string  `yaml:"pattern,omitempty"` // For regex type
 }
 
