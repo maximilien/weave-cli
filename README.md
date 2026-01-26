@@ -391,7 +391,7 @@ Supported VDB keys: `weaviate-local`, `weaviate-cloud`, `milvus-local`,
 
 See [User Guide](docs/USER_GUIDE.md#rag-agents) for custom agent configuration.
 
-### Agent Evaluation (New in v0.9.9)
+### Agent Evaluation (New in v0.9.10)
 
 Systematically evaluate and improve your RAG agents using test datasets and
 multiple evaluation metrics. Perfect for iterating on agent configurations,

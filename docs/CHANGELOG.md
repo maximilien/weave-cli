@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.10] - 2026-01-26
+
+### Added
+- **Custom Evaluators System**: Define domain-specific evaluation metrics
+using YAML without code
+  - 4 scoring types: `llm_judge`, `regex`, `exact_match`, `contains`
+  - YAML-based evaluator definitions with validation
+  - Template-based creation with `weave eval create-evaluator`
+  - CLI commands: `list-evaluators`, `validate-evaluator`,
+  `create-evaluator`
+  - Integration with dataset system via `custom_evaluators` field
+  - Comprehensive documentation in `evals/evaluators/README.md`
+  - 4 example evaluators in `evals/evaluators/examples/`
+  - Commits: b8fd95c, 638ed36, c96b0bc, 6e3ef0a
+- **Opik Integration - Hybrid Approach**: Real scores with trace sending
+  - Local LLM-as-judge evaluators for immediate CLI feedback
+  - OpenTelemetry trace sending to Opik dashboard for visualization
+  - Real scores (0.70-0.95 range) instead of 0.0 placeholders
+  - All 4 evaluators updated: Accuracy, Faithfulness, Hallucination,
+  Context Relevance
+  - 60+ test cases in `provider_opik_test.go`
+  - Documentation: `docs/planning/OPIK_API_INTEGRATION.md`
+  - Future option B documented: `docs/planning/OPIK_EVALUATOR_PORT_OPTION_B.md`
+  - Commit: 8c936d5
+
+### Changed
+- **Test Coverage**: Improved from 60.5% to 80.3% (exceeded 80% goal)
+  - Added `provider_opik_test.go` (400 lines, 60+ tests)
+  - Added `custom_evaluator_test.go` (424 lines, 16+ tests)
+  - Comprehensive testing of all custom evaluator scoring types
+  - All tests passing
+  - Commit: e999d4b
+
+### Fixed
+- **Markdown Linting**: Resolved 3 linting issues in README.md
+  - MD013: Split long line
+  - MD032: Added blank line before list
+  - MD040: Added language spec to code blocks
+  - Commits: b8e97cb, c96b0bc
+
+### Documentation
+- Created `evals/evaluators/README.md` - Complete custom evaluators guide
+- Added Custom Evaluators section to main README.md
+- Created `docs/planning/CUSTOM_EVALUATORS_DESIGN.md` - Design spec
+- Updated `docs/planning/OPIK_API_INTEGRATION.md` - Implementation guide
+- Created example dataset: `evals/datasets/custom-eval-demo.yaml`
+
 ## [0.8.5] - 2026-01-09
 
 ### Added
