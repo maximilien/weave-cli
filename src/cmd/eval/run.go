@@ -22,6 +22,7 @@ func NewRunCommand() *cobra.Command {
 	var collection string
 	var outputFormat string
 	var saveResults bool
+	var useOpik bool
 
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -35,9 +36,25 @@ This command:
 4. Generates a summary report
 5. Optionally saves results for later analysis
 
+Evaluator Providers:
+  By default, uses local LLM-as-judge evaluators with your OpenAI API key.
+
+  --use-opik: Use Opik's evaluators and send evaluation traces to Opik dashboard
+              Requires OPIK_API_KEY environment variable to be set
+
+              Benefits:
+              - Better LLM-as-judge evaluators
+              - Rich dashboard visualization
+              - Cost tracking
+              - Historical trends
+              - Production monitoring
+
 Examples:
-  # Run evaluation with baseline dataset
+  # Run evaluation with local evaluators (default)
   weave eval run --agent rag-agent --dataset baseline
+
+  # Run with Opik evaluators
+  weave eval run --agent rag-agent --dataset baseline --use-opik
 
   # Run with specific dataset file
   weave eval run --agent qa-agent --dataset evals/datasets/medical.yaml
@@ -48,7 +65,7 @@ Examples:
   # Save results to file
   weave eval run --agent rag-agent --dataset baseline --save`,
 		Run: func(cmd *cobra.Command, args []string) {
-			runEvaluation(agentName, datasetPath, collection, outputFormat, saveResults)
+			runEvaluation(agentName, datasetPath, collection, outputFormat, saveResults, useOpik)
 		},
 	}
 
@@ -57,6 +74,7 @@ Examples:
 	cmd.Flags().StringVar(&collection, "collection", "", "Collection to query (optional)")
 	cmd.Flags().StringVar(&outputFormat, "output", "text", "Output format: text, json, yaml")
 	cmd.Flags().BoolVar(&saveResults, "save", true, "Save results to file")
+	cmd.Flags().BoolVar(&useOpik, "use-opik", false, "Use Opik evaluators (requires OPIK_API_KEY)")
 
 	cmd.MarkFlagRequired("agent")
 	cmd.MarkFlagRequired("dataset")
@@ -64,7 +82,7 @@ Examples:
 	return cmd
 }
 
-func runEvaluation(agentName, datasetPath, collection, outputFormat string, saveResults bool) {
+func runEvaluation(agentName, datasetPath, collection, outputFormat string, saveResults bool, useOpik bool) {
 	ctx := context.Background()
 
 	// Print header
@@ -82,7 +100,7 @@ func runEvaluation(agentName, datasetPath, collection, outputFormat string, save
 	fmt.Printf("  Test cases: %d\n", len(dataset.TestCases))
 	fmt.Println()
 
-	// Create LLM client
+	// Create LLM client (needed for local evaluators and agent execution)
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	if apiKey == "" {
 		color.Red("Error: OPENAI_API_KEY environment variable is required\n")
@@ -94,6 +112,38 @@ func runEvaluation(agentName, datasetPath, collection, outputFormat string, save
 		color.Red("Error creating LLM client: %v\n", err)
 		os.Exit(1)
 	}
+
+	// Create evaluator provider
+	var provider evaluation.EvaluatorProvider
+	var providerType evaluation.ProviderType
+
+	if useOpik {
+		providerType = evaluation.ProviderTypeOpik
+	} else {
+		providerType = evaluation.ProviderTypeLocal
+	}
+
+	provider, err = evaluation.CreateProvider(ctx, providerType, llmClient)
+	if err != nil {
+		if useOpik {
+			color.Yellow("Warning: Failed to create Opik provider: %v\n", err)
+			color.Yellow("Falling back to local evaluators...\n\n")
+			provider = evaluation.NewLocalProvider(llmClient)
+		} else {
+			color.Red("Error creating evaluator provider: %v\n", err)
+			os.Exit(1)
+		}
+	}
+
+	// Display provider info
+	if provider.Name() == "opik" {
+		color.Cyan("Using Opik evaluators\n")
+		fmt.Printf("  Workspace: %s\n", os.Getenv("OPIK_WORKSPACE"))
+		fmt.Printf("  Project: %s\n", os.Getenv("OPIK_PROJECT_NAME"))
+	} else {
+		color.Cyan("Using local evaluators\n")
+	}
+	fmt.Println()
 
 	// Create runner
 	runner := evaluation.NewRunner(llmClient)
@@ -107,17 +157,22 @@ func runEvaluation(agentName, datasetPath, collection, outputFormat string, save
 
 	startTime := time.Now()
 
-	run, err := runner.RunEvaluation(ctx, dataset, agentName, collection)
+	run, err := runner.RunEvaluationWithProvider(ctx, dataset, agentName, collection, provider)
 	if err != nil {
 		color.Red("Error running evaluation: %v\n", err)
 		os.Exit(1)
+	}
+
+	// Cleanup Opik provider if needed
+	if opikProvider, ok := provider.(*evaluation.OpikProvider); ok {
+		defer opikProvider.Shutdown(ctx)
 	}
 
 	elapsed := time.Since(startTime)
 
 	// Print summary
 	fmt.Println()
-	printSummary(run, elapsed)
+	printSummary(run, elapsed, provider.Name())
 
 	// Print detailed results
 	if outputFormat == "text" {
@@ -136,6 +191,26 @@ func runEvaluation(agentName, datasetPath, collection, outputFormat string, save
 			fmt.Printf("View results: weave eval show %s\n", run.ID)
 		}
 	}
+
+	// Show Opik dashboard link if using Opik
+	if provider.Name() == "opik" {
+		fmt.Println()
+		color.Cyan("📊 View detailed results in Opik dashboard:\n")
+		workspace := os.Getenv("OPIK_WORKSPACE")
+		project := os.Getenv("OPIK_PROJECT_NAME")
+		if workspace == "" {
+			workspace = "default"
+		}
+		if project == "" {
+			project = "weave-cli-queries"
+		}
+		fmt.Printf("   https://www.comet.com/%s/%s\n\n", workspace, project)
+		fmt.Println("   Dashboard includes:")
+		fmt.Println("   - Detailed trace of each evaluation")
+		fmt.Println("   - Cost breakdown")
+		fmt.Println("   - Historical trends")
+		fmt.Println("   - Export to CSV/JSON")
+	}
 }
 
 func loadDataset(path string) (*evaluation.Dataset, error) {
@@ -152,10 +227,13 @@ func loadDataset(path string) (*evaluation.Dataset, error) {
 	return evaluation.LoadDataset(fullPath)
 }
 
-func printSummary(run *evaluation.EvaluationRun, elapsed time.Duration) {
+func printSummary(run *evaluation.EvaluationRun, elapsed time.Duration, providerName string) {
 	color.Cyan("=== Evaluation Summary ===\n")
 
 	summary := run.Summary
+
+	// Provider info
+	fmt.Printf("Provider:      %s\n", providerName)
 
 	// Overall results
 	fmt.Printf("Total Tests:   %d\n", summary.TotalTests)

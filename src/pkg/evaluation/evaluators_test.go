@@ -267,15 +267,15 @@ func (m *MockLLMClient) GetMetrics() *llm.Metrics {
 
 func TestContextRelevanceEvaluator(t *testing.T) {
 	tests := []struct {
-		name            string
+		name             string
 		retrievedContext []string
-		expectedScore   float64
-		llmResponse     string
+		expectedScore    float64
+		llmResponse      string
 	}{
 		{
-			name:            "No context returns 1.0",
+			name:             "No context returns 1.0",
 			retrievedContext: []string{},
-			expectedScore:   1.0,
+			expectedScore:    1.0,
 		},
 		{
 			name: "Highly relevant context",
@@ -379,17 +379,19 @@ func TestEvaluateTestCaseWithNewEvaluators(t *testing.T) {
 	mockClient := &MockLLMClient{response: "0.85"}
 
 	testCase := &TestCase{
-		ID:               "test-001",
-		Query:            "What is a vector database?",
-		ExpectedAnswer:   "A database for storing vectors",
-		RetrievedContext: []string{"Vector databases store embeddings"},
-		RequiredConcepts: []string{"vector", "database"},
-		MustCite:         false,
+		ID:                "test-001",
+		Query:             "What is a vector database?",
+		ExpectedAnswer:    "A database for storing vectors",
+		RetrievedContext:  []string{"Vector databases store embeddings"},
+		RequiredConcepts:  []string{"vector", "database"},
+		MustCite:          false,
 		MinRelevanceScore: 0.7,
 	}
 
 	ctx := context.Background()
-	result, err := EvaluateTestCase(ctx, testCase, "A vector database stores embeddings", nil, mockClient)
+
+	// Use the backward compatibility wrapper
+	result, err := EvaluateTestCaseWithLLMClient(ctx, testCase, "A vector database stores embeddings", nil, mockClient)
 
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
@@ -409,5 +411,10 @@ func TestEvaluateTestCaseWithNewEvaluators(t *testing.T) {
 	// Verify result structure
 	if result.TestCaseID != testCase.ID {
 		t.Errorf("Expected TestCaseID %s, got %s", testCase.ID, result.TestCaseID)
+	}
+
+	// Verify provider info
+	if result.Details["evaluator_provider"] != "local" {
+		t.Errorf("Expected provider 'local', got %v", result.Details["evaluator_provider"])
 	}
 }

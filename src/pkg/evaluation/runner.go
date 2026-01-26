@@ -25,8 +25,15 @@ func NewRunner(llmClient llm.Client) *Runner {
 	}
 }
 
-// RunEvaluation executes a complete evaluation
+// RunEvaluation executes a complete evaluation using the default local provider
 func (r *Runner) RunEvaluation(ctx context.Context, dataset *Dataset, agentName string, collection string) (*EvaluationRun, error) {
+	// Use local provider by default
+	provider := NewLocalProvider(r.llmClient)
+	return r.RunEvaluationWithProvider(ctx, dataset, agentName, collection, provider)
+}
+
+// RunEvaluationWithProvider executes a complete evaluation using the specified provider
+func (r *Runner) RunEvaluationWithProvider(ctx context.Context, dataset *Dataset, agentName string, collection string, provider EvaluatorProvider) (*EvaluationRun, error) {
 	// Load agent
 	agentConfig, err := agents.LoadAgent(agentName)
 	if err != nil {
@@ -46,6 +53,9 @@ func (r *Runner) RunEvaluation(ctx context.Context, dataset *Dataset, agentName 
 		},
 		Results: make([]TestCaseResult, 0, len(dataset.TestCases)),
 	}
+
+	// Add provider info to config
+	run.Config.Parameters["evaluator_provider"] = provider.Name()
 
 	startTime := time.Now()
 
@@ -72,8 +82,8 @@ func (r *Runner) RunEvaluation(ctx context.Context, dataset *Dataset, agentName 
 
 		testEnd := time.Now()
 
-		// Evaluate the result
-		result, err := EvaluateTestCase(ctx, &testCase, actualAnswer, actualCitations, r.llmClient)
+		// Evaluate the result using the specified provider
+		result, err := EvaluateTestCase(ctx, &testCase, actualAnswer, actualCitations, provider)
 		if err != nil {
 			result = &TestCaseResult{
 				TestCaseID:   testCase.ID,

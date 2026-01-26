@@ -397,8 +397,10 @@ Respond with ONLY a number between 0.0 and 1.0.`, testCase.Query, testCase.Expec
 	return score, nil
 }
 
-// EvaluateTestCase runs all evaluators on a test case
-func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer string, actualCitations []string, llmClient llm.Client) (*TestCaseResult, error) {
+// EvaluateTestCase runs all evaluators on a test case using the specified provider.
+// Rule-based evaluators (citation) always run locally.
+// LLM-based evaluators use the provider (local or Opik).
+func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer string, actualCitations []string, provider EvaluatorProvider) (*TestCaseResult, error) {
 	result := &TestCaseResult{
 		TestCaseID:      testCase.ID,
 		Query:           testCase.Query,
@@ -407,40 +409,38 @@ func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer stri
 		Details:         make(map[string]interface{}),
 	}
 
-	// Run evaluators
-	accuracyEval := NewAccuracyEvaluator(llmClient)
-	citationEval := NewCitationEvaluator()
-	hallucinationEval := NewHallucinationDetector(llmClient)
-	contextRelEval := NewContextRelevanceEvaluator(llmClient)
-	faithfulnessEval := NewFaithfulnessEvaluator(llmClient)
+	// Add provider info to details
+	result.Details["evaluator_provider"] = provider.Name()
 
 	var err error
 
-	// Accuracy
-	result.AccuracyScore, err = accuracyEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
-	if err != nil {
-		result.Errors = append(result.Errors, fmt.Sprintf("Accuracy evaluation failed: %v", err))
-	}
-
-	// Citation
+	// Rule-based evaluators (always local, fast)
+	citationEval := NewCitationEvaluator()
 	result.CitationScore, err = citationEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("Citation evaluation failed: %v", err))
 	}
 
-	// Hallucination
+	// LLM-based evaluators (use provider)
+	accuracyEval := provider.GetAccuracyEvaluator()
+	result.AccuracyScore, err = accuracyEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("Accuracy evaluation failed: %v", err))
+	}
+
+	hallucinationEval := provider.GetHallucinationEvaluator()
 	result.HallucinationScore, err = hallucinationEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("Hallucination evaluation failed: %v", err))
 	}
 
-	// Context Relevance
+	contextRelEval := provider.GetContextRelevanceEvaluator()
 	result.ContextRelevanceScore, err = contextRelEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("Context relevance evaluation failed: %v", err))
 	}
 
-	// Faithfulness
+	faithfulnessEval := provider.GetFaithfulnessEvaluator()
 	result.FaithfulnessScore, err = faithfulnessEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("Faithfulness evaluation failed: %v", err))
@@ -465,4 +465,11 @@ func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer stri
 	}
 
 	return result, nil
+}
+
+// EvaluateTestCaseWithLLMClient is a convenience wrapper that creates a LocalProvider.
+// This maintains backward compatibility with existing code.
+func EvaluateTestCaseWithLLMClient(ctx context.Context, testCase *TestCase, actualAnswer string, actualCitations []string, llmClient llm.Client) (*TestCaseResult, error) {
+	provider := NewLocalProvider(llmClient)
+	return EvaluateTestCase(ctx, testCase, actualAnswer, actualCitations, provider)
 }
