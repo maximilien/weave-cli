@@ -2,7 +2,11 @@
 
 **Date:** 2026-01-26
 **Status:** ✅ Complete
-**Commits:** TBD
+**Commits:**
+- `497a555` - feat: add pluggable evaluator architecture with optional Opik integration
+- `8ef4bc6` - test: add comprehensive provider tests and update README
+- `b8e97cb` - docs: fix markdown linting issues in README
+- `e999d4b` - test: increase evaluation package coverage from 60.5% to 66.4%
 
 ## Summary
 
@@ -208,18 +212,30 @@ weave eval run --agent rag-agent --dataset baseline --use-opik
 
 ## Tests
 
-**Status:** ✅ All tests passing
+**Status:** ✅ All tests passing (50+ tests)
 
 ```bash
 $ go test ./src/pkg/evaluation/...
-ok  	github.com/maximilien/weave-cli/src/pkg/evaluation	1.336s
+ok  	github.com/maximilien/weave-cli/src/pkg/evaluation	1.355s	coverage: 66.4% of statements
 ```
 
-**Test Coverage:**
-- Provider creation
-- Local provider
-- Backward compatibility (EvaluateTestCaseWithLLMClient)
-- Provider info in results
+**Test Coverage:** 66.4% (up from 60.5%)
+
+**New Test Files:**
+- `runner_test.go` - Runner creation, citation extraction
+- `dataset_additional_test.go` - Dataset save/load, validation
+- `results_additional_test.go` - Results save/load, formats
+- `evaluators_additional_test.go` - Error handling, thresholds
+- `provider_test.go` - Provider creation, factory, backward compat
+
+**Coverage by Component:**
+- Provider factory: 100%
+- LocalProvider: 100%
+- Evaluators: 67-100% (context-dependent code paths)
+- Dataset operations: 67-90%
+- Results operations: 73-82%
+- Runner: 0% (requires agent configs for integration testing)
+- OpikProvider: 0% (requires Opik API key and service)
 
 ## Backward Compatibility
 
@@ -231,15 +247,20 @@ ok  	github.com/maximilien/weave-cli/src/pkg/evaluation	1.336s
 
 ## Next Steps
 
-### Immediate (This PR)
-- [x] Design pluggable architecture ✅
-- [x] Implement provider interface ✅
-- [x] Add Opik provider ✅
-- [x] Update CLI with --use-opik flag ✅
-- [x] Test compilation and basic functionality ✅
-- [ ] Add integration tests for provider selection
-- [ ] Update README with --use-opik examples
-- [ ] Commit and create PR
+### Completed ✅
+- [x] Design pluggable architecture
+- [x] Implement provider interface
+- [x] Add Opik provider (trace-based, stubs for API)
+- [x] Update CLI with --use-opik flag
+- [x] Test compilation and basic functionality
+- [x] Add comprehensive test suite (66.4% coverage)
+- [x] Update README with --use-opik examples
+- [x] Commit and merge to main
+
+### Up Next (Priority Order)
+1. **Complete Opik API Integration** (Option 3)
+2. **Custom Evaluator Definitions** (Option 2)
+3. **Increase Test Coverage to 75-80%** (Option 1)
 
 ### Future Work
 1. **Complete Opik API Integration**

@@ -115,7 +115,7 @@ func TestRunEvaluationIntegration(t *testing.T) {
 func TestGenerateAnswerCitationExtraction(t *testing.T) {
 	// Test that runner extracts citations correctly
 	testCases := []struct {
-		response         string
+		response          string
 		expectedCitations int
 	}{
 		{"Answer without citations", 0},
