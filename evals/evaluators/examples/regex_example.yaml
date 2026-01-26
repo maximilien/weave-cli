@@ -1,0 +1,21 @@
+name: citation_check
+description: Checks if response includes citations using regex
+version: 1.0.0
+
+# Regex evaluators don't use prompts - they match patterns
+prompt: "Not used for regex evaluators"
+
+scoring:
+  type: regex
+  pattern: '\[[0-9]+\]'  # Matches [1], [2], etc.
+  threshold: 0.9
+
+tags:
+  - citations
+  - regex
+  - example
+
+author: weave-cli-team
+
+# If true, test must pass this evaluator to be considered passing
+required: false

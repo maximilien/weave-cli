@@ -1,0 +1,38 @@
+name: technical_accuracy
+description: Evaluates technical accuracy of responses
+version: 1.0.0
+
+prompt: |
+  You are evaluating the technical accuracy of an AI response.
+
+  Query: {{.Query}}
+  Expected Answer: {{.ExpectedAnswer}}
+  Actual Answer: {{.Answer}}
+
+  Evaluate the technical accuracy considering:
+  1. Correctness of technical concepts
+  2. Appropriate level of detail
+  3. Accuracy of terminology
+  4. Completeness of explanation
+
+  Rate from 0.0 (technically incorrect) to 1.0 (perfectly accurate).
+  Provide only a number between 0.0 and 1.0.
+
+scoring:
+  type: llm_judge
+  threshold: 0.75
+  weight: 1.5  # Higher weight for technical accuracy
+
+model:
+  provider: openai
+  name: gpt-4o-mini
+  temperature: 0.1  # Low temperature for consistent evaluation
+
+tags:
+  - technical
+  - accuracy
+  - domain-specific
+  - example
+
+author: weave-cli-team
+required: false

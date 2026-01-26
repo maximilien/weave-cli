@@ -17,6 +17,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// UnmarshalYAML is a helper function to unmarshal YAML data
+func UnmarshalYAML(data []byte, v interface{}) error {
+	return yaml.Unmarshal(data, v)
+}
+
 // CustomEvaluatorDef defines a custom evaluator from YAML configuration
 type CustomEvaluatorDef struct {
 	Name        string        `yaml:"name"`

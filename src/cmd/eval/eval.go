@@ -21,11 +21,14 @@ The eval command provides tools for:
 - Tracking evaluation history
 
 Available Commands:
-  run        Run an evaluation with a dataset
-  benchmark  Compare multiple agents on the same dataset
-  show       Show evaluation results
-  list       List all evaluation runs
-  datasets   Manage evaluation datasets
+  run                 Run an evaluation with a dataset
+  benchmark           Compare multiple agents on the same dataset
+  show                Show evaluation results
+  list                List all evaluation runs
+  datasets            Manage evaluation datasets
+  list-evaluators     List available custom evaluators
+  validate-evaluator  Validate a custom evaluator definition
+  create-evaluator    Create a new custom evaluator from template
 
 Examples:
   # Run evaluation
@@ -50,6 +53,9 @@ Examples:
 	cmd.AddCommand(NewShowCommand())
 	cmd.AddCommand(NewListCommand())
 	cmd.AddCommand(NewDatasetsCommand())
+	cmd.AddCommand(NewListEvaluatorsCommand())
+	cmd.AddCommand(NewValidateEvaluatorCommand())
+	cmd.AddCommand(NewCreateEvaluatorCommand())
 
 	return cmd
 }

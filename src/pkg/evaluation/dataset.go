@@ -24,6 +24,9 @@ type Dataset struct {
 	// Configuration
 	Config DatasetConfig `yaml:"config"`
 
+	// Custom evaluators to run (optional)
+	CustomEvaluators []string `yaml:"custom_evaluators,omitempty"`
+
 	// Test cases
 	TestCases []TestCase `yaml:"test_cases"`
 }

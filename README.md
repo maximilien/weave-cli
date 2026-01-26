@@ -451,6 +451,65 @@ Weave CLI evaluates agents on 5 key dimensions:
 4. **Context Relevance** - Quality of retrieved chunks (LLM-as-judge)
 5. **Faithfulness** - Answer supported by context (LLM-as-judge)
 
+**Custom Evaluators:**
+
+Define domain-specific evaluation metrics without writing code using YAML
+configuration:
+
+```bash
+# List available custom evaluators
+weave eval list-evaluators
+
+# Create a new evaluator from template
+weave eval create-evaluator citation_check --type regex
+
+# Validate evaluator definition
+weave eval validate-evaluator evals/evaluators/citation_check.yaml
+```
+
+**Supported Evaluator Types:**
+
+- **llm_judge** - LLM-based evaluation with custom prompts
+- **regex** - Pattern matching for specific formats
+- **exact_match** - Exact string comparison
+- **contains** - Substring/keyword checking
+
+**Example Custom Evaluator (regex):**
+
+```yaml
+name: citation_check
+description: Checks if response includes proper citations
+version: 1.0.0
+
+scoring:
+  type: regex
+  pattern: '\[[0-9]+\]'  # Matches [1], [2], etc.
+  threshold: 0.9
+
+tags:
+  - citation
+  - compliance
+```
+
+**Using in Datasets:**
+
+Reference custom evaluators in your test datasets:
+
+```yaml
+name: my-dataset
+custom_evaluators:
+  - citation_check
+  - technical_accuracy
+
+test_cases:
+  - id: test-001
+    query: "What is a vector database?"
+    expected_answer: "A vector database stores data..."
+```
+
+See [evals/evaluators/README.md](evals/evaluators/README.md) for complete
+documentation.
+
 **Example Output:**
 
 ```text
