@@ -1,3 +1,4 @@
+---
 name: custom-eval-demo
 description: Demonstrates using custom evaluators with a dataset
 version: 1.0.0

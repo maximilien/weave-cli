@@ -1,3 +1,4 @@
+---
 name: citation_check
 description: Checks if response includes citations using regex
 version: 1.0.0
