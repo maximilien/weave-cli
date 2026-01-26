@@ -31,11 +31,14 @@ func CreateProvider(ctx context.Context, providerType ProviderType, llmClient ll
 		return NewLocalProvider(llmClient), nil
 
 	case ProviderTypeOpik:
+		if llmClient == nil {
+			return nil, fmt.Errorf("Opik provider requires LLM client")
+		}
 		opikConfig := llm.LoadOpikConfig()
 		if !opikConfig.Enabled || opikConfig.APIKey == "" {
 			return nil, fmt.Errorf("Opik provider requires OPIK_API_KEY to be set in environment")
 		}
-		return NewOpikProvider(opikConfig)
+		return NewOpikProvider(opikConfig, llmClient)
 
 	default:
 		return nil, fmt.Errorf("unknown provider type: %s", providerType)

@@ -13,17 +13,23 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-// OpikProvider uses Opik's LLM-as-judge evaluators via OpenTelemetry.
-// Evaluations are sent to Opik's backend and results are displayed in their dashboard.
+// OpikProvider uses local LLM-as-judge evaluators and sends traces to Opik dashboard.
+// This provides real evaluation scores in CLI output while enabling rich visualization
+// in the Opik dashboard for production monitoring and analysis.
 type OpikProvider struct {
 	config         *llm.OpikConfig
 	tracerProvider *sdktrace.TracerProvider
+	llmClient      llm.Client
 }
 
 // NewOpikProvider creates an Opik evaluator provider
-func NewOpikProvider(config *llm.OpikConfig) (*OpikProvider, error) {
+func NewOpikProvider(config *llm.OpikConfig, llmClient llm.Client) (*OpikProvider, error) {
 	if !config.Enabled || config.APIKey == "" {
 		return nil, fmt.Errorf("Opik is not configured (set OPIK_API_KEY)")
+	}
+
+	if llmClient == nil {
+		return nil, fmt.Errorf("LLM client is required for Opik provider")
 	}
 
 	// Initialize OpenTelemetry tracing
@@ -35,6 +41,7 @@ func NewOpikProvider(config *llm.OpikConfig) (*OpikProvider, error) {
 	return &OpikProvider{
 		config:         config,
 		tracerProvider: tp,
+		llmClient:      llmClient,
 	}, nil
 }
 
@@ -83,8 +90,9 @@ func (e *OpikAccuracyEvaluator) Name() string {
 	return "accuracy"
 }
 
-// Evaluate sends accuracy evaluation to Opik via OpenTelemetry
+// Evaluate runs local accuracy evaluation and sends trace to Opik
 func (e *OpikAccuracyEvaluator) Evaluate(ctx context.Context, testCase *TestCase, actual string, actualCitations []string) (float64, error) {
+	// Start trace span
 	tracer := otel.Tracer("weave-cli-eval")
 	ctx, span := tracer.Start(ctx, "evaluate-accuracy")
 	defer span.End()
@@ -99,20 +107,16 @@ func (e *OpikAccuracyEvaluator) Evaluate(ctx context.Context, testCase *TestCase
 		attribute.String("actual_answer", actual),
 	)
 
-	// TODO: Implement Opik API integration
-	// Options:
-	// 1. Query Opik API synchronously for evaluation score
-	// 2. Use Opik SDK for evaluation (if available)
-	// 3. Get trace ID and poll for results
-	//
-	// For now, we return a placeholder score and rely on Opik dashboard
-	// to show the full evaluation results.
+	// Run local accuracy evaluation
+	localEval := NewAccuracyEvaluator(e.provider.llmClient)
+	score, err := localEval.Evaluate(ctx, testCase, actual, actualCitations)
 
-	score := 0.0 // Placeholder - will fetch from Opik API
-
+	// Add score to trace span
 	span.SetAttributes(attribute.Float64("score", score))
 
-	return score, fmt.Errorf("Opik evaluator integration not yet implemented - see traces in Opik dashboard")
+	// Even if evaluation failed, we still return the score
+	// The error will be logged in EvaluateTestCase
+	return score, err
 }
 
 // OpikFaithfulnessEvaluator evaluates faithfulness using Opik
@@ -125,8 +129,9 @@ func (e *OpikFaithfulnessEvaluator) Name() string {
 	return "faithfulness"
 }
 
-// Evaluate sends faithfulness evaluation to Opik via OpenTelemetry
+// Evaluate runs local faithfulness evaluation and sends trace to Opik
 func (e *OpikFaithfulnessEvaluator) Evaluate(ctx context.Context, testCase *TestCase, actual string, actualCitations []string) (float64, error) {
+	// Start trace span
 	tracer := otel.Tracer("weave-cli-eval")
 	ctx, span := tracer.Start(ctx, "evaluate-faithfulness")
 	defer span.End()
@@ -146,11 +151,14 @@ func (e *OpikFaithfulnessEvaluator) Evaluate(ctx context.Context, testCase *Test
 		}
 	}
 
-	score := 0.0 // Placeholder
+	// Run local faithfulness evaluation
+	localEval := NewFaithfulnessEvaluator(e.provider.llmClient)
+	score, err := localEval.Evaluate(ctx, testCase, actual, actualCitations)
 
+	// Add score to trace span
 	span.SetAttributes(attribute.Float64("score", score))
 
-	return score, fmt.Errorf("Opik evaluator integration not yet implemented - see traces in Opik dashboard")
+	return score, err
 }
 
 // OpikHallucinationEvaluator evaluates hallucination using Opik
@@ -163,8 +171,9 @@ func (e *OpikHallucinationEvaluator) Name() string {
 	return "hallucination"
 }
 
-// Evaluate sends hallucination evaluation to Opik via OpenTelemetry
+// Evaluate runs local hallucination evaluation and sends trace to Opik
 func (e *OpikHallucinationEvaluator) Evaluate(ctx context.Context, testCase *TestCase, actual string, actualCitations []string) (float64, error) {
+	// Start trace span
 	tracer := otel.Tracer("weave-cli-eval")
 	ctx, span := tracer.Start(ctx, "evaluate-hallucination")
 	defer span.End()
@@ -185,11 +194,14 @@ func (e *OpikHallucinationEvaluator) Evaluate(ctx context.Context, testCase *Tes
 		}
 	}
 
-	score := 0.0 // Placeholder
+	// Run local hallucination evaluation
+	localEval := NewHallucinationDetector(e.provider.llmClient)
+	score, err := localEval.Evaluate(ctx, testCase, actual, actualCitations)
 
+	// Add score to trace span
 	span.SetAttributes(attribute.Float64("score", score))
 
-	return score, fmt.Errorf("Opik evaluator integration not yet implemented - see traces in Opik dashboard")
+	return score, err
 }
 
 // OpikContextRelevanceEvaluator evaluates context relevance using Opik
@@ -202,8 +214,9 @@ func (e *OpikContextRelevanceEvaluator) Name() string {
 	return "context_relevance"
 }
 
-// Evaluate sends context relevance evaluation to Opik via OpenTelemetry
+// Evaluate runs local context relevance evaluation and sends trace to Opik
 func (e *OpikContextRelevanceEvaluator) Evaluate(ctx context.Context, testCase *TestCase, actual string, actualCitations []string) (float64, error) {
+	// Start trace span
 	tracer := otel.Tracer("weave-cli-eval")
 	ctx, span := tracer.Start(ctx, "evaluate-context-relevance")
 	defer span.End()
@@ -223,16 +236,12 @@ func (e *OpikContextRelevanceEvaluator) Evaluate(ctx context.Context, testCase *
 		}
 	}
 
-	score := 1.0 // Return 1.0 if no context (not applicable)
-	if len(testCase.RetrievedContext) > 0 {
-		score = 0.0 // Placeholder for actual evaluation
-	}
+	// Run local context relevance evaluation
+	localEval := NewContextRelevanceEvaluator(e.provider.llmClient)
+	score, err := localEval.Evaluate(ctx, testCase, actual, actualCitations)
 
+	// Add score to trace span
 	span.SetAttributes(attribute.Float64("score", score))
 
-	if len(testCase.RetrievedContext) > 0 {
-		return score, fmt.Errorf("Opik evaluator integration not yet implemented - see traces in Opik dashboard")
-	}
-
-	return score, nil
+	return score, err
 }
