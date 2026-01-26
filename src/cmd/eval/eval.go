@@ -21,14 +21,18 @@ The eval command provides tools for:
 - Tracking evaluation history
 
 Available Commands:
-  run       Run an evaluation with a dataset
-  show      Show evaluation results
-  list      List all evaluation runs
-  datasets  Manage evaluation datasets
+  run        Run an evaluation with a dataset
+  benchmark  Compare multiple agents on the same dataset
+  show       Show evaluation results
+  list       List all evaluation runs
+  datasets   Manage evaluation datasets
 
 Examples:
   # Run evaluation
   weave eval run --agent rag-agent --dataset baseline
+
+  # Benchmark multiple agents
+  weave eval benchmark --agents rag-agent,qa-agent --dataset baseline
 
   # Show results
   weave eval show run-20260123-140530
@@ -42,6 +46,7 @@ Examples:
 
 	// Add subcommands
 	cmd.AddCommand(NewRunCommand())
+	cmd.AddCommand(NewBenchmarkCommand())
 	cmd.AddCommand(NewShowCommand())
 	cmd.AddCommand(NewListCommand())
 	cmd.AddCommand(NewDatasetsCommand())

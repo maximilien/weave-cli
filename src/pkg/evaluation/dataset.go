@@ -58,6 +58,9 @@ type TestCase struct {
 	ExpectedCitations []string `yaml:"expected_citations,omitempty"`
 	RequiredConcepts  []string `yaml:"required_concepts,omitempty"`
 
+	// Retrieved context (for advanced evaluation)
+	RetrievedContext []string `yaml:"retrieved_context,omitempty"`
+
 	// Evaluation criteria
 	MinRelevanceScore float64 `yaml:"min_relevance_score,omitempty"`
 	MustCite          bool    `yaml:"must_cite,omitempty"`

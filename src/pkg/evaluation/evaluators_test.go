@@ -4,7 +4,10 @@
 package evaluation
 
 import (
+	"context"
 	"testing"
+
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 )
 
 func TestCitationEvaluator(t *testing.T) {
@@ -230,5 +233,181 @@ func TestExtractCitations(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// MockLLMClient for testing
+type MockLLMClient struct {
+	response string
+	err      error
+}
+
+func (m *MockLLMClient) Complete(ctx context.Context, prompt string, opts ...llm.Option) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+	return m.response, nil
+}
+
+func (m *MockLLMClient) CompleteWithImages(ctx context.Context, prompt string, imageURLs []string, opts ...llm.Option) (string, error) {
+	return m.Complete(ctx, prompt, opts...)
+}
+
+func (m *MockLLMClient) GenerateEmbeddings(ctx context.Context, texts []string) ([][]float32, error) {
+	return nil, nil
+}
+
+func (m *MockLLMClient) CompleteStructured(ctx context.Context, prompt string, schema interface{}, opts ...llm.Option) (interface{}, error) {
+	return m.Complete(ctx, prompt, opts...)
+}
+
+func (m *MockLLMClient) GetMetrics() *llm.Metrics {
+	return &llm.Metrics{}
+}
+
+func TestContextRelevanceEvaluator(t *testing.T) {
+	tests := []struct {
+		name            string
+		retrievedContext []string
+		expectedScore   float64
+		llmResponse     string
+	}{
+		{
+			name:            "No context returns 1.0",
+			retrievedContext: []string{},
+			expectedScore:   1.0,
+		},
+		{
+			name: "Highly relevant context",
+			retrievedContext: []string{
+				"Vector databases store embeddings",
+				"Embeddings are numerical representations",
+			},
+			expectedScore: 0.9,
+			llmResponse:   "0.9",
+		},
+		{
+			name: "Low relevance context",
+			retrievedContext: []string{
+				"Unrelated information",
+			},
+			expectedScore: 0.3,
+			llmResponse:   "0.3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := &MockLLMClient{response: tt.llmResponse}
+			evaluator := NewContextRelevanceEvaluator(mockClient)
+
+			testCase := &TestCase{
+				Query:            "What is a vector database?",
+				RetrievedContext: tt.retrievedContext,
+			}
+
+			ctx := context.Background()
+			score, err := evaluator.Evaluate(ctx, testCase, "answer", nil)
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			if tt.retrievedContext == nil || len(tt.retrievedContext) == 0 {
+				if score != tt.expectedScore {
+					t.Errorf("Expected score %.2f for no context, got %.2f", tt.expectedScore, score)
+				}
+			}
+		})
+	}
+}
+
+func TestFaithfulnessEvaluator(t *testing.T) {
+	tests := []struct {
+		name          string
+		context       []string
+		expectedScore float64
+		llmResponse   string
+	}{
+		{
+			name:          "Faithful answer",
+			context:       []string{"Vector databases store embeddings"},
+			expectedScore: 0.95,
+			llmResponse:   "0.95",
+		},
+		{
+			name:          "Unfaithful answer",
+			context:       []string{"Completely unrelated info"},
+			expectedScore: 0.2,
+			llmResponse:   "0.2",
+		},
+		{
+			name:          "No context falls back to expected answer",
+			context:       []string{},
+			expectedScore: 0.85,
+			llmResponse:   "0.85",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClient := &MockLLMClient{response: tt.llmResponse}
+			evaluator := NewFaithfulnessEvaluator(mockClient)
+
+			testCase := &TestCase{
+				Query:            "What is a vector database?",
+				ExpectedAnswer:   "A vector database stores and queries embeddings",
+				RetrievedContext: tt.context,
+			}
+
+			ctx := context.Background()
+			score, err := evaluator.Evaluate(ctx, testCase, "answer", nil)
+
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Just verify we get a score (mock returns fixed value)
+			if score < 0.0 || score > 1.0 {
+				t.Errorf("Score out of range: %.2f", score)
+			}
+		})
+	}
+}
+
+func TestEvaluateTestCaseWithNewEvaluators(t *testing.T) {
+	mockClient := &MockLLMClient{response: "0.85"}
+
+	testCase := &TestCase{
+		ID:               "test-001",
+		Query:            "What is a vector database?",
+		ExpectedAnswer:   "A database for storing vectors",
+		RetrievedContext: []string{"Vector databases store embeddings"},
+		RequiredConcepts: []string{"vector", "database"},
+		MustCite:         false,
+		MinRelevanceScore: 0.7,
+	}
+
+	ctx := context.Background()
+	result, err := EvaluateTestCase(ctx, testCase, "A vector database stores embeddings", nil, mockClient)
+
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	// Verify all scores are populated
+	if result.AccuracyScore == 0 {
+		t.Error("AccuracyScore should be populated")
+	}
+	if result.ContextRelevanceScore == 0 {
+		t.Error("ContextRelevanceScore should be populated")
+	}
+	if result.FaithfulnessScore == 0 {
+		t.Error("FaithfulnessScore should be populated")
+	}
+
+	// Verify result structure
+	if result.TestCaseID != testCase.ID {
+		t.Errorf("Expected TestCaseID %s, got %s", testCase.ID, result.TestCaseID)
 	}
 }

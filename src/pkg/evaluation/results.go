@@ -50,9 +50,11 @@ type TestCaseResult struct {
 	ResponseTime    float64  `json:"response_time_ms" yaml:"response_time_ms"`
 
 	// Evaluation scores
-	AccuracyScore      float64 `json:"accuracy_score" yaml:"accuracy_score"`
-	CitationScore      float64 `json:"citation_score" yaml:"citation_score"`
-	HallucinationScore float64 `json:"hallucination_score" yaml:"hallucination_score"`
+	AccuracyScore         float64 `json:"accuracy_score" yaml:"accuracy_score"`
+	CitationScore         float64 `json:"citation_score" yaml:"citation_score"`
+	HallucinationScore    float64 `json:"hallucination_score" yaml:"hallucination_score"`
+	ContextRelevanceScore float64 `json:"context_relevance_score" yaml:"context_relevance_score"`
+	FaithfulnessScore     float64 `json:"faithfulness_score" yaml:"faithfulness_score"`
 
 	// Pass/fail
 	Passed bool     `json:"passed" yaml:"passed"`
@@ -70,9 +72,11 @@ type EvaluationSummary struct {
 	PassRate    float64 `json:"pass_rate" yaml:"pass_rate"`
 
 	// Average scores
-	AvgAccuracy      float64 `json:"avg_accuracy" yaml:"avg_accuracy"`
-	AvgCitation      float64 `json:"avg_citation" yaml:"avg_citation"`
-	AvgHallucination float64 `json:"avg_hallucination" yaml:"avg_hallucination"`
+	AvgAccuracy         float64 `json:"avg_accuracy" yaml:"avg_accuracy"`
+	AvgCitation         float64 `json:"avg_citation" yaml:"avg_citation"`
+	AvgHallucination    float64 `json:"avg_hallucination" yaml:"avg_hallucination"`
+	AvgContextRelevance float64 `json:"avg_context_relevance" yaml:"avg_context_relevance"`
+	AvgFaithfulness     float64 `json:"avg_faithfulness" yaml:"avg_faithfulness"`
 
 	// Performance
 	TotalTime float64 `json:"total_time_ms" yaml:"total_time_ms"`
@@ -102,7 +106,7 @@ func CalculateSummary(results []TestCaseResult, startTime, endTime time.Time) Ev
 		return summary
 	}
 
-	var totalAccuracy, totalCitation, totalHallucination, totalTime float64
+	var totalAccuracy, totalCitation, totalHallucination, totalContextRel, totalFaithfulness, totalTime float64
 
 	for _, result := range results {
 		if result.Passed {
@@ -114,6 +118,8 @@ func CalculateSummary(results []TestCaseResult, startTime, endTime time.Time) Ev
 		totalAccuracy += result.AccuracyScore
 		totalCitation += result.CitationScore
 		totalHallucination += result.HallucinationScore
+		totalContextRel += result.ContextRelevanceScore
+		totalFaithfulness += result.FaithfulnessScore
 		totalTime += result.ResponseTime
 	}
 
@@ -121,6 +127,8 @@ func CalculateSummary(results []TestCaseResult, startTime, endTime time.Time) Ev
 	summary.AvgAccuracy = totalAccuracy / float64(summary.TotalTests)
 	summary.AvgCitation = totalCitation / float64(summary.TotalTests)
 	summary.AvgHallucination = totalHallucination / float64(summary.TotalTests)
+	summary.AvgContextRelevance = totalContextRel / float64(summary.TotalTests)
+	summary.AvgFaithfulness = totalFaithfulness / float64(summary.TotalTests)
 	summary.TotalTime = totalTime
 	summary.AvgTime = totalTime / float64(summary.TotalTests)
 

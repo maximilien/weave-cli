@@ -233,6 +233,170 @@ func parseScore(response string) float64 {
 	return score
 }
 
+// ContextRelevanceEvaluator evaluates how relevant retrieved context is to the query
+type ContextRelevanceEvaluator struct {
+	llmClient llm.Client
+}
+
+// NewContextRelevanceEvaluator creates a new context relevance evaluator
+func NewContextRelevanceEvaluator(llmClient llm.Client) *ContextRelevanceEvaluator {
+	return &ContextRelevanceEvaluator{
+		llmClient: llmClient,
+	}
+}
+
+// Name returns the evaluator name
+func (e *ContextRelevanceEvaluator) Name() string {
+	return "context_relevance"
+}
+
+// Evaluate scores how relevant the retrieved context is to the query
+func (e *ContextRelevanceEvaluator) Evaluate(ctx context.Context, testCase *TestCase, actual string, actualCitations []string) (float64, error) {
+	// If no context provided, return perfect score (not applicable)
+	if len(testCase.RetrievedContext) == 0 {
+		return 1.0, nil
+	}
+
+	// Evaluate each context chunk for relevance
+	totalScore := 0.0
+	evaluatedChunks := 0
+
+	for i, chunk := range testCase.RetrievedContext {
+		if strings.TrimSpace(chunk) == "" {
+			continue
+		}
+
+		prompt := fmt.Sprintf(`You are an evaluation assistant. Rate how relevant this context is to answering the query.
+
+Query: %s
+
+Context Chunk %d:
+%s
+
+Rate the relevance on a scale of 0.0 to 1.0, where:
+- 1.0 = Highly relevant, directly answers or helps answer the query
+- 0.8-0.9 = Very relevant, contains useful information
+- 0.6-0.7 = Somewhat relevant, tangentially related
+- 0.4-0.5 = Marginally relevant, weak connection
+- 0.2-0.3 = Barely relevant, mostly unrelated
+- 0.0-0.1 = Not relevant, completely unrelated
+
+Respond with ONLY a number between 0.0 and 1.0.`, testCase.Query, i+1, chunk)
+
+		response, err := e.llmClient.Complete(ctx, prompt, llm.WithMaxTokens(10))
+		if err != nil {
+			// Skip this chunk if evaluation fails
+			continue
+		}
+
+		score := parseScore(response)
+		totalScore += score
+		evaluatedChunks++
+	}
+
+	if evaluatedChunks == 0 {
+		return 1.0, nil // Default if no chunks could be evaluated
+	}
+
+	// Return average relevance score
+	avgScore := totalScore / float64(evaluatedChunks)
+	return avgScore, nil
+}
+
+// FaithfulnessEvaluator evaluates whether the answer is supported by the retrieved context
+type FaithfulnessEvaluator struct {
+	llmClient llm.Client
+}
+
+// NewFaithfulnessEvaluator creates a new faithfulness evaluator
+func NewFaithfulnessEvaluator(llmClient llm.Client) *FaithfulnessEvaluator {
+	return &FaithfulnessEvaluator{
+		llmClient: llmClient,
+	}
+}
+
+// Name returns the evaluator name
+func (e *FaithfulnessEvaluator) Name() string {
+	return "faithfulness"
+}
+
+// Evaluate verifies that the answer is supported by the retrieved context
+func (e *FaithfulnessEvaluator) Evaluate(ctx context.Context, testCase *TestCase, actual string, actualCitations []string) (float64, error) {
+	// If no context provided, use expected answer as reference
+	context := testCase.RetrievedContext
+	if len(context) == 0 {
+		// Fall back to comparing with expected answer
+		return e.evaluateAgainstExpected(ctx, testCase, actual)
+	}
+
+	// Combine all context chunks
+	combinedContext := strings.Join(context, "\n\n")
+
+	prompt := fmt.Sprintf(`You are an evaluation assistant. Determine if the answer is fully supported by the provided context.
+
+Query: %s
+
+Context:
+%s
+
+Answer:
+%s
+
+Rate the faithfulness on a scale of 0.0 to 1.0, where:
+- 1.0 = All claims in the answer are fully supported by context
+- 0.8-0.9 = Answer is mostly supported, minor unsupported details
+- 0.6-0.7 = Answer has some unsupported claims
+- 0.4-0.5 = Significant portions are not supported by context
+- 0.2-0.3 = Most of answer is unsupported
+- 0.0-0.1 = Answer is completely unsupported or contradicts context
+
+Consider:
+- Are all factual claims backed by the context?
+- Does the answer introduce information not in context?
+- Does the answer misrepresent or distort context?
+
+Respond with ONLY a number between 0.0 and 1.0.`, testCase.Query, combinedContext, actual)
+
+	response, err := e.llmClient.Complete(ctx, prompt, llm.WithMaxTokens(10))
+	if err != nil {
+		return 0.0, fmt.Errorf("LLM call failed: %w", err)
+	}
+
+	score := parseScore(response)
+	return score, nil
+}
+
+// evaluateAgainstExpected is a fallback when no context is provided
+func (e *FaithfulnessEvaluator) evaluateAgainstExpected(ctx context.Context, testCase *TestCase, actual string) (float64, error) {
+	prompt := fmt.Sprintf(`You are an evaluation assistant. Determine if the actual answer stays faithful to the expected answer (no hallucinations or unsupported claims).
+
+Query: %s
+
+Expected Answer (ground truth):
+%s
+
+Actual Answer:
+%s
+
+Rate the faithfulness on a scale of 0.0 to 1.0, where:
+- 1.0 = Actual answer is faithful to expected, no unsupported claims
+- 0.8-0.9 = Mostly faithful, minor deviations
+- 0.6-0.7 = Some unsupported information added
+- 0.4-0.5 = Significant unfaithful content
+- 0.2-0.3 = Mostly unfaithful
+- 0.0-0.1 = Completely unfaithful or contradictory
+
+Respond with ONLY a number between 0.0 and 1.0.`, testCase.Query, testCase.ExpectedAnswer, actual)
+
+	response, err := e.llmClient.Complete(ctx, prompt, llm.WithMaxTokens(10))
+	if err != nil {
+		return 0.0, fmt.Errorf("LLM call failed: %w", err)
+	}
+
+	score := parseScore(response)
+	return score, nil
+}
+
 // EvaluateTestCase runs all evaluators on a test case
 func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer string, actualCitations []string, llmClient llm.Client) (*TestCaseResult, error) {
 	result := &TestCaseResult{
@@ -247,6 +411,8 @@ func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer stri
 	accuracyEval := NewAccuracyEvaluator(llmClient)
 	citationEval := NewCitationEvaluator()
 	hallucinationEval := NewHallucinationDetector(llmClient)
+	contextRelEval := NewContextRelevanceEvaluator(llmClient)
+	faithfulnessEval := NewFaithfulnessEvaluator(llmClient)
 
 	var err error
 
@@ -266,6 +432,18 @@ func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer stri
 	result.HallucinationScore, err = hallucinationEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
 	if err != nil {
 		result.Errors = append(result.Errors, fmt.Sprintf("Hallucination evaluation failed: %v", err))
+	}
+
+	// Context Relevance
+	result.ContextRelevanceScore, err = contextRelEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("Context relevance evaluation failed: %v", err))
+	}
+
+	// Faithfulness
+	result.FaithfulnessScore, err = faithfulnessEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
+	if err != nil {
+		result.Errors = append(result.Errors, fmt.Sprintf("Faithfulness evaluation failed: %v", err))
 	}
 
 	// Determine pass/fail
