@@ -391,6 +391,154 @@ Supported VDB keys: `weaviate-local`, `weaviate-cloud`, `milvus-local`,
 
 See [User Guide](docs/USER_GUIDE.md#rag-agents) for custom agent configuration.
 
+### Agent Evaluation (New in v0.9.9)
+
+Systematically evaluate and improve your RAG agents using test datasets and
+multiple evaluation metrics. Perfect for iterating on agent configurations,
+prompts, and parameters.
+
+```bash
+# Run evaluation with baseline dataset
+weave eval run --agent rag-agent --dataset baseline
+
+# Create custom test dataset from template
+weave eval datasets create my-tests --template baseline
+
+# List all available datasets
+weave eval datasets list
+
+# Show evaluation results
+weave eval show eval-20260126-143022
+
+# Compare multiple agents on same dataset
+weave eval benchmark --agents rag-agent,qa-agent --dataset baseline
+```
+
+**Evaluator Providers:**
+
+Choose between local or Opik-based evaluation:
+
+```bash
+# Default: Local evaluators (uses OpenAI API key)
+weave eval run --agent rag-agent --dataset baseline
+
+# Opik: Cloud-based with dashboards & cost tracking
+weave eval run --agent rag-agent --dataset baseline --use-opik
+```
+
+**Local Evaluators (Default):**
+- ✅ Works offline
+- ✅ Fast iteration during development
+- ✅ Direct OpenAI/Claude API calls
+- ✅ No additional setup required
+
+**Opik Evaluators (`--use-opik`):**
+- ✅ Rich dashboard visualization
+- ✅ Automatic cost tracking
+- ✅ Historical trend analysis
+- ✅ Team collaboration features
+- 🔑 Requires: `OPIK_API_KEY` environment variable
+
+**Evaluation Metrics:**
+
+Weave CLI evaluates agents on 5 key dimensions:
+
+1. **Accuracy** - Semantic similarity to expected answer (LLM-as-judge)
+2. **Citation** - Proper source attribution (rule-based)
+3. **Hallucination** - Detects unsupported claims (LLM-as-judge)
+4. **Context Relevance** - Quality of retrieved chunks (LLM-as-judge)
+5. **Faithfulness** - Answer supported by context (LLM-as-judge)
+
+**Example Output:**
+
+```
+=== Evaluation Summary ===
+Provider:      local
+Total Tests:   25
+Passed:        22 (88.0%)
+Failed:        3 (12.0%)
+
+Average Scores:
+  Accuracy:       0.87
+  Citation:       0.85
+  Hallucination:  0.92 (higher is better)
+  Context Rel:    0.89
+  Faithfulness:   0.91
+
+Performance:
+  Total time:     45.3s
+  Avg per test:   1.8s
+
+✅ Results saved to: evals/results/eval-20260126-143022.json
+View results: weave eval show eval-20260126-143022
+```
+
+**With Opik Dashboard:**
+
+When using `--use-opik`, get additional insights:
+
+```
+=== Evaluation Summary ===
+Provider:      opik
+...
+Cost: $0.45 (tracked by Opik)
+
+📊 View detailed results in Opik dashboard:
+   https://www.comet.com/your-workspace/weave-cli-evals
+
+   Dashboard includes:
+   - Detailed trace of each evaluation
+   - Cost breakdown
+   - Historical trends
+   - Export to CSV/JSON
+```
+
+**Creating Custom Datasets:**
+
+```bash
+# Interactive creation
+weave eval datasets create medical-qa --interactive
+
+# From template
+weave eval datasets create my-tests --template baseline
+
+# Copy existing dataset
+weave eval datasets create my-copy --from baseline
+
+# Minimal dataset
+weave eval datasets create quick-test --minimal
+```
+
+**Dataset Format (YAML):**
+
+```yaml
+name: medical-qa
+version: "1.0.0"
+description: Medical question answering tests
+
+test_cases:
+  - id: test-001
+    query: "What are the symptoms of diabetes?"
+    expected_answer: "Common symptoms include increased thirst..."
+    required_concepts: ["diabetes", "symptoms"]
+    must_cite: true
+    min_relevance_score: 0.8
+
+  - id: test-002
+    query: "How is hypertension treated?"
+    expected_answer: "Treatment includes lifestyle changes..."
+    retrieved_context:
+      - "Hypertension is treated with medications..."
+      - "Lifestyle modifications are important..."
+```
+
+**Requirements:**
+
+- `OPENAI_API_KEY` for local evaluators
+- `OPIK_API_KEY` + `OPIK_WORKSPACE` for Opik evaluators (optional)
+
+See [Evaluation Guide](docs/EVALUATION.md) for advanced usage.
+
 ### More Examples
 
 ```bash
