@@ -1,6 +1,7 @@
 # Custom Evaluators
 
-Custom evaluators allow you to define domain-specific evaluation metrics using YAML configuration files. No code required!
+Custom evaluators allow you to define domain-specific evaluation metrics
+using YAML configuration files. No code required!
 
 ## Quick Start
 
@@ -74,6 +75,7 @@ scoring:
 ```
 
 **Template Variables:**
+
 - `{{.Query}}` - Test case query
 - `{{.ExpectedAnswer}}` - Expected answer
 - `{{.Answer}}` - Actual response
@@ -327,7 +329,7 @@ weave eval run --agent rag --dataset test --custom-evaluators
 
 ## Directory Structure
 
-```
+```text
 evals/
 ├── datasets/
 │   ├── baseline.yaml
