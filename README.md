@@ -526,6 +526,10 @@ Average Scores:
   Context Rel:    0.89
   Faithfulness:   0.91
 
+Custom Evaluators:
+  citation_check:      0.92
+  technical_accuracy:  0.84
+
 Performance:
   Total time:     45.3s
   Avg per test:   1.8s
