@@ -15,6 +15,16 @@ import (
 
 // CreateDocument creates a new document in the specified collection
 func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	if collectionName == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+	if document == nil {
+		return fmt.Errorf("document cannot be nil")
+	}
+	if document.ID == "" {
+		return fmt.Errorf("document ID cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
@@ -186,6 +196,13 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 
 // GetDocument retrieves a document by ID
 func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID string) (*vectordb.Document, error) {
+	if collectionName == "" {
+		return nil, fmt.Errorf("collection name cannot be empty")
+	}
+	if documentID == "" {
+		return nil, fmt.Errorf("document ID cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
@@ -233,6 +250,16 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 
 // UpdateDocument updates an existing document
 func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	if collectionName == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+	if document == nil {
+		return fmt.Errorf("document cannot be nil")
+	}
+	if document.ID == "" {
+		return fmt.Errorf("document ID cannot be empty")
+	}
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return err
@@ -288,6 +315,13 @@ func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, doc
 
 // DeleteDocument deletes a document by ID
 func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, documentID string) error {
+	if collectionName == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+	if documentID == "" {
+		return fmt.Errorf("document ID cannot be empty")
+	}
+
 	exists, err := a.CollectionExists(ctx, collectionName)
 	if err != nil {
 		return err

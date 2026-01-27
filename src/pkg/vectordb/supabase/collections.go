@@ -14,6 +14,10 @@ import (
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	if name == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
@@ -110,6 +114,10 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	if name == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
@@ -184,6 +192,10 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	if name == "" {
+		return false, fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 

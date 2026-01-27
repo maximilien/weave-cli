@@ -14,6 +14,16 @@ import (
 
 // SearchSemantic performs semantic search using vector embeddings
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	if collectionName == "" {
+		return nil, fmt.Errorf("collection name cannot be empty")
+	}
+	if query == "" {
+		return nil, fmt.Errorf("query cannot be empty")
+	}
+	if options == nil {
+		return nil, fmt.Errorf("options cannot be nil")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
