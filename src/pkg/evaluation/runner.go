@@ -82,8 +82,8 @@ func (r *Runner) RunEvaluationWithProvider(ctx context.Context, dataset *Dataset
 
 		testEnd := time.Now()
 
-		// Evaluate the result using the specified provider
-		result, err := EvaluateTestCase(ctx, &testCase, actualAnswer, actualCitations, provider)
+		// Evaluate the result using the specified provider (with dataset for custom evaluators)
+		result, err := EvaluateTestCaseWithDataset(ctx, &testCase, actualAnswer, actualCitations, provider, dataset)
 		if err != nil {
 			result = &TestCaseResult{
 				TestCaseID:   testCase.ID,

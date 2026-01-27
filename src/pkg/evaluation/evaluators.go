@@ -401,12 +401,18 @@ Respond with ONLY a number between 0.0 and 1.0.`, testCase.Query, testCase.Expec
 // Rule-based evaluators (citation) always run locally.
 // LLM-based evaluators use the provider (local or Opik).
 func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer string, actualCitations []string, provider EvaluatorProvider) (*TestCaseResult, error) {
+	return EvaluateTestCaseWithDataset(ctx, testCase, actualAnswer, actualCitations, provider, nil)
+}
+
+// EvaluateTestCaseWithDataset evaluates a test case with optional custom evaluators from dataset
+func EvaluateTestCaseWithDataset(ctx context.Context, testCase *TestCase, actualAnswer string, actualCitations []string, provider EvaluatorProvider, dataset *Dataset) (*TestCaseResult, error) {
 	result := &TestCaseResult{
 		TestCaseID:      testCase.ID,
 		Query:           testCase.Query,
 		ActualAnswer:    actualAnswer,
 		ActualCitations: actualCitations,
 		Details:         make(map[string]interface{}),
+		CustomScores:    make(map[string]float64),
 	}
 
 	// Add provider info to details
@@ -446,6 +452,43 @@ func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer stri
 		result.Errors = append(result.Errors, fmt.Sprintf("Faithfulness evaluation failed: %v", err))
 	}
 
+	// Execute custom evaluators if dataset specifies them
+	if dataset != nil && len(dataset.CustomEvaluators) > 0 {
+		// Get LLM client from provider (assuming LocalProvider)
+		var llmClient llm.Client
+		if localProvider, ok := provider.(*LocalProvider); ok {
+			llmClient = localProvider.llmClient
+		}
+
+		if llmClient != nil {
+			evalDir := GetDefaultCustomEvaluatorDir()
+			loader := NewCustomEvaluatorLoader(evalDir)
+
+			for _, evalName := range dataset.CustomEvaluators {
+				// Load evaluator definition
+				evalDef, err := loader.Load(evalName)
+				if err != nil {
+					result.Errors = append(result.Errors, fmt.Sprintf("Failed to load custom evaluator %s: %v", evalName, err))
+					continue
+				}
+
+				// Create and execute evaluator
+				customEval := NewCustomEvaluator(evalDef, llmClient)
+				score, err := customEval.Evaluate(ctx, testCase, actualAnswer, actualCitations)
+				if err != nil {
+					result.Errors = append(result.Errors, fmt.Sprintf("Custom evaluator %s failed: %v", evalName, err))
+					continue
+				}
+
+				// Store score
+				result.CustomScores[evalName] = score
+
+				// Add to details for debugging
+				result.Details[fmt.Sprintf("custom_%s_score", evalName)] = score
+			}
+		}
+	}
+
 	// Determine pass/fail
 	result.Passed = true
 
@@ -462,6 +505,35 @@ func EvaluateTestCase(ctx context.Context, testCase *TestCase, actualAnswer stri
 	if result.HallucinationScore < 0.6 {
 		result.Passed = false
 		result.Errors = append(result.Errors, fmt.Sprintf("High hallucination risk: score %.2f", result.HallucinationScore))
+	}
+
+	// Check custom evaluator thresholds
+	if dataset != nil && len(dataset.CustomEvaluators) > 0 {
+		evalDir := GetDefaultCustomEvaluatorDir()
+		loader := NewCustomEvaluatorLoader(evalDir)
+
+		for _, evalName := range dataset.CustomEvaluators {
+			score, hasScore := result.CustomScores[evalName]
+			if !hasScore {
+				continue // Already logged error during execution
+			}
+
+			// Load definition to check threshold and required flag
+			evalDef, err := loader.Load(evalName)
+			if err != nil {
+				continue // Already logged error
+			}
+
+			// Check if score meets threshold
+			if score < evalDef.Scoring.Threshold {
+				if evalDef.Required {
+					result.Passed = false
+				}
+				result.Errors = append(result.Errors,
+					fmt.Sprintf("Custom evaluator %s: score %.2f below threshold %.2f",
+						evalName, score, evalDef.Scoring.Threshold))
+			}
+		}
 	}
 
 	return result, nil

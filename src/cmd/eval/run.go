@@ -258,6 +258,34 @@ func printSummary(run *evaluation.EvaluationRun, elapsed time.Duration, provider
 	fmt.Printf("  Citation:       %.2f\n", summary.AvgCitation)
 	fmt.Printf("  Hallucination:  %.2f (higher is better)\n", summary.AvgHallucination)
 
+	// Show custom evaluator scores if any
+	if len(run.Results) > 0 && len(run.Results[0].CustomScores) > 0 {
+		fmt.Println()
+		fmt.Println("Custom Evaluators:")
+
+		// Collect all custom evaluator names from first result
+		customNames := make([]string, 0)
+		for name := range run.Results[0].CustomScores {
+			customNames = append(customNames, name)
+		}
+
+		// Calculate and display average for each custom evaluator
+		for _, name := range customNames {
+			var total float64
+			count := 0
+			for _, result := range run.Results {
+				if score, ok := result.CustomScores[name]; ok {
+					total += score
+					count++
+				}
+			}
+			if count > 0 {
+				avg := total / float64(count)
+				fmt.Printf("  %s: %.2f\n", name, avg)
+			}
+		}
+	}
+
 	fmt.Println()
 
 	// Performance
@@ -280,6 +308,20 @@ func printDetailedResults(run *evaluation.EvaluationRun) {
 		fmt.Printf("  Query: %s\n", result.Query)
 		fmt.Printf("  Scores: Accuracy=%.2f, Citation=%.2f, Hallucination=%.2f\n",
 			result.AccuracyScore, result.CitationScore, result.HallucinationScore)
+
+		// Print custom evaluator scores if any
+		if len(result.CustomScores) > 0 {
+			fmt.Printf("  Custom: ")
+			first := true
+			for name, score := range result.CustomScores {
+				if !first {
+					fmt.Printf(", ")
+				}
+				fmt.Printf("%s=%.2f", name, score)
+				first = false
+			}
+			fmt.Println()
+		}
 
 		// Print errors if any
 		if len(result.Errors) > 0 {

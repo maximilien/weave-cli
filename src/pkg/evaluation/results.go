@@ -56,6 +56,9 @@ type TestCaseResult struct {
 	ContextRelevanceScore float64 `json:"context_relevance_score" yaml:"context_relevance_score"`
 	FaithfulnessScore     float64 `json:"faithfulness_score" yaml:"faithfulness_score"`
 
+	// Custom evaluator scores
+	CustomScores map[string]float64 `json:"custom_scores,omitempty" yaml:"custom_scores,omitempty"`
+
 	// Pass/fail
 	Passed bool     `json:"passed" yaml:"passed"`
 	Errors []string `json:"errors,omitempty" yaml:"errors,omitempty"`
