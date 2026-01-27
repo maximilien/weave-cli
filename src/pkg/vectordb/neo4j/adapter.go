@@ -24,6 +24,10 @@ func (a *Adapter) Health(ctx context.Context) error {
 
 // CreateCollection creates a new collection with the given schema
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	if name == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
@@ -36,6 +40,10 @@ func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vec
 
 // DeleteCollection deletes a collection and all its documents
 func (a *Adapter) DeleteCollection(ctx context.Context, name string) error {
+	if name == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
@@ -71,6 +79,10 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // CollectionExists checks if a collection exists
 func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, error) {
+	if name == "" {
+		return false, fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
@@ -79,6 +91,10 @@ func (a *Adapter) CollectionExists(ctx context.Context, name string) (bool, erro
 
 // GetCollectionCount returns the number of documents in a collection
 func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, error) {
+	if name == "" {
+		return 0, fmt.Errorf("collection name cannot be empty")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
@@ -87,6 +103,16 @@ func (a *Adapter) GetCollectionCount(ctx context.Context, name string) (int64, e
 
 // CreateDocument creates a new document in the specified collection
 func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	if collectionName == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+	if document == nil {
+		return fmt.Errorf("document cannot be nil")
+	}
+	if document.ID == "" {
+		return fmt.Errorf("document ID cannot be empty")
+	}
+
 	// Convert vectordb.Document to Neo4j Document
 	// Prefer Content over Text if both are set
 	content := document.Content
@@ -154,6 +180,13 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 
 // GetDocument retrieves a document by ID
 func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID string) (*vectordb.Document, error) {
+	if collectionName == "" {
+		return nil, fmt.Errorf("collection name cannot be empty")
+	}
+	if documentID == "" {
+		return nil, fmt.Errorf("document ID cannot be empty")
+	}
+
 	doc, err := a.client.GetDocument(ctx, collectionName, documentID)
 	if err != nil {
 		return nil, err
@@ -169,6 +202,16 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 
 // UpdateDocument updates an existing document
 func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	if collectionName == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+	if document == nil {
+		return fmt.Errorf("document cannot be nil")
+	}
+	if document.ID == "" {
+		return fmt.Errorf("document ID cannot be empty")
+	}
+
 	// Prefer Content over Text if both are set
 	content := document.Content
 	if content == "" {
@@ -199,6 +242,13 @@ func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, doc
 
 // DeleteDocument deletes a document by ID
 func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, documentID string) error {
+	if collectionName == "" {
+		return fmt.Errorf("collection name cannot be empty")
+	}
+	if documentID == "" {
+		return fmt.Errorf("document ID cannot be empty")
+	}
+
 	return a.client.DeleteDocument(ctx, collectionName, documentID)
 }
 
@@ -299,6 +349,16 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 
 // SearchSemantic performs semantic search using vector embeddings
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	if collectionName == "" {
+		return nil, fmt.Errorf("collection name cannot be empty")
+	}
+	if query == "" {
+		return nil, fmt.Errorf("query cannot be empty")
+	}
+	if options == nil {
+		return nil, fmt.Errorf("options cannot be nil")
+	}
+
 	ctx, cancel := context.WithTimeout(ctx, a.client.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
