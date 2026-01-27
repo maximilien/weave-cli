@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -233,6 +234,11 @@ func ListResults() ([]*EvaluationRun, error) {
 
 		runs = append(runs, run)
 	}
+
+	// Sort by timestamp (newest first)
+	sort.Slice(runs, func(i, j int) bool {
+		return runs[i].Timestamp.After(runs[j].Timestamp)
+	})
 
 	return runs, nil
 }
