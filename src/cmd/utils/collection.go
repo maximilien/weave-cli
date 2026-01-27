@@ -2720,7 +2720,7 @@ func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collection
 }
 
 // QueryCollectionWithAgent queries a collection using generic VDB client and processes results through an agent
-func QueryCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+func QueryCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentNames []string, outputFormat string, showProgress bool) {
 	// Create progress reporter (use JSON reporter if output format is JSON)
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -2765,7 +2765,7 @@ func QueryCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, c
 	}
 
 	// Execute through agent (results are already in vectordb.QueryResult format)
-	ExecuteQueryWithAgent(ctx, agentName, queryText, results, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentNames, queryText, results, outputFormat, showProgress)
 }
 
 // QueryMockCollection performs semantic search on a mock collection
@@ -2784,7 +2784,7 @@ func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collec
 }
 
 // QueryMockCollectionWithAgent performs semantic search on a mock collection and processes results through an agent
-func QueryMockCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+func QueryMockCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentNames []string, outputFormat string, showProgress bool) {
 	// Create progress reporter (use JSON reporter if output format is JSON)
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -2823,7 +2823,7 @@ func QueryMockCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfi
 	}
 
 	// Execute through agent
-	ExecuteQueryWithAgent(ctx, agentName, queryText, vdbResults, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentNames, queryText, vdbResults, outputFormat, showProgress)
 }
 
 // Generic collection operations for VectorDB interface (Milvus, etc.)

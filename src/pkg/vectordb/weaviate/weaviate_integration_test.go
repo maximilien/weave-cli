@@ -9,6 +9,7 @@ package weaviate
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -842,4 +843,114 @@ func TestIntegration_Weaviate_MultiCollectionQuery(t *testing.T) {
 
 	// Test passes if both queries executed without errors (results optional due to "none" vectorizer)
 	t.Logf("✓ Multi-collection query test passed (total results: %d)", len(allResults))
+}
+
+// TestIntegration_Weaviate_SearchBM25 tests BM25 keyword search
+func TestIntegration_Weaviate_SearchBM25(t *testing.T) {
+	ctx := context.Background()
+
+	// Create test adapter
+	adapter, err := createTestAdapter(t)
+	if err != nil {
+		t.Fatalf("Failed to create adapter: %v", err)
+	}
+	defer adapter.Close()
+
+	// Generate unique collection name
+	collectionName := getUniqueCollectionName("test_bm25")
+
+	// Clean up collection after test
+	defer func() {
+		if err := adapter.DeleteCollection(ctx, collectionName); err != nil {
+			t.Logf("Warning: Failed to cleanup collection: %v", err)
+		}
+	}()
+
+	// Create test collection
+	schema := &vectordb.CollectionSchema{
+		Class:      collectionName,
+		Vectorizer: "none", // Use none for testing
+		Properties: []vectordb.SchemaProperty{
+			{
+				Name:     "content",
+				DataType: []string{"text"},
+			},
+			{
+				Name:     "metadata",
+				DataType: []string{"object"},
+			},
+		},
+	}
+
+	err = adapter.CreateCollection(ctx, collectionName, schema)
+	require.NoError(t, err, "Failed to create collection")
+
+	// Wait for collection to be ready
+	time.Sleep(500 * time.Millisecond)
+
+	// Create test documents with specific keywords
+	docs := []*vectordb.Document{
+		{
+			ID:      "bm25-1",
+			Content: "Python is a powerful programming language for data science",
+			Metadata: map[string]interface{}{
+				"lang": "Python",
+			},
+		},
+		{
+			ID:      "bm25-2",
+			Content: "JavaScript is used for web development and Node.js",
+			Metadata: map[string]interface{}{
+				"lang": "JavaScript",
+			},
+		},
+		{
+			ID:      "bm25-3",
+			Content: "Go programming language for system software",
+			Metadata: map[string]interface{}{
+				"lang": "Go",
+			},
+		},
+		{
+			ID:      "bm25-4",
+			Content: "Python pandas library for data analysis",
+			Metadata: map[string]interface{}{
+				"lang": "Python",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err, "Failed to create documents")
+
+	// Wait for indexing
+	time.Sleep(1 * time.Second)
+
+	// Perform BM25 search for "Python"
+	results, err := adapter.SearchBM25(ctx, collectionName, "Python", &vectordb.QueryOptions{TopK: 3})
+	assert.NoError(t, err, "BM25 search should not error")
+	assert.NotNil(t, results, "Results should not be nil")
+
+	// Should return Python-related documents
+	if len(results) > 0 {
+		t.Logf("BM25 search returned %d results", len(results))
+
+		// Verify results contain "Python"
+		foundPython := false
+		for _, result := range results {
+			t.Logf("  Result: ID=%s, Score=%.4f, Content=%s", result.Document.ID, result.Score, result.Document.Content)
+			if result.Document.Content != "" && (strings.Contains(result.Document.Content, "Python") ||
+				strings.Contains(result.Document.Content, "python")) {
+				foundPython = true
+			}
+		}
+		assert.True(t, foundPython, "Results should contain Python documents")
+
+		// Verify scores are positive
+		for _, result := range results {
+			assert.GreaterOrEqual(t, result.Score, 0.0, "BM25 scores should be non-negative")
+		}
+	}
+
+	t.Log("✓ BM25 search test passed")
 }

@@ -116,6 +116,7 @@ func init() {
 	QueryCmd.Flags().String("search-type", "", "Search type: 'text' (text metadata) or 'visual' (image content)")
 	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
 	QueryCmd.Flags().String("agent", "", "Agent to use for processing results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent')")
+	QueryCmd.Flags().StringSlice("agents", []string{}, "Multiple agents to execute in sequence (e.g., 'rag-agent,search-agent')")
 	QueryCmd.Flags().BoolP("verbose", "v", false, "Enable verbose debug logging")
 	QueryCmd.Flags().Bool("progress", false, "Show progress during query execution")
 }
@@ -143,8 +144,21 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	searchType, _ := cmd.Flags().GetString("search-type")
 	imagePath, _ := cmd.Flags().GetString("image")
 	agentName, _ := cmd.Flags().GetString("agent")
+	agentNames, _ := cmd.Flags().GetStringSlice("agents")
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	progress, _ := cmd.Flags().GetBool("progress")
+
+	// Handle agent flags - --agents takes precedence over --agent
+	if len(agentNames) > 0 {
+		// Multi-agent mode
+		if agentName != "" {
+			utils.PrintError("Cannot specify both --agent and --agents flags")
+			os.Exit(1)
+		}
+	} else if agentName != "" {
+		// Single agent mode - convert to slice for uniform handling
+		agentNames = []string{agentName}
+	}
 
 	// Support legacy --json flag for backward compatibility
 	jsonFlag, _ := cmd.Flags().GetBool("json")
@@ -254,9 +268,9 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 				os.Exit(1)
 			}
 
-			if agentName != "" {
+			if len(agentNames) > 0 {
 				// Cross-VDB query with agent
-				utils.QueryMultipleCollectionsWithAgentCrossVDB(ctx, collectionSpecs, vdbConfigs, queryText, options, agentName, outputFormat, progress)
+				utils.QueryMultipleCollectionsWithAgentCrossVDB(ctx, collectionSpecs, vdbConfigs, queryText, options, agentNames, outputFormat, progress)
 			} else {
 				// Cross-VDB query without agent
 				utils.QueryMultipleCollectionsCrossVDB(ctx, collectionSpecs, vdbConfigs, queryText, options)
@@ -268,9 +282,9 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 				collectionNames[i] = spec.Name
 			}
 
-			if agentName != "" {
+			if len(agentNames) > 0 {
 				// Multi-collection query with agent
-				utils.QueryMultipleCollectionsWithAgent(ctx, dbConfig, collectionNames, queryText, options, agentName, outputFormat, progress)
+				utils.QueryMultipleCollectionsWithAgent(ctx, dbConfig, collectionNames, queryText, options, agentNames, outputFormat, progress)
 			} else {
 				// Multi-collection query without agent
 				utils.QueryMultipleCollections(ctx, dbConfig, collectionNames, queryText, options)
@@ -295,17 +309,17 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	}
 
 	// If agent is specified, use agent-enabled query path
-	if agentName != "" {
+	if len(agentNames) > 0 {
 		switch dbConfig.Type {
 		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 			// Weaviate: use specialized function (keeps current behavior)
-			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat, progress)
+			utils.QueryWeaviateCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentNames, outputFormat, progress)
 		case config.VectorDBTypeMock:
 			// Mock: use specialized function
-			utils.QueryMockCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat, progress)
+			utils.QueryMockCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentNames, outputFormat, progress)
 		default:
 			// All other VDBs: use generic function
-			utils.QueryCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentName, outputFormat, progress)
+			utils.QueryCollectionWithAgent(ctx, dbConfig, collectionName, queryText, options, agentNames, outputFormat, progress)
 		}
 		return
 	}

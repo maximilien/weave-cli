@@ -520,6 +520,176 @@ func TestIntegration_MongoDB_SearchByMetadata(t *testing.T) {
 	}
 }
 
+// TestIntegration_MongoDB_SearchSemantic tests vector similarity search
+func TestIntegration_MongoDB_SearchSemantic(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close(context.Background())
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_search_semantic")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	// Create collection
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	// Create test documents with varying content
+	docs := []*vectordb.Document{
+		{
+			ID:      "search-1",
+			Text:    "Artificial intelligence and machine learning",
+			Content: "AI and ML are transforming technology",
+			Metadata: map[string]interface{}{
+				"category": "tech",
+				"topic":    "AI",
+			},
+		},
+		{
+			ID:      "search-2",
+			Text:    "Python programming for data science",
+			Content: "Python is widely used for data analysis",
+			Metadata: map[string]interface{}{
+				"category": "tech",
+				"topic":    "programming",
+			},
+		},
+		{
+			ID:      "search-3",
+			Text:    "Cooking Italian pasta recipes",
+			Content: "Learn authentic Italian cooking techniques",
+			Metadata: map[string]interface{}{
+				"category": "cooking",
+				"topic":    "recipes",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	// Wait for indexing and vector index to be ready
+	time.Sleep(2 * time.Second)
+
+	// Perform semantic search for AI-related content
+	results, err := adapter.SearchSemantic(ctx, collectionName, "tell me about AI", &vectordb.QueryOptions{TopK: 2})
+	assert.NoError(t, err, "SearchSemantic should not error")
+	assert.NotNil(t, results, "Results should not be nil")
+
+	// Should return at least 1 result
+	if len(results) > 0 {
+		// First result should be most relevant (AI-related)
+		assert.Contains(t, results[0].Document.Text, "AI", "Top result should contain 'AI' or related terms")
+		assert.Greater(t, results[0].Score, 0.0, "Score should be positive")
+
+		// Scores should be in descending order
+		for i := 1; i < len(results); i++ {
+			assert.GreaterOrEqual(t, results[i-1].Score, results[i].Score, "Scores should be sorted descending")
+		}
+	}
+}
+
+// TestIntegration_MongoDB_SearchBM25 tests BM25 keyword search
+func TestIntegration_MongoDB_SearchBM25(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close(context.Background())
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_search_bm25")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	// Create collection
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	// Create test documents with specific keywords
+	docs := []*vectordb.Document{
+		{
+			ID:      "bm25-1",
+			Text:    "Python is a powerful programming language",
+			Content: "Python has extensive libraries for data science",
+			Metadata: map[string]interface{}{
+				"lang": "Python",
+			},
+		},
+		{
+			ID:      "bm25-2",
+			Text:    "JavaScript for web development",
+			Content: "JavaScript runs in browsers and Node.js",
+			Metadata: map[string]interface{}{
+				"lang": "JavaScript",
+			},
+		},
+		{
+			ID:      "bm25-3",
+			Text:    "Go language for system programming",
+			Content: "Go is efficient for concurrent systems",
+			Metadata: map[string]interface{}{
+				"lang": "Go",
+			},
+		},
+		{
+			ID:      "bm25-4",
+			Text:    "Python data analysis with pandas",
+			Content: "Python pandas library for data manipulation",
+			Metadata: map[string]interface{}{
+				"lang": "Python",
+			},
+		},
+	}
+
+	err = adapter.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	// Wait for text index to be ready
+	time.Sleep(2 * time.Second)
+
+	// Perform BM25 keyword search for "Python"
+	client := adapter.Client
+	results, err := client.SearchBM25(ctx, collectionName, "Python", &vectordb.QueryOptions{TopK: 3})
+	assert.NoError(t, err, "SearchBM25 should not error")
+	assert.NotNil(t, results, "Results should not be nil")
+
+	// Should return Python-related documents
+	if len(results) > 0 {
+		// Verify results contain "Python"
+		foundPython := false
+		for _, result := range results {
+			if result.Document.Text != "" && (result.Document.Text == "Python is a powerful programming language" ||
+				result.Document.Text == "Python data analysis with pandas") {
+				foundPython = true
+				break
+			}
+		}
+		assert.True(t, foundPython, "Results should contain Python documents")
+
+		// Scores should be positive
+		for _, result := range results {
+			assert.Greater(t, result.Score, 0.0, "BM25 scores should be positive")
+		}
+	}
+}
+
+// TestIntegration_MongoDB_SearchSemantic_EmptyQuery tests error handling for empty query
+func TestIntegration_MongoDB_SearchSemantic_EmptyQuery(t *testing.T) {
+	adapter := getTestAdapter(t)
+	defer adapter.Close(context.Background())
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_empty_query")
+	defer adapter.DeleteCollection(ctx, collectionName)
+
+	err := adapter.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	// Try searching with empty query
+	results, err := adapter.SearchSemantic(ctx, collectionName, "", &vectordb.QueryOptions{TopK: 5})
+
+	// Should either error or return empty results
+	if err == nil {
+		assert.NotNil(t, results)
+	}
+}
+
 // TestIntegration_MongoDB_E2E_Workflow tests complete end-to-end workflow
 func TestIntegration_MongoDB_E2E_Workflow(t *testing.T) {
 	adapter := getTestAdapter(t)

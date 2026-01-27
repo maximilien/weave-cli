@@ -383,6 +383,35 @@ Supported VDB keys: `weaviate-local`, `weaviate-cloud`, `milvus-local`,
 - `summarize-agent` - Concise summaries of retrieved content
 - `qa-agent` - Precise question answering
 
+**Multi-Agent Orchestration (New in v0.9.11):**
+
+Chain multiple agents in sequence for advanced query processing. Each agent
+receives the output from the previous agent, enabling sophisticated workflows
+like comprehensive analysis followed by summarization.
+
+```bash
+# Chain agents: RAG analysis → QA extraction
+weave cols query MyDocs "machine learning algorithms" --agents rag-agent,qa-agent
+
+# Triple chain: Search → Comprehensive RAG → Summarization
+weave cols query LargeDocs "annual report" --agents search-agent,rag-agent,summarize-agent
+
+# Multi-collection + multi-agent
+weave cols query Docs Images "product features" --agents rag-agent,summarize-agent --top_k 10
+
+# With progress tracking
+weave cols query MyDocs "complex query" --agents rag-agent,qa-agent --progress
+```
+
+**Chain Behavior:**
+- Sequential execution: Agent1 → Agent2 → Agent3
+- Context passing: Each agent receives previous agent's output
+- Error handling: Continues on failure, returns last successful output
+- All query types supported: single collection, multi-collection, cross-VDB
+
+See [Multi-Agent Examples](docs/examples/MULTI_AGENT_EXAMPLES.md) for detailed
+use cases and patterns.
+
 **Requirements:**
 
 - `OPENAI_API_KEY` environment variable must be set

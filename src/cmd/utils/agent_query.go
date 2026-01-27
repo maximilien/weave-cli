@@ -75,8 +75,8 @@ func isImageCollectionBySchema(ctx context.Context, client interface{}, collecti
 	return false
 }
 
-// QueryMultipleCollectionsWithAgent queries multiple collections and processes aggregated results through an agent
-func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+// QueryMultipleCollectionsWithAgent queries multiple collections and processes aggregated results through one or more agents
+func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionNames []string, queryText string, options weaviate.QueryOptions, agentNames []string, outputFormat string, showProgress bool) {
 	// Create progress reporter
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -205,11 +205,11 @@ func QueryMultipleCollectionsWithAgent(ctx context.Context, cfg *config.VectorDB
 	reporter.Update(fmt.Sprintf("Aggregated %d results from %d collections", len(allResults), len(collectionNames)))
 
 	// Execute through agent with all aggregated results
-	ExecuteQueryWithAgent(ctx, agentName, queryText, allResults, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentNames, queryText, allResults, outputFormat, showProgress)
 }
 
-// ExecuteQueryWithAgent executes a query and processes results through an agent
-func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, results []*vectordb.QueryResult, outputFormat string, showProgress bool) {
+// ExecuteQueryWithAgent executes a query and processes results through one or more agents
+func ExecuteQueryWithAgent(ctx context.Context, agentNames []string, query string, results []*vectordb.QueryResult, outputFormat string, showProgress bool) {
 	// Create progress reporter (use JSON reporter if output format is JSON)
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -217,7 +217,18 @@ func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, 
 	} else {
 		reporter = progress.NewReporter(showProgress)
 	}
+
+	// Multi-agent chain execution
+	if len(agentNames) > 1 {
+		reporter.Start(fmt.Sprintf("Processing %d results with %d agents...", len(results), len(agentNames)))
+		executeAgentChain(ctx, agentNames, query, results, outputFormat, reporter)
+		return
+	}
+
+	// Single agent execution (backward compatible)
+	agentName := agentNames[0]
 	reporter.Start(fmt.Sprintf("Processing %d results with %s...", len(results), agentName))
+
 	// Load agent configuration
 	reporter.Update("Loading agent configuration...")
 	agentConfig, err := agents.LoadAgent(agentName)
@@ -289,8 +300,99 @@ func ExecuteQueryWithAgent(ctx context.Context, agentName string, query string, 
 	fmt.Println(formatted)
 }
 
-// QueryWeaviateCollectionWithAgent queries a collection and processes results through an agent
-func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+// executeAgentChain executes multiple agents in sequence using AgentChain
+func executeAgentChain(ctx context.Context, agentNames []string, query string, results []*vectordb.QueryResult, outputFormat string, reporter *progress.Reporter) {
+	// Get API key for LLM
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		PrintError("OPENAI_API_KEY environment variable is required for agent execution")
+		os.Exit(1)
+	}
+
+	reporter.Update("Creating LLM client...")
+	llmClient, err := llm.NewOpenAIClient(apiKey)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to create LLM client: %v", err))
+		os.Exit(1)
+	}
+
+	// Load and create all agents
+	reporter.Update(fmt.Sprintf("Loading %d agents...", len(agentNames)))
+	var agentList []agents.Agent
+	for i, agentName := range agentNames {
+		reporter.Update(fmt.Sprintf("Loading agent %d/%d: %s...", i+1, len(agentNames), agentName))
+
+		agentConfig, err := agents.LoadAgent(agentName)
+		if err != nil {
+			if agents.IsAgentNotFoundError(err) {
+				PrintError(fmt.Sprintf("Agent '%s' not found. Use 'weave agents list' to see available agents.", agentName))
+			} else {
+				PrintError(fmt.Sprintf("Failed to load agent '%s': %v", agentName, err))
+			}
+			os.Exit(1)
+		}
+
+		// Override output format if specified
+		if outputFormat != "" {
+			agentConfig.Output.Format = outputFormat
+		}
+
+		ragAgent, err := agents.NewRAGAgent(agentConfig, llmClient)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to create RAG agent '%s': %v", agentName, err))
+			os.Exit(1)
+		}
+
+		agentList = append(agentList, ragAgent)
+	}
+
+	// Create agent chain with default config (PassContext=true, FailFast=false, StopOnSuccess=false)
+	reporter.Update("Creating agent chain...")
+	chain := agents.NewAgentChain(agentList, nil)
+
+	// Execute chain
+	reporter.Update(fmt.Sprintf("Executing chain: %s...", strings.Join(agentNames, " → ")))
+	input := &agents.RAGInput{
+		Query:   query,
+		Results: results,
+	}
+
+	chainResponse, err := chain.Execute(ctx, input)
+	if err != nil {
+		PrintError(fmt.Sprintf("Agent chain execution failed: %v", err))
+		os.Exit(1)
+	}
+
+	// Display final output
+	reporter.Update("Formatting final output...")
+
+	// The final output should be RAGOutput from the last successful agent
+	ragOutput, ok := chainResponse.FinalOutput.(*agents.RAGOutput)
+	if !ok {
+		PrintError(fmt.Sprintf("Unexpected final output type: %T", chainResponse.FinalOutput))
+		os.Exit(1)
+	}
+
+	// Use the last agent for formatting
+	lastAgent := agentList[len(agentList)-1]
+	lastRAGAgent, ok := lastAgent.(*agents.RAGAgent)
+	if !ok {
+		PrintError(fmt.Sprintf("Last agent is not a RAGAgent: %T", lastAgent))
+		os.Exit(1)
+	}
+
+	formatted, err := lastRAGAgent.FormatOutput(ragOutput)
+	if err != nil {
+		PrintError(fmt.Sprintf("Failed to format agent output: %v", err))
+		os.Exit(1)
+	}
+
+	reporter.Complete(fmt.Sprintf("Executed %d agents in %v", chainResponse.AgentsExecuted, chainResponse.ExecutionTime))
+	fmt.Println(formatted)
+}
+
+// QueryWeaviateCollectionWithAgent queries a collection and processes results through one or more agents
+func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, collectionName, queryText string, options weaviate.QueryOptions, agentNames []string, outputFormat string, showProgress bool) {
 	// Create progress reporter (use JSON reporter if output format is JSON)
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -328,11 +430,11 @@ func QueryWeaviateCollectionWithAgent(ctx context.Context, cfg *config.VectorDBC
 	}
 
 	// Execute through agent
-	ExecuteQueryWithAgent(ctx, agentName, queryText, vdbResults, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentNames, queryText, vdbResults, outputFormat, showProgress)
 }
 
-// QueryMultipleCollectionsWithAgentCrossVDB queries multiple collections across different VDBs and processes aggregated results through an agent
-func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSpecs []CollectionSpec, vdbConfigs map[string]*config.VectorDBConfig, queryText string, options weaviate.QueryOptions, agentName string, outputFormat string, showProgress bool) {
+// QueryMultipleCollectionsWithAgentCrossVDB queries multiple collections across different VDBs and processes aggregated results through one or more agents
+func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSpecs []CollectionSpec, vdbConfigs map[string]*config.VectorDBConfig, queryText string, options weaviate.QueryOptions, agentNames []string, outputFormat string, showProgress bool) {
 	// Create progress reporter
 	var reporter *progress.Reporter
 	if showProgress && outputFormat == "json" {
@@ -473,5 +575,5 @@ func QueryMultipleCollectionsWithAgentCrossVDB(ctx context.Context, collectionSp
 	reporter.Update(fmt.Sprintf("Aggregated %d results from %d collections across multiple VDBs", len(allResults), len(collectionSpecs)))
 
 	// Execute through agent with all aggregated results
-	ExecuteQueryWithAgent(ctx, agentName, queryText, allResults, outputFormat, showProgress)
+	ExecuteQueryWithAgent(ctx, agentNames, queryText, allResults, outputFormat, showProgress)
 }

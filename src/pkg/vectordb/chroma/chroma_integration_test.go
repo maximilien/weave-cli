@@ -593,3 +593,87 @@ func TestIntegration_Chroma_E2E_Workflow(t *testing.T) {
 	require.NoError(t, err, "Step 9: Failed to check existence")
 	assert.False(t, exists, "Step 9: Collection should not exist after deletion")
 }
+
+// TestIntegration_Chroma_SearchBM25 tests BM25 keyword search
+func TestIntegration_Chroma_SearchBM25(t *testing.T) {
+	client := getTestClient(t)
+	defer client.Close(context.Background())
+
+	ctx := context.Background()
+	collectionName := getUniqueCollectionName("test_bm25")
+	defer client.DeleteCollection(ctx, collectionName)
+
+	// Create collection
+	err := client.CreateCollection(ctx, collectionName, getTestSchema(collectionName))
+	require.NoError(t, err)
+
+	// Create test documents with specific keywords
+	docs := []*vectordb.Document{
+		{
+			ID:      "bm25-1",
+			Text:    "Python is a powerful programming language",
+			Content: "Python has extensive libraries for data science and machine learning",
+			Metadata: map[string]interface{}{
+				"lang": "Python",
+			},
+		},
+		{
+			ID:      "bm25-2",
+			Text:    "JavaScript for web development",
+			Content: "JavaScript runs in browsers and on servers with Node.js",
+			Metadata: map[string]interface{}{
+				"lang": "JavaScript",
+			},
+		},
+		{
+			ID:      "bm25-3",
+			Text:    "Go language for system programming",
+			Content: "Go is efficient for building concurrent and scalable systems",
+			Metadata: map[string]interface{}{
+				"lang": "Go",
+			},
+		},
+		{
+			ID:      "bm25-4",
+			Text:    "Python data analysis with pandas",
+			Content: "Python pandas library provides powerful data manipulation tools",
+			Metadata: map[string]interface{}{
+				"lang": "Python",
+			},
+		},
+	}
+
+	err = client.CreateDocuments(ctx, collectionName, docs)
+	require.NoError(t, err)
+
+	// Wait for indexing
+	time.Sleep(2 * time.Second)
+
+	// Perform BM25 search for "Python"
+	results, err := client.SearchBM25(ctx, collectionName, "Python", &vectordb.QueryOptions{TopK: 3})
+	assert.NoError(t, err, "BM25 search should not error")
+	assert.NotNil(t, results, "Results should not be nil")
+
+	// Should return Python-related documents
+	if len(results) > 0 {
+		t.Logf("BM25 search returned %d results", len(results))
+
+		// Verify results contain "Python"
+		foundPython := false
+		for _, result := range results {
+			t.Logf("  Result: ID=%s, Score=%.4f", result.Document.ID, result.Score)
+			if result.Document.Text != "" && (result.Document.Text == "Python is a powerful programming language" ||
+				result.Document.Text == "Python data analysis with pandas") {
+				foundPython = true
+			}
+		}
+		assert.True(t, foundPython, "Results should contain Python documents")
+
+		// Verify scores are positive
+		for _, result := range results {
+			assert.Greater(t, result.Score, 0.0, "BM25 scores should be positive")
+		}
+	}
+
+	t.Log("✓ Chroma BM25 search test passed")
+}

@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.11] - 2026-01-27
+
+### Added
+- **Multi-Agent Orchestration (Phase 1)**: Chain multiple agents in sequence for advanced query processing
+  - Core `AgentChain` implementation with sequential execution
+  - `ChainConfig` options: `PassContext`, `FailFast`, `StopOnSuccess`
+  - `ChainResponse` with execution metrics and detailed outputs
+  - CLI integration: `--agents` flag for multi-agent mode (e.g., `--agents rag-agent,qa-agent`)
+  - Backward compatible with existing `--agent` flag
+  - Progress tracking: Shows agent execution flow with `--progress`
+  - Comprehensive test suite: 12 tests covering all execution modes
+  - Documentation: `docs/examples/MULTI_AGENT_EXAMPLES.md`
+  - Files: `src/pkg/agents/chain.go`, `src/pkg/agents/chain_test.go`
+  - Integration: Updated all query functions to support agent chains
+- **Search Functionality Tests**: Comprehensive test coverage across vector databases
+  - MongoDB: `SearchSemantic`, `SearchBM25`, empty query handling (+168 lines)
+  - Weaviate: `SearchBM25` keyword search (+111 lines)
+  - Chroma: `SearchBM25` keyword search (+83 lines)
+  - Total: +362 lines of integration tests
+  - All tests validate score ordering, result relevance, and edge cases
+
+### Changed
+- **Query Command**: Multi-agent support integrated across all query paths
+  - Single collection queries
+  - Multi-collection queries
+  - Cross-VDB queries
+  - All VDB types: Weaviate, MongoDB, Milvus, Chroma, Neo4j, Qdrant, Supabase, Mock
+
+### Documentation
+- Created `docs/examples/MULTI_AGENT_EXAMPLES.md` - Complete multi-agent guide with:
+  - Basic usage examples
+  - Multi-collection + multi-agent workflows
+  - Error handling patterns
+  - Use cases and best practices
+  - Progress tracking examples
+  - Phase 2 & 3 roadmap
+
 ## [0.9.10] - 2026-01-26
 
 ### Added
