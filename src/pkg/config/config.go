@@ -119,9 +119,16 @@ type DatabasesConfig struct {
 }
 
 // Config holds the complete application configuration
+// LoggingConfig holds logging configuration
+type LoggingConfig struct {
+	Level string `yaml:"level,omitempty"` // debug, info, warn, error
+	File  string `yaml:"file,omitempty"`  // log file path (empty = stderr)
+}
+
 type Config struct {
 	Databases  DatabasesConfig `yaml:"databases"`
 	SchemasDir string          `yaml:"schemas_dir,omitempty"`
+	Logging    LoggingConfig   `yaml:"logging,omitempty"`
 }
 
 // LoadConfig loads configuration from files and environment variables

@@ -15,6 +15,7 @@ import (
 	schemacmd "github.com/maximilien/weave-cli/src/cmd/schema"
 	statscmd "github.com/maximilien/weave-cli/src/cmd/stats"
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/repl"
 	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/cobra"
@@ -35,6 +36,8 @@ var (
 	timeout        string
 	noConfirm      bool
 	queryStrings   string
+	logLevel       string
+	logFile        string
 
 	// REPL MCP flags
 	mcpServerURL string
@@ -70,6 +73,7 @@ var rootCmd = &cobra.Command{
 	Use:                        "weave",
 	Short:                      "Weave Vector Database Management Tool",
 	SuggestionsMinimumDistance: 2,
+	PersistentPreRun:           initLogging,
 	Run:                        runREPL,
 	Long: `Weave is a command-line tool for managing vector databases.
 Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase PGVector, Chroma (local/cloud), Qdrant (local/cloud), Neo4j (local/cloud), and Mock databases.
@@ -189,6 +193,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&jsonOutput, "json", false, "output results in JSON format")
 	rootCmd.PersistentFlags().BoolVar(&quietConfig, "quiet-config", false, "suppress config location information")
 	rootCmd.PersistentFlags().BoolVar(&noConfirm, "no-confirm", false, "skip confirmation prompts for destructive operations")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "logging level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (logs to stderr if not specified)")
 
 	// REPL-specific flags
 	rootCmd.Flags().StringVar(&queryStrings, "query-strings", "", "file with queries to execute (one per line, batch mode)")
@@ -320,6 +326,62 @@ func initConfig() {
 		if viper.GetBool("verbose") {
 			fmt.Fprintf(os.Stderr, "Warning: Could not read config file: %v\n", err)
 		}
+	}
+}
+
+// initLogging initializes the logging subsystem
+func initLogging(cmd *cobra.Command, args []string) {
+	// Priority order for log level:
+	// 1. --verbose or --quiet flags (highest)
+	// 2. --log-level flag
+	// 3. config.yaml logging.level
+	// 4. Default (info)
+
+	finalLogLevel := logLevel
+	finalLogFile := logFile
+
+	// If flags aren't set, try to load from config
+	if logLevel == "info" && logFile == "" {
+		cfg, err := LoadConfigWithOverrides()
+		if err == nil && cfg != nil {
+			if cfg.Logging.Level != "" {
+				finalLogLevel = cfg.Logging.Level
+			}
+			if cfg.Logging.File != "" {
+				finalLogFile = cfg.Logging.File
+			}
+		}
+	}
+
+	// Parse log level
+	level, err := logging.ParseLevel(finalLogLevel)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: %v, using info level\n", err)
+		level = logging.LevelInfo
+	}
+
+	// Handle verbose flag override (for backward compatibility)
+	verbose, _ := cmd.Flags().GetBool("verbose")
+	if verbose {
+		level = logging.LevelDebug
+	}
+
+	// Handle quiet flag override
+	quiet, _ := cmd.Flags().GetBool("quiet")
+	if quiet {
+		level = logging.LevelError
+	}
+
+	// Initialize logger
+	if err := logging.Init(level, finalLogFile, noColor); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize logging: %v\n", err)
+	}
+
+	// Log startup information at debug level
+	if finalLogFile != "" {
+		logging.Debug("Logging initialized: level=%s file=%s", level.String(), finalLogFile)
+	} else {
+		logging.Debug("Logging initialized: level=%s", level.String())
 	}
 }
 
