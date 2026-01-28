@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/maximilien/weave-cli/src/pkg/logging"
 )
 
 // QueryResult represents the result of a semantic search query
@@ -68,10 +70,17 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		options.TopK = 5
 	}
 
+	logging.Debug("Starting query: collection=%s query=%s top_k=%d", collectionName, queryText, options.TopK)
+
 	// Get the collection schema to determine the content field
 	schema, err := c.GetFullCollectionSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("Weaviate: failed to get collection schema: %w", err)
+		context := map[string]interface{}{
+			"collection": collectionName,
+			"query":      queryText,
+			"top_k":      options.TopK,
+		}
+		return nil, logging.WrapErrorWithContext(err, "Query", "weaviate", c.config.URL, context)
 	}
 
 	// Determine the content field name and collection type
