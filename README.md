@@ -404,6 +404,7 @@ weave cols query MyDocs "complex query" --agents rag-agent,qa-agent --progress
 ```
 
 **Chain Behavior:**
+
 - Sequential execution: Agent1 → Agent2 → Agent3
 - Context passing: Each agent receives previous agent's output
 - Error handling: Continues on failure, returns last successful output

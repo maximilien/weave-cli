@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
+	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
@@ -115,8 +116,8 @@ func init() {
 	QueryCmd.Flags().String("vector", "", "Named vector to search (e.g., 'text_vector', 'image_vector')")
 	QueryCmd.Flags().String("search-type", "", "Search type: 'text' (text metadata) or 'visual' (image content)")
 	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
-	QueryCmd.Flags().String("agent", "", "Agent to use for processing results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent')")
-	QueryCmd.Flags().StringSlice("agents", []string{}, "Multiple agents to execute in sequence (e.g., 'rag-agent,search-agent')")
+	QueryCmd.Flags().String("agent", "", "Single agent to process results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent'). Use --agents for chains.")
+	QueryCmd.Flags().StringSlice("agents", []string{}, "Agent chain: comma-separated agents executed in sequence. Each agent's output feeds the next. Examples: 'rag-agent,summarize-agent' or 'search-agent,qa-agent'. Cannot combine with --agent.")
 	QueryCmd.Flags().BoolP("verbose", "v", false, "Enable verbose debug logging")
 	QueryCmd.Flags().Bool("progress", false, "Show progress during query execution")
 }
@@ -152,12 +153,32 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	if len(agentNames) > 0 {
 		// Multi-agent mode
 		if agentName != "" {
-			utils.PrintError("Cannot specify both --agent and --agents flags")
+			utils.PrintError("❌ Cannot specify both --agent and --agents flags.\n\n" +
+				"Choose one:\n" +
+				"  • --agent <name>          (single agent)\n" +
+				"  • --agents <name1,name2>  (multi-agent chain)\n\n" +
+				"Example:\n" +
+				"  weave cols query MyDocs \"query\" --agents rag-agent,qa-agent")
 			os.Exit(1)
 		}
 	} else if agentName != "" {
 		// Single agent mode - convert to slice for uniform handling
 		agentNames = []string{agentName}
+	}
+
+	// Validate agent names if provided
+	if len(agentNames) > 0 {
+		// Validate agent chain configuration
+		if err := agents.ValidateAgentChainConfig(agentNames); err != nil {
+			utils.PrintError(err.Error())
+			os.Exit(1)
+		}
+
+		// Validate agent names exist and provide suggestions
+		if err := agents.ValidateAgentNames(agentNames); err != nil {
+			utils.PrintError(err.Error())
+			os.Exit(1)
+		}
 	}
 
 	// Support legacy --json flag for backward compatibility
