@@ -131,6 +131,9 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - 📊 **Embeddings** - List and explore available embedding models
 - ⏱️ **Configurable Timeouts** - Default 10s timeout, adjustable per
   command
+- 🛡️ **Production Hardening** - Agent input validation with typo suggestions,
+  structured logging with file output (`--log-level`, `--log-file`), and rich
+  error context for debugging (v0.9.12+)
 
 ## Documentation
 
