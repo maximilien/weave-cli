@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.12] - 2026-01-28
+
+### Added
+- **Production Hardening - Agent Input Validation**: Comprehensive validation for multi-agent chains
+  - Agent name validation with Levenshtein distance "did you mean?" suggestions
+  - Duplicate detection in agent chains with helpful error messages
+  - Empty chain validation and long chain warnings (>5 agents)
+  - `ValidateAgentNames()` and `ValidateAgentChainConfig()` functions
+  - 29 test cases covering edge cases (empty chains, typos, duplicates)
+  - Files: `src/pkg/agents/validation.go` (211 lines), `src/pkg/agents/validation_test.go` (244 lines)
+  - Example: `weave cols query Docs "test" --agent rag-agnet` → suggests "rag-agent"
+  - Commits: 4c1e09c, 5371271
+
+- **Production Hardening - Structured Logging Infrastructure**: File-based logging with rich error context
+  - 4 log levels: DEBUG, INFO, WARN, ERROR with colored console output
+  - File output support: `--log-file logs/weave.log` flag
+  - Log level control: `--log-level debug` flag or `config.yaml` configuration
+  - Config file support: `logging.level` and `logging.file` in config.yaml
+  - Priority order: `--verbose`/`--quiet` > flags > config.yaml > default (info)
+  - `ContextError` wrapper for VDB operations with operation, vdb_type, endpoint metadata
+  - `WrapError()` and `WrapErrorWithContext()` helper functions
+  - 21 test cases with ~95% code coverage
+  - Files: `src/pkg/logging/logger.go` (249 lines), `src/pkg/logging/logger_test.go` (489 lines)
+  - Backward compatible with existing `--verbose` and `--quiet` flags
+  - Commits: 90749b2, 5371271
+
+- **Production Hardening - Rich Error Context**: Applied structured error context to Weaviate operations
+  - Updated `NewClient`, `Health`, and `Query` operations with `WrapError`
+  - Error context includes: operation name, VDB type, endpoint, collection, query parameters
+  - Debug logging on success paths for better observability
+  - Enhanced troubleshooting with context-aware error messages
+  - Example: `connection refused [operation=Health vdb=weaviate endpoint=localhost:8080 timeout=10s]`
+  - Commit: 847d4fd
+
+### Changed
+- **CLI Help Text**: Improved `--agent` and `--agents` flag descriptions
+  - Clarified single agent vs agent chain behavior
+  - Added examples and usage notes
+  - Cannot combine `--agent` and `--agents` flags (validation added)
+  - Commit: 4c1e09c
+
+### Fixed
+- Markdown linting issue in README.md (missing blank line around list)
+  - Commit: 4c1e09c
+
+### Documentation
+- Added logging configuration example to `config.yaml`
+- Enhanced error messages with structured context across all VDB operations
+
+### Testing
+- 50 new test cases added (29 validation + 21 logging)
+- All tests passing with 100% success rate
+- Total lines added: 1,787 (code + tests)
+
 ## [0.9.11] - 2026-01-27
 
 ### Added
