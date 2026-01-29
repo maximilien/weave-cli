@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Configuration Validation on Startup**: Proactive config validation with helpful warnings
+  - Validates VDB configuration before operations: required fields, URL formats, credentials
+  - Database-specific validation: Weaviate, Milvus, Qdrant, Chroma, MongoDB, Supabase, Neo4j
+  - Warns about deprecated settings (e.g., "supabase" → "supabase-cloud")
+  - Non-blocking warnings with actionable suggestions
+  - Can be disabled with `WEAVE_SKIP_CONFIG_VALIDATION=true`
+  - File: `src/pkg/config/validation.go` (~500 lines)
+  - Example: Detects missing MongoDB `database_url`, suggests connection string format
+
+- **Rich Error Context for Qdrant, Milvus, Chroma**: Extended v0.9.12 error context to more VDBs
+  - Applied `logging.WrapError` and `WrapErrorWithContext` to Qdrant, Milvus, Chroma clients
+  - NewClient and Health operations now include structured context (timeout, address, hints)
+  - Debug logging on successful operations for better observability
+  - Consistent error handling across all supported VDBs
+  - Files: `src/pkg/vectordb/qdrant/client.go`, `src/pkg/vectordb/milvus/client.go`, `src/pkg/vectordb/chroma/client.go`
+  - Example: `connection refused [operation=Health vdb=qdrant endpoint=localhost:6334 hint=connection_refused]`
+
 ## [0.9.12] - 2026-01-28
 
 ### Added

@@ -14,6 +14,7 @@ import (
 	chroma "github.com/amikos-tech/chroma-go/pkg/api/v2"
 	"github.com/amikos-tech/chroma-go/pkg/embeddings"
 
+	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -121,8 +122,9 @@ func NewClient(config *Config) (*Client, error) {
 
 		client, err = chroma.NewCloudClient(opts...)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create Chroma cloud client: %w", err)
+			return nil, logging.WrapError(err, "NewClient", "chroma-cloud", "api.trychroma.com")
 		}
+		logging.Debug("Chroma cloud client created successfully: tenant=%s database=%s", config.Tenant, config.Database)
 	} else {
 		// Local HTTP client
 		opts := []chroma.ClientOption{
@@ -131,8 +133,9 @@ func NewClient(config *Config) (*Client, error) {
 		}
 		client, err = chroma.NewHTTPClient(opts...)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create Chroma HTTP client: %w", err)
+			return nil, logging.WrapError(err, "NewClient", "chroma-local", config.URL)
 		}
+		logging.Debug("Chroma HTTP client created successfully: url=%s tenant=%s database=%s", config.URL, config.Tenant, config.Database)
 	}
 
 	return &Client{
@@ -167,8 +170,19 @@ func (c *Client) getCollection(ctx context.Context, name string) (chroma.Collect
 
 // Health checks the health of the Chroma instance
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
+	timeout := c.getTimeoutFor(vectordb.OperationTypeHealth)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	endpoint := c.config.URL
+	if endpoint == "" {
+		endpoint = "api.trychroma.com"
+	}
+	context := map[string]interface{}{
+		"timeout":  fmt.Sprintf("%v", timeout),
+		"tenant":   c.config.Tenant,
+		"database": c.config.Database,
+	}
 
 	// Use heartbeat to check health
 	err := c.client.Heartbeat(ctx)
@@ -176,29 +190,36 @@ func (c *Client) Health(ctx context.Context) error {
 		errMsg := err.Error()
 		// Provide helpful troubleshooting hints for common errors
 		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
-			return fmt.Errorf("Chroma health check failed: %w\n\nConnection refused. Common causes:\n"+
+			context["hint"] = "connection_refused"
+			wrappedErr := logging.WrapErrorWithContext(err, "Health", "chroma", endpoint, context)
+			return fmt.Errorf("%w\n\nConnection refused. Common causes:\n"+
 				"  1. Chroma server not running (start with: docker run -p 8000:8000 chromadb/chroma)\n"+
 				"  2. Wrong URL/port in configuration (default: http://localhost:8000)\n"+
 				"  3. For Chroma Cloud: verify tenant and API key\n"+
-				"  → Check Chroma is running and verify connection details", err)
+				"  → Check Chroma is running and verify connection details", wrappedErr)
 		}
 		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
-			return fmt.Errorf("Chroma health check failed: %w\n\nConnection timeout. Common causes:\n"+
+			context["hint"] = "timeout"
+			wrappedErr := logging.WrapErrorWithContext(err, "Health", "chroma", endpoint, context)
+			return fmt.Errorf("%w\n\nConnection timeout. Common causes:\n"+
 				"  1. Chroma server not responding (check logs: docker logs <container>)\n"+
 				"  2. Network/firewall blocking port 8000\n"+
 				"  3. For Chroma Cloud: verify cluster is running\n"+
-				"  → Check Chroma status and network connectivity", err)
+				"  → Check Chroma status and network connectivity", wrappedErr)
 		}
 		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
-			return fmt.Errorf("Chroma health check failed: %w\n\nAuthentication error. Common causes:\n"+
+			context["hint"] = "auth_error"
+			wrappedErr := logging.WrapErrorWithContext(err, "Health", "chroma", endpoint, context)
+			return fmt.Errorf("%w\n\nAuthentication error. Common causes:\n"+
 				"  1. Invalid or missing API key for Chroma Cloud\n"+
 				"  2. API key not set in CHROMA_API_KEY environment variable\n"+
 				"  3. Wrong tenant or database configuration\n"+
-				"  → Verify API key and tenant settings", err)
+				"  → Verify API key and tenant settings", wrappedErr)
 		}
-		return fmt.Errorf("Chroma health check failed: %w", err)
+		return logging.WrapErrorWithContext(err, "Health", "chroma", endpoint, context)
 	}
 
+	logging.Debug("Chroma health check successful: endpoint=%s tenant=%s database=%s", endpoint, c.config.Tenant, c.config.Database)
 	return nil
 }
 

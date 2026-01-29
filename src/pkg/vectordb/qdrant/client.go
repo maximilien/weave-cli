@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	qdrant "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc"
@@ -76,13 +77,15 @@ func NewClient(config *Config) (*Client, error) {
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Qdrant client for %s: %w", addr, err)
+		return nil, logging.WrapError(err, "NewClient", "qdrant", addr)
 	}
 
 	// Create Qdrant clients
 	qdrantClient := qdrant.NewQdrantClient(conn)
 	collectionsClient := qdrant.NewCollectionsClient(conn)
 	pointsClient := qdrant.NewPointsClient(conn)
+
+	logging.Debug("Qdrant client created successfully: addr=%s tls=%v", addr, config.UseTLS)
 
 	return &Client{
 		qdrantClient:      qdrantClient,
@@ -103,8 +106,16 @@ func (c *Client) Close() error {
 
 // Health checks if the Qdrant server is healthy and accessible
 func (c *Client) Health(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeHealth))
+	timeout := c.getTimeoutFor(vectordb.OperationTypeHealth)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
+
+	addr := fmt.Sprintf("%s:%d", c.config.Host, c.config.Port)
+	context := map[string]interface{}{
+		"timeout": fmt.Sprintf("%v", timeout),
+		"host":    c.config.Host,
+		"port":    c.config.Port,
+	}
 
 	// Use the HealthCheck gRPC method
 	req := &qdrant.HealthCheckRequest{}
@@ -113,27 +124,35 @@ func (c *Client) Health(ctx context.Context) error {
 		errMsg := err.Error()
 		// Provide helpful troubleshooting hints for common errors
 		if strings.Contains(errMsg, "connection refused") || strings.Contains(errMsg, "connect:") {
-			return fmt.Errorf("Qdrant health check failed: %w\n\nConnection refused. Common causes:\n"+
+			context["hint"] = "connection_refused"
+			wrappedErr := logging.WrapErrorWithContext(err, "Health", "qdrant", addr, context)
+			return fmt.Errorf("%w\n\nConnection refused. Common causes:\n"+
 				"  1. Qdrant server not running (start with: docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant)\n"+
 				"  2. Wrong host or port in configuration\n"+
 				"  3. For Qdrant Cloud: check API endpoint and API key\n"+
-				"  → Verify connection details in config", err)
+				"  → Verify connection details in config", wrappedErr)
 		}
 		if strings.Contains(errMsg, "timeout") || strings.Contains(errMsg, "deadline") {
-			return fmt.Errorf("Qdrant health check failed: %w\n\nConnection timeout. Common causes:\n"+
+			context["hint"] = "timeout"
+			wrappedErr := logging.WrapErrorWithContext(err, "Health", "qdrant", addr, context)
+			return fmt.Errorf("%w\n\nConnection timeout. Common causes:\n"+
 				"  1. Qdrant server not responding (check logs: docker logs <container>)\n"+
 				"  2. Network/firewall issues\n"+
 				"  3. For Qdrant Cloud: verify cluster is running\n"+
-				"  → Check Qdrant status and network connectivity", err)
+				"  → Check Qdrant status and network connectivity", wrappedErr)
 		}
 		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "403") || strings.Contains(errMsg, "Unauthorized") {
-			return fmt.Errorf("Qdrant health check failed: %w\n\nAuthentication error. Common causes:\n"+
+			context["hint"] = "auth_error"
+			wrappedErr := logging.WrapErrorWithContext(err, "Health", "qdrant", addr, context)
+			return fmt.Errorf("%w\n\nAuthentication error. Common causes:\n"+
 				"  1. Invalid or missing API key for Qdrant Cloud\n"+
 				"  2. API key not configured in environment\n"+
-				"  → Set QDRANT_API_KEY for cloud deployments", err)
+				"  → Set QDRANT_API_KEY for cloud deployments", wrappedErr)
 		}
-		return fmt.Errorf("Qdrant health check failed: %w", err)
+		return logging.WrapErrorWithContext(err, "Health", "qdrant", addr, context)
 	}
+
+	logging.Debug("Qdrant health check successful: addr=%s", addr)
 	return nil
 }
 

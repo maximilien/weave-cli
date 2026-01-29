@@ -251,6 +251,12 @@ func LoadConfigWithOptions(opts LoadConfigOptions) (*Config, error) {
 		}
 	}
 
+	// Validate configuration and print warnings (non-blocking)
+	validationResult := ValidateConfig(&config)
+	if os.Getenv("WEAVE_SKIP_CONFIG_VALIDATION") != "true" {
+		PrintValidationResult(validationResult)
+	}
+
 	return &config, nil
 }
 
