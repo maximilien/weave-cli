@@ -46,6 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added link to Timeout Configuration Guide in Guides section
   - Shows practical examples: health checks, queries, bulk imports
 
+## Added
+- **`weave vdb` Command**: New command for vector database management
+  - `weave vdb list` - List all configured databases with filtering (--cloud, --local)
+  - `weave vdb info <name>` - Show detailed database configuration and settings
+  - `weave vdb health` - Placeholder for health checks (directs to `weave health check`)
+  - Aliases: `db`, `database` for discoverability
+  - Files: `src/cmd/vdb/*.go` (~350 lines)
+  - Better UX than `weave config list` for database-specific operations
+  - Example: `weave vdb list --cloud` shows only cloud databases
+
 ## [0.9.12] - 2026-01-28
 
 ### Added

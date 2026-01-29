@@ -48,6 +48,12 @@ weave config create --env
 
 # Verify setup
 weave health check
+
+# List configured databases
+weave vdb list
+
+# Show detailed database info
+weave vdb info weaviate-cloud
 ```
 
 For other databases, see their setup guides linked in the table above.
@@ -174,6 +180,36 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
 
 ## Advanced Usage
+
+### Vector Database Management
+
+Manage your vector database configurations with dedicated commands:
+
+```bash
+# List all configured databases
+weave vdb list                    # Show all databases
+weave vdb ls                      # Alias for list
+weave vdb list --cloud            # Show only cloud databases
+weave vdb list --local            # Show only local databases
+
+# Show detailed database information
+weave vdb info weaviate-cloud     # Connection details, auth, collections
+weave vdb info milvus-local       # Vector settings, endpoints
+
+# Check database health
+weave vdb health                  # Directs to 'weave health check'
+weave vdb health weaviate-cloud   # Check specific database
+
+# Aliases for discoverability
+weave db list                     # Same as 'weave vdb list'
+weave database info my-db         # Same as 'weave vdb info my-db'
+```
+
+**Features:**
+- **List view** - Table showing name, type, endpoint, and default status
+- **Info view** - Detailed configuration including auth status (masked secrets), vector dimensions, similarity metrics, and collections
+- **Filtering** - `--cloud` and `--local` flags to filter by deployment type
+- **Better UX** - More intuitive than `weave config list` for database-specific operations
 
 ### Timeout Configuration
 
