@@ -129,8 +129,9 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - 🧠 **AI Schema & Chunking** - Analyze documents and get AI-powered schema and
   optimal chunk size recommendations
 - 📊 **Embeddings** - List and explore available embedding models
-- ⏱️ **Configurable Timeouts** - Default 10s timeout, adjustable per
-  command
+- ⏱️ **Configurable Timeouts** - Smart operation-specific defaults (Health: 10s,
+  Bulk: 120s), adjustable per command (`-t 30s` or `--timeout 30s`) or in
+  config.yaml. See [Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)
 - 🛡️ **Production Hardening** - Agent input validation with typo suggestions,
   structured logging with file output (`--log-level`, `--log-file`), and rich
   error context for debugging (v0.9.12+)
@@ -151,6 +152,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - **[⚙️ Agent Management](docs/AGENT_MANAGEMENT.md)** - Create, customize, and
   manage RAG agents
 - **[🔌 MCP AI Tools API](docs/mcp/MCP_AI_TOOLS.md)** - Using AI tools via MCP server
+- **[⏱️ Timeout Configuration](docs/TIMEOUT_CONFIGURATION.md)** - Configure and
+  troubleshoot operation timeouts
 - **[📦 Batch Processing](docs/guides/BATCH_DOCS_CREATION.md)** - Directory
   processing guide
 - **[📚 Vector DB Abstraction](docs/guides/VECTOR_DB_ABSTRACTION.md)** -
@@ -171,6 +174,27 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
 
 ## Advanced Usage
+
+### Timeout Configuration
+
+Control operation timeouts for better performance and reliability:
+
+```bash
+# Quick timeout for fast connectivity test
+weave health check -t 5s
+
+# Longer timeout for cloud operations
+weave cols query MyDocs "search" -t 30s
+
+# Very long timeout for bulk imports
+weave docs batch --dir ./data --collection Docs -t 600s
+
+# Configure per-database in config.yaml
+timeout: 30  # seconds
+```
+
+See **[Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)** for details on
+operation-specific defaults and troubleshooting.
 
 ### Configuration Options
 

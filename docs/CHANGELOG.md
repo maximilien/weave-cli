@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files: `src/pkg/vectordb/qdrant/client.go`, `src/pkg/vectordb/milvus/client.go`, `src/pkg/vectordb/chroma/client.go`
   - Example: `connection refused [operation=Health vdb=qdrant endpoint=localhost:6334 hint=connection_refused]`
 
+### Changed
+- **Timeout Flag Enhancement**: Added `-t` as shortcut for `--timeout` flag
+  - Faster to type: `weave health check -t 5s` vs `--timeout 5s`
+  - Works on all commands that support timeout configuration
+  - Backward compatible - both `-t` and `--timeout` work
+
 ### Documentation
 - **Timeout Configuration Guide**: Comprehensive guide for timeout tuning and troubleshooting
   - Explains operation-specific timeout defaults (Health: 10s, Bulk: 120s, etc.)
@@ -33,6 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Troubleshooting guide for timeout errors with actionable steps
   - Best practices for production and development environments
   - File: `docs/TIMEOUT_CONFIGURATION.md`
+
+- **README.md Updates**: Enhanced timeout documentation and discoverability
+  - Added timeout examples in Advanced Usage section
+  - Updated Key Features with timeout defaults and `-t` flag
+  - Added link to Timeout Configuration Guide in Guides section
+  - Shows practical examples: health checks, queries, bulk imports
 
 ## [0.9.12] - 2026-01-28
 
