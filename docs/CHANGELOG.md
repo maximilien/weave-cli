@@ -25,6 +25,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files: `src/pkg/vectordb/qdrant/client.go`, `src/pkg/vectordb/milvus/client.go`, `src/pkg/vectordb/chroma/client.go`
   - Example: `connection refused [operation=Health vdb=qdrant endpoint=localhost:6334 hint=connection_refused]`
 
+### Documentation
+- **Timeout Configuration Guide**: Comprehensive guide for timeout tuning and troubleshooting
+  - Explains operation-specific timeout defaults (Health: 10s, Bulk: 120s, etc.)
+  - Cloud vs local timeout differences (2x for cloud operations)
+  - Configuration examples for common scenarios (batch imports, slow networks, testing)
+  - Troubleshooting guide for timeout errors with actionable steps
+  - Best practices for production and development environments
+  - File: `docs/TIMEOUT_CONFIGURATION.md`
+
 ## [0.9.12] - 2026-01-28
 
 ### Added
