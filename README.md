@@ -206,10 +206,14 @@ weave database info my-db         # Same as 'weave vdb info my-db'
 ```
 
 **Features:**
+
 - **List view** - Table showing name, type, endpoint, and default status
-- **Info view** - Detailed configuration including auth status (masked secrets), vector dimensions, similarity metrics, and collections
-- **Filtering** - `--cloud` and `--local` flags to filter by deployment type
-- **Better UX** - More intuitive than `weave config list` for database-specific operations
+- **Info view** - Detailed configuration including auth status (masked
+  secrets), vector dimensions, similarity metrics, and collections
+- **Filtering** - `--cloud` and `--local` flags to filter by deployment
+  type
+- **Better UX** - More intuitive than `weave config list` for
+  database-specific operations
 
 ### Timeout Configuration
 
@@ -229,8 +233,8 @@ weave docs batch --dir ./data --collection Docs -t 600s
 timeout: 30  # seconds
 ```
 
-See **[Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)** for details on
-operation-specific defaults and troubleshooting.
+See **[Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)** for
+details on operation-specific defaults and troubleshooting.
 
 ### Configuration Options
 
