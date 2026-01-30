@@ -216,7 +216,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&vectorDBType, "vdb", "", "alias for --vector-db-type")
 	rootCmd.PersistentFlags().StringVar(&weaviateAPIKey, "weaviate-api-key", "", "override WEAVIATE_API_KEY")
 	rootCmd.PersistentFlags().StringVar(&weaviateURL, "weaviate-url", "", "override WEAVIATE_URL")
-	rootCmd.PersistentFlags().StringVarP(&timeout, "timeout", "t", "", "timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)")
+	rootCmd.PersistentFlags().StringVar(&timeout, "timeout", "", "timeout for vector DB operations (e.g., 5s, 10s, 30s; default: 10s)")
 
 	// Vector database type selection flags (hidden - use --vector-db-type instead)
 	rootCmd.PersistentFlags().BoolVar(&useWeaviate, "weaviate", false, "use Weaviate vector database (weaviate-cloud or weaviate-local)")

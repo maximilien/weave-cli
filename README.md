@@ -136,8 +136,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
   optimal chunk size recommendations
 - 📊 **Embeddings** - List and explore available embedding models
 - ⏱️ **Configurable Timeouts** - Smart operation-specific defaults (Health: 10s,
-  Bulk: 120s), adjustable per command (`-t 30s` or `--timeout 30s`) or in
-  config.yaml. See [Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)
+  Bulk: 120s), adjustable per command (`--timeout 30s`) or in config.yaml. See
+  [Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)
 - 🛡️ **Production Hardening** - Agent input validation with typo suggestions,
   structured logging with file output (`--log-level`, `--log-file`), and rich
   error context for debugging (v0.9.12+)
@@ -221,13 +221,13 @@ Control operation timeouts for better performance and reliability:
 
 ```bash
 # Quick timeout for fast connectivity test
-weave health check -t 5s
+weave health check --timeout 5s
 
 # Longer timeout for cloud operations
-weave cols query MyDocs "search" -t 30s
+weave cols query MyDocs "search" --timeout 30s
 
 # Very long timeout for bulk imports
-weave docs batch --dir ./data --collection Docs -t 600s
+weave docs batch --dir ./data --collection Docs --timeout 600s
 
 # Configure per-database in config.yaml
 timeout: 30  # seconds

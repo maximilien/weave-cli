@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Flag Conflict Resolution**: Removed `-t` shortcut for `--timeout` flag to resolve conflict
+  - The stats command already uses `-t` for `--top` (number of top values to show)
+  - Attempting to use both caused panic: "unable to redefine 't' shorthand"
+  - Customer Impact: Blocked PDF image ingestion workflows
+  - Resolution: Use `--timeout 5s` instead of `-t 5s` for timeout configuration
+  - The `-t` flag remains available for `weave stats` command as `--top` shortcut
+  - Issue: Customer reported panic during batch PDF image extraction
+  - Files: `src/cmd/root.go`, `README.md`, `docs/CHANGELOG.md`
+
 ### Added
 - **Configuration Validation on Startup**: Proactive config validation with helpful warnings
   - Validates VDB configuration before operations: required fields, URL formats, credentials
@@ -25,12 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files: `src/pkg/vectordb/qdrant/client.go`, `src/pkg/vectordb/milvus/client.go`, `src/pkg/vectordb/chroma/client.go`
   - Example: `connection refused [operation=Health vdb=qdrant endpoint=localhost:6334 hint=connection_refused]`
 
-### Changed
-- **Timeout Flag Enhancement**: Added `-t` as shortcut for `--timeout` flag
-  - Faster to type: `weave health check -t 5s` vs `--timeout 5s`
-  - Works on all commands that support timeout configuration
-  - Backward compatible - both `-t` and `--timeout` work
-
 ### Documentation
 - **Timeout Configuration Guide**: Comprehensive guide for timeout tuning and troubleshooting
   - Explains operation-specific timeout defaults (Health: 10s, Bulk: 120s, etc.)
@@ -42,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **README.md Updates**: Enhanced timeout documentation and discoverability
   - Added timeout examples in Advanced Usage section
-  - Updated Key Features with timeout defaults and `-t` flag
+  - Updated Key Features with timeout defaults and configuration options
   - Added link to Timeout Configuration Guide in Guides section
   - Shows practical examples: health checks, queries, bulk imports
 
