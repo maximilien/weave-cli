@@ -265,6 +265,35 @@ weave version
 
 ---
 
+---
+
+## 🚨 CRITICAL FIX - January 30, 2026
+
+### Customer-Reported Panic (AuctionsMax.ai)
+
+**Issue**: Panic during PDF image ingestion
+**Error**: `panic: unable to redefine 't' shorthand in "stats" flagset`
+
+**Root Cause**:
+- The `-t` shortcut we added for `--timeout` conflicted with existing `-t` for `--top` in stats command
+- When commands merge persistent flags, Cobra panics on duplicate shortcuts
+
+**Fix Applied** (< 30 minutes from report):
+- ✅ Removed `-t` shortcut from `--timeout` flag
+- ✅ Updated README.md to use `--timeout` (no shortcut)
+- ✅ Updated CHANGELOG.md to document fix
+- ✅ Tested: stats command works, no panics
+- ✅ Committed and pushed: `f010189`
+
+**Resolution**: Use `--timeout 5s` instead of `-t 5s`
+
+**Lesson Learned**: Check for flag conflicts across all commands before adding shortcuts to persistent flags
+
+**Customer Status**: UNBLOCKED - Can resume PDF ingestion
+
+---
+
 **Created**: 2026-01-29 20:30 PST
-**Status**: Ready for tomorrow
-**Next Review**: After customer feedback or Friday EOD
+**Updated**: 2026-01-30 09:30 PST (Critical fix applied)
+**Status**: Customer feedback received and resolved
+**Next Review**: Monitor for additional feedback
