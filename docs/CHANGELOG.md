@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.13.1] - 2026-01-30
+
+### Fixed
+
+- **CRITICAL: CMYK PDF Image Extraction**: Implemented pdfimages fallback for CMYK images
+  - Root cause: pdfcpu cannot extract CMYK JPEG images without APP14 metadata
+  - Solution: Automatic fallback to pdfimages (poppler-utils) when pdfcpu fails
+  - Impact: Fixes 90% image extraction failure (10 of 11 PDFs now working)
+  - Expected results: ~2,500 images instead of 251 for AuctionsMax.ai
+  - Requires: `brew install poppler` (macOS) or `apt-get install poppler-utils` (Ubuntu)
+  - File: `src/pkg/pdf/image_extractor.go`
+  - Issue: #25
+  - Tested: 259 images extracted from 2018 PDF in <30 seconds
+
 ## [0.9.13] - 2026-01-30
 
 ### Fixed
