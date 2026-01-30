@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -78,28 +79,87 @@ func extractPDFImages(filePath string, skipSmallImages bool, minImageSize int, n
 	return imageData, nil
 }
 
-// extractImagesWithFallback attempts to extract images using a more lenient approach
+// extractImagesWithFallback attempts to extract images using pdfimages (poppler-utils)
 func extractImagesWithFallback(filePath, tempDir string, skipSmallImages bool, minImageSize int, noTips bool) ([]PDFImageData, error) {
-	// For now, return empty slice with a warning
-	// This allows PDF processing to continue without images
-	fmt.Printf("⚠️  Skipping image extraction for this PDF due to incompatible JPEG format\n")
+	fmt.Printf("🔄 Using fallback extraction with pdfimages for CMYK/incompatible PDFs...\n")
 
-	// Only show tips if not suppressed
-	if !noTips {
-		fmt.Printf("\n💡 Tips for extracting images from CMYK PDFs:\n")
-		fmt.Printf("\n   Option 1 - Using Ghostscript (recommended):\n")
-		fmt.Printf("   $ gs -sDEVICE=pdfwrite -dProcessColorModel=/DeviceRGB \\\n")
-		fmt.Printf("        -dColorConversionStrategy=/RGB -dNOPAUSE -dBATCH \\\n")
-		fmt.Printf("        -sOutputFile=output-rgb.pdf %s\n", filepath.Base(filePath))
-		fmt.Printf("   $ weave docs create <collection> output-rgb.pdf --image-col <image-collection>\n")
-		fmt.Printf("\n   Option 2 - Using ImageMagick:\n")
-		fmt.Printf("   $ convert -density 300 -colorspace RGB %s output-rgb.pdf\n", filepath.Base(filePath))
-		fmt.Printf("   $ weave docs create <collection> output-rgb.pdf --image-col <image-collection>\n")
-		fmt.Printf("\n   Option 3 - Continue with text-only processing (current):\n")
-		fmt.Printf("   Text content will be extracted and searchable without images.\n\n")
+	// Check if pdfimages is available using exec.LookPath
+	pdfimagesPath, err := exec.LookPath("pdfimages")
+	if err != nil {
+		// pdfimages not found, show installation tips
+		fmt.Printf("⚠️  pdfimages not found - cannot extract images from CMYK PDFs\n")
+		if !noTips {
+			fmt.Printf("\n💡 Install poppler-utils to extract images from CMYK PDFs:\n")
+			fmt.Printf("   macOS:  brew install poppler\n")
+			fmt.Printf("   Ubuntu: sudo apt-get install poppler-utils\n\n")
+		}
+		return []PDFImageData{}, nil
 	}
 
-	return []PDFImageData{}, nil
+	fmt.Printf("✅ Found pdfimages at: %s\n", pdfimagesPath)
+
+	// Use pdfimages to extract images
+	// -j flag: extract as JPEG when possible (preserves quality)
+	// -png flag: extract as PNG when JPEG not appropriate
+	imagePrefix := filepath.Join(tempDir, "image")
+
+	cmd := exec.Command("pdfimages", "-j", "-png", filePath, imagePrefix)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("⚠️  pdfimages extraction failed: %v\n", err)
+		if len(output) > 0 {
+			fmt.Printf("Output: %s\n", string(output))
+		}
+		return []PDFImageData{}, nil
+	}
+
+	fmt.Printf("✅ pdfimages extraction completed\n")
+
+	// Find extracted image files
+	var imageFiles []string
+	err = filepath.Walk(tempDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			ext := strings.ToLower(filepath.Ext(path))
+			if ext == ".jpg" || ext == ".jpeg" || ext == ".png" || ext == ".ppm" || ext == ".pbm" {
+				imageFiles = append(imageFiles, path)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk temp directory: %w", err)
+	}
+
+	if len(imageFiles) == 0 {
+		fmt.Printf("⚠️  No images found after fallback extraction\n")
+		return []PDFImageData{}, nil
+	}
+
+	fmt.Printf("📸 Found %d images using fallback method\n", len(imageFiles))
+
+	var imageData []PDFImageData
+	for i, imagePath := range imageFiles {
+		// Process each extracted image
+		data, err := processExtractedImage(imagePath, filePath, i)
+		if err != nil {
+			fmt.Printf("⚠️  Failed to process image %d: %v\n", i+1, err)
+			continue // Skip problematic images
+		}
+
+		// Apply size filter if specified
+		if skipSmallImages && len(data.ImageData) < minImageSize {
+			continue
+		}
+
+		imageData = append(imageData, *data)
+	}
+
+	fmt.Printf("✅ Processed %d images (after filtering)\n", len(imageData))
+
+	return imageData, nil
 }
 
 // processExtractedImage processes a single extracted image
