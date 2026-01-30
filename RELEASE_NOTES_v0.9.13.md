@@ -9,24 +9,29 @@
 ## 🚨 CRITICAL FIX - PDF Image Ingestion Panic
 
 ### What was broken?
+
 A flag conflict caused the CLI to panic during PDF image ingestion workflows:
 
-```
+```text
 panic: unable to redefine 't' shorthand in "stats" flagset: it's already used for "top" flag
 ```
 
 ### What we fixed
+
 - Removed the `-t` shortcut for `--timeout` flag (conflicted with `stats --top`)
 - The `stats` command retains `-t` for `--top` functionality
 - All timeout operations now use `--timeout` (full flag name only)
 
 ### Migration Required
+
 **Before** (v0.9.12 - broken):
+
 ```bash
 weave health check -t 5s  # ❌ CAUSES PANIC
 ```
 
 **After** (v0.9.13 - fixed):
+
 ```bash
 weave health check --timeout 5s  # ✅ WORKS
 weave stats MyCollection --top 10  # ✅ WORKS (-t still available here)
@@ -43,13 +48,15 @@ weave stats MyCollection --top 10  # ✅ WORKS (-t still available here)
 Proactive validation of all vector database configurations before operations:
 
 **Features**:
+
 - Validates required fields (URLs, API keys, credentials)
 - Database-specific validators for all 10+ supported VDBs
 - Non-blocking warnings with actionable suggestions
 - Can be disabled: `export WEAVE_SKIP_CONFIG_VALIDATION=true`
 
 **Example Output**:
-```
+
+```text
 ⚠️  Configuration Warnings:
   • databases.vector_databases[4] (milvus-cloud).api_key: Milvus Cloud (Zilliz) requires an API key
     💡 Set 'api_key' field for authentication
@@ -65,6 +72,7 @@ Proactive validation of all vector database configurations before operations:
 New dedicated command for managing vector database configurations:
 
 **Commands**:
+
 ```bash
 # List all configured databases
 weave vdb list                    # All databases
@@ -83,7 +91,8 @@ weave vdb health                  # Directs to 'weave health check'
 **Aliases**: Use `weave db` or `weave database` for discoverability
 
 **Output Example**:
-```
+
+```text
 📊 Configured Vector Databases (14 total)
 
 NAME                 TYPE                      ENDPOINT                                 DEFAULT
@@ -101,17 +110,20 @@ mongodb-cloud        mongodb-cloud             mongodb+srv://weave-cli_db_user..
 Extended v0.9.12's error context improvements to more VDBs:
 
 **Features**:
+
 - Structured logging with `WrapError` and `WrapErrorWithContext`
 - Operation context: timeout, address, connection hints
 - Debug logging on successful operations
 - Consistent error handling across all VDBs
 
 **Example Error**:
-```
+
+```text
 connection refused [operation=Health vdb=qdrant endpoint=localhost:6334 hint=connection_refused]
 ```
 
 **Files**:
+
 - `src/pkg/vectordb/qdrant/client.go`
 - `src/pkg/vectordb/milvus/client.go`
 - `src/pkg/vectordb/chroma/client.go`
@@ -127,6 +139,7 @@ Comprehensive guide for timeout tuning and troubleshooting:
 **Location**: `docs/TIMEOUT_CONFIGURATION.md`
 
 **Covers**:
+
 - Operation-specific timeout defaults (Health: 10s, Bulk: 120s)
 - Cloud vs local timeout differences (2x multiplier for cloud)
 - Configuration examples for common scenarios
@@ -134,6 +147,7 @@ Comprehensive guide for timeout tuning and troubleshooting:
 - Production and development best practices
 
 **Examples**:
+
 ```bash
 # Quick health check
 weave health check --timeout 5s
@@ -148,6 +162,7 @@ timeout: 30  # seconds (per-database)
 ### 2. Enhanced README
 
 **Updates**:
+
 - Vector Database Management section with `weave vdb` examples
 - Timeout configuration examples in Advanced Usage
 - Updated Key Features section
@@ -158,12 +173,14 @@ timeout: 30  # seconds (per-database)
 ## 🏗️ Production Hardening Summary
 
 ### Changes Overview
+
 - **Config Validation**: Prevents confusing runtime errors
 - **Error Context**: Makes debugging easier across all VDBs
 - **Database Management**: Better UX for multi-database workflows
 - **Documentation**: Comprehensive guides for timeout and deployment
 
 ### Total Changes
+
 - ~1,500 lines of new code
 - ~800 lines of documentation
 - 8 commits with critical fixes
@@ -174,6 +191,7 @@ timeout: 30  # seconds (per-database)
 ## 🚀 Installation & Upgrade
 
 ### From Source (Recommended)
+
 ```bash
 # Clone/pull latest
 git clone https://github.com/maximilien/weave-cli.git
@@ -189,6 +207,7 @@ git checkout v0.9.13
 ```
 
 ### From Git Tag
+
 ```bash
 cd weave-cli
 git fetch --tags
@@ -197,6 +216,7 @@ git checkout v0.9.13
 ```
 
 ### Verify Installation
+
 ```bash
 # Check version
 ./bin/weave --version
@@ -214,6 +234,7 @@ git checkout v0.9.13
 ## 🧪 Testing the Fix
 
 ### Original Failing Command (from customer report)
+
 ```bash
 weave docs create "AuctionListings" \
   "data/tamarkin/2021-tamarkin-auction-catalogue.pdf" \
@@ -226,6 +247,7 @@ weave docs create "AuctionListings" \
 **Expected**: No panic, successful image extraction and ingestion
 
 ### Additional Tests
+
 ```bash
 # Config validation
 weave vdb list
@@ -245,6 +267,7 @@ weave stats MyCollection --top 10
 ## 📋 Breaking Changes
 
 ### Timeout Flag Shortcut Removed
+
 - **Old**: `weave health check -t 5s`
 - **New**: `weave health check --timeout 5s`
 
@@ -252,7 +275,7 @@ weave stats MyCollection --top 10
 
 **Impact**: Low - most users likely use `--timeout` already
 
-**Migration**: Find/replace `-t ` with `--timeout ` in scripts
+**Migration**: Find/replace `-t` with `--timeout` in scripts
 
 ---
 
@@ -265,12 +288,15 @@ None reported for v0.9.13.
 ## 📞 Support & Feedback
 
 ### Reporting Issues
-- GitHub Issues: https://github.com/maximilien/weave-cli/issues
+
+- GitHub Issues: [weave-cli/issues](https://github.com/maximilien/weave-cli/issues)
 - Include version: `weave --version`
 - Include logs: `weave <command> --log-level debug --log-file debug.log`
 
 ### Quick Support
+
 For critical issues blocking production:
+
 1. Check `docs/TIMEOUT_CONFIGURATION.md` for timeout issues
 2. Run `weave vdb list` to verify configuration
 3. Use `--log-level debug` for detailed error context
@@ -281,10 +307,12 @@ For critical issues blocking production:
 ## 🙏 Acknowledgments
 
 **Special Thanks**:
+
 - AuctionsMax.ai for rapid feedback on the flag conflict issue
 - Early testers of v0.9.12 production hardening features
 
 **Contributors**:
+
 - Michael Maximilien (@maximilien)
 - Claude Code (AI pair programming)
 
@@ -293,6 +321,7 @@ For critical issues blocking production:
 ## 📈 What's Next?
 
 **Planned for v0.9.14+**:
+
 - Agent chain telemetry (token usage tracking, cost optimization)
 - Retry logic with exponential backoff for VDB connections
 - Circuit breaker pattern for cascade failure prevention
