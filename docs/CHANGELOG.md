@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.13] - 2026-01-30
+
 ### Fixed
 - **Flag Conflict Resolution**: Removed `-t` shortcut for `--timeout` flag to resolve conflict
   - The stats command already uses `-t` for `--top` (number of top values to show)
@@ -50,7 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added link to Timeout Configuration Guide in Guides section
   - Shows practical examples: health checks, queries, bulk imports
 
-## Added
 - **`weave vdb` Command**: New command for vector database management
   - `weave vdb list` - List all configured databases with filtering (--cloud, --local)
   - `weave vdb info <name>` - Show detailed database configuration and settings
