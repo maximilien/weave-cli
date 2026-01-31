@@ -520,10 +520,14 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 		imageSuccessCount := 0
 
 		for i, imgData := range imageData {
+			// Combine section heading, surrounding text, and OCR text for better search relevance
+			// This addresses Issue #27: "Enhancement: Combine OCR + surrounding_text in image content field"
+			combinedContent := buildCombinedImageContent(imgData)
+
 			doc := &vectordb.Document{
 				ID:        imgData.ID,
-				Text:      imgData.OCRText,
-				Content:   imgData.OCRText,
+				Text:      combinedContent, // Combined text for better search
+				Content:   combinedContent, // Combined text for better search
 				ImageData: imgData.ImageData,
 				Image:     imgData.Image,
 				URL:       imgData.URL,
@@ -560,6 +564,35 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 	}
 
 	return nil
+}
+
+// buildCombinedImageContent combines section heading, surrounding text, and OCR text
+// for better search relevance. This addresses Issue #27.
+func buildCombinedImageContent(imgData pdf.PDFImageData) string {
+	var parts []string
+
+	// Add section heading if available
+	if imgData.SectionHeading != "" {
+		parts = append(parts, imgData.SectionHeading)
+	}
+
+	// Add surrounding text if available
+	if imgData.SurroundingText != "" {
+		parts = append(parts, imgData.SurroundingText)
+	}
+
+	// Add OCR text if available
+	if imgData.OCRText != "" {
+		parts = append(parts, imgData.OCRText)
+	}
+
+	// If no content at all, return empty string
+	if len(parts) == 0 {
+		return ""
+	}
+
+	// Join all parts with newline for better readability
+	return strings.Join(parts, "\n\n")
 }
 
 func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string) error {
