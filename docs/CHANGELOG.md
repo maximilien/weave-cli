@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.13.2] - 2026-01-31
+
+### Fixed
+
+- **CRITICAL: OCR Implementation**: Replaced placeholder OCR with real Tesseract implementation
+  - Root cause: `extractOCRText()` was returning fake text: "OCR text from image: image-001.jpg"
+  - Solution: Integrated Tesseract OCR via gosseract library for real text extraction
+  - Impact: Extracted images now have searchable text content for semantic queries
+  - Expected results: Real OCR text instead of placeholder strings
+  - Requires: `brew install tesseract` (macOS) or `apt-get install tesseract-ocr` (Ubuntu)
+  - File: `src/pkg/pdf/image_extractor.go`
+  - Issue: #26
+  - Features:
+    - Non-fatal error handling (returns empty string on failure)
+    - Text cleanup and noise filtering (< 3 characters filtered out)
+    - Works with all image formats (JPEG, PNG, PPM, PBM)
+    - Automatic integration with image extraction pipeline
+    - Enables semantic search on image text content
+
+### Added
+
+- **OCR Test Suite**: Comprehensive test coverage for OCR functionality
+  - `TestExtractOCRText`: Tests blank image handling (empty string expected)
+  - `TestExtractOCRText_NonExistentFile`: Tests error handling (non-fatal)
+  - `TestExtractOCRText_Integration`: Tests real OCR with actual images (requires TEST_IMAGE_PATH)
+  - `BenchmarkExtractOCRText`: Performance benchmarking for OCR operations
+  - File: `src/pkg/pdf/ocr_test.go`
+  - All tests passing with proper CGO configuration
+
+### Changed
+
+- **Dependencies**: Added gosseract library for OCR support
+  - Added `github.com/otiai10/gosseract/v2 v2.4.1` to go.mod
+  - Requires CGO compilation with Tesseract/Leptonica headers
+  - Binary size increased from 121M to 122M (OCR library overhead)
+
+### Documentation
+
+- **OCR Fix Documentation**: Comprehensive guide for OCR implementation
+  - Created `docs/OCR_FIX.md` with complete OCR setup and usage guide
+  - Installation requirements for Tesseract
+  - Usage examples and verification steps
+  - Integration with semantic search workflows
+  - Troubleshooting common OCR issues
+  - Performance optimization tips
+
 ## [0.9.13.1] - 2026-01-30
 
 ### Fixed
