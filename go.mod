@@ -17,6 +17,7 @@ require (
 	github.com/neo4j/neo4j-go-driver/v5 v5.28.4
 	github.com/openai/openai-go v1.12.0
 	github.com/opensearch-project/opensearch-go/v4 v4.5.0
+	github.com/otiai10/gosseract/v2 v2.4.1
 	github.com/pdfcpu/pdfcpu v0.11.0
 	github.com/pinecone-io/go-pinecone v1.1.1
 	github.com/qdrant/go-client v1.16.2
