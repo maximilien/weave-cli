@@ -5,6 +5,7 @@ package qdrant
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	qdrant "github.com/qdrant/go-client/qdrant"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
@@ -65,11 +67,15 @@ func NewClient(config *Config) (*Client, error) {
 	// Create gRPC connection
 	var opts []grpc.DialOption
 	if config.UseTLS {
-		// For Qdrant Cloud, we would use TLS credentials
-		// For now, using insecure for local development
-		// TODO: Implement proper TLS configuration for cloud
-		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		// Use TLS credentials for Qdrant Cloud
+		// System cert pool is used by default for proper certificate verification
+		tlsConfig := &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		}
+		creds := credentials.NewTLS(tlsConfig)
+		opts = append(opts, grpc.WithTransportCredentials(creds))
 	} else {
+		// Use insecure credentials for local development
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
