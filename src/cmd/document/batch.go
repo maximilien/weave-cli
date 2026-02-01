@@ -50,6 +50,8 @@ type BatchProgress struct {
 	SkippedFiles       int
 	TotalChunks        int
 	TotalImages        int
+	FailedChunks       int // Failed document chunks across all files
+	FailedImages       int // Failed image documents across all files
 	StartTime          time.Time
 	EstimatedRemaining time.Duration
 	CurrentFile        string
@@ -573,6 +575,10 @@ func updateProgress(progress *BatchProgress, status *ProcessedFileStatus, mu *sy
 		progress.FailedFiles++
 	}
 
+	// Track failed documents (even for partially successful files)
+	progress.FailedChunks += status.ChunksFailed
+	progress.FailedImages += status.ImagesFailed
+
 	// Update time estimation
 	if progress.ProcessedFiles > 0 {
 		elapsed := time.Since(progress.StartTime)
@@ -810,8 +816,8 @@ func BuildBatchReport(progress *BatchProgress, statuses []ProcessedFileStatus, t
 			Failed:    progress.FailedFiles,
 		},
 		Documents: BatchDocStats{
-			Created: progress.TotalChunks,
-			Failed:  0, // TODO: Track failed document count separately
+			Created: progress.TotalChunks + progress.TotalImages,
+			Failed:  progress.FailedChunks + progress.FailedImages,
 		},
 		Performance: BatchPerformanceStats{
 			ThroughputFilesPerSec: throughputFilesPerSec,
