@@ -116,9 +116,38 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 		return nil, fmt.Errorf("OpenSearch: document not found: %s", documentID)
 	}
 
-	// TODO: Parse source properly (resp.Source is RawMessage, needs unmarshaling)
+	// Parse source from RawMessage
+	var source map[string]interface{}
+	if err := json.Unmarshal(resp.Source, &source); err != nil {
+		return nil, fmt.Errorf("OpenSearch: failed to parse document source: %w", err)
+	}
+
+	// Build document from parsed source
 	doc := &vectordb.Document{
 		ID: resp.ID,
+	}
+
+	// Extract text field
+	if text, ok := source["text"].(string); ok {
+		doc.Text = text
+	}
+
+	// Extract content field
+	if content, ok := source["content"].(string); ok {
+		doc.Content = content
+	}
+
+	// Extract metadata
+	if metadata, ok := source["metadata"].(map[string]interface{}); ok {
+		doc.Metadata = metadata
+	}
+
+	// Extract image data if present
+	if imageData, ok := source["image_data"].(string); ok {
+		doc.ImageData = imageData
+	}
+	if image, ok := source["image"].(string); ok {
+		doc.Image = image
 	}
 
 	return doc, nil
