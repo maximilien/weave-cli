@@ -692,78 +692,99 @@ func ShowDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionNam
 		vectorizer = schema.Vectorizer
 	}
 
+	// Helper function to display a document
+	displayDocument := func(doc *vectordb.Document, documents *[]interface{}) {
+		if jsonOutput {
+			*documents = append(*documents, map[string]interface{}{
+				"id":         doc.ID,
+				"collection": collectionName,
+				"content":    doc.Content,
+				"text":       doc.Text,
+				"metadata":   doc.Metadata,
+			})
+		} else {
+			if len(*documents) > 0 {
+				fmt.Println(strings.Repeat("=", 80))
+				fmt.Println()
+			}
+
+			// Display document details
+			color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
+			fmt.Printf("Collection: %s\n", collectionName)
+			if vectorizer != "" {
+				fmt.Printf("Embedding model: %s\n", GetStyledValueDimmed(vectorizer))
+			}
+			fmt.Println()
+
+			fmt.Printf("Content:\n")
+			if showLong {
+				fmt.Printf("%s\n", doc.Content)
+			} else {
+				preview := TruncateStringByLines(doc.Content, shortLines)
+				fmt.Printf("%s\n", preview)
+			}
+			fmt.Println()
+
+			if len(doc.Metadata) > 0 {
+				fmt.Printf("Metadata:\n")
+				for key, value := range doc.Metadata {
+					valueStr := fmt.Sprintf("%v", value)
+					truncatedValue := SmartTruncate(valueStr, key, shortLines)
+					fmt.Printf("  %s: %s\n", key, truncatedValue)
+				}
+			}
+
+			*documents = append(*documents, doc)
+		}
+	}
+
+	var documents []interface{}
+
 	// If document IDs are provided, show them directly
 	if len(documentIDs) > 0 {
-		var documents []interface{}
-
 		for _, docID := range documentIDs {
 			doc, err := client.GetDocument(ctx, collectionName, docID)
 			if err != nil {
 				PrintError(fmt.Sprintf("Failed to get document '%s': %v", docID, err))
 				continue
 			}
-
-			if jsonOutput {
-				documents = append(documents, map[string]interface{}{
-					"id":         doc.ID,
-					"collection": collectionName,
-					"content":    doc.Content,
-					"text":       doc.Text,
-					"metadata":   doc.Metadata,
-				})
-			} else {
-				if len(documents) > 0 {
-					fmt.Println(strings.Repeat("=", 80))
-					fmt.Println()
-				}
-
-				// Display document details
-				color.New(color.FgGreen).Printf("Document ID: %s\n", doc.ID)
-				fmt.Printf("Collection: %s\n", collectionName)
-				if vectorizer != "" {
-					fmt.Printf("Embedding model: %s\n", GetStyledValueDimmed(vectorizer))
-				}
-				fmt.Println()
-
-				fmt.Printf("Content:\n")
-				if showLong {
-					fmt.Printf("%s\n", doc.Content)
-				} else {
-					preview := TruncateStringByLines(doc.Content, shortLines)
-					fmt.Printf("%s\n", preview)
-				}
-				fmt.Println()
-
-				if len(doc.Metadata) > 0 {
-					fmt.Printf("Metadata:\n")
-					for key, value := range doc.Metadata {
-						valueStr := fmt.Sprintf("%v", value)
-						truncatedValue := SmartTruncate(valueStr, key, shortLines)
-						fmt.Printf("  %s: %s\n", key, truncatedValue)
-					}
-				}
-			}
+			displayDocument(doc, &documents)
+		}
+	} else {
+		// No document IDs provided - list all documents (with limit)
+		limit := 50 // Default limit for show all
+		docs, err := client.ListDocuments(ctx, collectionName, limit, 0)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to list documents: %v", err))
+			return
 		}
 
-		if jsonOutput && len(documents) > 0 {
-			output := map[string]interface{}{
-				"documents": documents,
-				"count":     len(documents),
-			}
-			if vectorizer != "" {
-				output["vectorizer"] = vectorizer
-			}
-			jsonBytes, err := json.MarshalIndent(output, "", "  ")
-			if err != nil {
-				PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
-				return
-			}
-			fmt.Println(string(jsonBytes))
+		if len(docs) == 0 {
+			PrintWarning("No documents found in collection")
+			return
 		}
-		return
+
+		for _, doc := range docs {
+			displayDocument(doc, &documents)
+		}
 	}
 
-	PrintWarning("Metadata and name-based document lookup not yet implemented for generic document show")
+	// Output JSON if requested
+	if jsonOutput && len(documents) > 0 {
+		output := map[string]interface{}{
+			"documents": documents,
+			"count":     len(documents),
+		}
+		if vectorizer != "" {
+			output["vectorizer"] = vectorizer
+		}
+		jsonBytes, err := json.MarshalIndent(output, "", "  ")
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to marshal JSON: %v", err))
+			return
+		}
+		fmt.Println(string(jsonBytes))
+	}
 }
 
 func ShowWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, documentIDs []string, showLong bool, shortLines int, metadataFilters []string, name string, showSchema bool, expandMetadata bool, jsonOutput bool) {
