@@ -154,10 +154,11 @@ func TestBuildBatchReport(t *testing.T) {
 		t.Errorf("report.Files.Skipped = %d, want 2", report.Files.Skipped)
 	}
 
-	// Test document counts (Created = TotalChunks from progress)
-	// Note: Images are tracked separately, not included in Documents.Created
-	if report.Documents.Created != progress.TotalChunks {
-		t.Errorf("report.Documents.Created = %d, want %d", report.Documents.Created, progress.TotalChunks)
+	// Test document counts (Created = TotalChunks + TotalImages from progress)
+	// Note: Images are now included in Documents.Created for accurate total count
+	expectedCreated := progress.TotalChunks + progress.TotalImages
+	if report.Documents.Created != expectedCreated {
+		t.Errorf("report.Documents.Created = %d, want %d", report.Documents.Created, expectedCreated)
 	}
 
 	// Test configuration
