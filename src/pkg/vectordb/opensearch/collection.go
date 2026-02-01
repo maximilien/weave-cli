@@ -212,10 +212,28 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 // GetCollectionInfo returns information about an index
 func (a *Adapter) GetCollectionInfo(ctx context.Context, name string) (*vectordb.CollectionInfo, error) {
-	// TODO: Implement proper stats parsing
+	// Get index stats using the Stats API
+	resp, err := a.client.Indices.Stats(
+		ctx,
+		&opensearchapi.IndicesStatsReq{
+			Indices: []string{name},
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("OpenSearch: failed to get index stats: %w", err)
+	}
+
+	// Parse stats response
+	var count int64
+	if resp.Indices != nil {
+		if indexStats, ok := resp.Indices[name]; ok {
+			count = int64(indexStats.Total.Docs.Count)
+		}
+	}
+
 	return &vectordb.CollectionInfo{
 		Name:  name,
-		Count: 0,
+		Count: count,
 	}, nil
 }
 
