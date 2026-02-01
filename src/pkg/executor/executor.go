@@ -355,8 +355,38 @@ func (e *Executor) executePlan(ctx context.Context, plan *agents.ExecutionPlan) 
 		}
 		fmt.Println() // Add spacing between steps
 
-		// Stop on critical failure
-		// TODO: Implement retry logic when MaxRetries > 0 and !report.Success && !step.Optional
+		// Implement retry logic for failed non-optional steps
+		if !report.Success && !step.Optional && e.config.MaxRetries > 0 {
+			retryCount := 0
+			for retryCount < e.config.MaxRetries {
+				retryCount++
+
+				// Exponential backoff: 2^retry seconds (1s, 2s, 4s, etc.)
+				backoffDuration := time.Duration(1<<uint(retryCount-1)) * time.Second
+				fmt.Printf("\n⚠️  Step failed. Retrying in %v (attempt %d/%d)...\n",
+					backoffDuration, retryCount, e.config.MaxRetries)
+
+				time.Sleep(backoffDuration)
+
+				// Retry the step
+				retryReport := e.executeStep(ctx, &step, stepOutputs)
+				if retryReport.Success {
+					fmt.Printf("✅ Retry succeeded!\n")
+					report = retryReport
+					reports[i] = retryReport
+					stepOutputs[i] = retryReport.Output
+					break
+				}
+
+				if retryCount < e.config.MaxRetries {
+					fmt.Printf("❌ Retry %d failed: %s\n", retryCount, retryReport.Error)
+				} else {
+					fmt.Printf("❌ All retries exhausted. Step failed permanently.\n")
+					report = retryReport
+					reports[i] = retryReport
+				}
+			}
+		}
 	}
 
 	return reports, nil
