@@ -4,11 +4,12 @@
 package opensearch
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/opensearch-project/opensearch-go/v4/opensearchapi"
-	"github.com/opensearch-project/opensearch-go/v4/opensearchutil"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
@@ -34,12 +35,18 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		docID = fmt.Sprintf("doc_%d", len(document.Text)) // Simple ID generation
 	}
 
+	// Encode document as JSON
+	body, err := json.Marshal(doc)
+	if err != nil {
+		return fmt.Errorf("OpenSearch: failed to marshal document: %w", err)
+	}
+
 	resp, err := a.client.Document.Create(
 		ctx,
 		opensearchapi.DocumentCreateReq{
 			Index:      collectionName,
 			DocumentID: docID,
-			Body:       opensearchutil.NewJSONReader(doc),
+			Body:       bytes.NewReader(body),
 		},
 	)
 	if err != nil {
@@ -60,13 +67,35 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
-	// For now, implement as sequential creates
-	// TODO: Implement proper bulk API usage
+	// Process in parallel batches for better performance
+	// Use a semaphore pattern to limit concurrency
+	const maxConcurrency = 10
+	sem := make(chan struct{}, maxConcurrency)
+	errCh := make(chan error, len(documents))
+
 	for _, doc := range documents {
-		if err := a.CreateDocument(ctx, collectionName, doc); err != nil {
-			return fmt.Errorf("OpenSearch: failed to create document %s: %w", doc.ID, err)
+		sem <- struct{}{} // Acquire
+		go func(d *vectordb.Document) {
+			defer func() { <-sem }() // Release
+			if err := a.CreateDocument(ctx, collectionName, d); err != nil {
+				errCh <- fmt.Errorf("failed to create document %s: %w", d.ID, err)
+			}
+		}(doc)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < maxConcurrency; i++ {
+		sem <- struct{}{}
+	}
+	close(errCh)
+
+	// Check for errors
+	for err := range errCh {
+		if err != nil {
+			return fmt.Errorf("OpenSearch: bulk create failed: %w", err)
 		}
 	}
+
 	return nil
 }
 
@@ -128,13 +157,34 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
-	// For now, implement as sequential deletes
-	// TODO: Implement proper bulk delete
+	// Process in parallel batches for better performance
+	const maxConcurrency = 10
+	sem := make(chan struct{}, maxConcurrency)
+	errCh := make(chan error, len(documentIDs))
+
 	for _, docID := range documentIDs {
-		if err := a.DeleteDocument(ctx, collectionName, docID); err != nil {
-			return fmt.Errorf("OpenSearch: failed to delete document %s: %w", docID, err)
+		sem <- struct{}{} // Acquire
+		go func(id string) {
+			defer func() { <-sem }() // Release
+			if err := a.DeleteDocument(ctx, collectionName, id); err != nil {
+				errCh <- fmt.Errorf("failed to delete document %s: %w", id, err)
+			}
+		}(docID)
+	}
+
+	// Wait for all goroutines to complete
+	for i := 0; i < maxConcurrency; i++ {
+		sem <- struct{}{}
+	}
+	close(errCh)
+
+	// Check for errors
+	for err := range errCh {
+		if err != nil {
+			return fmt.Errorf("OpenSearch: bulk delete failed: %w", err)
 		}
 	}
+
 	return nil
 }
 
