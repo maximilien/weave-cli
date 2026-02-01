@@ -316,16 +316,16 @@
 
 **Medium Priority (Feature Completion)**:
 
-5. Evaluation framework (4 TODOs) - Wednesday
-6. Schema suggestions (2 TODOs) - Wednesday
-7. Image query support (1 TODO) - Wednesday
-8. Pinecone completion (2 TODOs) - Wednesday
+1. Evaluation framework (4 TODOs) - Wednesday
+2. Schema suggestions (2 TODOs) - Wednesday
+3. Image query support (1 TODO) - Wednesday
+4. Pinecone completion (2 TODOs) - Wednesday
 
 **Low Priority (Nice to Have)**:
 
-9. Opik integration (1 TODO) - Defer to v1.1
-10. OpenSearch cleanup (1 TODO) - Defer
-11. OpenSearch embedding generation (1 TODO) - Defer
+1. Opik integration (1 TODO) - Defer to v1.1
+2. OpenSearch cleanup (1 TODO) - Defer
+3. OpenSearch embedding generation (1 TODO) - Defer
 
 **Target**: 20/23 TODOs eliminated (87% reduction)
 
