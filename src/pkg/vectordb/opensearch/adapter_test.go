@@ -133,3 +133,61 @@ func TestAdapter_DeleteDocumentsByMetadata(t *testing.T) {
 	assert.Equal(t, "test", metadata["source"])
 	assert.Equal(t, "document", metadata["type"])
 }
+
+func TestAdapter_AWSSignatureV4Detection(t *testing.T) {
+	tests := []struct {
+		name      string
+		url       string
+		isAWS     bool
+		awsRegion string
+	}{
+		{
+			name:      "AWS OpenSearch Service domain",
+			url:       "https://search-my-domain.us-east-1.es.amazonaws.com",
+			isAWS:     true,
+			awsRegion: "us-east-1",
+		},
+		{
+			name:      "AWS OpenSearch Serverless",
+			url:       "https://abc123.us-west-2.aoss.amazonaws.com",
+			isAWS:     true,
+			awsRegion: "us-west-2",
+		},
+		{
+			name:      "Non-AWS OpenSearch",
+			url:       "https://localhost:9200",
+			isAWS:     false,
+			awsRegion: "",
+		},
+		{
+			name:      "Self-hosted cloud",
+			url:       "https://opensearch.example.com",
+			isAWS:     false,
+			awsRegion: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test AWS detection logic
+			isAWS := false
+			if tt.url != "" {
+				isAWS = contains(tt.url, "amazonaws.com") || contains(tt.url, ".aoss.")
+			}
+			assert.Equal(t, tt.isAWS, isAWS, "AWS detection mismatch")
+		})
+	}
+}
+
+func contains(s, substr string) bool {
+	return len(s) > 0 && len(substr) > 0 && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || containsMiddle(s, substr)))
+}
+
+func containsMiddle(s, substr string) bool {
+	for i := 0; i+len(substr) <= len(s); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}

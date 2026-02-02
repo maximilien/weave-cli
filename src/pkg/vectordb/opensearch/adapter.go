@@ -12,8 +12,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/session"
 	opensearch "github.com/opensearch-project/opensearch-go/v4"
 	opensearchapi "github.com/opensearch-project/opensearch-go/v4/opensearchapi"
+	requestsigner "github.com/opensearch-project/opensearch-go/v4/signer/aws"
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -64,7 +66,43 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 	// Add authentication for cloud
 	if config.Type == vectordb.VectorDBTypeOpenSearchCloud {
-		if config.Username != "" && config.Password != "" {
+		// Check if this is AWS OpenSearch Service (domain contains amazonaws.com)
+		isAWS := false
+		awsRegion := os.Getenv("AWS_REGION")
+		if awsRegion == "" {
+			awsRegion = os.Getenv("AWS_DEFAULT_REGION")
+		}
+
+		for _, addr := range addresses {
+			if strings.Contains(addr, "amazonaws.com") || strings.Contains(addr, "aoss.") {
+				isAWS = true
+				// Extract region from domain if not set (e.g., search-domain.us-east-1.es.amazonaws.com)
+				if awsRegion == "" && strings.Contains(addr, ".es.amazonaws.com") {
+					parts := strings.Split(addr, ".")
+					for i, part := range parts {
+						if i > 0 && parts[i-1] != "search" && strings.Contains(parts[i+1], "es") {
+							awsRegion = part
+							break
+						}
+					}
+				}
+				break
+			}
+		}
+
+		if isAWS && awsRegion != "" {
+			// AWS OpenSearch Service with Signature V4
+			// Create AWS signer with default credentials and region
+			signer, err := requestsigner.NewSignerWithService(session.Options{
+				SharedConfigState: session.SharedConfigEnable,
+			}, requestsigner.OpenSearchService)
+			if err != nil {
+				return nil, fmt.Errorf("OpenSearch: failed to create AWS signer: %w", err)
+			}
+
+			// Add AWS signer to OpenSearch config
+			osConfig.Signer = signer
+		} else if config.Username != "" && config.Password != "" {
 			osConfig.Username = config.Username
 			osConfig.Password = config.Password
 		} else if config.APIKey != "" {
@@ -73,7 +111,6 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 				"Authorization": []string{"ApiKey " + config.APIKey},
 			}
 		}
-		// TODO: Add AWS Signature V4 support for AWS OpenSearch Service
 	}
 
 	// Create the OpenSearch API client
