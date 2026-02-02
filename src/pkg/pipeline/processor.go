@@ -2,6 +2,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -397,12 +398,50 @@ func (p *Processor) createDocumentsInBatches(ctx context.Context, documents []*v
 
 // loadState loads ingestion state from file
 func loadState(stateFile string) (*IngestState, error) {
-	// TODO: Implement state file loading (JSON format)
-	return nil, nil
+	// Check if state file exists
+	if _, err := os.Stat(stateFile); os.IsNotExist(err) {
+		// No state file, return empty state
+		return &IngestState{
+			ProcessedFiles: make(map[string]bool),
+			LastUpdated:    time.Now(),
+		}, nil
+	}
+
+	// Read state file
+	data, err := os.ReadFile(stateFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state file: %w", err)
+	}
+
+	// Parse JSON
+	var state IngestState
+	if err := json.Unmarshal(data, &state); err != nil {
+		return nil, fmt.Errorf("failed to parse state file: %w", err)
+	}
+
+	// Initialize map if nil
+	if state.ProcessedFiles == nil {
+		state.ProcessedFiles = make(map[string]bool)
+	}
+
+	return &state, nil
 }
 
 // saveState saves ingestion state to file
 func saveState(stateFile string, state *IngestState) error {
-	// TODO: Implement state file saving (JSON format)
+	// Update timestamp
+	state.LastUpdated = time.Now()
+
+	// Marshal to JSON with indentation for readability
+	data, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal state: %w", err)
+	}
+
+	// Write to file with proper permissions
+	if err := os.WriteFile(stateFile, data, 0644); err != nil {
+		return fmt.Errorf("failed to write state file: %w", err)
+	}
+
 	return nil
 }
