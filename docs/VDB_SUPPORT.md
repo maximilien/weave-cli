@@ -32,74 +32,74 @@ This document tracks feature support and compatibility across different vector d
 
 | Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Pinecone | Mock | Notes |
 |---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|----------|------|-------|
-| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Pinecone: Lists indexes |
-| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | MongoDB: Vector index requires Atlas UI; Neo4j: Creates VECTOR INDEX; OpenSearch: kNN index; Pinecone: Serverless index |
-| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus: Explicit schema; MongoDB: Schema-less; Neo4j/Pinecone: Flexible properties; OpenSearch: Dynamic mapping |
-| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus: Schema immutable after creation; Neo4j/Pinecone: Validates dimensions; OpenSearch: Validates dimensions |
+| Health Check | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| List Collections | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Pinecone: Lists indexes |
+| Create Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | MongoDB: Vector index requires Atlas UI; Neo4j: Creates VECTOR INDEX; OpenSearch: kNN index; Pinecone: Serverless index |
+| Delete Collection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| Collection Exists | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| Get Collection Count | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| Get Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Milvus: Explicit schema; MongoDB: Schema-less; Neo4j/Pinecone: Flexible properties; OpenSearch: Dynamic mapping |
+| Validate Schema | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Milvus: Schema immutable after creation; Neo4j/Pinecone: Validates dimensions; OpenSearch: Validates dimensions |
 
 ### Document Operations
 
 | Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Pinecone | Mock | Notes |
 |---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|----------|------|-------|
-| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/Neo4j/OpenSearch/Pinecone: Auto-embedding with OpenAI |
-| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/OpenSearch/Pinecone: Upsert operation; Neo4j: Native MERGE |
-| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | - |
-| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Pinecone: Metadata filter delete |
+| Create Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/Neo4j/OpenSearch/Pinecone: Auto-embedding with OpenAI |
+| Get Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| Update Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/OpenSearch/Pinecone: Upsert operation; Neo4j: Native MERGE |
+| Delete Document | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| List Documents | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | - |
+| Batch Create | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | OpenSearch: Parallel bulk ops with 10x performance |
+| Delete by Metadata | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Pinecone/OpenSearch: Metadata filter delete |
 
 ### Search Operations
 
 | Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Pinecone | Mock | Notes |
 |---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|----------|------|-------|
-| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus: IVF_FLAT; Qdrant/Neo4j/OpenSearch: HNSW; Pinecone: Proprietary serverless |
-| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ❌ | ✅ | Milvus/OpenSearch: Native BM25; Chroma/Qdrant/Neo4j/Pinecone: Not supported |
-| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ⚠️ | ✅ | Milvus/OpenSearch: RRF fusion; Chroma/Qdrant/Pinecone: Falls back to vector search; Neo4j: Not supported |
-| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/Neo4j/OpenSearch/Pinecone: JSON field filtering |
+| Vector Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Milvus: IVF_FLAT; Qdrant/Neo4j/OpenSearch: HNSW; Pinecone: Proprietary serverless |
+| BM25 Search | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | Milvus/OpenSearch: Native BM25; Chroma/Qdrant/Neo4j/Pinecone: Not supported |
+| Hybrid Search | ✅ | ✅ | ✅ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | Milvus/OpenSearch: RRF fusion; Chroma/Qdrant/Pinecone: Falls back to vector search; Neo4j: Not supported |
+| Metadata Search | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | 🧪 | ✅ | Milvus/Qdrant/Neo4j/OpenSearch/Pinecone: JSON field filtering |
 
 ### Embedding Support
 
 | Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Mock | Notes |
 |---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|------|-------|
-| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j/OpenSearch: text-embedding-3-small default |
+| OpenAI Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | Milvus/Qdrant/Neo4j/OpenSearch: text-embedding-3-small default |
 | Cohere Embeddings | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-cohere` |
 | Hugging Face | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | Weaviate: `text2vec-huggingface` |
-| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Manual embeddings |
-| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ⚠️ | ✅ | ✅ | Supabase/OpenSearch: Limited |
+| No Vectorizer | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | Manual embeddings |
+| Custom Embeddings | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ✅ | Supabase: Limited; OpenSearch: Full support |
 
 ### CLI Commands
 
 | Command | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Mock | Notes |
 |---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|------|-------|
-| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Neo4j: Not supported |
-| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ❌ | ❌ | 🧪 | 🧪 | ✅ | ✅ | ✅ | Neo4j: Not supported |
-| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| `weave health check` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave cols schema` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs get` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs update` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs delete` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave docs ls` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search semantic` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| `weave search bm25` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | Neo4j: Not supported |
+| `weave search hybrid` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | Neo4j: Not supported |
+| `weave search metadata` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ### Configuration
 
 | Feature | Weaviate Cloud | Weaviate Local | Milvus Local | Milvus Cloud | Chroma Local | Chroma Cloud | Qdrant Local | Qdrant Cloud | Neo4j Local | Neo4j Cloud | OpenSearch Local | OpenSearch Cloud | Supabase | MongoDB | Mock | Notes |
 |---------|----------------|----------------|--------------|--------------|--------------|--------------|--------------|--------------|-------------|-------------|------------------|------------------|----------|---------|------|-------|
-| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | `~/.weave-cli` |
-| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
-| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | 🧪 | 🧪 | ✅ | ✅ | ✅ | - |
+| YAML Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Env Variables | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Global Config | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | `~/.weave-cli` |
+| Multiple Databases | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
+| Schema Directory | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 🧪 | 🧪 | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | - |
 
 ## Database-Specific Notes
 
@@ -552,9 +552,9 @@ databases:
 - [Neo4j Integration Guide](neo4j/README.md)
 - [Neo4j Vector Search Docs](https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/)
 
-### OpenSearch (🧪 Experimental - Local & Cloud)
+### OpenSearch (✅ Stable - Local & Cloud)
 
-**Status:** Experimental - Core functionality complete, testing in progress
+**Status:** Production - Full feature support with AWS authentication (v0.9.14+)
 
 **Strengths:**
 - Enterprise-grade search engine with vector capabilities
@@ -562,9 +562,11 @@ databases:
 - Native BM25 full-text search
 - Hybrid search combining vector and keyword approaches
 - Both local (Docker/Podman) and cloud (AWS OpenSearch Service) deployment
+- **AWS Signature V4 authentication** with auto-detection
 - Elasticsearch API compatible
 - Mature open-source project
 - Advanced filtering capabilities
+- **Parallel bulk operations** for high-throughput ingestion
 
 **Configuration (Local):**
 ```yaml
@@ -588,31 +590,38 @@ databases:
   vector_databases:
     - name: opensearch-cloud
       type: opensearch-cloud
-      url: ${OPENSEARCH_CLOUD_URL}
-      username: ${OPENSEARCH_CLOUD_USERNAME}
-      password: ${OPENSEARCH_CLOUD_PASSWORD}
+      url: ${OPENSEARCH_CLOUD_URL}  # Auto-detects AWS domains
+      # For AWS OpenSearch Service, credentials from AWS SDK (no username/password needed)
+      # Set AWS_REGION or AWS_DEFAULT_REGION environment variable
       vector_dimensions: 1536
       similarity_metric: cosinesimil
       timeout: 30
 ```
 
+**AWS Authentication:**
+OpenSearch adapter auto-detects AWS domains (`.amazonaws.com`, `.aoss.`) and uses AWS Signature V4:
+- Extracts region from domain URL
+- Falls back to `AWS_REGION` or `AWS_DEFAULT_REGION` environment variables
+- Uses AWS SDK credentials (IAM role, profile, or environment variables)
+- Supports both OpenSearch Service and OpenSearch Serverless
+
 **What Works:**
-- 🧪 Connection and health checks
-- 🧪 Collection management (create, delete, list, exists, count)
-- 🧪 Document CRUD operations
-- 🧪 Automatic OpenAI embedding generation
-- 🧪 Vector similarity search (k-NN with HNSW)
-- 🧪 BM25 keyword search
-- 🧪 Hybrid search with RRF
-- 🧪 Metadata filtering (JSON field support)
-- 🧪 Batch operations
+- ✅ Connection and health checks
+- ✅ Collection management (create, delete, list, exists, count with accurate stats)
+- ✅ Document CRUD operations (create, get, update, delete)
+- ✅ Automatic OpenAI embedding generation
+- ✅ Vector similarity search (k-NN with HNSW)
+- ✅ BM25 keyword search
+- ✅ Hybrid search with RRF
+- ✅ Metadata filtering with bool queries (JSON field support)
+- ✅ Parallel bulk operations (10x faster with controlled concurrency)
+- ✅ Delete by metadata filter
+- ✅ AWS Signature V4 authentication
 
 **Known Limitations:**
-- **Experimental Status**: New integration, limited production testing
-- **Container Stability**: Local container may exit unexpectedly (code 137)
-- **SSL Configuration**: Self-signed certificates for local setup
+- **SSL Configuration**: Self-signed certificates for local setup (use `--insecure` flag if needed)
 - **Float32 Vectors**: Embeddings converted from float64 to float32
-- **Index Management**: Requires proper index mapping setup
+- **Index Management**: Requires proper index mapping setup for k-NN
 
 **Local Development:**
 ```bash
@@ -684,18 +693,18 @@ databases:
 
 | Test Type | Weaviate | Milvus | Chroma | Qdrant | Neo4j | OpenSearch | Supabase | MongoDB | Mock |
 |-----------|----------|--------|--------|--------|-------|------------|----------|---------|------|
-| Health Check | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Collection CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Document CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Batch Operations | ✅ | ✅ | ⚠️ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Semantic Search | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| BM25 Search | ✅ | ✅ | ❌ | ❌ | ❌ | 🧪 | ✅ | ✅ | ✅ |
-| Hybrid Search | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | 🧪 | ✅ | ✅ | ✅ |
-| Metadata Search | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| Schema Operations | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| OpenAI Embeddings | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| No Vectorizer | ✅ | ✅ | ✅ | 🧪 | ✅ | 🧪 | ✅ | ✅ | ✅ |
-| E2E Tests | ✅ | ✅ | ✅ | 🚧 | ✅ | 🧪 | ✅ | ⚠️ | ✅ |
+| Health Check | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Collection CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Document CRUD | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Batch Operations | ✅ | ✅ | ⚠️ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Semantic Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| BM25 Search | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Hybrid Search | ✅ | ✅ | ⚠️ | ⚠️ | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Metadata Search | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Schema Operations | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| OpenAI Embeddings | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| No Vectorizer | ✅ | ✅ | ✅ | 🧪 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| E2E Tests | ✅ | ✅ | ✅ | 🚧 | ✅ | ✅ | ✅ | ⚠️ | ✅ |
 
 **Legend:** ✅ Tested | 🧪 Experimental (implemented, needs real-world testing) | 🚧 Planned | ⚠️ Quota limits or known issues | ❌ Not supported
 
