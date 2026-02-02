@@ -155,9 +155,45 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, documentID st
 
 // UpdateDocument updates an existing document
 func (a *Adapter) UpdateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
-	// TODO: UpdateDocument API needs investigation
-	// Will need to prepare doc with text, content, metadata and use proper update API
-	return fmt.Errorf("OpenSearch: UpdateDocument not yet fully implemented")
+	// Prepare document for update
+	doc := map[string]interface{}{
+		"text":     document.Text,
+		"content":  document.Content,
+		"metadata": document.Metadata,
+	}
+
+	// Include image data if present
+	if document.ImageData != "" {
+		doc["image_data"] = document.ImageData
+	}
+	if document.Image != "" {
+		doc["image"] = document.Image
+	}
+
+	// Encode document as JSON
+	body, err := json.Marshal(doc)
+	if err != nil {
+		return fmt.Errorf("OpenSearch: failed to marshal update document: %w", err)
+	}
+
+	// OpenSearch uses Create with existing ID to update/overwrite a document
+	resp, err := a.client.Document.Create(
+		ctx,
+		opensearchapi.DocumentCreateReq{
+			Index:      collectionName,
+			DocumentID: document.ID,
+			Body:       bytes.NewReader(body),
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("OpenSearch: failed to update document: %w", err)
+	}
+
+	if resp.Result != "updated" && resp.Result != "created" {
+		return fmt.Errorf("OpenSearch: unexpected update result: %s", resp.Result)
+	}
+
+	return nil
 }
 
 // DeleteDocument deletes a document by ID
@@ -219,8 +255,46 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 
 // DeleteDocumentsByMetadata deletes documents matching metadata filters
 func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}) error {
-	// TODO: Implement delete by query with metadata filters
-	return fmt.Errorf("OpenSearch: DeleteDocumentsByMetadata not yet fully implemented")
+	// Build query with metadata filters
+	mustClauses := []map[string]interface{}{}
+	for key, value := range metadata {
+		mustClauses = append(mustClauses, map[string]interface{}{
+			"term": map[string]interface{}{
+				fmt.Sprintf("metadata.%s", key): value,
+			},
+		})
+	}
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": mustClauses,
+			},
+		},
+	}
+
+	body, err := json.Marshal(query)
+	if err != nil {
+		return fmt.Errorf("OpenSearch: failed to marshal delete query: %w", err)
+	}
+
+	resp, err := a.client.Document.DeleteByQuery(
+		ctx,
+		opensearchapi.DocumentDeleteByQueryReq{
+			Indices: []string{collectionName},
+			Body:    bytes.NewReader(body),
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("OpenSearch: failed to delete by query: %w", err)
+	}
+
+	// resp.Deleted is an int, not a pointer
+	if resp.Deleted < 0 {
+		return fmt.Errorf("OpenSearch: invalid deleted count: %d", resp.Deleted)
+	}
+
+	return nil
 }
 
 // ListDocuments lists all documents in a collection

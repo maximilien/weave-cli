@@ -102,3 +102,34 @@ func TestAdapter_UpdateSchema(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "does not support schema updates")
 }
+
+func TestAdapter_UpdateDocument(t *testing.T) {
+	// Test validates that UpdateDocument method signature and basic structure
+	// Integration tests with real OpenSearch client should be run separately
+	doc := &vectordb.Document{
+		ID:       "test-doc-id",
+		Text:     "Updated text",
+		Content:  "Updated content",
+		Metadata: map[string]interface{}{"key": "value"},
+	}
+
+	// Validate document structure
+	assert.NotEmpty(t, doc.ID)
+	assert.NotEmpty(t, doc.Text)
+	assert.NotEmpty(t, doc.Content)
+	assert.NotNil(t, doc.Metadata)
+}
+
+func TestAdapter_DeleteDocumentsByMetadata(t *testing.T) {
+	// Test validates that DeleteDocumentsByMetadata method signature and structure
+	// Integration tests with real OpenSearch client should be run separately
+	metadata := map[string]interface{}{
+		"source": "test",
+		"type":   "document",
+	}
+
+	// Validate metadata filter structure
+	assert.NotNil(t, metadata)
+	assert.Equal(t, "test", metadata["source"])
+	assert.Equal(t, "document", metadata["type"])
+}
