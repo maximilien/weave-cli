@@ -5,8 +5,11 @@ package collection
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/agents"
@@ -211,9 +214,37 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	// Handle image file for visual similarity search
 	var imageBase64 string
 	if imagePath != "" {
-		// TODO: Read image file and convert to base64
-		// For now, treat imagePath as already base64 encoded
-		imageBase64 = imagePath
+		// Check if it's already base64 (starts with data:image/ or is pure base64)
+		if strings.HasPrefix(imagePath, "data:image/") || !strings.Contains(imagePath, "/") {
+			// Already base64 encoded
+			imageBase64 = imagePath
+		} else {
+			// Read image file and convert to base64
+			imageData, err := os.ReadFile(imagePath)
+			if err != nil {
+				utils.PrintError(fmt.Sprintf("Failed to read image file: %v", err))
+				os.Exit(1)
+			}
+
+			// Detect image MIME type from file extension
+			ext := strings.ToLower(filepath.Ext(imagePath))
+			mimeType := "image/jpeg" // Default
+			switch ext {
+			case ".png":
+				mimeType = "image/png"
+			case ".gif":
+				mimeType = "image/gif"
+			case ".webp":
+				mimeType = "image/webp"
+			case ".bmp":
+				mimeType = "image/bmp"
+			case ".jpg", ".jpeg":
+				mimeType = "image/jpeg"
+			}
+
+			// Encode to base64 with data URI scheme
+			imageBase64 = fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(imageData))
+		}
 	}
 
 	// Handle explicit vector name override
