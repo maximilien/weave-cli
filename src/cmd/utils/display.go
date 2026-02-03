@@ -358,7 +358,7 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 }
 
 // DisplayVirtualDocuments displays virtual documents with aggregation and styling
-func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, summary bool, jsonOutput bool, vectorizer string) {
+func DisplayVirtualDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, summary bool, jsonOutput bool, vectorizer string, totalCount int64, limit int, offset int) {
 	// Aggregate documents by original filename/source
 	virtualDocs := AggregateDocumentsByOriginal(documents)
 
@@ -400,7 +400,14 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 		return
 	}
 
-	PrintSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
+	// Show header with pagination info
+	if totalCount >= 0 && int64(len(documents)) < totalCount {
+		PrintSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d of %d total documents):", len(virtualDocs), collectionName, len(documents), totalCount))
+		PrintWarning(fmt.Sprintf("  ⚠️  Showing paginated view. Chunk counts may be incomplete."))
+		PrintInfo(fmt.Sprintf("  💡 Use --limit %d to see all documents and accurate chunk counts", totalCount))
+	} else {
+		PrintSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))
+	}
 	if vectorizer != "" {
 		PrintInfo(fmt.Sprintf("  Embedding model: %s", GetStyledValueDimmed(vectorizer)))
 	}
@@ -510,16 +517,31 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 			}
 		} else {
 			// Fallback to original display for non-image documents
+			isPaginated := totalCount >= 0 && int64(len(documents)) < totalCount
 			for i, vdoc := range virtualDocs {
 				fmt.Printf("   %d. ", i+1)
 				PrintStyledFilename(vdoc.OriginalFilename)
 				fmt.Printf(" - ")
 				PrintStyledNumber(vdoc.TotalChunks)
-				fmt.Printf(" chunks")
+				if isPaginated {
+					fmt.Printf(" chunks (from paginated view)")
+				} else {
+					fmt.Printf(" chunks")
+				}
 				fmt.Println()
 			}
 		}
 		fmt.Println()
+
+		// Add pagination footer for virtual view
+		if totalCount >= 0 && int64(len(documents)) < totalCount {
+			fmt.Println(strings.Repeat("─", 80))
+			fmt.Println()
+			PrintWarning("⚠️  Virtual document view is based on paginated results")
+			PrintInfo(fmt.Sprintf("   Showing aggregation of %d out of %d total documents", len(documents), totalCount))
+			PrintInfo(fmt.Sprintf("   For accurate chunk counts, use: weave docs ls %s -w -S --limit %d", collectionName, totalCount))
+			fmt.Println()
+		}
 	}
 }
 

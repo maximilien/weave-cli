@@ -233,7 +233,7 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	}
 
 	if virtual {
-		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, noTruncate, summary, jsonOutput, vectorizer)
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, noTruncate, summary, jsonOutput, vectorizer, totalCount, limit, offset)
 	} else {
 		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, noTruncate, jsonOutput, vectorizer, totalCount, limit, offset)
 	}
@@ -304,7 +304,7 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 
 	// ListWeaviateDocuments doesn't support JSON output, use default formatted output
 	if virtual {
-		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, false, summary, false, vectorizer)
+		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, false, summary, false, vectorizer, totalCount, limit, 0)
 	} else {
 		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, false, vectorizer, totalCount, limit, 0)
 	}
