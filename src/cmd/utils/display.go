@@ -6,6 +6,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -518,12 +519,21 @@ func AggregateDocumentsByOriginal(documents []weaviate.Document) []VirtualDocume
 		var originalFilename string
 		var metadata map[string]interface{}
 
-		// Check for WeaveDocs schema first (flat metadata structure)
-		if filename, ok := doc.Metadata["original_filename"].(string); ok {
+		// Check for new schema first (source_document field - v0.9.14+)
+		if sourceDoc, ok := doc.Metadata["source_document"].(string); ok {
+			originalFilename = sourceDoc
+			metadata = doc.Metadata
+		} else if sourceFile, ok := doc.Metadata["source_file"].(string); ok {
+			// Fallback to source_file for old schema (v0.9.7 and earlier)
+			// Extract just the filename from the full path
+			originalFilename = filepath.Base(sourceFile)
+			metadata = doc.Metadata
+		} else if filename, ok := doc.Metadata["original_filename"].(string); ok {
+			// Check for WeaveDocs schema (flat metadata structure)
 			originalFilename = filename
 			metadata = doc.Metadata
 		} else if filename, ok := doc.Metadata["filename"].(string); ok {
-			// Fallback to filename if original_filename is not available
+			// Another fallback for filename field
 			originalFilename = filename
 			metadata = doc.Metadata
 		} else {
