@@ -137,9 +137,23 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	// Check if any specific database flags are set
 	hasSpecificFlags := useWeaviate || useWeaviateLocal || useWeaviateCloud || useSupabase || useSupabaseLocal || useSupabaseCloud || useMongoDB || useMongoDBLocal || useMongoDBCloud || useMilvusLocal || useMilvusCloud || useChromaLocal || useChromaCloud || useQdrantLocal || useQdrantCloud || useNeo4jLocal || useNeo4jCloud || useOpenSearchLocal || useOpenSearchCloud || useMock
 
-	// If --all flag is used OR no specific flags are set, return all configured databases
-	if useAll || !hasSpecificFlags {
+	// If --all flag is used, return all configured databases
+	if useAll {
 		return getAllConfiguredDatabases(cfg)
+	}
+
+	// If no specific flags are set, use the default database
+	if !hasSpecificFlags {
+		defaultDB, err := cfg.GetDefaultDatabase()
+		if err != nil || defaultDB == nil {
+			// No default configured, return all databases as fallback
+			return getAllConfiguredDatabases(cfg)
+		}
+		// Return only the default database
+		return &VectorDBSelection{
+			Configs: []config.VectorDBConfig{*defaultDB},
+			Types:   []string{string(defaultDB.Type)},
+		}, nil
 	}
 
 	// Handle specific database type flags
