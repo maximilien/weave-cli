@@ -147,8 +147,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 ### Core Documentation
 
 - **[📖 User Guide](docs/USER_GUIDE.md)** - Complete feature documentation
-- **[📋 Changelog](docs/CHANGELOG.md)** - Version history and updates
-- **[🗂️ VDB Support Matrix](docs/VDB_SUPPORT.md)** - Database feature
+- **[📋 Changelog](CHANGELOG.md)** - Version history and updates
+- **[🗂️ VDB Support Matrix](docs/VDB_SUPPORT_MATRIX.md)** - Database feature
   comparison
 
 ### Guides
