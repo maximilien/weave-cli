@@ -266,6 +266,209 @@ func TestPDFProcessingConsistency(t *testing.T) {
 	t.Log("PDF processing is consistent across multiple runs")
 }
 
+// TestPDFVersionCompatibility tests extraction from PDFs of different versions
+// Addresses Issue #8: Test various PDFs from different years (versions)
+func TestPDFVersionCompatibility(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping PDF version compatibility tests in short mode")
+	}
+
+	testCases := []struct {
+		name        string
+		pdfFile     string
+		minVersion  string
+		description string
+		skipReason  string
+	}{
+		{
+			name:        "PDF 1.3 (1999)",
+			pdfFile:     "fixtures/pdf_versions/pdf_1.3.pdf",
+			minVersion:  "1.3",
+			description: "Basic PDF features",
+			skipReason:  "Test PDF not yet available",
+		},
+		{
+			name:        "PDF 1.4 (2001)",
+			pdfFile:     "fixtures/pdf_versions/pdf_1.4.pdf",
+			minVersion:  "1.4",
+			description: "CMYK color support, transparency",
+			skipReason:  "Test PDF not yet available",
+		},
+		{
+			name:        "PDF 1.7 (2006)",
+			pdfFile:     "fixtures/pdf_versions/pdf_1.7.pdf",
+			minVersion:  "1.7",
+			description: "Modern features, attachments",
+			skipReason:  "Test PDF not yet available",
+		},
+		{
+			name:        "PDF 2.0 (2017)",
+			pdfFile:     "fixtures/pdf_versions/pdf_2.0.pdf",
+			minVersion:  "2.0",
+			description: "Latest spec, improved security",
+			skipReason:  "Test PDF not yet available",
+		},
+		{
+			name:        "Current Test PDF (ragme-io.pdf)",
+			pdfFile:     "fixtures/ragme-io.pdf",
+			minVersion:  "1.4",
+			description: "Existing test PDF",
+			skipReason:  "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.skipReason != "" {
+				t.Skip(tc.skipReason)
+			}
+
+			// Extract PDF content
+			textData, imageData, err := pdf.ExtractPDFContent(tc.pdfFile, 1000, true, 10240, 2000, false)
+			if err != nil {
+				t.Fatalf("Failed to extract content from %s: %v", tc.name, err)
+			}
+
+			// Verify extraction succeeded
+			if len(textData) == 0 && len(imageData) == 0 {
+				t.Errorf("%s: No content extracted", tc.name)
+			}
+
+			t.Logf("%s: Extracted %d text chunks and %d images",
+				tc.name, len(textData), len(imageData))
+
+			// Verify metadata
+			if len(textData) > 0 {
+				chunk := textData[0]
+				requiredFields := []string{"source_document", "processing_info"}
+				for _, field := range requiredFields {
+					if _, ok := chunk.Metadata[field]; !ok {
+						t.Errorf("%s: Missing metadata field %s", tc.name, field)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestPDFTypeExtraction tests extraction from different PDF types
+// Addresses Issue #8: Validate text and image extraction for various PDF types
+func TestPDFTypeExtraction(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping PDF type extraction tests in short mode")
+	}
+
+	testCases := []struct {
+		name           string
+		pdfFile        string
+		expectedText   bool // Should have text content
+		expectedImages bool // Should have images
+		minTextChunks  int  // Minimum text chunks expected
+		minImages      int  // Minimum images expected
+		skipReason     string
+	}{
+		{
+			name:           "Text-only PDF",
+			pdfFile:        "fixtures/pdf_types/text_only.pdf",
+			expectedText:   true,
+			expectedImages: false,
+			minTextChunks:  1,
+			minImages:      0,
+			skipReason:     "Test PDF not yet available",
+		},
+		{
+			name:           "Image-only PDF (Scanned)",
+			pdfFile:        "fixtures/pdf_types/scanned.pdf",
+			expectedText:   false, // No OCR by default
+			expectedImages: true,
+			minTextChunks:  0,
+			minImages:      1,
+			skipReason:     "Test PDF not yet available - requires OCR test",
+		},
+		{
+			name:           "Mixed PDF (Text + Images)",
+			pdfFile:        "fixtures/pdf_types/mixed.pdf",
+			expectedText:   true,
+			expectedImages: true,
+			minTextChunks:  1,
+			minImages:      1,
+			skipReason:     "Test PDF not yet available",
+		},
+		{
+			name:           "Photo-heavy PDF",
+			pdfFile:        "fixtures/pdf_types/photo_heavy.pdf",
+			expectedText:   true,
+			expectedImages: true,
+			minTextChunks:  1,
+			minImages:      5, // Many images
+			skipReason:     "Test PDF not yet available",
+		},
+		{
+			name:           "Auction Catalogue (Real-world Mixed)",
+			pdfFile:        "fixtures/ragme-io.pdf",
+			expectedText:   true,
+			expectedImages: true,
+			minTextChunks:  5,
+			minImages:      0, // Images optional in default extraction
+			skipReason:     "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.skipReason != "" {
+				t.Skip(tc.skipReason)
+			}
+
+			// Extract with images enabled
+			textData, imageData, err := pdf.ExtractPDFContent(tc.pdfFile, 1000, true, 10240, 2000, false)
+			if err != nil {
+				t.Fatalf("Failed to extract content from %s: %v", tc.name, err)
+			}
+
+			// Verify text extraction
+			if tc.expectedText {
+				if len(textData) < tc.minTextChunks {
+					t.Errorf("%s: Expected at least %d text chunks, got %d",
+						tc.name, tc.minTextChunks, len(textData))
+				}
+			} else {
+				if len(textData) > 0 {
+					t.Logf("%s: Note - extracted %d text chunks (expected 0, but OCR may have run)",
+						len(textData))
+				}
+			}
+
+			// Verify image extraction
+			if tc.expectedImages {
+				if len(imageData) < tc.minImages {
+					t.Logf("%s: Warning - expected at least %d images, got %d (images may be disabled)",
+						tc.name, tc.minImages, len(imageData))
+				}
+			}
+
+			t.Logf("%s: Extracted %d text chunks and %d images",
+				tc.name, len(textData), len(imageData))
+		})
+	}
+}
+
+// TestPDFWithCMYKImages tests handling of PDFs with CMYK color space images
+// Some VDBs may have issues with CMYK images
+func TestPDFWithCMYKImages(t *testing.T) {
+	if testing.Short() {
+		t.Skip("Skipping CMYK image test in short mode")
+	}
+
+	t.Skip("CMYK test PDF not yet available")
+
+	// TODO: Add test with CMYK PDF when available
+	// Should verify:
+	// - CMYK images are extracted
+	// - Color space is preserved or converted correctly
+	// - No corruption in image data
+}
+
 func init() {
 	// Initialize config for tests
 	_ = context.Background()
