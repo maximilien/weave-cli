@@ -10,44 +10,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.14.2] - 2026-02-03
 
 ### Added
-- **Pagination Navigation**: Added `--offset` flag to `docs ls` command for page navigation
-- **Page Display**: Shows "Page X of Y" with prev/next/last page hints in footer
-- **Virtual Aggregation Warnings**: Warns when chunk counts are incomplete due to pagination
+
+- **Pagination Navigation**: Added `--offset` flag to `docs ls` command
+  for page navigation
+- **Page Display**: Shows "Page X of Y" with prev/next/last page hints
+  in footer
+- **Virtual Aggregation Warnings**: Warns when chunk counts are
+  incomplete due to pagination
 - **Unit Tests**: Comprehensive pagination tests (202 lines of coverage)
 
 ### Fixed
-- **Misleading Chunk Counts**: Virtual mode (-w -S) now clearly indicates paginated views
-- **Navigation Gaps**: Added full pagination support with offset-based navigation
-- **Incomplete Aggregation**: Warns users and provides exact command for accurate counts
+
+- **Misleading Chunk Counts**: Virtual mode (-w -S) now clearly
+  indicates paginated views
+- **Navigation Gaps**: Added full pagination support with offset-based
+  navigation
+- **Incomplete Aggregation**: Warns users and provides exact command
+  for accurate counts
 
 ### Improved
-- Pagination footer with smart navigation hints (prev/next/last page commands)
-- Virtual document display with "(from paginated view)" labels when appropriate
+
+- Pagination footer with smart navigation hints (prev/next/last page
+  commands)
+- Virtual document display with "(from paginated view)" labels when
+  appropriate
 - User guidance for accessing complete aggregations
 
 ## [0.9.14.1] - 2026-02-03
 
 ### Fixed
-- **Default Database Selection**: Commands now respect `vector_db.type` from config.yaml
-- **Pagination Information**: Added total count display ("Showing X of Y documents")
-- **Backward Compatibility**: Fixed virtual aggregation with old metadata schema (v0.9.7)
+
+- **Default Database Selection**: Commands now respect `vector_db.type`
+  from config.yaml
+- **Pagination Information**: Added total count display
+  ("Showing X of Y documents")
+- **Backward Compatibility**: Fixed virtual aggregation with old
+  metadata schema (v0.9.7)
   - Added fallback from `source_document` → `source_file` field
   - Old documents properly aggregated instead of "standalone-XXXXXX"
 
 ### Improved
+
 - CLI UX with clear pagination information and navigation hints
-- Database selection logic in `docs show`, `docs count`, `docs ls` commands
+- Database selection logic in `docs show`, `docs count`, `docs ls`
+  commands
 - Backward compatibility with documents from weave-cli v0.9.7
 
 ## [0.9.14] - 2026-02-01
 
 ### Added
-- **VDB Lifecycle Management**: Comprehensive VDB health monitoring and management
+
+- **VDB Lifecycle Management**: Comprehensive VDB health monitoring
+  and management
   - Health check endpoints with detailed diagnostics
   - Connection validation and timeout handling
   - Rich error context for debugging
 
 ### Improved
+
 - Production hardening with enhanced observability
 - Structured logging for VDB operations
 - Error messages with actionable troubleshooting steps
@@ -55,11 +75,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.13] - 2026-01-30
 
 ### Added
-- **Enhanced Document Management**: Improved document listing and pagination
-- **Virtual Document Mode**: Aggregate chunks by original document with `--virtual` flag
+
+- **Enhanced Document Management**: Improved document listing and
+  pagination
+- **Virtual Document Mode**: Aggregate chunks by original document with
+  `--virtual` flag
 - **Summary Mode**: Clean document summaries with `--summary` flag
 
 ### Improved
+
 - Document display formatting and truncation controls
 - Better handling of large collections
 - Metadata display with nested field support
