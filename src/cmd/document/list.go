@@ -33,6 +33,7 @@ func init() {
 	DocumentCmd.AddCommand(ListCmd)
 
 	ListCmd.Flags().IntP("limit", "l", 50, "Maximum number of documents to show")
+	ListCmd.Flags().Int("offset", 0, "Number of documents to skip (for pagination)")
 	ListCmd.Flags().BoolP("long", "L", false, "Show full content instead of preview")
 	ListCmd.Flags().IntP("short", "s", 5, "Show only first N lines of content (default: 5)")
 	ListCmd.Flags().Bool("no-truncate", false, "Don't truncate content or metadata (show everything)")
@@ -44,6 +45,7 @@ func init() {
 func runDocumentList(cmd *cobra.Command, args []string) {
 	collectionName := args[0]
 	limit, _ := cmd.Flags().GetInt("limit")
+	offset, _ := cmd.Flags().GetInt("offset")
 	showLong, _ := cmd.Flags().GetBool("long")
 	shortLines, _ := cmd.Flags().GetInt("short")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
@@ -112,5 +114,5 @@ func runDocumentList(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 
 	// Use generic ListDocuments that works with all database types via vectordb abstraction
-	utils.ListDocuments(ctx, dbConfig, collectionName, limit, showLong, shortLines, noTruncate, virtual, summary, jsonOutput)
+	utils.ListDocuments(ctx, dbConfig, collectionName, limit, offset, showLong, shortLines, noTruncate, virtual, summary, jsonOutput)
 }
