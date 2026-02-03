@@ -254,8 +254,8 @@ func TestIsAPIKeySet(t *testing.T) {
 }
 
 func TestEmbeddingsCommandAliases(t *testing.T) {
-	// Test that all aliases work
-	aliases := []string{"embeddings", "emb", "embed", "embeds"}
+	// Test that all aliases work, including new vectorizer aliases
+	aliases := []string{"embeddings", "emb", "embed", "embeds", "vectorizer", "vectorizers"}
 
 	for _, alias := range aliases {
 		t.Run("alias_"+alias, func(t *testing.T) {
@@ -263,10 +263,10 @@ func TestEmbeddingsCommandAliases(t *testing.T) {
 				Use: "test",
 			}
 
-			// Create embeddings command
+			// Create embeddings command with all aliases
 			embeddingsCmd := &cobra.Command{
 				Use:     "embeddings",
-				Aliases: []string{"emb", "embed", "embeds"},
+				Aliases: []string{"emb", "embed", "embeds", "vectorizer", "vectorizers"},
 			}
 			embeddingsCmd.AddCommand(embeddings.ListCmd)
 			cmd.AddCommand(embeddingsCmd)
