@@ -435,7 +435,7 @@ func TestPDFTypeExtraction(t *testing.T) {
 			} else {
 				if len(textData) > 0 {
 					t.Logf("%s: Note - extracted %d text chunks (expected 0, but OCR may have run)",
-						len(textData))
+						tc.name, len(textData))
 				}
 			}
 
