@@ -210,6 +210,14 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 		vectorizer = schema.Vectorizer
 	}
 
+	// Get total document count for pagination info
+	totalCount, err := client.GetCollectionCount(ctx, collectionName)
+	if err != nil {
+		// If we can't get count, just log warning and continue
+		// (some VDBs may not support this operation efficiently)
+		totalCount = -1 // -1 indicates count unavailable
+	}
+
 	// Convert vectordb.Document to weaviate.Document for display functions
 	documents := make([]weaviate.Document, len(vdbDocuments))
 	for i, doc := range vdbDocuments {
@@ -227,7 +235,7 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	if virtual {
 		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, noTruncate, summary, jsonOutput, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, noTruncate, jsonOutput, vectorizer)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, noTruncate, jsonOutput, vectorizer, totalCount, limit)
 	}
 }
 
@@ -282,10 +290,15 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 
 	// Get collection schema to display vectorizer/embedding model
 	var vectorizer string
+	var totalCount int64 = -1
 	vdbClient, err := CreateVectorDBClient(cfg)
 	if err == nil {
 		if schema, err := vdbClient.GetSchema(ctx, collectionName); err == nil && schema != nil {
 			vectorizer = schema.Vectorizer
+		}
+		// Get total document count
+		if count, err := vdbClient.GetCollectionCount(ctx, collectionName); err == nil {
+			totalCount = count
 		}
 	}
 
@@ -293,7 +306,7 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 	if virtual {
 		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, false, summary, false, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, false, vectorizer)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, false, vectorizer, totalCount, limit)
 	}
 }
 
