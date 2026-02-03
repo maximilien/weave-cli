@@ -241,13 +241,16 @@ func extractPageNumbers(images []VirtualDocument) (int, int) {
 }
 
 // DisplayRegularDocuments displays regular documents with styling
-func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, jsonOutput bool, vectorizer string) {
+func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, jsonOutput bool, vectorizer string, totalCount int64, limit int) {
 	// If JSON output is requested, marshal and print JSON
 	if jsonOutput {
 		output := map[string]interface{}{
 			"collection":      collectionName,
-			"total_documents": len(documents),
+			"shown_documents": len(documents),
 			"documents":       documents,
+		}
+		if totalCount >= 0 {
+			output["total_documents"] = totalCount
 		}
 		if vectorizer != "" {
 			output["vectorizer"] = vectorizer
@@ -261,7 +264,17 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 		return
 	}
 
-	PrintSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
+	// Display header with pagination info
+	if totalCount >= 0 {
+		if int64(len(documents)) < totalCount {
+			PrintSuccess(fmt.Sprintf("Showing %d of %d documents in collection '%s':", len(documents), totalCount, collectionName))
+		} else {
+			PrintSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
+		}
+	} else {
+		// Total count unavailable
+		PrintSuccess(fmt.Sprintf("Found %d documents in collection '%s':", len(documents), collectionName))
+	}
 	if vectorizer != "" {
 		PrintInfo(fmt.Sprintf("  Embedding model: %s", GetStyledValueDimmed(vectorizer)))
 	}
@@ -310,6 +323,21 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 					fmt.Println()
 				}
 			}
+		}
+		fmt.Println()
+	}
+
+	// Display pagination footer if more documents exist
+	if totalCount >= 0 && int64(len(documents)) < totalCount {
+		remaining := totalCount - int64(len(documents))
+		fmt.Println(strings.Repeat("─", 80))
+		fmt.Println()
+		PrintInfo(fmt.Sprintf("📄 Page 1 • %d documents shown • %d total", len(documents), totalCount))
+		PrintInfo(fmt.Sprintf("   %d more documents available", remaining))
+		fmt.Println()
+		PrintInfo(fmt.Sprintf("   Next page: weave docs ls %s --offset %d --limit %d", collectionName, len(documents), limit))
+		if remaining <= int64(limit) {
+			PrintInfo(fmt.Sprintf("   All:       weave docs ls %s --limit %d", collectionName, totalCount))
 		}
 		fmt.Println()
 	}
