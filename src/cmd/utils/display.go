@@ -242,7 +242,7 @@ func extractPageNumbers(images []VirtualDocument) (int, int) {
 }
 
 // DisplayRegularDocuments displays regular documents with styling
-func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, jsonOutput bool, vectorizer string, totalCount int64, limit int) {
+func DisplayRegularDocuments(documents []weaviate.Document, collectionName string, showLong bool, shortLines int, noTruncate bool, jsonOutput bool, vectorizer string, totalCount int64, limit int, offset int) {
 	// If JSON output is requested, marshal and print JSON
 	if jsonOutput {
 		output := map[string]interface{}{
@@ -329,16 +329,29 @@ func DisplayRegularDocuments(documents []weaviate.Document, collectionName strin
 	}
 
 	// Display pagination footer if more documents exist
-	if totalCount >= 0 && int64(len(documents)) < totalCount {
-		remaining := totalCount - int64(len(documents))
+	if totalCount >= 0 && int64(offset+len(documents)) < totalCount {
+		currentEnd := offset + len(documents)
+		remaining := totalCount - int64(currentEnd)
+		currentPage := (offset / limit) + 1
+		totalPages := (int(totalCount) + limit - 1) / limit
+
 		fmt.Println(strings.Repeat("─", 80))
 		fmt.Println()
-		PrintInfo(fmt.Sprintf("📄 Page 1 • %d documents shown • %d total", len(documents), totalCount))
+		PrintInfo(fmt.Sprintf("📄 Page %d of %d • %d documents shown • %d total", currentPage, totalPages, len(documents), totalCount))
 		PrintInfo(fmt.Sprintf("   %d more documents available", remaining))
 		fmt.Println()
-		PrintInfo(fmt.Sprintf("   Next page: weave docs ls %s --offset %d --limit %d", collectionName, len(documents), limit))
+
+		// Show navigation hints
+		if offset > 0 {
+			prevOffset := offset - limit
+			if prevOffset < 0 {
+				prevOffset = 0
+			}
+			PrintInfo(fmt.Sprintf("   Prev page: weave docs ls %s --offset %d --limit %d", collectionName, prevOffset, limit))
+		}
+		PrintInfo(fmt.Sprintf("   Next page: weave docs ls %s --offset %d --limit %d", collectionName, currentEnd, limit))
 		if remaining <= int64(limit) {
-			PrintInfo(fmt.Sprintf("   All:       weave docs ls %s --limit %d", collectionName, totalCount))
+			PrintInfo(fmt.Sprintf("   Last page: weave docs ls %s --offset %d --limit %d", collectionName, int(totalCount)-limit, limit))
 		}
 		fmt.Println()
 	}

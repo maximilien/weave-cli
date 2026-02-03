@@ -155,7 +155,7 @@ func WriteProcessingReport(report *ProcessingReport) error {
 
 // ListWeaviateDocuments lists Weaviate documents
 // ListDocuments lists documents using the vector database abstraction (works for all DB types)
-func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, showLong bool, shortLines int, noTruncate bool, virtual bool, summary bool, jsonOutput bool) {
+func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionName string, limit int, offset int, showLong bool, shortLines int, noTruncate bool, virtual bool, summary bool, jsonOutput bool) {
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -166,8 +166,8 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
-	// Get documents from collection (offset 0 means start from beginning)
-	vdbDocuments, err := client.ListDocuments(ctx, collectionName, limit, 0)
+	// Get documents from collection with offset for pagination
+	vdbDocuments, err := client.ListDocuments(ctx, collectionName, limit, offset)
 	if err != nil {
 		if ctx.Err() == context.DeadlineExceeded {
 			PrintError("Failed to connect to database: connection timeout after 30 seconds")
@@ -235,7 +235,7 @@ func ListDocuments(ctx context.Context, cfg *config.VectorDBConfig, collectionNa
 	if virtual {
 		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, noTruncate, summary, jsonOutput, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, noTruncate, jsonOutput, vectorizer, totalCount, limit)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, noTruncate, jsonOutput, vectorizer, totalCount, limit, offset)
 	}
 }
 
@@ -306,7 +306,7 @@ func ListWeaviateDocuments(ctx context.Context, cfg *config.VectorDBConfig, coll
 	if virtual {
 		DisplayVirtualDocuments(documents, collectionName, showLong, shortLines, false, summary, false, vectorizer)
 	} else {
-		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, false, vectorizer, totalCount, limit)
+		DisplayRegularDocuments(documents, collectionName, showLong, shortLines, false, false, vectorizer, totalCount, limit, 0)
 	}
 }
 
