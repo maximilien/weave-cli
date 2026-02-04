@@ -141,6 +141,9 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - 🛡️ **Production Hardening** - Agent input validation with typo suggestions,
   structured logging with file output (`--log-level`, `--log-file`), and rich
   error context for debugging (v0.9.12+)
+- 📊 **Observability** - Production-ready monitoring with Prometheus metrics,
+  health endpoints, and structured JSON logging for Kubernetes deployments
+  (v0.9.15+). See [Observability Guide](docs/OBSERVABILITY.md)
 
 ## Documentation
 
@@ -158,6 +161,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - **[⚙️ Agent Management](docs/AGENT_MANAGEMENT.md)** - Create, customize, and
   manage RAG agents
 - **[🔌 MCP AI Tools API](docs/mcp/MCP_AI_TOOLS.md)** - Using AI tools via MCP server
+- **[📊 Observability](docs/OBSERVABILITY.md)** - Production monitoring with
+  Prometheus metrics, health endpoints, and structured logging (v0.9.15+)
 - **[⏱️ Timeout Configuration](docs/TIMEOUT_CONFIGURATION.md)** - Configure and
   troubleshoot operation timeouts
 - **[📦 Batch Processing](docs/guides/BATCH_DOCS_CREATION.md)** - Directory
