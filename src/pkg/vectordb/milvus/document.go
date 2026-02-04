@@ -12,11 +12,15 @@ import (
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 
+	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // CreateDocument creates a new document in the specified collection
 func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, document *vectordb.Document) error {
+	logger := logging.WithDocument("milvus", collectionName, document.ID)
+	logger.Debug("Creating document")
+
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
@@ -96,15 +100,18 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	// Insert data
 	_, err := a.client.Insert(ctx, collectionName, "", columns...)
 	if err != nil {
+		logger.Error("Failed to insert document: %v", err)
 		return fmt.Errorf("Milvus: failed to create document: %w", err)
 	}
 
 	// Flush to make data available for search
 	err = a.client.Flush(ctx, collectionName, false)
 	if err != nil {
+		logger.Error("Failed to flush collection: %v", err)
 		return fmt.Errorf("Milvus: failed to flush collection: %w", err)
 	}
 
+	logger.Info("Document created successfully")
 	return nil
 }
 

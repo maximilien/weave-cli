@@ -9,6 +9,7 @@ import (
 
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 
+	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -143,14 +144,20 @@ func (c *Client) DeleteCollection(ctx context.Context, name string) error {
 
 // ListCollections returns a list of all collections
 func (c *Client) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	logger := logging.WithVDB("milvus", "ListCollections")
+	logger.Debug("Listing collections: address=%s database=%s", c.config.Address, c.config.Database)
+
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeoutFor(vectordb.OperationTypeCollection))
 	defer cancel()
 
 	// List all collections
 	collections, err := c.client.ListCollections(ctx)
 	if err != nil {
+		logger.Error("Failed to list collections: %v", err)
 		return nil, fmt.Errorf("Milvus: failed to list collections: %w", err)
 	}
+
+	logger.Debug("Found %d collections", len(collections))
 
 	result := make([]vectordb.CollectionInfo, 0, len(collections))
 	for _, coll := range collections {

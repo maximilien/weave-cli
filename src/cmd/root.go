@@ -38,6 +38,7 @@ var (
 	noConfirm      bool
 	queryStrings   string
 	logLevel       string
+	logFormat      string
 	logFile        string
 
 	// REPL MCP flags
@@ -198,6 +199,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&quietConfig, "quiet-config", false, "suppress config location information")
 	rootCmd.PersistentFlags().BoolVar(&noConfirm, "no-confirm", false, "skip confirmation prompts for destructive operations")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "logging level (debug, info, warn, error)")
+	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "text", "logging format (text, json)")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (logs to stderr if not specified)")
 
 	// REPL-specific flags
@@ -342,6 +344,7 @@ func initLogging(cmd *cobra.Command, args []string) {
 	// 4. Default (info)
 
 	finalLogLevel := logLevel
+	finalLogFormat := logFormat
 	finalLogFile := logFile
 
 	// If flags aren't set, try to load from config
@@ -364,6 +367,17 @@ func initLogging(cmd *cobra.Command, args []string) {
 		level = logging.LevelInfo
 	}
 
+	// Parse log format
+	var format logging.Format
+	switch finalLogFormat {
+	case "json":
+		format = logging.FormatJSON
+	case "text":
+		format = logging.FormatText
+	default:
+		format = logging.FormatText
+	}
+
 	// Handle verbose flag override (for backward compatibility)
 	verbose, _ := cmd.Flags().GetBool("verbose")
 	if verbose {
@@ -376,8 +390,8 @@ func initLogging(cmd *cobra.Command, args []string) {
 		level = logging.LevelError
 	}
 
-	// Initialize logger
-	if err := logging.Init(level, finalLogFile, noColor); err != nil {
+	// Initialize logger with format
+	if err := logging.InitWithFormat(level, format, finalLogFile, noColor); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Failed to initialize logging: %v\n", err)
 	}
 

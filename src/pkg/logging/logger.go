@@ -4,6 +4,7 @@
 package logging
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -56,12 +57,22 @@ func ParseLevel(level string) (Level, error) {
 	}
 }
 
+// Format represents the log output format
+type Format string
+
+const (
+	FormatText Format = "text"
+	FormatJSON Format = "json"
+)
+
 // Logger provides structured logging with file output support
 type Logger struct {
 	level      Level
+	format     Format
 	writer     io.Writer
 	fileWriter io.WriteCloser
 	noColor    bool
+	fields     map[string]interface{} // Structured fields for context
 }
 
 var defaultLogger *Logger
@@ -69,17 +80,26 @@ var defaultLogger *Logger
 func init() {
 	defaultLogger = &Logger{
 		level:   LevelInfo,
+		format:  FormatText,
 		writer:  os.Stderr,
 		noColor: false,
+		fields:  make(map[string]interface{}),
 	}
 }
 
 // Init initializes the global logger with options
 func Init(level Level, logFile string, noColor bool) error {
+	return InitWithFormat(level, FormatText, logFile, noColor)
+}
+
+// InitWithFormat initializes the global logger with format option
+func InitWithFormat(level Level, format Format, logFile string, noColor bool) error {
 	logger := &Logger{
 		level:   level,
+		format:  format,
 		writer:  os.Stderr,
 		noColor: noColor,
+		fields:  make(map[string]interface{}),
 	}
 
 	// Set up file logging if specified
@@ -130,8 +150,41 @@ func (l *Logger) log(level Level, format string, args ...interface{}) {
 		return
 	}
 
-	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	message := fmt.Sprintf(format, args...)
+
+	if l.format == FormatJSON {
+		l.logJSON(level, message)
+	} else {
+		l.logText(level, message)
+	}
+}
+
+// logJSON writes a log message in JSON format
+func (l *Logger) logJSON(level Level, message string) {
+	entry := map[string]interface{}{
+		"level":   strings.ToLower(level.String()),
+		"time":    time.Now().Format(time.RFC3339),
+		"message": message,
+	}
+
+	// Add any structured fields
+	for k, v := range l.fields {
+		entry[k] = v
+	}
+
+	data, err := json.Marshal(entry)
+	if err != nil {
+		// Fallback to text format on error
+		l.logText(level, message)
+		return
+	}
+
+	fmt.Fprintln(l.writer, string(data))
+}
+
+// logText writes a log message in text format
+func (l *Logger) logText(level Level, message string) {
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
 
 	// Format: [LEVEL] timestamp message
 	var levelStr string
@@ -246,4 +299,72 @@ func WrapErrorWithContext(err error, operation, vdbType, endpoint string, contex
 		Err:       err,
 		Context:   context,
 	}
+}
+
+// WithFields creates a logger with structured fields
+func WithFields(fields map[string]interface{}) *Logger {
+	logger := &Logger{
+		level:   defaultLogger.level,
+		format:  defaultLogger.format,
+		writer:  defaultLogger.writer,
+		noColor: defaultLogger.noColor,
+		fields:  make(map[string]interface{}),
+	}
+
+	// Copy default fields
+	for k, v := range defaultLogger.fields {
+		logger.fields[k] = v
+	}
+
+	// Add new fields
+	for k, v := range fields {
+		logger.fields[k] = v
+	}
+
+	return logger
+}
+
+// WithVDB creates a logger with VDB context
+func WithVDB(vdbType, operation string) *Logger {
+	return WithFields(map[string]interface{}{
+		"vdb_type":  vdbType,
+		"operation": operation,
+	})
+}
+
+// WithCollection creates a logger with collection context
+func WithCollection(vdbType, collection string) *Logger {
+	return WithFields(map[string]interface{}{
+		"vdb_type":   vdbType,
+		"collection": collection,
+	})
+}
+
+// WithDocument creates a logger with document context
+func WithDocument(vdbType, collection, docID string) *Logger {
+	return WithFields(map[string]interface{}{
+		"vdb_type":   vdbType,
+		"collection": collection,
+		"document_id": docID,
+	})
+}
+
+// InfoWithFields logs an info message with this logger's fields
+func (l *Logger) Info(format string, args ...interface{}) {
+	l.log(LevelInfo, format, args...)
+}
+
+// DebugWithFields logs a debug message with this logger's fields
+func (l *Logger) Debug(format string, args ...interface{}) {
+	l.log(LevelDebug, format, args...)
+}
+
+// WarnWithFields logs a warning message with this logger's fields
+func (l *Logger) Warn(format string, args ...interface{}) {
+	l.log(LevelWarn, format, args...)
+}
+
+// ErrorWithFields logs an error message with this logger's fields
+func (l *Logger) Error(format string, args ...interface{}) {
+	l.log(LevelError, format, args...)
 }
