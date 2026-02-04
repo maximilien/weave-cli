@@ -8,14 +8,15 @@ A comprehensive guide to using the Weave CLI tool for managing Weaviate vector d
 
 1. [Getting Started](#getting-started)
 2. [Configuration](#configuration)
-3. [Error Handling & Help](#error-handling--help)
-4. [Basic Commands](#basic-commands)
-5. [Virtual Document View](#virtual-document-view)
-6. [Global Flags](#global-flags)
-7. [Advanced Usage](#advanced-usage)
-8. [Troubleshooting](#troubleshooting)
-9. [FAQ (Frequently Asked Questions)](#faq-frequently-asked-questions)
-10. [Examples](#examples)
+3. [Observability](#observability)
+4. [Error Handling & Help](#error-handling--help)
+5. [Basic Commands](#basic-commands)
+6. [Virtual Document View](#virtual-document-view)
+7. [Global Flags](#global-flags)
+8. [Advanced Usage](#advanced-usage)
+9. [Troubleshooting](#troubleshooting)
+10. [FAQ (Frequently Asked Questions)](#faq-frequently-asked-questions)
+11. [Examples](#examples)
 
 ## Getting Started
 
@@ -429,6 +430,101 @@ weave collection show MyCollection --schema --compact --yaml-file schema.yaml
 # Create new collection from exported schema
 weave collection create NewCollection --schema-yaml-file schema.yaml
 ```
+
+## Observability
+
+Weave CLI provides production-ready observability features for monitoring, debugging, and alerting.
+
+### Structured Logging
+
+Enable JSON logging for log aggregation systems (ELK, Datadog, Splunk):
+
+```bash
+# JSON format for production
+weave --log-format json --log-level info docs ls MyDocs
+
+# Text format for CLI usage (default, colored)
+weave --log-format text --log-level debug docs ls MyDocs
+
+# Write logs to file
+weave --log-file /var/log/weave.log docs ls MyDocs
+```
+
+**Log Levels**: `debug`, `info`, `warn`, `error`
+
+**JSON Output Example**:
+```json
+{
+  "level": "info",
+  "time": "2026-02-04T10:00:00Z",
+  "message": "Document created successfully",
+  "vdb_type": "milvus",
+  "collection": "AuctionListings",
+  "document_id": "auction-12345"
+}
+```
+
+### Prometheus Metrics
+
+Enable metrics server for monitoring with Prometheus and Grafana:
+
+```bash
+# Enable metrics on default port 9090
+weave --metrics docs ls MyDocs
+
+# Custom port
+weave --metrics --metrics-port 8080 docs ls MyDocs
+
+# Access metrics
+curl http://localhost:9090/metrics
+```
+
+**Available Metrics**:
+- `weave_request_duration_seconds`: Request latency histogram
+- `weave_documents_total`: Document operation counter
+- `weave_errors_total`: Error counter by type
+- `weave_active_connections`: Active VDB connections gauge
+
+### Health Endpoints
+
+Kubernetes-ready health and readiness probes:
+
+```bash
+# Start with metrics enabled
+weave --metrics docs ls MyDocs
+
+# Health endpoints:
+curl http://localhost:9090/healthz  # Liveness probe
+curl http://localhost:9090/readyz   # Readiness probe
+```
+
+**Response Example**:
+```json
+{
+  "status": "healthy",
+  "timestamp": 1738612800,
+  "version": "0.9.15",
+  "databases": {
+    "milvus-local": "healthy"
+  }
+}
+```
+
+### Combined Usage
+
+For full production observability:
+
+```bash
+weave \
+  --log-format json \
+  --log-level info \
+  --log-file /var/log/weave.log \
+  --metrics \
+  --metrics-port 9090 \
+  docs ls MyDocs
+```
+
+📖 **For detailed observability documentation**, see [OBSERVABILITY.md](OBSERVABILITY.md)
 
 ## Error Handling & Help
 

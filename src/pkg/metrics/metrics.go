@@ -14,8 +14,8 @@ var (
 	// RequestDuration tracks the duration of VDB requests
 	RequestDuration = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "weave_request_duration_seconds",
-			Help: "Duration of VDB requests in seconds",
+			Name:    "weave_request_duration_seconds",
+			Help:    "Duration of VDB requests in seconds",
 			Buckets: []float64{.001, .005, .01, .05, .1, .5, 1, 5, 10},
 		},
 		[]string{"vdb_type", "operation", "status"},
