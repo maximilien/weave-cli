@@ -1,0 +1,267 @@
+---
+databases:
+  # Default database to use when not specified
+  # Options: weaviate-cloud, weaviate-local, milvus-local, milvus-cloud,
+  # mongodb-local, supabase-local, chroma-cloud, chroma-local,
+  # neo4j-cloud, neo4j-local, qdrant-cloud, qdrant-local,
+  # opensearch-local, opensearch-cloud, pinecone, mock
+  # Shortcuts (resolve to -cloud): weaviate, milvus, chroma, neo4j,
+  # qdrant, opensearch
+  default: weaviate-cloud
+
+  vector_databases:
+    # Weaviate Cloud configuration
+    - name: weaviate-cloud
+      type: weaviate-cloud
+      url: ${WEAVIATE_URL}
+      api_key: ${WEAVIATE_API_KEY}
+      openai_api_key: ${OPENAI_API_KEY}
+      timeout: 10
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection
+        - name: WeaveImages
+          type: image
+          description: Image documents collection
+
+    # Weaviate Local configuration (requires Weaviate running locally)
+    - name: weaviate-local
+      type: weaviate-local
+      url: ${WEAVIATE_LOCAL_URL:-http://localhost:8080}
+      openai_api_key: ${OPENAI_API_KEY}
+      timeout: 10
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection
+        - name: WeaveImages
+          type: image
+          description: Image documents collection
+
+    # MongoDB Atlas configuration (commented out - uncomment to use)
+    # Note: MongoDB Atlas is a cloud service
+    - name: mongodb-cloud
+      type: mongodb-cloud
+      url: ${MONGODB_URI}
+      database: ${MONGODB_DATABASE:-weave}
+      vector_dimensions: 1536  # OpenAI ada-002 embedding size
+      similarity_metric: cosine  # Options: cosine, euclidean, dotProduct
+      timeout: 10
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection
+        - name: WeaveImages
+          type: image
+          description: Image documents collection
+
+    # Milvus Local configuration (requires Milvus running locally)
+    - name: milvus-local
+      type: milvus-local
+      address: localhost:19530
+      database: default
+      vector_dimensions: 1536  # OpenAI ada-002 embedding size
+      similarity_metric: L2  # Options: L2, IP (inner product), COSINE
+      timeout: 10
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection
+        - name: WeaveImages
+          type: image
+          description: Image documents collection
+
+    # Milvus Cloud configuration
+    - name: milvus-cloud
+      type: milvus-cloud
+
+      # Connection settings (use environment variables for security)
+      # e.g., your-cluster.aws-us-west-2.vectordb.zillizcloud.com:19530
+      address: ${MILVUS_CLOUD_ADDRESS}
+      username: ${MILVUS_CLOUD_USERNAME}
+      password: ${MILVUS_CLOUD_PASSWORD}
+      database: default
+      timeout: 30  # Longer timeout for network latency
+
+      # Vector configuration
+      vector_dimensions: 1536     # OpenAI text-embedding-3-small
+      # Recommended for normalized embeddings
+      # Options: L2, IP (inner product), COSINE
+      similarity_metric: COSINE
+
+    # Supabase PGVector configuration (commented out - uncomment to use)
+    # Note: Supabase is a cloud service
+    - name: supabase-cloud
+      type: supabase-cloud
+      database_url: ${SUPABASE_DATABASE_URL}
+      database_key: ${SUPABASE_DATABASE_KEY}
+      vector_dimensions: 1536  # OpenAI ada-002 embedding size
+      similarity_metric: cosine  # Options: cosine, euclidean, dotProduct
+      timeout: 10
+      collections:
+        - name: WeaveDocs
+          type: text
+          description: Main text documents collection
+        - name: WeaveImages
+          type: image
+          description: Image documents collection
+
+    # Supabase Local configuration
+    - name: supabase-local
+      type: supabase-local
+      database_url: postgres://postgres:postgres@localhost:5432/postgres
+      timeout: 30
+
+    # Chroma configuration (cloud)
+    - name: chroma-cloud
+      type: chroma-cloud
+
+      # Connection settings (use environment variables)
+      url: ${CHROMA_CLOUD_URL}
+      api_key: ${CHROMA_CLOUD_API_KEY}
+      database: default_database
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, l2, ip
+
+    # Chroma configuration (local)
+    - name: chroma-local
+      type: chroma-local
+
+      # Connection settings
+      url: ${CHROMA_URL:-http://localhost:8000}
+      database: default_database
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, l2, ip
+
+    # Neo4j configuration (local)
+    - name: neo4j-local
+      type: neo4j-local
+
+      # Connection settings (Bolt protocol)
+      url: ${NEO4J_URL:-bolt://localhost:7687}
+      username: ${NEO4J_USERNAME:-neo4j}
+      password: ${NEO4J_PASSWORD}
+      database: ${NEO4J_DATABASE:-neo4j}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, euclidean
+
+    # # Neo4j configuration (cloud - Aura)
+    # - name: neo4j-cloud
+    #   type: neo4j-cloud
+
+    #   # Connection settings (use environment variables)
+    #   url: ${NEO4J_CLOUD_URL}  # neo4j+s://xxx.databases.neo4j.io
+    #   username: ${NEO4J_CLOUD_USERNAME}
+    #   password: ${NEO4J_CLOUD_PASSWORD}
+    #   database: ${NEO4J_CLOUD_DATABASE:-neo4j}
+    #   timeout: 60  # seconds (longer for cloud connections)
+
+    #   # Vector configuration
+    #   vector_dimensions: 1536  # OpenAI text-embedding-3-small
+    #   similarity_metric: cosine  # Options: cosine, euclidean
+
+    # Qdrant configuration (local)
+    - name: qdrant-local
+      type: qdrant-local
+
+      # Connection settings
+      # Note: Use gRPC port 6334, not HTTP port 6333
+      url: ${QDRANT_URL:-http://localhost:6334}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: Cosine  # Options: Cosine, Euclidean, Dot
+
+    # # Qdrant configuration (cloud)
+    # - name: qdrant-cloud
+    #   type: qdrant-cloud
+
+    #   # Connection settings (use environment variables)
+    #   url: ${QDRANT_CLOUD_URL}  # https://xxx-xxx.aws.cloud.qdrant.io
+    #   api_key: ${QDRANT_CLOUD_API_KEY}
+    #   timeout: 60  # seconds (longer for cloud connections)
+
+    #   # Vector configuration
+    #   vector_dimensions: 1536  # OpenAI text-embedding-3-small
+    #   similarity_metric: cosine  # Options: cosine, euclidean, dot
+
+    # OpenSearch configuration (local)
+    - name: opensearch-local
+      type: opensearch-local
+
+      # Connection settings
+      url: ${OPENSEARCH_LOCAL_ADDRESS:-http://localhost:9200}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: l2  # Options: l2, cosinesimil, innerproduct, l1, linf
+
+    # # OpenSearch configuration (cloud - AWS OpenSearch Service)
+    # - name: opensearch-cloud
+    #   type: opensearch-cloud
+    #
+    #   # Connection settings (use environment variables)
+    #   # e.g., https://your-domain.us-east-1.es.amazonaws.com
+    #   url: ${OPENSEARCH_CLOUD_ADDRESS}
+    #   username: ${OPENSEARCH_CLOUD_USERNAME}
+    #   password: ${OPENSEARCH_CLOUD_PASSWORD}
+    #   # Alternative to username/password
+    #   # api_key: ${OPENSEARCH_CLOUD_API_KEY}
+    #   timeout: 60  # seconds (longer for cloud connections)
+    #
+    #   # Vector configuration
+    #   vector_dimensions: 1536  # OpenAI text-embedding-3-small
+    #   # Options: l2, cosinesimil, innerproduct, l1, linf
+    #   similarity_metric: cosinesimil
+
+    # Pinecone configuration (cloud-only serverless)
+    - name: pinecone
+      type: pinecone
+
+      # Connection settings (use environment variables)
+      # API key is required - get from https://app.pinecone.io
+      api_key: ${PINECONE_CLOUD_API_KEY}
+      # Host is optional for serverless - determined per-index
+      # For pod-based: url: ${PINECONE_HOST}
+      timeout: 60  # seconds (longer for cloud connections)
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      # Options: cosine, euclidean, dotproduct
+      similarity_metric: cosine
+
+      # OpenAI API key for generating embeddings
+      openai_api_key: ${OPENAI_API_KEY}
+
+    - name: elasticsearch
+      type: elasticsearch-local
+
+      # Connection settings
+      address: ${ELASTICSEARCH_LOCAL_ADDRESS:-http://localhost:9200}
+      timeout: 30  # seconds
+
+      # Vector configuration
+      vector_dimensions: 1536  # OpenAI text-embedding-3-small
+      similarity_metric: cosine  # Options: cosine, dot_product, l2_norm
+
+      openai:
+        api_key: ${OPENAI_API_KEY}
+        embedding_model: text-embedding-3-small
+
+# Logging configuration (optional)
+# Uncomment and configure to enable persistent logging
+# logging:
+#   level: debug  # Options: debug, info, warn, error (default: info)
+#   file: logs/weave.log  # Log file path (default: stderr only)
