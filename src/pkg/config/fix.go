@@ -32,11 +32,11 @@ type ConfigIssue struct {
 type FixAction string
 
 const (
-	FixActionSetValue  FixAction = "set_value"
-	FixActionSkip      FixAction = "skip"
-	FixActionRemove    FixAction = "remove"
-	FixActionDisable   FixAction = "disable"
-	FixActionQuit      FixAction = "quit"
+	FixActionSetValue FixAction = "set_value"
+	FixActionSkip     FixAction = "skip"
+	FixActionRemove   FixAction = "remove"
+	FixActionDisable  FixAction = "disable"
+	FixActionQuit     FixAction = "quit"
 )
 
 // FixResult tracks the outcome of fixing an issue
@@ -49,9 +49,10 @@ type FixResult struct {
 
 // ParseValidationOutput parses validation error/warning output into ConfigIssue list
 // Expected format from validation:
-//   "⚠️  Configuration Errors:"
-//   "  • databases.vector_databases[2] (mongodb-cloud).database_url: MongoDB database_url is required"
-//   "    💡 Set 'database_url' field with MongoDB Atlas connection string"
+//
+//	"⚠️  Configuration Errors:"
+//	"  • databases.vector_databases[2] (mongodb-cloud).database_url: MongoDB database_url is required"
+//	"    💡 Set 'database_url' field with MongoDB Atlas connection string"
 func ParseValidationOutput(output string) ([]ConfigIssue, error) {
 	var issues []ConfigIssue
 	lines := strings.Split(output, "\n")
