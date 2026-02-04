@@ -343,8 +343,8 @@ func WithCollection(vdbType, collection string) *Logger {
 // WithDocument creates a logger with document context
 func WithDocument(vdbType, collection, docID string) *Logger {
 	return WithFields(map[string]interface{}{
-		"vdb_type":   vdbType,
-		"collection": collection,
+		"vdb_type":    vdbType,
+		"collection":  collection,
 		"document_id": docID,
 	})
 }

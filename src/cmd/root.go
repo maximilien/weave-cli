@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/fatih/color"
 	chunkingcmd "github.com/maximilien/weave-cli/src/cmd/chunking"
@@ -16,8 +17,10 @@ import (
 	statscmd "github.com/maximilien/weave-cli/src/cmd/stats"
 	vdbcmd "github.com/maximilien/weave-cli/src/cmd/vdb"
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/health"
 	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/repl"
+	"github.com/maximilien/weave-cli/src/pkg/server"
 	"github.com/maximilien/weave-cli/src/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -40,6 +43,10 @@ var (
 	logLevel       string
 	logFormat      string
 	logFile        string
+
+	// Metrics server flags
+	enableMetrics bool
+	metricsPort   int
 
 	// REPL MCP flags
 	mcpServerURL string
@@ -201,6 +208,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "logging level (debug, info, warn, error)")
 	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "text", "logging format (text, json)")
 	rootCmd.PersistentFlags().StringVar(&logFile, "log-file", "", "log file path (logs to stderr if not specified)")
+	rootCmd.PersistentFlags().BoolVar(&enableMetrics, "metrics", false, "enable Prometheus metrics server")
+	rootCmd.PersistentFlags().IntVar(&metricsPort, "metrics-port", 9090, "port for metrics and health endpoints")
 
 	// REPL-specific flags
 	rootCmd.Flags().StringVar(&queryStrings, "query-strings", "", "file with queries to execute (one per line, batch mode)")
@@ -400,6 +409,34 @@ func initLogging(cmd *cobra.Command, args []string) {
 		logging.Debug("Logging initialized: level=%s file=%s", level.String(), finalLogFile)
 	} else {
 		logging.Debug("Logging initialized: level=%s", level.String())
+	}
+
+	// Start metrics server if enabled
+	if enableMetrics {
+		startMetricsServer()
+	}
+}
+
+// startMetricsServer starts the HTTP server for metrics and health endpoints
+func startMetricsServer() {
+	// Create server
+	srv := server.New(&server.Config{
+		Port:         metricsPort,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	})
+
+	// Create health checker
+	healthChecker := health.NewHealthChecker(version.Get().Version, 5*time.Second)
+
+	// Register health endpoints
+	mux := srv.GetHandler()
+	mux.HandleFunc("/healthz", healthChecker.HealthzHandler())
+	mux.HandleFunc("/readyz", healthChecker.ReadyzHandler())
+
+	// Start server
+	if err := srv.Start(); err != nil {
+		logging.Error("Failed to start metrics server: %v", err)
 	}
 }
 
