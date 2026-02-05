@@ -209,18 +209,35 @@ func (f *InteractiveFixer) promptFixAction(issue ConfigIssue) (FixResult, error)
 func (f *InteractiveFixer) promptForValue(issue ConfigIssue) (FixResult, error) {
 	fmt.Println()
 
-	if issue.IsSecretField() {
-		color.Cyan("Enter %s (input hidden): ", issue.Field)
+	// Allow up to 3 attempts for validation
+	maxAttempts := 3
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		var value string
 
-		// Read password (hidden)
-		fd := int(os.Stdin.Fd())
-		password, err := term.ReadPassword(fd)
-		if err != nil {
-			return FixResult{}, fmt.Errorf("failed to read secret: %w", err)
+		if issue.IsSecretField() {
+			color.Cyan("Enter %s (input hidden): ", issue.Field)
+
+			// Read password (hidden)
+			fd := int(os.Stdin.Fd())
+			password, readErr := term.ReadPassword(fd)
+			if readErr != nil {
+				return FixResult{}, fmt.Errorf("failed to read secret: %w", readErr)
+			}
+			fmt.Println() // New line after password input
+
+			value = strings.TrimSpace(string(password))
+		} else {
+			color.Cyan("Enter %s: ", issue.Field)
+
+			input, readErr := f.reader.ReadString('\n')
+			if readErr != nil {
+				return FixResult{}, fmt.Errorf("failed to read input: %w", readErr)
+			}
+
+			value = strings.TrimSpace(input)
 		}
-		fmt.Println() // New line after password input
 
-		value := strings.TrimSpace(string(password))
+		// Check for empty
 		if value == "" {
 			color.Yellow("⚠️  Empty value, skipping")
 			return FixResult{
@@ -229,34 +246,41 @@ func (f *InteractiveFixer) promptForValue(issue ConfigIssue) (FixResult, error) 
 			}, nil
 		}
 
-		return FixResult{
-			Issue:  issue,
-			Action: FixActionSetValue,
-			Value:  value,
-		}, nil
-	} else {
-		color.Cyan("Enter %s: ", issue.Field)
+		// Validate the value
+		if validationErr := ValidateFieldValue(issue.Field, value); validationErr != nil {
+			color.Red("❌ Validation failed: %s", validationErr.Error())
 
-		value, err := f.reader.ReadString('\n')
-		if err != nil {
-			return FixResult{}, fmt.Errorf("failed to read input: %w", err)
+			// Show helpful hint
+			if hint := GetValidationHint(issue.Field, validationErr); hint != "" {
+				fmt.Println(hint)
+			}
+
+			if attempt < maxAttempts {
+				color.Yellow("\nTry again (%d/%d attempts remaining)...", maxAttempts-attempt, maxAttempts)
+				fmt.Println()
+				continue
+			} else {
+				color.Yellow("\n⚠️  Max attempts reached, skipping")
+				return FixResult{
+					Issue:  issue,
+					Action: FixActionSkip,
+				}, nil
+			}
 		}
 
-		value = strings.TrimSpace(value)
-		if value == "" {
-			color.Yellow("⚠️  Empty value, skipping")
-			return FixResult{
-				Issue:  issue,
-				Action: FixActionSkip,
-			}, nil
-		}
-
+		// Validation passed
 		return FixResult{
 			Issue:  issue,
 			Action: FixActionSetValue,
 			Value:  value,
 		}, nil
 	}
+
+	// Should not reach here
+	return FixResult{
+		Issue:  issue,
+		Action: FixActionSkip,
+	}, nil
 }
 
 // showActionResult shows the result of an action

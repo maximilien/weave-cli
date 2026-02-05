@@ -153,7 +153,7 @@ func validateWeaviate(db *VectorDBConfig, prefix string, result *ValidationResul
 			Message:    "Weaviate URL is required",
 			Suggestion: "Set 'url' field or WEAVIATE_URL environment variable",
 		})
-	} else if err := validateURL(db.URL); err != nil {
+	} else if err := validateURLConfig(db.URL); err != nil {
 		result.Warnings = append(result.Warnings, ValidationWarning{
 			Field:      prefix + ".url",
 			Message:    fmt.Sprintf("Invalid URL format: %v", err),
@@ -220,7 +220,7 @@ func validateQdrant(db *VectorDBConfig, prefix string, result *ValidationResult)
 			Message:    "Qdrant URL is required",
 			Suggestion: "Set 'url' field (e.g., 'http://localhost:6333' for local)",
 		})
-	} else if err := validateURL(db.URL); err != nil {
+	} else if err := validateURLConfig(db.URL); err != nil {
 		result.Warnings = append(result.Warnings, ValidationWarning{
 			Field:      prefix + ".url",
 			Message:    fmt.Sprintf("Invalid URL format: %v", err),
@@ -344,7 +344,7 @@ func validateOpenSearch(db *VectorDBConfig, prefix string, result *ValidationRes
 }
 
 // validateURL validates that a string is a valid URL
-func validateURL(rawURL string) error {
+func validateURLConfig(rawURL string) error {
 	// Handle environment variable interpolation
 	if strings.Contains(rawURL, "${") {
 		return nil // Skip validation for templated URLs
