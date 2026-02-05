@@ -10,6 +10,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/embeddings"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
@@ -41,9 +42,10 @@ Examples:
   # Create collection from a YAML schema file
   weave collection create MyCollection --schema-yaml-file schema.yaml
 
-  # Create collection with custom embedding model
+  # Create collection with custom embedding model (dimensions auto-detected!)
   weave collection create MyCollection --embedding text-embedding-3-small
-  weave collection create MyCollection -e text-embedding-ada-002
+  weave collection create MyCollection -e sentence-transformers/all-mpnet-base-v2
+  weave collection create OSS_Col -e nomic-embed-text  # OSS model - auto-detects 768 dims
 
   # Create collection with custom options
   weave collection create MyCollection --embedding text-embedding-3-small --fields "title:string,description:text"`,
@@ -75,6 +77,18 @@ func runCollectionCreate(cmd *cobra.Command, args []string) {
 		if embeddingModelFlag, _ := cmd.Flags().GetString("embedding-model"); embeddingModelFlag != "" {
 			embeddingModel = embeddingModelFlag
 			utils.PrintWarning("⚠️  --embedding-model is deprecated, use --embedding or -e instead")
+		}
+	}
+
+	// Auto-detect and display embedding dimensions
+	if embeddingModel != "" {
+		if info, err := embeddings.GetModelInfo(embeddingModel); err == nil {
+			// Show helpful info about the model
+			ossLabel := ""
+			if info.OSS {
+				ossLabel = " (OSS)"
+			}
+			utils.PrintInfo(fmt.Sprintf("📐 Auto-detected: %d dimensions for %s%s", info.Dimensions, embeddingModel, ossLabel))
 		}
 	}
 
