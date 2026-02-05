@@ -246,6 +246,16 @@ func (f *InteractiveFixer) promptForValue(issue ConfigIssue) (FixResult, error) 
 			}, nil
 		}
 
+		// Show smart suggestions before validation
+		suggestions := GetFieldSuggestions(issue.Field, value)
+		if len(suggestions) > 0 {
+			fmt.Println()
+			for _, suggestion := range suggestions {
+				color.Cyan(suggestion)
+			}
+			fmt.Println()
+		}
+
 		// Validate the value
 		if validationErr := ValidateFieldValue(issue.Field, value); validationErr != nil {
 			color.Red("❌ Validation failed: %s", validationErr.Error())
@@ -266,6 +276,12 @@ func (f *InteractiveFixer) promptForValue(issue ConfigIssue) (FixResult, error) 
 					Action: FixActionSkip,
 				}, nil
 			}
+		}
+
+		// Show positive feedback for good values
+		if len(suggestions) == 0 {
+			// If no suggestions were shown and validation passed, it's likely a good value
+			fmt.Println()
 		}
 
 		// Validation passed

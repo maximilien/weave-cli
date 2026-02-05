@@ -250,3 +250,47 @@ func TestGetValidationHint(t *testing.T) {
 		})
 	}
 }
+
+func TestGetFieldSuggestions(t *testing.T) {
+	tests := []struct {
+		name            string
+		field           string
+		value           string
+		wantSuggestions bool
+		contains        string
+	}{
+		{"url missing scheme", "url", "example.com", true, "Did you mean: https://example.com"},
+		{"url with http", "url", "http://api.example.com", true, "Did you mean:"},
+		{"url with https", "url", "https://example.com", false, ""},
+		{"mongodb atlas without srv", "database_url", "mongodb.net/db", true, "mongodb+srv://"},
+		{"api key too short", "api_key", "sk-short", true, "OpenAI"},
+		{"api key good length", "api_key", "sk-proj-1234567890abcdefghijklmnopqrstuvwxyz12345", false, ""},
+		{"port 80", "port", "80", true, "443"},
+		{"port 8080", "port", "8080", true, "development"},
+		{"empty value", "field", "", false, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			suggestions := GetFieldSuggestions(tt.field, tt.value)
+			hasSuggestions := len(suggestions) > 0
+
+			if hasSuggestions != tt.wantSuggestions {
+				t.Errorf("GetFieldSuggestions() returned %d suggestions, want suggestions=%v", len(suggestions), tt.wantSuggestions)
+			}
+
+			if tt.contains != "" {
+				found := false
+				for _, suggestion := range suggestions {
+					if strings.Contains(suggestion, tt.contains) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Errorf("GetFieldSuggestions() = %v, want to contain %q", suggestions, tt.contains)
+				}
+			}
+		})
+	}
+}
