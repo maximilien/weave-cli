@@ -221,6 +221,9 @@ func init() {
 	rootCmd.Flags().StringVar(&mcpTransport, "mcp-transport", "http", "MCP transport type (http, stdio)")
 	rootCmd.Flags().IntVar(&mcpTimeout, "mcp-timeout", 30, "MCP client timeout in seconds")
 
+	// Register flag completions
+	registerFlagCompletions(rootCmd)
+
 	// Environment variable override flags (highest priority)
 	rootCmd.PersistentFlags().StringVarP(&vectorDBType, "vector-db-type", "", "", "select vector database type\n"+
 		"                              Options: weaviate-cloud, weaviate-local, supabase-cloud, supabase-local,\n"+
