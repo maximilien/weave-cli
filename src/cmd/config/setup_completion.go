@@ -40,7 +40,7 @@ Supported shells: bash, zsh, fish, powershell`,
 }
 
 var (
-	dryRun       bool
+	dryRun           bool
 	updateCompletion bool
 )
 
