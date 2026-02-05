@@ -7,7 +7,30 @@ Weave CLI supports shell completion for Bash, Zsh, Fish, and PowerShell. This al
 - Complete database names from your config
 - Complete collection names (when connected)
 
-## Quick Setup
+## 🚀 Easiest Setup (Recommended)
+
+**One command - auto-detects your shell:**
+```bash
+weave config setup-completion
+```
+
+This will:
+1. ✓ Auto-detect your shell (bash, zsh, fish, powershell)
+2. ✓ Show what will be done
+3. ✓ Ask for permission
+4. ✓ Add completion to your shell config
+
+**To update completion after weave CLI updates:**
+```bash
+weave config setup-completion --update
+```
+
+**To preview without installing:**
+```bash
+weave config setup-completion --dry-run
+```
+
+## Manual Setup (Advanced)
 
 ### Bash
 
