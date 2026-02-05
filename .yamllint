@@ -11,3 +11,4 @@ ignore: |
   .github/workflows/release.yml
   .github/workflows/ci.yml
   examples/ci-cd/
+  config.yaml
