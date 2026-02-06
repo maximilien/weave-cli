@@ -121,12 +121,12 @@ func TestIntegrationScenarios(t *testing.T) {
 func TestBatchReEmbeddingPrep(t *testing.T) {
 	// Models that Client0 will likely test during 3-week validation
 	requiredModels := []string{
-		"sentence-transformers/all-mpnet-base-v2",     // Primary candidate
-		"sentence-transformers/all-minilm-l6-v2",      // Smaller alternative
-		"sentence-transformers/all-minilm-l12-v2",     // Mid-size alternative
-		"nomic-embed-text",                            // Ollama option
-		"text-embedding-3-small",                      // OpenAI baseline (small)
-		"text-embedding-3-large",                      // OpenAI baseline (large)
+		"sentence-transformers/all-mpnet-base-v2", // Primary candidate
+		"sentence-transformers/all-minilm-l6-v2",  // Smaller alternative
+		"sentence-transformers/all-minilm-l12-v2", // Mid-size alternative
+		"nomic-embed-text",                        // Ollama option
+		"text-embedding-3-small",                  // OpenAI baseline (small)
+		"text-embedding-3-large",                  // OpenAI baseline (large)
 	}
 
 	for _, modelName := range requiredModels {
