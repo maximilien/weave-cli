@@ -186,8 +186,8 @@ func TestEmbeddingPipeline_IsSupported(t *testing.T) {
 		modelName string
 		supported bool
 	}{
-		{"text-embedding-3-small", true},  // OpenAI - supported
-		{"text-embedding-3-large", true},  // OpenAI - supported
+		{"text-embedding-3-small", true}, // OpenAI - supported
+		{"text-embedding-3-large", true}, // OpenAI - supported
 	}
 
 	for _, tt := range tests {
@@ -266,4 +266,3 @@ func TestEmbeddingPipeline_ProcessBatch_NilDocs(t *testing.T) {
 		t.Errorf("Expected no error for nil docs, got: %v", err)
 	}
 }
-

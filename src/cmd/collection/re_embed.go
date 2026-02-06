@@ -17,8 +17,9 @@ import (
 
 // ReEmbedCmd represents the collection re-embed command
 var ReEmbedCmd = &cobra.Command{
-	Use:   "re-embed SOURCE_COLLECTION",
-	Short: "Re-embed collection with different embedding model",
+	Use:     "reembed SOURCE_COLLECTION",
+	Aliases: []string{"re-embed"},
+	Short:   "Re-embed collection with different embedding model",
 	Long: `Re-embed an existing collection using a different embedding model.
 
 This reads existing text chunks and generates new embeddings without
