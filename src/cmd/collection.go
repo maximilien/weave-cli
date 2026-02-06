@@ -31,4 +31,5 @@ func init() {
 	collectionCmd.AddCommand(collection.DeleteCmd)
 	collectionCmd.AddCommand(collection.DeleteAllCmd)
 	collectionCmd.AddCommand(collection.DeleteSchemaCmd)
+	collectionCmd.AddCommand(collection.ReEmbedCmd)
 }
