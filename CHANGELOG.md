@@ -105,16 +105,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Batch processing errors (skip and continue)
   - Output collection conflict detection
 
-### Known Issues
-
-- **CLI Command Registration Issue** 🐛
-  - Command compiled and symbols present in binary
-  - Not appearing in `weave collection --help` output
-  - Workaround: Direct function calls work, CLI visibility issue only
-  - Investigation shows init() executes and AddCommand() called
-  - May be related to Cobra command registration or build configuration
-  - Does not affect functionality, only CLI discoverability
-
 ### Provider Support
 
 - **Currently Supported**:
