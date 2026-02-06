@@ -43,75 +43,109 @@ func (m *MockVectorDBClient) ListDocuments(ctx context.Context, collectionName s
 
 // Implement other required interface methods as no-ops
 func (m *MockVectorDBClient) Health(ctx context.Context) error { return nil }
-func (m *MockVectorDBClient) CollectionExists(ctx context.Context, name string) (bool, error) { return true, nil }
-func (m *MockVectorDBClient) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error { return nil }
+func (m *MockVectorDBClient) CollectionExists(ctx context.Context, name string) (bool, error) {
+	return true, nil
+}
+func (m *MockVectorDBClient) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
+	return nil
+}
 func (m *MockVectorDBClient) DeleteCollection(ctx context.Context, name string) error { return nil }
-func (m *MockVectorDBClient) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) { return nil, nil }
-func (m *MockVectorDBClient) CreateDocument(ctx context.Context, collectionName string, doc *vectordb.Document) error { return nil }
-func (m *MockVectorDBClient) CreateDocuments(ctx context.Context, collectionName string, docs []*vectordb.Document) error { return nil }
-func (m *MockVectorDBClient) GetDocument(ctx context.Context, collectionName string, id string) (*vectordb.Document, error) { return nil, nil }
-func (m *MockVectorDBClient) UpdateDocument(ctx context.Context, collectionName string, doc *vectordb.Document) error { return nil }
-func (m *MockVectorDBClient) DeleteDocument(ctx context.Context, collectionName string, id string) error { return nil }
-func (m *MockVectorDBClient) DeleteDocuments(ctx context.Context, collectionName string, documentIDs []string) error { return nil }
-func (m *MockVectorDBClient) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}) error { return nil }
-func (m *MockVectorDBClient) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) { return nil, nil }
-func (m *MockVectorDBClient) SearchBM25(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) { return nil, nil }
-func (m *MockVectorDBClient) SearchHybrid(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) { return nil, nil }
-func (m *MockVectorDBClient) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) { return nil, nil }
-func (m *MockVectorDBClient) GetSchema(ctx context.Context, collectionName string) (*vectordb.CollectionSchema, error) { return nil, nil }
-func (m *MockVectorDBClient) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error { return nil }
-func (m *MockVectorDBClient) GetDefaultSchema(schemaType vectordb.SchemaType, collectionName string) *vectordb.CollectionSchema { return nil }
+func (m *MockVectorDBClient) ListCollections(ctx context.Context) ([]vectordb.CollectionInfo, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) CreateDocument(ctx context.Context, collectionName string, doc *vectordb.Document) error {
+	return nil
+}
+func (m *MockVectorDBClient) CreateDocuments(ctx context.Context, collectionName string, docs []*vectordb.Document) error {
+	return nil
+}
+func (m *MockVectorDBClient) GetDocument(ctx context.Context, collectionName string, id string) (*vectordb.Document, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) UpdateDocument(ctx context.Context, collectionName string, doc *vectordb.Document) error {
+	return nil
+}
+func (m *MockVectorDBClient) DeleteDocument(ctx context.Context, collectionName string, id string) error {
+	return nil
+}
+func (m *MockVectorDBClient) DeleteDocuments(ctx context.Context, collectionName string, documentIDs []string) error {
+	return nil
+}
+func (m *MockVectorDBClient) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}) error {
+	return nil
+}
+func (m *MockVectorDBClient) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) SearchBM25(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) SearchHybrid(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) SearchByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) GetSchema(ctx context.Context, collectionName string) (*vectordb.CollectionSchema, error) {
+	return nil, nil
+}
+func (m *MockVectorDBClient) UpdateSchema(ctx context.Context, collectionName string, schema *vectordb.CollectionSchema) error {
+	return nil
+}
+func (m *MockVectorDBClient) GetDefaultSchema(schemaType vectordb.SchemaType, collectionName string) *vectordb.CollectionSchema {
+	return nil
+}
 func (m *MockVectorDBClient) ValidateSchema(schema *vectordb.CollectionSchema) error { return nil }
 
 func TestNewCollectionReader(t *testing.T) {
 	tests := []struct {
-		name          string
-		client        vectordb.VectorDBClient
+		name           string
+		client         vectordb.VectorDBClient
 		collectionName string
-		batchSize     int
-		totalDocs     int64
-		shouldErr     bool
-		errContains   string
+		batchSize      int
+		totalDocs      int64
+		shouldErr      bool
+		errContains    string
 	}{
 		{
-			name:          "valid reader with custom batch size",
-			client:        &MockVectorDBClient{totalDocs: 100},
+			name:           "valid reader with custom batch size",
+			client:         &MockVectorDBClient{totalDocs: 100},
 			collectionName: "TestCollection",
-			batchSize:     50,
-			totalDocs:     100,
-			shouldErr:     false,
+			batchSize:      50,
+			totalDocs:      100,
+			shouldErr:      false,
 		},
 		{
-			name:          "valid reader with default batch size",
-			client:        &MockVectorDBClient{totalDocs: 200},
+			name:           "valid reader with default batch size",
+			client:         &MockVectorDBClient{totalDocs: 200},
 			collectionName: "TestCollection",
-			batchSize:     0, // Should default to 100
-			totalDocs:     200,
-			shouldErr:     false,
+			batchSize:      0, // Should default to 100
+			totalDocs:      200,
+			shouldErr:      false,
 		},
 		{
-			name:          "nil client",
-			client:        nil,
+			name:           "nil client",
+			client:         nil,
 			collectionName: "TestCollection",
-			batchSize:     100,
-			shouldErr:     true,
-			errContains:   "client cannot be nil",
+			batchSize:      100,
+			shouldErr:      true,
+			errContains:    "client cannot be nil",
 		},
 		{
-			name:          "empty collection name",
-			client:        &MockVectorDBClient{totalDocs: 100},
+			name:           "empty collection name",
+			client:         &MockVectorDBClient{totalDocs: 100},
 			collectionName: "",
-			batchSize:     100,
-			shouldErr:     true,
-			errContains:   "collection name cannot be empty",
+			batchSize:      100,
+			shouldErr:      true,
+			errContains:    "collection name cannot be empty",
 		},
 		{
-			name:          "error getting collection count",
-			client:        &MockVectorDBClient{totalDocs: 100, shouldErr: true},
+			name:           "error getting collection count",
+			client:         &MockVectorDBClient{totalDocs: 100, shouldErr: true},
 			collectionName: "TestCollection",
-			batchSize:     100,
-			shouldErr:     true,
-			errContains:   "failed to get collection count",
+			batchSize:      100,
+			shouldErr:      true,
+			errContains:    "failed to get collection count",
 		},
 	}
 
