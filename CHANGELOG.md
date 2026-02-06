@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Validates models before processing
 
 - **Command Syntax**:
+
   ```bash
   weave collection reembed SOURCE_COLLECTION \
     --new-embedding MODEL_NAME \
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Comparing model performance across datasets
 
 - **Examples**:
+
   ```bash
   # Re-embed with sentence-transformers (OSS)
   weave collection reembed MyCollection \
@@ -138,7 +140,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Files Added
 
-```
+```text
 src/pkg/reembedding/reader.go           (127 lines)
 src/pkg/reembedding/reader_test.go      (181 lines)
 src/pkg/reembedding/progress.go         (106 lines)
