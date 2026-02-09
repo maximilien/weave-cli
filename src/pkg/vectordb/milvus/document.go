@@ -151,8 +151,15 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 			}
 		}
 
-		// Generate embedding if LLM client is available and document has content
-		if a.llmClient != nil && (doc.Content != "" || doc.Text != "") {
+		// Use pre-generated embedding if available (from re-embedding providers)
+		if len(doc.Embedding) > 0 {
+			// Convert float64 to float32 for Milvus
+			mdoc.Embedding = make([]float32, len(doc.Embedding))
+			for j, v := range doc.Embedding {
+				mdoc.Embedding[j] = float32(v)
+			}
+		} else if a.llmClient != nil && (doc.Content != "" || doc.Text != "") {
+			// Generate embedding if LLM client is available and document has content
 			textToEmbed := doc.Content
 			if textToEmbed == "" {
 				textToEmbed = doc.Text

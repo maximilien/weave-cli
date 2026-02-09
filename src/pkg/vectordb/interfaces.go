@@ -16,6 +16,7 @@ type Document struct {
 	ImageData string                 `json:"image_data"`
 	URL       string                 `json:"url"`
 	Metadata  map[string]interface{} `json:"metadata"`
+	Embedding []float64              `json:"embedding,omitempty"` // Pre-generated embedding (optional)
 }
 
 // QueryOptions represents options for querying the vector database
