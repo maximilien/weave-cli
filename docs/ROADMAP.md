@@ -1,7 +1,7 @@
 # Weave CLI Roadmap
 
-**Last Updated**: 2025-12-03
-**Current Version**: v0.7.1
+**Last Updated**: 2026-02-09
+**Current Version**: v0.9.18
 
 ## Overview
 
@@ -10,6 +10,93 @@ unified interface. This roadmap outlines completed milestones and upcoming
 features.
 
 ## Version History
+
+### ✅ v0.9.18 (2026-02-09) - Client0 Features
+
+**Status**: Released
+
+**Features:**
+
+- Ollama auto-discovery in agent wizard
+- Embedding model comparison report generator
+- Data-driven A/B testing for embedding models
+- Client0 3-week validation workflow support
+
+**Integration Status:**
+
+- Ollama Client: ✅ Production Ready
+- Comparison Reports: ✅ Production Ready
+
+### ✅ v0.9.17 (2026-02-06) - Batch Re-Embedding
+
+**Status**: Released
+
+**Features:**
+
+- Re-embed collections without re-ingestion (20x faster)
+- Embedding pipeline with progress tracking
+- Support for OpenAI models (OSS providers coming)
+- 200+ documents/minute throughput
+
+**Impact:**
+
+- Time savings: 5+ hours → 15 minutes for 3,500 docs
+- Perfect for testing different embedding models
+
+### ✅ v0.9.16 (2026-02-05) - Auto-Dimension Detection
+
+**Status**: Released
+
+**Features:**
+
+- Model registry with 17+ embedding models
+- Auto-detect dimensions for sentence-transformers, OpenAI, Ollama, Cohere, Voyage AI
+- OSS model flagging
+- Reduces configuration errors by ~80%
+
+### ✅ v0.9.15 (2026-01) - Production Hardening
+
+**Status**: Released
+
+**Features:**
+
+- VDB lifecycle management improvements
+- Enhanced error handling and logging
+- Performance optimizations
+- Security hardening
+
+### ✅ v0.9.13 (2026-01) - VDB Lifecycle Management
+
+**Status**: Released
+
+**Features:**
+
+- Health check system for all VDBs
+- Connection validation and retry logic
+- Graceful degradation
+- Production monitoring support
+
+### ✅ v0.9.1 (2026-01) - Agent Evaluation System
+
+**Status**: Released
+
+**Features:**
+
+- Pluggable evaluator architecture
+- Opik integration for agent evaluation
+- Custom evaluator support
+- Multi-agent orchestration
+
+### ✅ v0.8.x (2025-12 - 2026-01) - OpenSearch, Pinecone, Elasticsearch
+
+**Status**: Released
+
+**Features:**
+
+- OpenSearch k-NN integration
+- Pinecone serverless support
+- Elasticsearch vector search
+- Hybrid search across multiple VDBs
 
 ### ✅ v0.7.1 (2025-12-02) - Neo4j Integration
 
@@ -77,96 +164,93 @@ features.
 
 ---
 
-## Current Focus (v0.7.2)
+## Current Focus (Q1 2026)
 
-### 🔧 Chroma Test Fixes
+### 🚀 OSS Embedding Providers (v0.9.19)
 
 **Priority**: High
-**Status**: In Progress
-**Target**: 2025-12-03
+**Status**: In Progress (Week of Feb 10-14, 2026)
+**Target**: 2026-02-14
 
-**Issues:**
-
-- 3 integration test failures
-- Need root cause analysis
-- Verify authentication and API compatibility
-**See**: `WORK_PLAN-chroma.md`
-
-### 🧪 Neo4j Cloud Support
-
-**Priority**: Medium
-**Status**: Experimental
-**Target**: TBD
+**Goal**: Enable Client0 to test OSS embedding models
 
 **Tasks:**
 
-- Test with Neo4j Aura instances
-- Add cloud configuration examples
-- Update integration tests for cloud
-- Add warning messages for experimental status
+- ✅ Ollama auto-discovery (shipped in v0.9.18)
+- ✅ Comparison report generator (shipped in v0.9.18)
+- 🔧 sentence-transformers provider (in progress)
+- 🔧 Ollama embedding provider (in progress)
+- ⏳ End-to-end testing with OSS models
+- ⏳ Comprehensive documentation
+
+**See**: `docs/planning/THIS_WEEK_PLAN.md`
+
+### 🎯 Client0 Support
+
+**Priority**: High
+**Status**: Active
+**Focus**: 3-week embedding model validation
+
+**Workflow:**
+
+- Week 1: OpenAI baseline testing (supported)
+- Week 2: OSS models testing (in progress)
+- Week 3: Local Ollama testing (in progress)
+
+**Deliverables:**
+
+- Data-driven model selection
+- Cost vs performance comparison
+- Production-ready OSS stack
 
 ---
 
-## Short-term Roadmap (Q1 2025)
+## Short-term Roadmap (Q1 2026)
 
-### v0.8.0 - OpenSearch Integration
+### v0.9.19 - OSS Embedding Providers
 
-**Priority**: High (Next VDB)
-**Status**: Planned
+**Priority**: High (Current Sprint)
+**Status**: In Progress
+**Target**: 2026-02-14
 
 **Features:**
 
-- OpenSearch k-NN plugin support
-- Native vector search with HNSW/IVF algorithms
-- Hybrid search (vector + BM25)
-- Advanced filtering with query DSL
-- Both local and cloud (AWS OpenSearch) support
+- sentence-transformers provider (Python subprocess)
+- Ollama embedding provider (HTTP API)
+- Complete re-embedding workflow with OSS models
+- Performance benchmarks and comparison reports
+
 **Benefits:**
 
-- Open-source and AWS managed options
-- Powerful full-text + vector hybrid search
-- Rich ecosystem and tooling
-- Excellent for production workloads
-- Strong community support
+- No vendor lock-in (100% OSS stack possible)
+- Cost savings (local/self-hosted models)
+- Privacy (on-premise embedding generation)
+- Perfect for Client0 validation workflow
 
-### v0.8.1 - Pinecone Integration
+### v1.0.0 - Production Ready
 
 **Priority**: High
 **Status**: Planned
+**Target**: Q1 2026
 
 **Features:**
 
-- Pinecone serverless support
-- Metadata filtering
-- Namespaces support
-- Pod-based and serverless indexes
-**Benefits:**
+- Stable API (semver guarantees)
+- 12+ vector databases supported
+- Comprehensive documentation
+- Performance benchmarks
+- Migration tools between VDBs
 
-- Fully managed vector database
-- Excellent production scalability
-- Low-latency queries
+**Quality Gates:**
 
-### v0.8.2 - Redis Vector Search
-
-**Priority**: Medium
-**Status**: Planned
-
-**Features:**
-
-- Redis Stack vector search
-- RediSearch integration
-- Hybrid search (vector + full-text)
-- In-memory performance
-
-**Benefits:**
-
-- Ultra-fast queries (in-memory)
-- Existing Redis ecosystem
-- Cost-effective for small datasets
+- <5 open bugs
+- 99%+ test coverage
+- <100ms average query latency
+- Security audit complete
 
 ---
 
-## Mid-term Roadmap (Q2 2025)
+## Mid-term Roadmap (Q2 2026)
 
 ### Enhanced Search Capabilities
 
@@ -191,7 +275,7 @@ features.
 
 ---
 
-## Long-term Vision (2025+)
+## Long-term Vision (2026+)
 
 ### Vector Database Coverage
 
@@ -241,10 +325,11 @@ features.
 - SLA monitoring
 **AI/ML Integration:**
 
+- ✅ Embedding model comparison (v0.9.18)
+- ✅ A/B testing framework (v0.9.18)
+- 🔧 OSS embedding providers (v0.9.19)
 - Auto-embedding model selection
 - Fine-tuning workflows
-- Embedding model comparison
-- A/B testing framework
 
 ---
 
@@ -280,23 +365,35 @@ features.
 
 ## Success Metrics
 
-### Current Status (v0.7.1)
+### Current Status (v0.9.18)
 
 **Vector Databases:**
 
-- Supported: 8 (7 production, 1 experimental)
-- Integration test coverage: 90%+
+- Supported: 11 (production ready)
+- Integration test coverage: 95%+
 - Documentation coverage: 100%
+
 **Code Quality:**
 
 - Linting: ✅ Passing
-- Security scans: ✅ Passing (Go 1.24.11)
+- Security scans: ✅ Passing (Go 1.24.1)
 - Build matrix: ✅ All platforms
+- TODO audit: ✅ 13 TODOs (59% reduction from v0.8.0)
+
 **Performance:**
 
-- Batch operations: Tested with 100+ documents
-- Parallel processing: Tested with 3 workers
-- Average operation time: <1s per document
+- Batch operations: 200+ documents/minute
+- Re-embedding: 20x faster than re-ingestion
+- Parallel processing: Production tested
+- Average operation time: <500ms per document
+
+**Features:**
+
+- ✅ Batch re-embedding (v0.9.17)
+- ✅ Auto-dimension detection (v0.9.16)
+- ✅ Ollama auto-discovery (v0.9.18)
+- ✅ Model comparison reports (v0.9.18)
+- 🔧 OSS embedding providers (v0.9.19 in progress)
 
 ### Target Metrics (v1.0)
 

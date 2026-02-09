@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.18] - 2026-02-09
+
+### Added - Client0 Features 🎉
+
+- **Issue #7: Ollama Auto-Discovery**
+  - Automatically discovers local Ollama embedding models
+  - Integrates into `weave config agents` wizard
+  - Shows setup instructions if Ollama not found
+  - Lists available models with dimensions
+  - Helpful error messages guide users to install Ollama
+
+- **Issue #9: Embedding Model Comparison Reports**
+  - Compare search quality across 2+ collections with different embedding models
+  - New `weave collection compare` command
+  - Generate markdown or JSON reports
+  - Shows relevance scores, document rankings, and latency per collection
+  - Perfect for A/B testing embedding models and making data-driven decisions
+
+- **Command Examples**:
+
+  ```bash
+  # Discover Ollama models
+  weave config agents
+  # Output: Found 2 local embedding model(s):
+  #   • nomic-embed-text:latest (768d)
+  #   • mxbai-embed-large:latest (1024d)
+
+  # Compare collections with different models
+  weave collection compare \
+    AuctionListings_OpenAI \
+    AuctionListings_OSS \
+    --query "vintage cameras" \
+    --query "auction results 2024" \
+    --top-k 10 \
+    --report comparison.md
+  ```
+
+### Architecture
+
+- **Ollama Client** (`src/pkg/ollama/client.go`):
+  - HTTP client for Ollama API
+  - Model discovery via `/api/tags` endpoint
+  - Known embedding models: nomic-embed-text (768d), mxbai-embed-large (1024d), snowflake-arctic-embed (1024d)
+  - Graceful error handling with setup instructions
+
+- **Comparison Report Generator** (`src/cmd/collection/compare.go`):
+  - Runs test queries across multiple collections
+  - Calculates average relevance scores and latency
+  - Supports markdown and JSON output formats
+  - Sortable results by performance metrics
+
+### Testing
+
+- **Ollama Client**: 5 unit tests (all passing)
+  - Mock HTTP server for testing
+  - Model discovery and filtering
+  - Availability detection
+
+- **Comparison Reports**: Integration tested with multiple collections
+  - Query execution across collections
+  - Report generation (markdown/JSON)
+  - Performance metric calculation
+
+### Client0 Workflow Integration
+
+Enables 3-week embedding model validation:
+- **Week 1**: OpenAI baseline testing
+- **Week 2**: OSS model testing (sentence-transformers)
+- **Week 3**: Local Ollama testing
+- **Result**: Data-driven model selection with comparison reports
+
+### Files Added
+
+```text
+src/pkg/ollama/client.go              (133 lines)
+src/pkg/ollama/client_test.go         (154 lines)
+src/cmd/collection/compare.go         (384 lines)
+```
+
+**Total**: ~671 lines of implementation + tests
+
 ## [0.9.17] - 2026-02-06
 
 ### Added - Batch Re-Embedding Feature 🚀
