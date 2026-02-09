@@ -4,12 +4,15 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 	configpkg "github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/ollama"
 	"github.com/spf13/cobra"
 )
 
@@ -100,6 +103,9 @@ func runConfigAgents(cmd *cobra.Command, args []string) {
 		printError(fmt.Sprintf("Failed to create weave-agents.yaml: %v", err))
 		os.Exit(1)
 	}
+
+	// Discover Ollama models
+	discoverOllamaModels()
 
 	// Success message
 	fmt.Println()
@@ -335,4 +341,53 @@ features:
 
 	color.New(color.FgGreen, color.Bold).Printf("✅ Successfully created %s\n", agentsFile)
 	return nil
+}
+
+// discoverOllamaModels discovers available Ollama embedding models
+func discoverOllamaModels() {
+	fmt.Println()
+	color.New(color.FgCyan).Println("🔍 Discovering local Ollama models...")
+
+	client := ollama.NewClient("")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	// Check if Ollama is available
+	if !client.IsAvailable(ctx) {
+		color.New(color.FgYellow).Println("⚠️  Ollama not detected (server not running at http://localhost:11434)")
+		fmt.Println()
+		color.New(color.FgCyan).Println("💡 To use local Ollama embeddings:")
+		fmt.Println("  1. Install Ollama: https://ollama.ai")
+		fmt.Println("  2. Start Ollama server")
+		fmt.Println("  3. Pull embedding model: ollama pull nomic-embed-text")
+		return
+	}
+
+	// Discover embedding models
+	embeddings, err := client.DiscoverEmbeddingModels(ctx)
+	if err != nil {
+		color.New(color.FgYellow).Printf("⚠️  Failed to discover Ollama models: %v\n", err)
+		return
+	}
+
+	if len(embeddings) == 0 {
+		color.New(color.FgYellow).Println("⚠️  No embedding models found")
+		fmt.Println()
+		color.New(color.FgCyan).Println("💡 To add embedding models:")
+		fmt.Println("  ollama pull nomic-embed-text    # 768 dimensions, fast")
+		fmt.Println("  ollama pull mxbai-embed-large   # 1024 dimensions, accurate")
+		return
+	}
+
+	// Display discovered models
+	color.New(color.FgGreen).Printf("✓ Found %d local embedding model(s):\n", len(embeddings))
+	for _, em := range embeddings {
+		fmt.Printf("  • %s (%dd)\n", em.Name, em.Dimensions)
+	}
+
+	fmt.Println()
+	color.New(color.FgCyan).Println("💡 To use Ollama embeddings in re-embedding:")
+	if len(embeddings) > 0 {
+		fmt.Printf("  weave collection reembed SOURCE --new-embedding %s --output TARGET\n", embeddings[0].Name)
+	}
 }
