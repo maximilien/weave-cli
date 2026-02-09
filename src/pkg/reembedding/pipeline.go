@@ -58,6 +58,11 @@ func (p *EmbeddingPipeline) ProcessBatch(ctx context.Context, docs []*vectordb.D
 		return nil
 	}
 
+	// Check if provider is available
+	if p.embProvider == nil {
+		return fmt.Errorf("embedding provider not initialized")
+	}
+
 	// Collect texts from documents
 	texts := make([]string, 0, len(docs))
 	for _, doc := range docs {
