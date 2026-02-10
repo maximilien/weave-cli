@@ -178,7 +178,6 @@ embedding providers - 100% free, local alternatives to OpenAI.
 
 **What You'll Learn**:
 
-
 - ✅ How to install OSS embedding providers
 - ✅ How to re-embed collections with free models
 - ✅ How to compare OpenAI vs OSS quality
