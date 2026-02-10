@@ -217,10 +217,14 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	// Count embeddings with actual data vs zero vectors
 	nonZeroCount := 0
 	zeroCount := 0
+	actualDimensions := 0
 	for _, emb := range embeddings {
 		if emb == nil {
 			fmt.Fprintf(os.Stderr, "DEBUG: Found nil embedding!\n")
 			continue
+		}
+		if actualDimensions == 0 && len(emb) > 0 {
+			actualDimensions = len(emb)
 		}
 		isZero := true
 		for _, v := range emb {
@@ -236,6 +240,16 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		}
 	}
 	fmt.Fprintf(os.Stderr, "DEBUG: Non-zero embeddings: %d, Zero vectors: %d\n", nonZeroCount, zeroCount)
+	fmt.Fprintf(os.Stderr, "DEBUG: Config dimensions: %d, Actual embedding dimensions: %d\n", a.config.VectorDimensions, actualDimensions)
+
+	// CRITICAL FIX: Use actual embedding dimensions, not config dimensions
+	// The config dimensions are from the original collection, but we may be re-embedding
+	// with a different model that has different dimensions (e.g., 768 vs 1536)
+	vectorDimensions := a.config.VectorDimensions
+	if actualDimensions > 0 && actualDimensions != a.config.VectorDimensions {
+		fmt.Fprintf(os.Stderr, "DEBUG: Dimension mismatch! Using actual: %d (config was: %d)\n", actualDimensions, a.config.VectorDimensions)
+		vectorDimensions = actualDimensions
+	}
 
 	// Prepare column data for batch insertion
 	columns := []entity.Column{
@@ -245,7 +259,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		entity.NewColumnVarChar(FieldImage, images),
 		entity.NewColumnJSONBytes(FieldImageData, imageDatas), // JSON field supports large base64 images
 		entity.NewColumnVarChar(FieldURL, urls),
-		entity.NewColumnFloatVector(FieldEmbedding, a.config.VectorDimensions, embeddings),
+		entity.NewColumnFloatVector(FieldEmbedding, vectorDimensions, embeddings),
 		entity.NewColumnJSONBytes(FieldMetadata, metadatas),
 		entity.NewColumnInt64(FieldCreatedAt, createdAts),
 		entity.NewColumnInt64(FieldUpdatedAt, updatedAts),
