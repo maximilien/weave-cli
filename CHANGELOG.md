@@ -7,6 +7,62 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - OSS Embedding Providers 🌟
+
+- **sentence-transformers Provider**
+  - Python subprocess integration for OSS embeddings
+  - Batch embedding support
+  - Models: all-mpnet-base-v2 (768d), all-MiniLM-L6-v2 (384d), all-MiniLM-L12-v2 (384d)
+  - No API key required - 100% local and free
+
+- **Ollama Provider**
+  - HTTP API integration for local LLM embeddings
+  - Models: nomic-embed-text (768d), mxbai-embed-large (1024d), snowflake-arctic-embed (1024d)
+  - Auto-discovery from `weave config agents` (v0.9.18)
+  - Works with local Ollama server
+
+- **Provider Architecture**
+  - Pluggable `EmbeddingProvider` interface
+  - Factory auto-detection based on model name
+  - Pre-generated embeddings passed to VDB (no regeneration)
+  - Graceful error messages with setup instructions
+
+**Command Examples**:
+
+```bash
+# Re-embed with sentence-transformers (OSS)
+weave collection reembed MyCollection \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output MyCollection_OSS
+
+# Re-embed with Ollama (local)
+weave collection reembed MyCollection \
+  --new-embedding nomic-embed-text \
+  --output MyCollection_Ollama
+```
+
+**Client0 3-Week Validation**: Now fully supported
+- Week 1: OpenAI baseline ✅
+- Week 2: OSS models (sentence-transformers) ✅
+- Week 3: Local Ollama ✅
+
+### Architecture
+
+- `providers/provider.go` - Common interface (4 methods)
+- `providers/sentence_transformers.go` - Python subprocess bridge
+- `providers/ollama.go` - HTTP API client
+- `providers/openai.go` - OpenAI wrapper
+- `providers/factory.go` - Auto-detection and creation
+- Updated `Document` struct with optional `Embedding` field
+- VDB adapters check for pre-generated embeddings first
+
+### Testing
+
+- 28 unit tests passing
+- Integration scenarios validated
+- Provider availability checks
+- Performance benchmarks maintained
+
 ## [0.9.18] - 2026-02-09
 
 ### Added - Client0 Features 🎉

@@ -42,7 +42,12 @@ func CreateProvider(ctx context.Context, modelName string) (EmbeddingProvider, e
 		}
 
 	case "ollama":
-		return nil, fmt.Errorf("Ollama provider not yet implemented (coming in v0.9.19)")
+		// Strip ollama/ prefix if present
+		modelName = strings.TrimPrefix(modelName, "ollama/")
+		provider, err = NewOllamaProvider(modelName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Ollama provider: %w", err)
+		}
 
 	default:
 		return nil, fmt.Errorf("unsupported embedding provider: %s", info.Provider)
