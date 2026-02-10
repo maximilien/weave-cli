@@ -12,12 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **sentence-transformers Provider**
   - Python subprocess integration for OSS embeddings
   - Batch embedding support
-  - Models: all-mpnet-base-v2 (768d), all-MiniLM-L6-v2 (384d), all-MiniLM-L12-v2 (384d)
+  - Models: all-mpnet-base-v2 (768d), all-MiniLM-L6-v2 (384d),
+    all-MiniLM-L12-v2 (384d)
   - No API key required - 100% local and free
 
 - **Ollama Provider**
   - HTTP API integration for local LLM embeddings
-  - Models: nomic-embed-text (768d), mxbai-embed-large (1024d), snowflake-arctic-embed (1024d)
+  - Models: nomic-embed-text (768d), mxbai-embed-large (1024d),
+    snowflake-arctic-embed (1024d)
   - Auto-discovery from `weave config agents` (v0.9.18)
   - Works with local Ollama server
 
@@ -42,6 +44,7 @@ weave collection reembed MyCollection \
 ```
 
 **Client0 3-Week Validation**: Now fully supported
+
 - Week 1: OpenAI baseline ✅
 - Week 2: OSS models (sentence-transformers) ✅
 - Week 3: Local Ollama ✅
@@ -105,7 +108,8 @@ weave collection reembed MyCollection \
 - **Ollama Client** (`src/pkg/ollama/client.go`):
   - HTTP client for Ollama API
   - Model discovery via `/api/tags` endpoint
-  - Known embedding models: nomic-embed-text (768d), mxbai-embed-large (1024d), snowflake-arctic-embed (1024d)
+  - Known embedding models: nomic-embed-text (768d),
+    mxbai-embed-large (1024d), snowflake-arctic-embed (1024d)
   - Graceful error handling with setup instructions
 
 - **Comparison Report Generator** (`src/cmd/collection/compare.go`):
@@ -129,6 +133,7 @@ weave collection reembed MyCollection \
 ### Client0 Workflow Integration
 
 Enables 3-week embedding model validation:
+
 - **Week 1**: OpenAI baseline testing
 - **Week 2**: OSS model testing (sentence-transformers)
 - **Week 3**: Local Ollama testing
