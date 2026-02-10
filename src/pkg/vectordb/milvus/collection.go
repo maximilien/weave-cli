@@ -6,6 +6,7 @@ package milvus
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
@@ -44,9 +45,15 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 	}
 
 	// Build Milvus schema with explicit fields using builder pattern
+	// Store vectorizer in description so we can retrieve it later for queries
+	description := fmt.Sprintf("Collection %s for vector search", name)
+	if schema != nil && schema.Vectorizer != "" {
+		description = fmt.Sprintf("%s | vectorizer=%s", description, schema.Vectorizer)
+	}
+
 	milvusSchema := &entity.Schema{
 		CollectionName: name,
-		Description:    fmt.Sprintf("Collection %s for vector search", name),
+		Description:    description,
 		AutoID:         false, // We provide our own document IDs
 		Fields: []*entity.Field{
 			// Primary key field
@@ -236,12 +243,18 @@ func (c *Client) GetSchema(ctx context.Context, name string) (*vectordb.Collecti
 		return nil, fmt.Errorf("Milvus: failed to get collection schema: %w", err)
 	}
 
-	// Find embedding field to get vectorizer info
-	var vectorizer string
-	for _, field := range coll.Schema.Fields {
-		if field.Name == FieldEmbedding {
-			vectorizer = "text-embedding-3-small" // Default, we don't store this in schema
-			break
+	// Parse vectorizer from collection description
+	// Format: "Collection X for vector search | vectorizer=MODEL_NAME"
+	vectorizer := "text-embedding-3-small" // Default fallback
+	if desc := coll.Schema.Description; desc != "" {
+		// Look for "vectorizer=" pattern in description
+		if idx := strings.Index(desc, "vectorizer="); idx != -1 {
+			// Extract everything after "vectorizer="
+			vectorizer = desc[idx+len("vectorizer="):]
+			// Remove any trailing text (shouldn't be any, but be safe)
+			if endIdx := strings.IndexAny(vectorizer, " |"); endIdx != -1 {
+				vectorizer = vectorizer[:endIdx]
+			}
 		}
 	}
 

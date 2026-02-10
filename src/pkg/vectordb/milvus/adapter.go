@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
+	"github.com/maximilien/weave-cli/src/pkg/reembedding/providers"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -81,4 +82,9 @@ func (a *Adapter) Close() error {
 		return a.Client.Close()
 	}
 	return nil
+}
+
+// createEmbeddingProvider creates an embedding provider for the given model
+func (a *Adapter) createEmbeddingProvider(ctx context.Context, modelName string) (providers.EmbeddingProvider, error) {
+	return providers.CreateProvider(ctx, modelName)
 }

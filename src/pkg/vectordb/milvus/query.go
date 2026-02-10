@@ -15,18 +15,48 @@ import (
 
 // SearchSemantic performs semantic search using Milvus vector search
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	// Check if LLM client is available for embedding generation
-	if a.llmClient == nil {
-		return nil, fmt.Errorf("Milvus: SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
-	}
-
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
-	// Generate embedding for query using LLM client
-	queryEmbedding64, err := a.llmClient.GenerateEmbedding(ctx, query, "")
+	// Get collection schema to determine embedding model
+	schema, err := a.Client.GetSchema(ctx, collectionName)
 	if err != nil {
-		return nil, fmt.Errorf("Milvus: failed to generate query embedding: %w", err)
+		return nil, fmt.Errorf("Milvus: failed to get collection schema: %w", err)
+	}
+
+	embeddingModel := schema.Vectorizer
+	if embeddingModel == "" {
+		embeddingModel = "text-embedding-3-small" // Fallback default
+	}
+
+	// Generate query embedding using collection's embedding model
+	var queryEmbedding64 []float64
+
+	// Check if this is an OpenAI model
+	isOpenAI := embeddingModel == "text-embedding-3-small" ||
+		embeddingModel == "text-embedding-3-large" ||
+		embeddingModel == "text-embedding-ada-002"
+
+	if isOpenAI {
+		// Use LLM client for OpenAI models
+		if a.llmClient == nil {
+			return nil, fmt.Errorf("Milvus: SearchSemantic requires OpenAI API key for OpenAI embedding models. Please set OPENAI_API_KEY environment variable")
+		}
+		queryEmbedding64, err = a.llmClient.GenerateEmbedding(ctx, query, "")
+		if err != nil {
+			return nil, fmt.Errorf("Milvus: failed to generate query embedding: %w", err)
+		}
+	} else {
+		// Use embedding provider factory for OSS models (sentence-transformers, Ollama, etc.)
+		provider, err := a.createEmbeddingProvider(ctx, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("Milvus: failed to create embedding provider for model '%s': %w", embeddingModel, err)
+		}
+
+		queryEmbedding64, err = provider.GenerateEmbedding(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("Milvus: failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
 	}
 
 	// Convert float64 to float32 for Milvus
