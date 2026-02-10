@@ -87,11 +87,18 @@ func (p *EmbeddingPipeline) ProcessBatch(ctx context.Context, docs []*vectordb.D
 
 	// Validate and store embeddings in documents
 	for i, doc := range docs {
-		if doc == nil || texts[i] == "" {
+		if doc == nil {
 			continue
 		}
 
 		embedding := embeddings[i]
+
+		// Handle empty text -> create zero vector of correct dimensions
+		if texts[i] == "" || len(embedding) == 0 {
+			// Create zero vector for empty/nil embeddings
+			doc.Embedding = make([]float64, p.dimensions)
+			continue
+		}
 
 		// Validate embedding dimensions
 		if len(embedding) != p.dimensions {
