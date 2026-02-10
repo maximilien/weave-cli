@@ -149,9 +149,11 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 
 **Duration**: ~8 minutes
 
-**Description**: Comprehensive demonstration of OSS (Open Source Software) embedding providers - 100% free, local alternatives to OpenAI.
+**Description**: Comprehensive demonstration of OSS (Open Source Software)
+embedding providers - 100% free, local alternatives to OpenAI.
 
 **Topics**:
+
 - Prerequisites check (Python, sentence-transformers, Ollama)
 - Creating baseline collection with OpenAI embeddings
 - Re-embedding with sentence-transformers (local Python)
@@ -162,17 +164,21 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 - Performance benchmarks
 
 **Run**:
+
 ```bash
 ./demos/oss-embeddings-demo.sh
 ```
 
 **Prerequisites**:
+
 - Python 3.8+ with pip
 - `pip install sentence-transformers` (prompted if missing)
-- Ollama installed (optional): https://ollama.ai
+- Ollama installed (optional): <https://ollama.ai>
 - Vector database configured (Milvus local by default)
 
 **What You'll Learn**:
+
+
 - ✅ How to install OSS embedding providers
 - ✅ How to re-embed collections with free models
 - ✅ How to compare OpenAI vs OSS quality
@@ -189,9 +195,11 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 
 **Duration**: ~6 minutes
 
-**Description**: 3-way performance benchmark comparing OpenAI vs sentence-transformers vs Ollama embeddings with detailed metrics.
+**Description**: 3-way performance benchmark comparing OpenAI vs
+sentence-transformers vs Ollama embeddings with detailed metrics.
 
 **Topics**:
+
 - Automated prerequisites check
 - Parallel re-embedding with all available providers
 - Performance timing (speed benchmarks)
@@ -201,19 +209,22 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 - Actionable recommendations
 
 **Run**:
+
 ```bash
 ./demos/embedding-comparison-demo.sh
 ```
 
 **Prerequisites**:
+
 - At least 2 of 3 providers configured:
   - OpenAI: `OPENAI_API_KEY` environment variable
   - sentence-transformers: `pip install sentence-transformers`
   - Ollama: `ollama pull nomic-embed-text`
 
 **Output**:
-- `/tmp/weave-comparison-YYYYMMDD-HHMMSS/comparison-report.md` - Quality metrics
-- `/tmp/weave-comparison-YYYYMMDD-HHMMSS/performance-metrics.txt` - Speed & cost
+
+- `/tmp/weave-comparison-YYYYMMDD-HHMMSS/comparison-report.md` - Quality
+- `/tmp/weave-comparison-YYYYMMDD-HHMMSS/performance-metrics.txt` - Speed
 
 **Use Case**: Data-driven decision making for embedding provider selection
 

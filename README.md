@@ -85,7 +85,8 @@ weave collection compare MyCollection MyCollection_OSS \
   --report comparison.md
 ```
 
-**Performance:** OSS models often achieve 90%+ quality retention vs OpenAI at 100% cost savings!
+**Performance:** OSS models often achieve 90%+ quality retention vs OpenAI
+at 100% cost savings!
 
 📖 **See [OSS Embedding Testing Guide](docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)
 for setup, troubleshooting, and benchmarks**

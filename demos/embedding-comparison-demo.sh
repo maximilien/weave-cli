@@ -94,8 +94,8 @@ echo -e "${CYAN}Providers available: ${#PROVIDERS_AVAILABLE[@]}/3${NC}"
 
 if [ ${#PROVIDERS_AVAILABLE[@]} -lt 2 ]; then
     echo -e "${RED}Error: Need at least 2 providers for comparison${NC}"
-    echo "Available: ${PROVIDERS_AVAILABLE[@]}"
-    echo "Skipped: ${PROVIDERS_SKIPPED[@]}"
+    echo "Available: ${PROVIDERS_AVAILABLE[*]}"
+    echo "Skipped: ${PROVIDERS_SKIPPED[*]}"
     exit 1
 fi
 
@@ -200,7 +200,7 @@ for provider in "${PROVIDERS_AVAILABLE[@]}"; do
 
     # Time the re-embedding
     START_TIME=$(date +%s)
-    START_TIMES+=($START_TIME)
+    START_TIMES+=("$START_TIME")
 
     $WEAVE_BIN collection reembed "$BASE_COLLECTION" \
         --new-embedding "$MODEL" \
@@ -208,7 +208,7 @@ for provider in "${PROVIDERS_AVAILABLE[@]}"; do
         $VDB_FLAG
 
     END_TIME=$(date +%s)
-    END_TIMES+=($END_TIME)
+    END_TIMES+=("$END_TIME")
 
     DURATION=$((END_TIME - START_TIME))
     echo -e "${GREEN}✓ Completed in ${DURATION}s${NC}"
@@ -251,7 +251,7 @@ echo ""
 REPORT_FILE="$REPORT_DIR/comparison-report.md"
 
 # Build collection list for compare command
-COMPARE_COLLECTIONS="${COLLECTIONS[@]}"
+COMPARE_COLLECTIONS="${COLLECTIONS[*]}"
 
 # Build query arguments
 QUERY_ARGS=""
@@ -327,7 +327,7 @@ Quality Metrics:
 Cost Analysis:
 EOF
 
-if [[ " ${PROVIDERS_AVAILABLE[@]} " =~ " openai " ]]; then
+if [[ " ${PROVIDERS_AVAILABLE[*]} " =~ " openai " ]]; then
     cat >> "$PERF_FILE" << EOF
   • OpenAI: ~\$0.02 per 1M tokens
   • OSS Providers: \$0.00 (100% free)
@@ -361,7 +361,7 @@ if [ ${#PROVIDERS_AVAILABLE[@]} -eq 3 ]; then
     echo -e "${GREEN}✓ All 3 providers tested successfully${NC}"
 elif [ ${#PROVIDERS_AVAILABLE[@]} -eq 2 ]; then
     echo -e "${YELLOW}⚠ 2 of 3 providers tested${NC}"
-    echo "  Skipped: ${PROVIDERS_SKIPPED[@]}"
+    echo "  Skipped: ${PROVIDERS_SKIPPED[*]}"
 fi
 
 echo ""
