@@ -143,6 +143,46 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 
 ---
 
+### 🌟 OSS Embeddings Demo (NEW)
+
+**File**: `oss-embeddings-demo.sh`
+
+**Duration**: ~8 minutes
+
+**Description**: Comprehensive demonstration of OSS (Open Source Software) embedding providers - 100% free, local alternatives to OpenAI.
+
+**Topics**:
+- Prerequisites check (Python, sentence-transformers, Ollama)
+- Creating baseline collection with OpenAI embeddings
+- Re-embedding with sentence-transformers (local Python)
+- Re-embedding with Ollama (local HTTP API)
+- Generating comparison reports
+- Quality metrics (90%+ retention vs OpenAI)
+- Cost savings ($0 vs OpenAI)
+- Performance benchmarks
+
+**Run**:
+```bash
+./demos/oss-embeddings-demo.sh
+```
+
+**Prerequisites**:
+- Python 3.8+ with pip
+- `pip install sentence-transformers` (prompted if missing)
+- Ollama installed (optional): https://ollama.ai
+- Vector database configured (Milvus local by default)
+
+**What You'll Learn**:
+- ✅ How to install OSS embedding providers
+- ✅ How to re-embed collections with free models
+- ✅ How to compare OpenAI vs OSS quality
+- ✅ Cost savings: 100% free local embeddings
+- ✅ Performance: Often faster than OpenAI!
+
+**For More Details**: See [OSS Embedding Testing Guide](../docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)
+
+---
+
 ### 🤖 REPL Demo
 
 **File**: `repl-demo.sh`

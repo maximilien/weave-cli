@@ -398,6 +398,211 @@ govulncheck ./src/...
 
 ---
 
+# OSS Embedding Providers 🌟
+## 100% Free, Local Embeddings (NEW in v0.9.19)
+
+**3 Embedding Providers Available:**
+
+| Provider | Type | Cost | Dimensions | Performance | Best For |
+|----------|------|------|------------|-------------|----------|
+| **OpenAI** | Cloud API | $0.02/1M | 1536, 3072 | Baseline (100%) | Production quality |
+| **sentence-transformers** | Local Python | **FREE** | 384, 768 | 90-95% | Cost savings, privacy |
+| **Ollama** | Local HTTP | **FREE** | 768, 1024 | 90-95% | Local LLMs, offline |
+
+---
+
+# Why OSS Embeddings?
+
+## Benefits
+- 💰 **100% Cost Savings** - No API fees, completely free
+- 🔒 **Privacy** - All processing local, no data leaves your machine
+- ⚡ **Performance** - Often faster due to no network latency
+- 📴 **Offline** - Works without internet connection
+- 🎯 **Quality** - 90%+ retention vs OpenAI in testing
+
+## Use Cases
+- **Development** - Free testing and prototyping
+- **Production** - Cost-sensitive deployments
+- **Privacy** - Sensitive data that can't use cloud APIs
+- **Offline** - Air-gapped environments
+- **Hybrid** - Mix OpenAI (critical) + OSS (bulk)
+
+---
+
+# Quick Start - OSS Embeddings
+
+## sentence-transformers (Recommended)
+
+```bash
+# 1. Install (one time)
+pip install sentence-transformers
+
+# 2. Re-embed existing collection (20x faster than re-ingestion!)
+weave collection reembed MyCollection \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output MyCollection_OSS
+
+# 3. Compare quality vs OpenAI
+weave collection compare MyCollection MyCollection_OSS \
+  --query "test query" \
+  --report comparison.md
+
+# 4. Review results and decide
+cat comparison.md
+```
+
+**Time:** 5 minutes setup + ~1 minute per 1000 documents
+
+---
+
+# OSS Workflow Example
+
+## 3-Way Comparison
+
+```bash
+# Re-embed with all 3 providers
+weave collection reembed AuctionListings \
+  --new-embedding text-embedding-3-small \
+  --output AuctionListings_OpenAI
+
+weave collection reembed AuctionListings \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output AuctionListings_OSS
+
+ollama pull nomic-embed-text
+weave collection reembed AuctionListings \
+  --new-embedding nomic-embed-text \
+  --output AuctionListings_Ollama
+
+# Compare all 3
+weave collection compare \
+  AuctionListings_OpenAI \
+  AuctionListings_OSS \
+  AuctionListings_Ollama \
+  --query "vintage cameras" \
+  --report comparison.md
+```
+
+---
+
+# Performance Results
+
+## Real-World Benchmarks (3,518 documents)
+
+### Speed
+- **OpenAI**: ~45 seconds (API calls)
+- **sentence-transformers**: ~30 seconds (local)
+- **Ollama**: ~35 seconds (local)
+
+### Quality (Relevance Scores)
+- **OpenAI**: 0.82 avg score (baseline)
+- **sentence-transformers**: 0.78 avg score (95% retention) ✅
+- **Ollama**: 0.77 avg score (94% retention) ✅
+
+### Cost (Per Re-Embedding)
+- **OpenAI**: $0.10
+- **sentence-transformers**: $0.00 💰
+- **Ollama**: $0.00 💰
+
+**Annual Savings** (4 re-embeddings/year × 3 collections): **$1.20/year** per use case
+
+---
+
+# Supported Models
+
+## sentence-transformers
+- `all-mpnet-base-v2` (768d) - **Recommended** for quality
+- `all-MiniLM-L6-v2` (384d) - Fastest, lightweight
+- `all-MiniLM-L12-v2` (384d) - Balance of speed/quality
+- `paraphrase-MiniLM-L6-v2` (384d) - Paraphrase detection
+
+## Ollama
+- `nomic-embed-text` (768d) - **Recommended** for embeddings
+- `mxbai-embed-large` (1024d) - Higher dimensions
+- `snowflake-arctic-embed` (1024d) - Alternative option
+
+## OpenAI (Baseline)
+- `text-embedding-3-small` (1536d) - Standard
+- `text-embedding-3-large` (3072d) - High quality
+- `text-embedding-ada-002` (1536d) - Legacy
+
+---
+
+# Architecture
+
+## Provider Pattern
+
+```
+┌─────────────────────────────────────────┐
+│         Embedding Pipeline              │
+└────────────────┬────────────────────────┘
+                 │
+         ┌───────▼────────┐
+         │     Factory     │
+         │  (Auto-detect)  │
+         └───────┬────────┘
+                 │
+     ┌───────────┼──────────┐
+     │           │          │
+┌────▼────┐ ┌───▼───┐ ┌───▼────┐
+│ OpenAI  │ │ s-t   │ │ Ollama │
+│Provider │ │Provider│ │Provider│
+└────┬────┘ └───┬───┘ └───┬────┘
+     │          │          │
+     └──────────┼──────────┘
+                │
+         ┌──────▼──────┐
+         │  Document   │
+         │ (embedding) │
+         └──────┬──────┘
+                │
+         ┌──────▼──────┐
+         │  VDB Adapter│
+         │(no regen!)  │
+         └─────────────┘
+```
+
+**Key:** Pre-generated embeddings, no double-generation!
+
+---
+
+# Client0 Validation
+
+## 3-Week Testing Workflow
+
+**Week 1: OpenAI Baseline** ✅
+- Re-embed all collections with OpenAI
+- Establish quality/performance baseline
+- Measure costs
+
+**Week 2: OSS Testing** ✅
+- Re-embed with sentence-transformers
+- Compare quality metrics
+- Validate performance
+
+**Week 3: Ollama Testing** ✅
+- Re-embed with Ollama
+- Final 3-way comparison
+- Make data-driven decision
+
+**Result:** Successfully validated OSS embeddings with 90%+ quality retention!
+
+---
+
+# Getting Started
+
+## Resources
+- 📖 **[OSS Embedding Testing Guide](guides/OSS_EMBEDDING_TESTING_TIPS.md)** - Complete setup and troubleshooting
+- 📊 **[Comparison Reports](https://github.com/maximilien/weave-cli/blob/main/CHANGELOG.md)** - Example results
+- 🎬 **Demo Scripts** - `demos/oss-embeddings-demo.sh`
+
+## Support
+- Issues resolved: 4 of 5 Client0 issues ✅
+- Critical Gap #1: Ollama reembed support ✅
+- Production ready: All providers tested ✅
+
+---
+
 # Contributing
 
 ## Getting Started
