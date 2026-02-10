@@ -183,6 +183,42 @@ SELECT * FROM pg_extension WHERE extname = 'vector';
 
 ---
 
+### 📊 Embedding Comparison Demo (NEW)
+
+**File**: `embedding-comparison-demo.sh`
+
+**Duration**: ~6 minutes
+
+**Description**: 3-way performance benchmark comparing OpenAI vs sentence-transformers vs Ollama embeddings with detailed metrics.
+
+**Topics**:
+- Automated prerequisites check
+- Parallel re-embedding with all available providers
+- Performance timing (speed benchmarks)
+- Quality comparison (relevance scores)
+- Cost analysis ($0.02/1M vs FREE)
+- Comprehensive comparison reports
+- Actionable recommendations
+
+**Run**:
+```bash
+./demos/embedding-comparison-demo.sh
+```
+
+**Prerequisites**:
+- At least 2 of 3 providers configured:
+  - OpenAI: `OPENAI_API_KEY` environment variable
+  - sentence-transformers: `pip install sentence-transformers`
+  - Ollama: `ollama pull nomic-embed-text`
+
+**Output**:
+- `/tmp/weave-comparison-YYYYMMDD-HHMMSS/comparison-report.md` - Quality metrics
+- `/tmp/weave-comparison-YYYYMMDD-HHMMSS/performance-metrics.txt` - Speed & cost
+
+**Use Case**: Data-driven decision making for embedding provider selection
+
+---
+
 ### 🤖 REPL Demo
 
 **File**: `repl-demo.sh`
