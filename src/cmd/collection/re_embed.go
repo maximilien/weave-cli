@@ -164,9 +164,26 @@ func runReEmbed(cmd *cobra.Command, args []string) {
 
 	// 6. Create output collection with new dimensions
 	utils.PrintInfo(fmt.Sprintf("🔨 Creating output collection '%s' with %d dimensions...", outputCollection, dims))
+
+	// CRITICAL: Update the VDB client config with NEW embedding dimensions
+	// The client was created with source collection's dimensions (e.g., 1536 for OpenAI),
+	// but we need to use the new embedding model's dimensions (e.g., 768 for sentence-transformers)
+	// for the output collection. This fixes the dimension mismatch issue.
+	if dbConfig.VectorDimensions != dims {
+		utils.PrintInfo(fmt.Sprintf("📐 Updating VDB dimensions: %d → %d (for %s)",
+			dbConfig.VectorDimensions, dims, newEmbeddingModel))
+		dbConfig.VectorDimensions = dims
+
+		// Recreate client with updated config so CreateCollection uses correct dimensions
+		client, err = utils.CreateVectorDBClient(dbConfig)
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to recreate VDB client with new dimensions: %v", err))
+			os.Exit(1)
+		}
+	}
+
 	schema := client.GetDefaultSchema(vectordb.SchemaTypeText, outputCollection)
 	schema.Vectorizer = newEmbeddingModel
-	// Dimensions are auto-detected by VDB client using our registry!
 
 	err = client.CreateCollection(ctx, outputCollection, schema)
 	if err != nil {
