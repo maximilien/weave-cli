@@ -58,6 +58,38 @@ weave vdb info weaviate-cloud
 
 For other databases, see their setup guides linked in the table above.
 
+### Choose Your Embedding Provider
+
+Weave CLI supports **3 embedding providers** - including 100% free, local options:
+
+| Provider | Type | Cost | Dimensions | Setup Time | Best For |
+|----------|------|------|------------|------------|----------|
+| **OpenAI** | Cloud API | $0.02/1M tokens | 1536, 3072 | 2 min | Production, quality |
+| **sentence-transformers** | Local Python | FREE | 384, 768 | 5 min | Cost savings, privacy |
+| **Ollama** | Local HTTP | FREE | 768, 1024 | 10 min | Local LLMs, offline |
+
+**Quick Start - OSS Embeddings:**
+
+```bash
+# Install sentence-transformers (one time)
+pip install sentence-transformers
+
+# Re-embed existing collection with OSS model (20x faster than re-ingestion!)
+weave collection reembed MyCollection \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output MyCollection_OSS
+
+# Compare OpenAI vs OSS embeddings
+weave collection compare MyCollection MyCollection_OSS \
+  --query "search query" \
+  --report comparison.md
+```
+
+**Performance:** OSS models often achieve 90%+ quality retention vs OpenAI at 100% cost savings!
+
+📖 **See [OSS Embedding Testing Guide](docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)
+for setup, troubleshooting, and benchmarks**
+
 ### Basic Usage
 
 ```bash
@@ -134,7 +166,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
   language, including multi-collection queries
 - 🧠 **AI Schema & Chunking** - Analyze documents and get AI-powered schema and
   optimal chunk size recommendations
-- 📊 **Embeddings** - List and explore available embedding models
+- 📊 **Embeddings** - Multiple providers (OpenAI, sentence-transformers, Ollama)
+  with 100% free local options. Batch re-embedding 20x faster than re-ingestion
 - ⏱️ **Configurable Timeouts** - Smart operation-specific defaults (Health: 10s,
   Bulk: 120s), adjustable per command (`--timeout 30s`) or in config.yaml. See
   [Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)
