@@ -208,6 +208,35 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		updatedAts[i] = mdoc.UpdatedAt
 	}
 
+	// DEBUG: Log array lengths before creating columns
+	fmt.Fprintf(os.Stderr, "DEBUG: Milvus batch insertion - document count: %d\n", len(documents))
+	fmt.Fprintf(os.Stderr, "DEBUG: documentIDs length: %d\n", len(documentIDs))
+	fmt.Fprintf(os.Stderr, "DEBUG: texts length: %d\n", len(texts))
+	fmt.Fprintf(os.Stderr, "DEBUG: embeddings length: %d\n", len(embeddings))
+
+	// Count embeddings with actual data vs zero vectors
+	nonZeroCount := 0
+	zeroCount := 0
+	for _, emb := range embeddings {
+		if emb == nil {
+			fmt.Fprintf(os.Stderr, "DEBUG: Found nil embedding!\n")
+			continue
+		}
+		isZero := true
+		for _, v := range emb {
+			if v != 0 {
+				isZero = false
+				break
+			}
+		}
+		if isZero {
+			zeroCount++
+		} else {
+			nonZeroCount++
+		}
+	}
+	fmt.Fprintf(os.Stderr, "DEBUG: Non-zero embeddings: %d, Zero vectors: %d\n", nonZeroCount, zeroCount)
+
 	// Prepare column data for batch insertion
 	columns := []entity.Column{
 		entity.NewColumnVarChar(FieldDocumentID, documentIDs),
