@@ -16,6 +16,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // QueryCmd represents the collection query command
@@ -34,11 +35,11 @@ Multi-Collection Queries:
   This is useful for searching across different data types (e.g., documents,
   images, metadata) in a unified way.
 
-  For multi-modal queries (text + images), use --top_k_images to ensure image
+  For multi-modal queries (text + images), use --top-k-images to ensure image
   results are included. By default, text documents often have higher similarity
-  scores than images, causing images to be filtered out. The --top_k_images flag
+  scores than images, causing images to be filtered out. The --top-k-images flag
   guarantees that image collections return their top K results:
-    weave cols query WeaveDocs WeaveImages "screenshot" --top_k 5 --top_k_images 2
+    weave cols query WeaveDocs WeaveImages "screenshot" --top-k 5 --top-k-images 2
   This returns top 5 from WeaveDocs + top 2 from WeaveImages, merged by score.
 
 Cross-VDB Queries:
@@ -70,23 +71,23 @@ RAG Agents:
 Examples:
   # Single collection search
   weave cols query MyDocs "machine learning algorithms"
-  weave cols q MyDocs "artificial intelligence" --top_k 10
+  weave cols q MyDocs "artificial intelligence" --top-k 10
 
   # Multi-collection search (returns top K from EACH collection)
-  weave cols query WeaveDocs WeaveImages "weave cli" --agent rag-agent --top_k 3
+  weave cols query WeaveDocs WeaveImages "weave cli" --agent rag-agent --top-k 3
   weave cols query AuctionListings AuctionResults AuctionImages "vintage cars" --agent rag-agent
 
   # Multi-modal queries with guaranteed image results
-  weave cols query WeaveDocs WeaveImages "screenshot" --agent rag-agent --top_k 5 --top_k_images 2
-  weave cols query ProductDocs ProductImages "red vintage car" --agent rag-agent --top_k 10 --top_k_images 3
+  weave cols query WeaveDocs WeaveImages "screenshot" --agent rag-agent --top-k 5 --top-k-images 2
+  weave cols query ProductDocs ProductImages "red vintage car" --agent rag-agent --top-k 10 --top-k-images 3
 
   # Cross-VDB queries (query collections from different VDBs)
   weave cols query WeaveDocs:weaviate-local WeaveImages:milvus-local "weave cli" --agent rag-agent
-  weave cols query AuctionDocs:mongodb AuctionImages:weaviate-cloud "vintage" --agent rag-agent --top_k 3
+  weave cols query AuctionDocs:mongodb AuctionImages:weaviate-cloud "vintage" --agent rag-agent --top-k 3
 
   # RAG agent query with comprehensive answer
   weave cols query MyDocs "What is machine learning?" --agent rag-agent
-  weave cols q MyDocs "Summarize the main topics" --agent summarize-agent --top_k 10
+  weave cols q MyDocs "Summarize the main topics" --agent summarize-agent --top-k 10
 
   # Show progress during query execution
   weave cols query MyDocs "complex query" --agent rag-agent --progress
@@ -95,12 +96,12 @@ Examples:
   weave cols query MyDocs "query" --agent rag-agent --json --progress
 
   # Image search by text metadata (captions, OCR)
-  weave cols query MyImages "sunset over mountains" --top_k 3
+  weave cols query MyImages "sunset over mountains" --top-k 3
   weave cols query MyImages "camera" --search-type text
 
   # Visual similarity search (CLIP)
   weave cols query MyImages "product photo" --search-type visual
-  weave cols query MyImages "" --vector image_vector --top_k 5
+  weave cols query MyImages "" --vector image_vector --top-k 5
 
   # Keyword search
   weave cols q MyDocs "exact keywords" --bm25
@@ -110,8 +111,20 @@ Examples:
 }
 
 func init() {
-	QueryCmd.Flags().IntP("top_k", "k", 5, "Number of top results to return (default: 5)")
-	QueryCmd.Flags().Int("top_k_images", 0, "Number of top results from image collections (0 = use top_k)")
+	QueryCmd.Flags().IntP("top-k", "k", 5, "Number of top results to return (default: 5)")
+	QueryCmd.Flags().Int("top-k-images", 0, "Number of top results from image collections (0 = use top-k)")
+
+	// Deprecated aliases for backward compatibility
+	QueryCmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+		// Map underscore versions to hyphen versions
+		switch name {
+		case "top_k":
+			name = "top-k"
+		case "top_k_images":
+			name = "top-k-images"
+		}
+		return pflag.NormalizedName(name)
+	})
 	QueryCmd.Flags().Float64P("distance", "d", 0.0, "Maximum distance threshold for results")
 	QueryCmd.Flags().BoolP("search-metadata", "m", false, "Also search in metadata fields (default: false)")
 	QueryCmd.Flags().Bool("bm25", false, "Use BM25 keyword search instead of semantic search (default: false)")
@@ -137,8 +150,8 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		utils.PrintError(fmt.Sprintf("Invalid collection specification: %v", err))
 		os.Exit(1)
 	}
-	topK, _ := cmd.Flags().GetInt("top_k")
-	topKImages, _ := cmd.Flags().GetInt("top_k_images")
+	topK, _ := cmd.Flags().GetInt("top-k")
+	topKImages, _ := cmd.Flags().GetInt("top-k-images")
 	distance, _ := cmd.Flags().GetFloat64("distance")
 	searchMetadata, _ := cmd.Flags().GetBool("search-metadata")
 	noTruncate, _ := cmd.Flags().GetBool("no-truncate")
