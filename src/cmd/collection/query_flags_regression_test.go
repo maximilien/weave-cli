@@ -165,13 +165,11 @@ func TestIssue2_FlagNormalizationEdgeCases(t *testing.T) {
 
 // TestIssue2_BackwardCompatibility tests that old code using --top_k still works
 func TestIssue2_BackwardCompatibility(t *testing.T) {
-	// Simulate old AuctionsMax.ai frontend code using underscore version
+	// Simulate old Client0 frontend code using underscore version
 	oldCommandArgs := []string{
 		"AuctionImages_OSS",
 		"Nikon F2",
 		"--top_k", "5",
-		"--milvus-local",
-		"--json",
 	}
 
 	cmd := &cobra.Command{
