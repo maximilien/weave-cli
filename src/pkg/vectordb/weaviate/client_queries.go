@@ -26,7 +26,7 @@ type QueryResult struct {
 // QueryOptions holds options for semantic search queries
 type QueryOptions struct {
 	TopK           int     `json:"top_k"`
-	TopKImages     int     `json:"top_k_images"` // Number of results from image collections (0 = use TopK)
+	TopKImages     int     `json:"top_k_images"`     // Number of results from image collections (0 = use TopK)
 	Distance       float64 `json:"distance"`
 	SearchMetadata bool    `json:"search_metadata"`
 	NoTruncate     bool    `json:"no_truncate"`
@@ -34,6 +34,7 @@ type QueryOptions struct {
 	JSONOutput     bool    `json:"json_output"`
 	ImageQuery     string  `json:"image_query"`      // Base64 encoded image for nearImage search
 	UseImageVector bool    `json:"use_image_vector"` // Use image_vector instead of text_vector
+	IncludeImages  bool    `json:"include_images"`   // Include base64 image data in JSON output
 	Verbose        bool    `json:"verbose"`          // Enable debug logging
 }
 

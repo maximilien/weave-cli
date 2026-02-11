@@ -132,6 +132,7 @@ func init() {
 	QueryCmd.Flags().String("vector", "", "Named vector to search (e.g., 'text_vector', 'image_vector')")
 	QueryCmd.Flags().String("search-type", "", "Search type: 'text' (text metadata) or 'visual' (image content)")
 	QueryCmd.Flags().String("image", "", "Path to image file for visual similarity search (base64 encoded)")
+	QueryCmd.Flags().Bool("include-images", false, "Include base64-encoded image data in JSON output for image collections")
 	QueryCmd.Flags().String("agent", "", "Single agent to process results (e.g., 'rag-agent', 'qa-agent', 'summarize-agent'). Use --agents for chains.")
 	QueryCmd.Flags().StringSlice("agents", []string{}, "Agent chain: comma-separated agents executed in sequence. Each agent's output feeds the next. Examples: 'rag-agent,summarize-agent' or 'search-agent,qa-agent'. Cannot combine with --agent.")
 	QueryCmd.Flags().BoolP("verbose", "v", false, "Enable verbose debug logging")
@@ -160,6 +161,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 	vectorName, _ := cmd.Flags().GetString("vector")
 	searchType, _ := cmd.Flags().GetString("search-type")
 	imagePath, _ := cmd.Flags().GetString("image")
+	includeImages, _ := cmd.Flags().GetBool("include-images")
 	agentName, _ := cmd.Flags().GetString("agent")
 	agentNames, _ := cmd.Flags().GetStringSlice("agents")
 	verbose, _ := cmd.Flags().GetBool("verbose")
@@ -288,6 +290,7 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		JSONOutput:     jsonOutput,
 		ImageQuery:     imageBase64,
 		UseImageVector: useImageVector,
+		IncludeImages:  includeImages,
 		Verbose:        verbose,
 	}
 
