@@ -38,7 +38,26 @@ func Get() Info {
 
 // String returns a formatted version string
 func String() string {
+	return StringWithJSON(false)
+}
+
+// StringWithJSON returns a formatted version string or JSON
+func StringWithJSON(jsonOutput bool) string {
 	info := Get()
+
+	if jsonOutput {
+		// JSON output
+		return fmt.Sprintf(`{
+  "version": "%s",
+  "git_commit": "%s",
+  "build_time": "%s",
+  "go_version": "%s"
+}`,
+			info.Version,
+			info.GitCommit,
+			info.BuildTime,
+			info.GoVersion)
+	}
 
 	// Format build time if it's not "unknown"
 	var buildTimeStr string

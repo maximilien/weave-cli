@@ -78,12 +78,42 @@ var (
 	useAll             bool
 )
 
+// handleVersionFlag checks if version flag is set and handles JSON output
+func handleVersionFlag(cmd *cobra.Command, args []string) error {
+	// Check if version flag was explicitly set (check both local and persistent flags)
+	versionFlag := cmd.Flags().Lookup("version")
+	if versionFlag != nil && versionFlag.Changed {
+		versionFlagSet, _ := cmd.Flags().GetBool("version")
+		if versionFlagSet {
+			// Check if --json flag is set (it's a persistent flag)
+			jsonFlagSet := false
+			if jsonFlag := cmd.Flags().Lookup("json"); jsonFlag != nil {
+				jsonFlagSet, _ = cmd.Flags().GetBool("json")
+			}
+			fmt.Println(version.StringWithJSON(jsonFlagSet))
+			os.Exit(0)
+		}
+	}
+	return nil
+}
+
+// combinedPreRun runs both version check and initLogging
+func combinedPreRun(cmd *cobra.Command, args []string) {
+	// Handle version flag first
+	if err := handleVersionFlag(cmd, args); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	// Then run initLogging
+	initLogging(cmd, args)
+}
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:                        "weave",
 	Short:                      "Weave Vector Database Management Tool",
 	SuggestionsMinimumDistance: 2,
-	PersistentPreRun:           initLogging,
+	PersistentPreRun:           combinedPreRun,
 	Run:                        runREPL,
 	Long: `Weave is a command-line tool for managing vector databases.
 Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase PGVector, Chroma (local/cloud), Qdrant (local/cloud), Neo4j (local/cloud), and Mock databases.
@@ -153,7 +183,8 @@ The tool uses ./config.yaml and ./.env files by default, or you can specify
 custom locations with --config and --env flags.
 
 Priority order: command flags > --env file > .env file > shell environment.`,
-	Version: version.Get().Version,
+	// Note: Version field removed to enable custom --json handling
+	// Version flag is handled in combinedPreRun()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -319,10 +350,8 @@ func init() {
 	_ = viper.BindPFlag("all", rootCmd.PersistentFlags().Lookup("all"))
 
 	// Add version flag with custom handler
+	// Handled in combinedPreRun() to support --json output
 	rootCmd.Flags().BoolP("version", "V", false, "show version information")
-
-	// Override the default version template
-	rootCmd.SetVersionTemplate(version.String())
 }
 
 // initConfig reads in config file and ENV variables if set.
