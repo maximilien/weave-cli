@@ -2465,7 +2465,7 @@ func QueryWeaviateCollection(ctx context.Context, cfg *config.VectorDBConfig, co
 	}
 
 	// Display results
-	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate, options.JSONOutput)
+	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate, options.JSONOutput, options.IncludeImages)
 }
 
 // QueryMultipleCollections queries multiple collections and displays aggregated results
@@ -2562,7 +2562,7 @@ func QueryMultipleCollections(ctx context.Context, cfg *config.VectorDBConfig, c
 	fmt.Printf("\nAggregated %d results from %d collections\n\n", len(allResults), len(collectionNames))
 
 	// Display aggregated results
-	DisplayQueryResults(allResults, fmt.Sprintf("Multiple Collections (%d)", len(collectionNames)), queryText, options.NoTruncate, options.JSONOutput)
+	DisplayQueryResults(allResults, fmt.Sprintf("Multiple Collections (%d)", len(collectionNames)), queryText, options.NoTruncate, options.JSONOutput, options.IncludeImages)
 }
 
 // QueryMultipleCollectionsCrossVDB queries multiple collections across different VDBs and displays aggregated results
@@ -2671,7 +2671,7 @@ func QueryMultipleCollectionsCrossVDB(ctx context.Context, collectionSpecs []Col
 	fmt.Printf("\nAggregated %d results from %d collections across multiple VDBs\n\n", len(allResults), len(collectionSpecs))
 
 	// Display aggregated results
-	DisplayQueryResults(allResults, fmt.Sprintf("Multiple Collections Cross-VDB (%d)", len(collectionSpecs)), queryText, options.NoTruncate, options.JSONOutput)
+	DisplayQueryResults(allResults, fmt.Sprintf("Multiple Collections Cross-VDB (%d)", len(collectionSpecs)), queryText, options.NoTruncate, options.JSONOutput, options.IncludeImages)
 }
 
 // QueryCollection performs semantic search on a collection using the vectordb abstraction (works for all DB types)
@@ -2716,7 +2716,7 @@ func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collection
 	}
 
 	// Display results
-	DisplayQueryResults(weaviateResults, collectionName, queryText, options.NoTruncate, options.JSONOutput)
+	DisplayQueryResults(weaviateResults, collectionName, queryText, options.NoTruncate, options.JSONOutput, options.IncludeImages)
 }
 
 // QueryCollectionWithAgent queries a collection using generic VDB client and processes results through an agent
@@ -2780,7 +2780,7 @@ func QueryMockCollection(ctx context.Context, cfg *config.VectorDBConfig, collec
 	}
 
 	// Display results
-	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate, options.JSONOutput)
+	DisplayQueryResults(results, collectionName, queryText, options.NoTruncate, options.JSONOutput, options.IncludeImages)
 }
 
 // QueryMockCollectionWithAgent performs semantic search on a mock collection and processes results through an agent
