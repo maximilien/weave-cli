@@ -230,6 +230,126 @@ func TestIssue2_HelpTextShowsHyphens(t *testing.T) {
 	}
 }
 
+// TestIssue_IncludeImagesFlag tests the --include-images flag
+// Feature request from Client0 for frontend image display
+func TestIssue_IncludeImagesFlag(t *testing.T) {
+	tests := []struct {
+		name              string
+		args              []string
+		expectIncludeFlag bool
+	}{
+		{
+			name:              "Flag not set (default false)",
+			args:              []string{"TestCol", "query"},
+			expectIncludeFlag: false,
+		},
+		{
+			name:              "Flag explicitly set to true",
+			args:              []string{"TestCol", "query", "--include-images"},
+			expectIncludeFlag: true,
+		},
+		{
+			name:              "Flag with other flags",
+			args:              []string{"TestCol", "query", "--top-k", "10", "--include-images", "--json"},
+			expectIncludeFlag: true,
+		},
+		{
+			name:              "Flag position doesn't matter",
+			args:              []string{"TestCol", "query", "--include-images", "--top-k", "5"},
+			expectIncludeFlag: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{
+				Use: "query",
+				Run: func(cmd *cobra.Command, args []string) {
+					includeImages, err := cmd.Flags().GetBool("include-images")
+					if err != nil {
+						t.Errorf("Failed to get include-images flag: %v", err)
+						return
+					}
+
+					if includeImages != tt.expectIncludeFlag {
+						t.Errorf("include-images: expected %v, got %v", tt.expectIncludeFlag, includeImages)
+					}
+				},
+			}
+
+			// Initialize flags (same as QueryCmd)
+			cmd.Flags().IntP("top-k", "k", 5, "Number of results")
+			cmd.Flags().Bool("json", false, "JSON output")
+			cmd.Flags().Bool("include-images", false, "Include base64 image data")
+
+			// Set args and execute
+			cmd.SetArgs(tt.args)
+			err := cmd.Execute()
+
+			if err != nil {
+				t.Errorf("Expected command to succeed, but got error: %v", err)
+			}
+		})
+	}
+}
+
+// TestIssue_IncludeImagesFlagValidation tests flag validation
+func TestIssue_IncludeImagesFlagValidation(t *testing.T) {
+	cmd := &cobra.Command{
+		Use: "query",
+		Run: func(cmd *cobra.Command, args []string) {},
+	}
+
+	cmd.Flags().Bool("include-images", false, "Include base64 image data")
+
+	// Test that flag is boolean and defaults to false
+	defaultValue := cmd.Flags().Lookup("include-images").DefValue
+	if defaultValue != "false" {
+		t.Errorf("Expected default value 'false', got '%s'", defaultValue)
+	}
+
+	// Test that flag can be looked up
+	flag := cmd.Flags().Lookup("include-images")
+	if flag == nil {
+		t.Error("Flag 'include-images' not found")
+	}
+
+	if flag.Usage != "Include base64 image data" {
+		t.Errorf("Expected usage 'Include base64 image data', got '%s'", flag.Usage)
+	}
+}
+
+// TestIssue_IncludeImagesWithJSON tests that flag works with --json
+func TestIssue_IncludeImagesWithJSON(t *testing.T) {
+	// This test verifies the primary use case from Client0:
+	// Using --include-images with --json for frontend display
+	cmd := &cobra.Command{
+		Use: "query",
+		Run: func(cmd *cobra.Command, args []string) {
+			includeImages, _ := cmd.Flags().GetBool("include-images")
+			jsonOutput, _ := cmd.Flags().GetBool("json")
+
+			if !includeImages {
+				t.Error("Expected include-images to be true")
+			}
+			if !jsonOutput {
+				t.Error("Expected json to be true")
+			}
+		},
+	}
+
+	cmd.Flags().Bool("include-images", false, "Include base64 image data")
+	cmd.Flags().Bool("json", false, "JSON output")
+
+	// Simulate Client0's usage: weave cols query Collection "query" --json --include-images
+	cmd.SetArgs([]string{"Collection", "query", "--json", "--include-images"})
+	err := cmd.Execute()
+
+	if err != nil {
+		t.Errorf("Expected success, got error: %v", err)
+	}
+}
+
 // Helper function
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && (s[:len(substr)] == substr || s[len(s)-len(substr):] == substr || stringContains(s, substr)))

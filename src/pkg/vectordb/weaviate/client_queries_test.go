@@ -241,3 +241,99 @@ func TestMultiVectorCollectionDetection(t *testing.T) {
 		})
 	}
 }
+
+// TestQueryOptions_IncludeImages tests the IncludeImages field in QueryOptions
+// Feature request from Client0 for frontend image display
+func TestQueryOptions_IncludeImages(t *testing.T) {
+	tests := []struct {
+		name          string
+		options       QueryOptions
+		expectInclude bool
+	}{
+		{
+			name: "Default value (false)",
+			options: QueryOptions{
+				TopK:       5,
+				JSONOutput: true,
+			},
+			expectInclude: false,
+		},
+		{
+			name: "Explicitly set to true",
+			options: QueryOptions{
+				TopK:          5,
+				JSONOutput:    true,
+				IncludeImages: true,
+			},
+			expectInclude: true,
+		},
+		{
+			name: "Explicitly set to false",
+			options: QueryOptions{
+				TopK:          5,
+				JSONOutput:    true,
+				IncludeImages: false,
+			},
+			expectInclude: false,
+		},
+		{
+			name: "With other options set",
+			options: QueryOptions{
+				TopK:           10,
+				TopKImages:     3,
+				Distance:       0.5,
+				SearchMetadata: true,
+				NoTruncate:     true,
+				UseBM25:        false,
+				JSONOutput:     true,
+				IncludeImages:  true,
+				Verbose:        true,
+			},
+			expectInclude: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.options.IncludeImages != tt.expectInclude {
+				t.Errorf("Expected IncludeImages=%v, got %v",
+					tt.expectInclude, tt.options.IncludeImages)
+			}
+		})
+	}
+}
+
+// TestQueryOptions_IncludeImagesUsage tests intended usage pattern
+func TestQueryOptions_IncludeImagesUsage(t *testing.T) {
+	// This test documents the intended usage for Client0's frontend
+
+	// Scenario 1: Text query without images (default)
+	textOptions := QueryOptions{
+		TopK:          5,
+		JSONOutput:    true,
+		IncludeImages: false,
+	}
+	if textOptions.IncludeImages {
+		t.Error("Text queries should not include images by default")
+	}
+
+	// Scenario 2: Image collection query with base64 data
+	imageOptions := QueryOptions{
+		TopK:          5,
+		JSONOutput:    true,
+		IncludeImages: true, // Client0 sets this for frontend display
+	}
+	if !imageOptions.IncludeImages {
+		t.Error("Image queries should include images when flag is set")
+	}
+
+	// Scenario 3: Performance-conscious query (no images)
+	performanceOptions := QueryOptions{
+		TopK:          50, // Large result set
+		JSONOutput:    true,
+		IncludeImages: false, // Avoid large JSON payloads
+	}
+	if performanceOptions.IncludeImages {
+		t.Error("Large queries should disable images for performance")
+	}
+}

@@ -323,3 +323,155 @@ func TestInfoStructJSON(t *testing.T) {
 		t.Errorf("Expected go version go1.24.1, got %s", info.GoVersion)
 	}
 }
+
+func TestStringWithJSON(t *testing.T) {
+	// Save original values
+	origVersion := Version
+	origGitCommit := GitCommit
+	origBuildTime := BuildTime
+	origGoVersion := GoVersion
+
+	// Restore after test
+	defer func() {
+		Version = origVersion
+		GitCommit = origGitCommit
+		BuildTime = origBuildTime
+		GoVersion = origGoVersion
+	}()
+
+	// Set test values
+	Version = "0.9.8"
+	GitCommit = "abc1234567890"
+	BuildTime = "2026-01-21T21:32:45Z"
+	GoVersion = "go1.24.1"
+
+	tests := []struct {
+		name           string
+		jsonOutput     bool
+		expectContains []string
+		notContains    []string
+	}{
+		{
+			name:       "Text format (false)",
+			jsonOutput: false,
+			expectContains: []string{
+				"Weave CLI 0.9.8",
+				"Git Commit: abc1234", // Truncated
+				"Build Time: 2026-01-21 21:32:45",
+				"Go Version: go1.24.1",
+			},
+			notContains: []string{
+				"{", // No JSON structure
+				"\"version\"",
+			},
+		},
+		{
+			name:       "JSON format (true)",
+			jsonOutput: true,
+			expectContains: []string{
+				"{",
+				"\"version\": \"0.9.8\"",
+				"\"git_commit\": \"abc1234567890\"", // Full commit in JSON
+				"\"build_time\": \"2026-01-21T21:32:45Z\"",
+				"\"go_version\": \"go1.24.1\"",
+				"}",
+			},
+			notContains: []string{
+				"Weave CLI", // No text prefix in JSON
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := StringWithJSON(tt.jsonOutput)
+
+			// Check expected content
+			for _, expected := range tt.expectContains {
+				if !strings.Contains(result, expected) {
+					t.Errorf("Expected output to contain '%s', got:\n%s", expected, result)
+				}
+			}
+
+			// Check not present content
+			for _, notExpected := range tt.notContains {
+				if strings.Contains(result, notExpected) {
+					t.Errorf("Expected output NOT to contain '%s', got:\n%s", notExpected, result)
+				}
+			}
+		})
+	}
+}
+
+func TestStringWithJSON_FormatDifferences(t *testing.T) {
+	// Save original values
+	origVersion := Version
+	origGitCommit := GitCommit
+	origBuildTime := BuildTime
+	origGoVersion := GoVersion
+
+	defer func() {
+		Version = origVersion
+		GitCommit = origGitCommit
+		BuildTime = origBuildTime
+		GoVersion = origGoVersion
+	}()
+
+	// Set test values with long commit
+	Version = "0.9.8"
+	GitCommit = "0e3a9807a1e8170b67aa47e6b682420d953c91bc" // Full 40-char commit
+	BuildTime = "2026-01-21T21:32:45Z"
+	GoVersion = "go1.24.1"
+
+	textOutput := StringWithJSON(false)
+	jsonOutput := StringWithJSON(true)
+
+	// Text output should have shortened commit (7 chars)
+	if !strings.Contains(textOutput, "Git Commit: 0e3a980") {
+		t.Errorf("Text output should have shortened commit, got:\n%s", textOutput)
+	}
+
+	// JSON output should have full commit
+	if !strings.Contains(jsonOutput, "\"git_commit\": \"0e3a9807a1e8170b67aa47e6b682420d953c91bc\"") {
+		t.Errorf("JSON output should have full commit, got:\n%s", jsonOutput)
+	}
+
+	// Text output should have formatted build time
+	if !strings.Contains(textOutput, "Build Time: 2026-01-21 21:32:45") {
+		t.Errorf("Text output should have formatted build time, got:\n%s", textOutput)
+	}
+
+	// JSON output should have RFC3339 build time
+	if !strings.Contains(jsonOutput, "\"build_time\": \"2026-01-21T21:32:45Z\"") {
+		t.Errorf("JSON output should have RFC3339 build time, got:\n%s", jsonOutput)
+	}
+}
+
+func TestString_CallsStringWithJSON(t *testing.T) {
+	// Save original values
+	origVersion := Version
+	origGitCommit := GitCommit
+	origBuildTime := BuildTime
+	origGoVersion := GoVersion
+
+	defer func() {
+		Version = origVersion
+		GitCommit = origGitCommit
+		BuildTime = origBuildTime
+		GoVersion = origGoVersion
+	}()
+
+	Version = "0.9.8"
+	GitCommit = "abc1234"
+	BuildTime = "2026-01-21T21:32:45Z"
+	GoVersion = "go1.24.1"
+
+	// String() should be equivalent to StringWithJSON(false)
+	result1 := String()
+	result2 := StringWithJSON(false)
+
+	if result1 != result2 {
+		t.Errorf("String() should equal StringWithJSON(false)\nString(): %s\nStringWithJSON(false): %s",
+			result1, result2)
+	}
+}
