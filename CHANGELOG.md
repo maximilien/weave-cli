@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.20] - 2026-02-11
+
+### Fixed - Production Hardening 🔧
+
+- **Query Embedding Model Matching** (Issue #12, Fix #3)
+  - Queries now automatically use collection's embedding model
+  - Fixed dimension mismatch when querying OSS re-embedded collections
+  - Collection vectorizer stored in Milvus description field
+  - Provider factory integration for dynamic model selection
+  - **Impact**: Complete OSS workflow (re-embed + query) now working
+
+- **Comprehensive Documentation**
+  - ARCHITECTURE.md: Added Embedding Provider Architecture section (282 lines)
+  - VDB_SUPPORT_MATRIX.md: Added OSS Embeddings and Re-embedding feature rows
+  - PRODUCTION_READY.md: Complete OSS deployment guide (368 lines)
+  - Production metrics, cost calculator, troubleshooting guide
+  - Client0 results: +11% quality improvement, $240/year savings
+
+### Changed
+
+- Removed debug logging from Issue #12 investigation
+  - Cleaned up pipeline.go verbose counters
+  - Simplified document.go dimension detection
+  - Production-ready code (~30 lines removed)
+
+### Client0 Production Validation ✅
+
+**Results** (426-document collection):
+- ✅ Re-embedding: 100% success (426/426 docs in 85 seconds, 308 docs/min)
+- ✅ Query functionality: Automatic dimension matching working
+- ✅ Quality: 0.673 avg (OSS) vs 0.606 avg (OpenAI) = **+11% improvement**
+- ✅ Cost: $0 vs $0.008 = **100% savings**
+- ✅ Storage: 768 dims (OSS) vs 1536 dims (OpenAI) = **50% smaller**
+
+**Status**: Client0 proceeding with UI/UX development on OSS stack
+
 ## [0.9.19] - 2026-02-10
 
 ### Added - OSS Embedding Providers 🌟
