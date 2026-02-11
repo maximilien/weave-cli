@@ -6,7 +6,6 @@ package reembedding
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/maximilien/weave-cli/src/pkg/embeddings"
 	"github.com/maximilien/weave-cli/src/pkg/reembedding/providers"
@@ -87,10 +86,6 @@ func (p *EmbeddingPipeline) ProcessBatch(ctx context.Context, docs []*vectordb.D
 	}
 
 	// Validate and store embeddings in documents
-	emptyTextCount := 0
-	zeroVectorCount := 0
-	normalEmbeddingCount := 0
-
 	for i, doc := range docs {
 		if doc == nil {
 			continue
@@ -102,10 +97,6 @@ func (p *EmbeddingPipeline) ProcessBatch(ctx context.Context, docs []*vectordb.D
 		if texts[i] == "" || len(embedding) == 0 {
 			// Create zero vector for empty/nil embeddings
 			doc.Embedding = make([]float64, p.dimensions)
-			if texts[i] == "" {
-				emptyTextCount++
-			}
-			zeroVectorCount++
 			continue
 		}
 
@@ -116,11 +107,7 @@ func (p *EmbeddingPipeline) ProcessBatch(ctx context.Context, docs []*vectordb.D
 
 		// Store embedding in document (VDB will use this if present)
 		doc.Embedding = embedding
-		normalEmbeddingCount++
 	}
-
-	fmt.Fprintf(os.Stderr, "DEBUG Pipeline: Batch size=%d, Empty text=%d, Zero vectors created=%d, Normal embeddings=%d\n",
-		len(docs), emptyTextCount, zeroVectorCount, normalEmbeddingCount)
 
 	return nil
 }

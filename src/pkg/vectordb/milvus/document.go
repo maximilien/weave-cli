@@ -208,46 +208,20 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		updatedAts[i] = mdoc.UpdatedAt
 	}
 
-	// DEBUG: Log array lengths before creating columns
-	fmt.Fprintf(os.Stderr, "DEBUG: Milvus batch insertion - document count: %d\n", len(documents))
-	fmt.Fprintf(os.Stderr, "DEBUG: documentIDs length: %d\n", len(documentIDs))
-	fmt.Fprintf(os.Stderr, "DEBUG: texts length: %d\n", len(texts))
-	fmt.Fprintf(os.Stderr, "DEBUG: embeddings length: %d\n", len(embeddings))
-
-	// Count embeddings with actual data vs zero vectors
-	nonZeroCount := 0
-	zeroCount := 0
-	actualDimensions := 0
-	for _, emb := range embeddings {
-		if emb == nil {
-			fmt.Fprintf(os.Stderr, "DEBUG: Found nil embedding!\n")
-			continue
-		}
-		if actualDimensions == 0 && len(emb) > 0 {
-			actualDimensions = len(emb)
-		}
-		isZero := true
-		for _, v := range emb {
-			if v != 0 {
-				isZero = false
-				break
-			}
-		}
-		if isZero {
-			zeroCount++
-		} else {
-			nonZeroCount++
-		}
-	}
-	fmt.Fprintf(os.Stderr, "DEBUG: Non-zero embeddings: %d, Zero vectors: %d\n", nonZeroCount, zeroCount)
-	fmt.Fprintf(os.Stderr, "DEBUG: Config dimensions: %d, Actual embedding dimensions: %d\n", a.config.VectorDimensions, actualDimensions)
-
-	// CRITICAL FIX: Use actual embedding dimensions, not config dimensions
+	// CRITICAL FIX: Detect actual embedding dimensions from embeddings array
 	// The config dimensions are from the original collection, but we may be re-embedding
 	// with a different model that has different dimensions (e.g., 768 vs 1536)
+	actualDimensions := 0
+	for _, emb := range embeddings {
+		if len(emb) > 0 {
+			actualDimensions = len(emb)
+			break
+		}
+	}
+
+	// Use actual dimensions if different from config
 	vectorDimensions := a.config.VectorDimensions
 	if actualDimensions > 0 && actualDimensions != a.config.VectorDimensions {
-		fmt.Fprintf(os.Stderr, "DEBUG: Dimension mismatch! Using actual: %d (config was: %d)\n", actualDimensions, a.config.VectorDimensions)
 		vectorDimensions = actualDimensions
 	}
 
