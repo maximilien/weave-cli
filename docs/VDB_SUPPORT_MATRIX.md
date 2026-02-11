@@ -37,6 +37,8 @@ and features.
 | **Collection Management** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **Schema Management** | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ❌ | ✅ | ⚠️ | ⚠️ | ✅ |
 | **Auto Embeddings** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **OSS Embeddings** [v0.9.19+] | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Collection Re-embedding** [v0.9.19+] | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **AI Schema Suggestions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **AI Chunking Suggestions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
@@ -54,6 +56,17 @@ and features.
 - **Pinecone Hybrid**: Falls back to semantic search (vector-only database)
 - **AI Schema Suggestions**: Use `weave schema suggest` to analyze documents and get AI-powered schema recommendations
 - **AI Chunking Suggestions**: Use `weave chunking suggest` to analyze documents and get optimal chunk size recommendations
+- **OSS Embeddings** [v0.9.19+]: Provider-independent open-source embedding support (sentence-transformers, Ollama)
+  - Works with ALL vector databases (pre-generated embeddings via `doc.Embedding` field)
+  - No VDB-specific configuration required
+  - Supports OpenAI, sentence-transformers, Ollama out of the box
+  - Use `weave embeddings list` to see available models
+- **Collection Re-embedding** [v0.9.19+]: Fast model switching without document re-ingestion
+  - Re-embed existing collections with different embedding models
+  - 20x faster than full re-ingestion (200+ docs/min typical)
+  - Perfect for testing model quality, switching providers, cost optimization
+  - Use `weave collection re-embed SOURCE --new-embedding MODEL --output DEST`
+  - Queries automatically use collection's embedding model (dimension auto-matching)
 
 ## Quick Start
 
