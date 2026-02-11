@@ -4,6 +4,7 @@
 package providers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -52,11 +53,19 @@ func (p *SentenceTransformersProvider) GenerateEmbeddings(ctx context.Context, t
 	pythonScript := `
 import sys
 import json
+import os
+import warnings
+
+# Suppress all warnings and progress bars
+warnings.filterwarnings('ignore')
+os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = '1'
+os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
+
 from sentence_transformers import SentenceTransformer
 
 def main():
 	try:
-		# Load model
+		# Load model (progress bars suppressed by environment variables)
 		model_name = sys.argv[1]
 		model = SentenceTransformer(model_name)
 
@@ -64,7 +73,7 @@ def main():
 		texts_json = sys.stdin.read()
 		texts = json.loads(texts_json)
 
-		# Generate embeddings
+		# Generate embeddings (no progress bar)
 		embeddings = model.encode(texts, show_progress_bar=False)
 
 		# Convert to list and output as JSON
@@ -89,13 +98,33 @@ if __name__ == "__main__":
 	cmd := exec.CommandContext(ctx, "python3", "-c", pythonScript, p.modelName)
 	cmd.Stdin = strings.NewReader(string(textsJSON))
 
-	output, err := cmd.Output()
+	// Capture stdout and stderr separately
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	// Run command and check exit code
+	err = cmd.Run()
 	if err != nil {
+		// Only treat as error if exit code is non-zero
+		// stderr may contain progress bars which are not errors
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return nil, fmt.Errorf("sentence-transformers error: %s", string(exitErr.Stderr))
+			stderrStr := stderr.String()
+			// Check if stderr contains actual error (JSON error format or Python traceback)
+			if strings.Contains(stderrStr, `"error"`) || strings.Contains(stderrStr, "Traceback") {
+				return nil, fmt.Errorf("sentence-transformers error: %s", stderrStr)
+			}
+			return nil, fmt.Errorf("sentence-transformers failed with exit code %d", exitErr.ExitCode())
 		}
 		return nil, fmt.Errorf("failed to execute Python script: %w", err)
 	}
+
+	// Note: stderr may contain progress bars like "Loading weights: 100%|██████████|"
+	// We ignore stderr if the command succeeded (exit code 0)
+	// To suppress progress entirely, the Python script uses show_progress_bar=False for encode()
+	// Model loading progress cannot be easily suppressed without environment variables
+
+	output := stdout.Bytes()
 
 	// Parse output JSON
 	var embeddings [][]float64
