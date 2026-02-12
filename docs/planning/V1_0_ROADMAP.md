@@ -1,8 +1,8 @@
 # Weave CLI v1.0 Roadmap
 
 **Status**: Draft - Ready for AuctionsMax.ai Consultation
-**Target Release**: TBD (4-6 weeks from v0.9.7)
-**Last Updated**: 2026-01-20
+**Target Release**: TBD (2-4 weeks from v0.9.19)
+**Last Updated**: 2026-02-12
 
 ---
 
@@ -19,11 +19,20 @@
 
 ---
 
-## 📊 Current State (v0.9.7)
+## 📊 Current State (v0.9.19)
 
 ### What's Working ✅
 
-**Multi-Modal RAG** (v0.9.4-v0.9.7):
+**OSS Embedding Providers** (v0.9.19) 🆕:
+- ✅ Provider-independent architecture (OpenAI, sentence-transformers, Ollama)
+- ✅ Pre-generated embeddings (via `doc.Embedding` field)
+- ✅ Fast re-embedding (20x faster than re-ingestion, 200+ docs/min)
+- ✅ Auto-detection of collection embedding models for queries
+- ✅ Cost savings ($240/year for 10M tokens vs OpenAI)
+- ✅ Works with ALL 10 vector databases
+- ✅ Models: sentence-transformers (768/384 dims), Ollama (768/1024 dims)
+
+**Multi-Modal RAG** (v0.9.4-v0.9.19):
 - ✅ Image collections with embeddings
 - ✅ `--top_k_images` flag for guaranteed image results
 - ✅ RAG agent citations for multi-collection queries
@@ -60,8 +69,13 @@
 - ❓ Neo4j: Untested with image collections
 
 **Documentation** (Issues #15, #17):
+- ✅ ARCHITECTURE.md updated with embedding provider patterns (v0.9.19)
+- ✅ VDB_SUPPORT_MATRIX.md updated with OSS embedding support (v0.9.19)
+- ✅ README.md enhanced with comprehensive OSS embedding examples (v0.9.19)
+- ✅ DEMO.md updated with OSS embedding workflows (v0.9.19)
+- ✅ BATCH_DOCS_CREATION.md updated with OSS examples (v0.9.19)
 - ⚠️ USER_GUIDE.md needs multi-modal RAG examples
-- ⚠️ Videos and presentations outdated (v0.7.x era)
+- ⚠️ Videos and presentations outdated (v0.7.x era, need v0.9.19+ content)
 - ⚠️ Missing production deployment guides
 - ⚠️ Missing performance benchmarks
 
