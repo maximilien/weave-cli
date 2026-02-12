@@ -4,11 +4,24 @@ This directory contains asciinema recordings of Weave CLI demonstrations.
 
 ## Available Recordings
 
+### Core Demos
 - `weave-cli-full-demo.cast` - Complete 5-minute demo showcasing all features
 - `weave-cli-quick-demo.cast` - Quick 2-minute demo for rapid overview
+- `weave-cli-repl-demo.cast` - AI-powered REPL mode demonstration
+- `weave-cli-config-demo.cast` - Configuration management demo
+- `weave-cli-supabase-demo.cast` - Supabase integration demo
+
+### OSS Embedding Demos (v0.9.19+) 🆕
+- `scripts/oss-embeddings-basic.sh` - Basic OSS embedding workflow (~2 min)
+- `scripts/oss-embeddings-reembed.sh` - Re-embedding demo (20x faster) (~3 min)
+- `scripts/oss-embeddings-compare.sh` - Model comparison and selection (~3 min)
+
+### Metadata
 - `latest-demo-uploads.txt` - **Latest uploaded demo URLs** (automatically updated)
 
 ## Creating Recordings
+
+### Recording Core Demos
 
 Use the asciinema recording tool:
 
@@ -28,6 +41,52 @@ Use the asciinema recording tool:
 # View latest uploaded demo URLs
 cat videos/latest-demo-uploads.txt
 ```
+
+### Recording OSS Embedding Demos (v0.9.19+)
+
+Record OSS embedding workflow demonstrations:
+
+```bash
+# Prerequisites
+pip install sentence-transformers  # One-time setup
+weave health check --milvus-local   # Verify Milvus is running
+
+# Record Basic OSS Workflow (~2 min)
+asciinema rec videos/oss-embeddings-basic.cast -c "bash videos/scripts/oss-embeddings-basic.sh"
+
+# Record Re-embedding Demo (~3 min)
+asciinema rec videos/oss-embeddings-reembed.cast -c "bash videos/scripts/oss-embeddings-reembed.sh"
+
+# Record Model Comparison Demo (~3 min)
+asciinema rec videos/oss-embeddings-compare.cast -c "bash videos/scripts/oss-embeddings-compare.sh"
+
+# Upload all OSS demos
+asciinema upload videos/oss-embeddings-basic.cast
+asciinema upload videos/oss-embeddings-reembed.cast
+asciinema upload videos/oss-embeddings-compare.cast
+```
+
+**What Each Demo Shows:**
+
+1. **oss-embeddings-basic.sh** - Getting started with OSS embeddings
+   - Install sentence-transformers
+   - List available models
+   - Create collection with OSS embedding
+   - Query with auto-detection
+   - Verify collection metadata
+
+2. **oss-embeddings-reembed.sh** - Fast model switching (20x speedup)
+   - Create OpenAI collection
+   - Re-embed to OSS model (200+ docs/min)
+   - Query both collections
+   - Compare quality (90%+ retention typical)
+   - Cost analysis ($240/year savings)
+
+3. **oss-embeddings-compare.sh** - Model selection guide
+   - Re-embed to multiple models (mpnet, MiniLM)
+   - Query all collections with same query
+   - Generate quality comparison reports
+   - Recommendations for model selection
 
 ## Prerequisites
 
