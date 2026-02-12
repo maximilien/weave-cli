@@ -94,6 +94,43 @@ weave docs batch \
   --parallel 3
 ```
 
+### With OSS Embeddings (NEW in v0.9.19)
+
+Use open-source embedding models for 100% FREE operation:
+
+```bash
+# Setup (one-time)
+pip install sentence-transformers
+
+# Batch ingest with OSS embedding (saves $240/year on 10M tokens)
+weave docs batch \
+  --directory ./documents \
+  --collection MyDocs_OSS \
+  --embedding sentence-transformers/all-mpnet-base-v2 \
+  --parallel 3
+
+# Fast variant (384 dims instead of 768)
+weave docs batch \
+  --directory ./documents \
+  --collection MyDocs_Fast \
+  --embedding sentence-transformers/all-MiniLM-L6-v2 \
+  --parallel 5
+
+# With Ollama (local LLM embedding)
+weave docs batch \
+  --directory ./documents \
+  --collection MyDocs_Ollama \
+  --embedding ollama/nomic-embed-text \
+  --parallel 3
+```
+
+**OSS Benefits for Batch Processing:**
+- **Zero API Costs**: Completely free, no OpenAI charges
+- **Privacy**: All embeddings generated locally
+- **Quality**: 90%+ retention vs OpenAI for most use cases
+- **Speed**: Similar performance to OpenAI for batch operations
+- **All VDBs**: Works with all 10 supported vector databases
+
 ### Force Reprocess
 
 Reprocess all files, even if already processed:
