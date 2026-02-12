@@ -1,5 +1,8 @@
 # Vector Database Support Matrix
 
+**Last Updated**: 2026-02-12
+**Version**: v0.9.19+
+
 Weave CLI supports multiple vector databases with varying levels of maturity
 and features.
 
