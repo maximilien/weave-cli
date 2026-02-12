@@ -755,8 +755,14 @@ func ListChromaCollections(ctx context.Context, cfg *config.VectorDBConfig, limi
 				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
 			}
 
-			// Display collection info with vector icon
-			fmt.Printf("%2d. %s %s%s 🔍\n", i+1, nameColor, countStr, vectorizerStr)
+			// Choose emoji based on collection type
+			emoji := "📄" // Default: text document
+			if strings.Contains(strings.ToLower(info.Name), "image") {
+				emoji = "🖼️" // Image collection
+			}
+
+			// Display collection info with appropriate icon
+			fmt.Printf("%2d. %s %s%s %s\n", i+1, nameColor, countStr, vectorizerStr, emoji)
 		}
 	} else {
 		// JSON output
@@ -996,8 +1002,14 @@ func ListNeo4jCollections(ctx context.Context, cfg *config.VectorDBConfig, limit
 				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
 			}
 
-			// Display collection info with emoji (🔍 for vector search)
-			fmt.Printf("%2d. %s %s%s 🔍\n", i+1, nameColor, countStr, vectorizerStr)
+			// Choose emoji based on collection type
+			emoji := "📄" // Default: text document
+			if strings.Contains(strings.ToLower(info.Name), "image") {
+				emoji = "🖼️" // Image collection
+			}
+
+			// Display collection info with appropriate icon
+			fmt.Printf("%2d. %s %s%s %s\n", i+1, nameColor, countStr, vectorizerStr, emoji)
 		}
 	} else {
 		// JSON output
@@ -1119,8 +1131,14 @@ func ListMilvusCollections(ctx context.Context, cfg *config.VectorDBConfig, limi
 				vectorizerStr = fmt.Sprintf(" [%s]", GetStyledValueDimmed(info.Vectorizer))
 			}
 
-			// Display collection info with vector icon
-			fmt.Printf("%2d. %s %s%s 🔍\n", i+1, nameColor, countStr, vectorizerStr)
+			// Choose emoji based on collection type
+			emoji := "📄" // Default: text document
+			if strings.Contains(strings.ToLower(info.Name), "image") {
+				emoji = "🖼️" // Image collection
+			}
+
+			// Display collection info with appropriate icon
+			fmt.Printf("%2d. %s %s%s %s\n", i+1, nameColor, countStr, vectorizerStr, emoji)
 		}
 	} else {
 		// JSON output
