@@ -112,6 +112,10 @@ func (c *Client) Query(ctx context.Context, collectionName, queryText string, op
 		// For image collections, request url and metadata.filename
 		// GraphQL allows accessing nested properties directly by name
 		queryFields = "url\n\t\t\t\t\tmetadata {\n\t\t\t\t\t\tfilename\n\t\t\t\t\t}"
+		// Include image_data field if requested
+		if options.IncludeImages {
+			queryFields = "url\n\t\t\t\t\timage_data\n\t\t\t\t\tmetadata {\n\t\t\t\t\t\tfilename\n\t\t\t\t\t}"
+		}
 		if hasURL {
 			contentField = "url" // Use URL for display purposes
 		}
@@ -587,6 +591,14 @@ func (c *Client) parseQueryResults(result interface{}, contentField string) ([]Q
 
 		// Extract metadata
 		metadata, _ := resultItem["metadata"].(map[string]interface{})
+
+		// Extract image_data if present and add to metadata
+		if imageData, ok := resultItem["image_data"].(string); ok && imageData != "" {
+			if metadata == nil {
+				metadata = make(map[string]interface{})
+			}
+			metadata["image_base64"] = imageData
+		}
 
 		queryResults = append(queryResults, QueryResult{
 			ID:       id,

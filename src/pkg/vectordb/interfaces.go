@@ -26,6 +26,7 @@ type QueryOptions struct {
 	SearchMetadata bool    `json:"search_metadata"`
 	NoTruncate     bool    `json:"no_truncate"`
 	UseBM25        bool    `json:"use_bm25"`
+	IncludeImages  bool    `json:"include_images"` // Include base64 image data in results
 }
 
 // QueryResult represents a search result with score

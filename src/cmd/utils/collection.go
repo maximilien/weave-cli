@@ -2689,6 +2689,7 @@ func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collection
 		SearchMetadata: options.SearchMetadata,
 		NoTruncate:     options.NoTruncate,
 		UseBM25:        options.UseBM25,
+		IncludeImages:  options.IncludeImages,
 	}
 
 	// Perform semantic or BM25 search based on options
@@ -2707,11 +2708,20 @@ func QueryCollection(ctx context.Context, cfg *config.VectorDBConfig, collection
 	// Convert vectordb.QueryResult to weaviate.QueryResult for display
 	weaviateResults := make([]weaviate.QueryResult, len(results))
 	for i, r := range results {
+		// Add image_base64 to metadata if present
+		metadata := r.Document.Metadata
+		if options.IncludeImages && r.Document.ImageData != "" {
+			if metadata == nil {
+				metadata = make(map[string]interface{})
+			}
+			metadata["image_base64"] = r.Document.ImageData
+		}
+
 		weaviateResults[i] = weaviate.QueryResult{
 			ID:       r.Document.ID,
 			Content:  r.Document.Content,
 			Score:    r.Score,
-			Metadata: r.Document.Metadata,
+			Metadata: metadata,
 		}
 	}
 
@@ -2745,6 +2755,7 @@ func QueryCollectionWithAgent(ctx context.Context, cfg *config.VectorDBConfig, c
 		SearchMetadata: options.SearchMetadata,
 		NoTruncate:     options.NoTruncate,
 		UseBM25:        options.UseBM25,
+		IncludeImages:  options.IncludeImages,
 	}
 
 	// Perform semantic or BM25 search based on options

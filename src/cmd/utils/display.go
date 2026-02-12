@@ -4,16 +4,13 @@
 package utils
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/fatih/color"
-	"github.com/maximilien/weave-cli/src/pkg/logging"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
@@ -838,70 +835,14 @@ func ShowDocumentMetadata(doc weaviate.Document, collectionName string) {
 	fmt.Println()
 }
 
-// loadImageData loads an image file and returns base64-encoded data
-// Returns empty string if file not found or error occurs
-func loadImageData(filename string) string {
-	if filename == "" {
-		return ""
-	}
-
-	// Read image file
-	imageData, err := os.ReadFile(filename)
-	if err != nil {
-		logging.Debug("Failed to load image %s: %v", filename, err)
-		return ""
-	}
-
-	// Encode to base64
-	return base64.StdEncoding.EncodeToString(imageData)
-}
-
-// addImageDataToResults processes query results and adds base64 image data if requested
-func addImageDataToResults(results []weaviate.QueryResult, includeImages bool) []map[string]interface{} {
-	processedResults := make([]map[string]interface{}, len(results))
-
-	for i, result := range results {
-		// Convert QueryResult to map for JSON marshaling
-		resultMap := map[string]interface{}{
-			"id":       result.ID,
-			"content":  result.Content,
-			"metadata": result.Metadata,
-			"score":    result.Score,
-		}
-
-		// Add image data if requested and filename exists in metadata
-		if includeImages && result.Metadata != nil {
-			if filename, ok := result.Metadata["filename"].(string); ok && filename != "" {
-				imageBase64 := loadImageData(filename)
-				if imageBase64 != "" {
-					// Add image_base64 to metadata
-					metadata := make(map[string]interface{})
-					for k, v := range result.Metadata {
-						metadata[k] = v
-					}
-					metadata["image_base64"] = imageBase64
-					resultMap["metadata"] = metadata
-				}
-			}
-		}
-
-		processedResults[i] = resultMap
-	}
-
-	return processedResults
-}
-
 // DisplayQueryResults displays semantic search results with styling
 func DisplayQueryResults(results []weaviate.QueryResult, collectionName, queryText string, noTruncate bool, jsonOutput bool, includeImages bool) {
 	// Handle JSON output
 	if jsonOutput {
-		// Process results to add image data if requested
-		processedResults := addImageDataToResults(results, includeImages)
-
 		output := map[string]interface{}{
 			"collection": collectionName,
 			"query":      queryText,
-			"results":    processedResults,
+			"results":    results,
 			"count":      len(results),
 		}
 		jsonBytes, err := json.MarshalIndent(output, "", "  ")
