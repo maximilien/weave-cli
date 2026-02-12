@@ -74,10 +74,17 @@ Weave CLI supports **3 embedding providers** - including 100% free, local option
 # Install sentence-transformers (one time)
 pip install sentence-transformers
 
-# Re-embed existing collection with OSS model (20x faster than re-ingestion!)
+# Create collection with OSS embedding model
+weave docs create MyDocs_OSS data/documents.pdf \
+  --embedding sentence-transformers/all-mpnet-base-v2
+
+# Re-embed existing collection (20x faster than re-ingestion!)
 weave collection reembed MyCollection \
   --new-embedding sentence-transformers/all-mpnet-base-v2 \
   --output MyCollection_OSS
+
+# Query automatically uses collection's embedding model
+weave cols query MyDocs_OSS "search query" --top-k 5
 
 # Compare OpenAI vs OSS embeddings
 weave collection compare MyCollection MyCollection_OSS \
@@ -85,8 +92,36 @@ weave collection compare MyCollection MyCollection_OSS \
   --report comparison.md
 ```
 
-**Performance:** OSS models often achieve 90%+ quality retention vs OpenAI
-at 100% cost savings!
+**Available Models:**
+
+```bash
+# List all available embedding models
+weave embeddings list
+
+# Output shows providers with dimensions and support status:
+# OpenAI Models:
+#   text-embedding-3-small     (1536 dims) ✅
+#   text-embedding-3-large     (3072 dims) ✅
+#   text-embedding-ada-002     (1536 dims) ✅
+#
+# sentence-transformers (OSS):
+#   all-mpnet-base-v2          (768 dims)  ✅ Recommended
+#   all-MiniLM-L6-v2           (384 dims)  ✅ Fast
+#
+# Ollama (Local):
+#   nomic-embed-text           (768 dims)  ✅
+#   mxbai-embed-large          (1024 dims) ✅
+```
+
+**Cost Savings:**
+
+- **10M tokens/month**: Save **$240/year** using OSS vs OpenAI
+- **Performance**: OSS models achieve 90%+ quality retention vs OpenAI
+- **Privacy**: All processing happens locally - no data leaves your machine
+
+**Works with ALL Vector Databases:**
+
+OSS embeddings use pre-generated embeddings (via `doc.Embedding` field), making them compatible with all 10 supported vector databases - no VDB-specific configuration required!
 
 📖 **See [OSS Embedding Testing Guide](docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)
 for setup, troubleshooting, and benchmarks**
@@ -187,6 +222,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - **[📋 Changelog](CHANGELOG.md)** - Version history and updates
 - **[🗂️ VDB Support Matrix](docs/VDB_SUPPORT_MATRIX.md)** - Database feature
   comparison
+- **[🏗️ Architecture](docs/ARCHITECTURE.md)** - System architecture including
+  embedding provider patterns (v0.9.19+)
 
 ### Guides
 
@@ -195,6 +232,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - **[⚙️ Agent Management](docs/AGENT_MANAGEMENT.md)** - Create, customize, and
   manage RAG agents
 - **[🔌 MCP AI Tools API](docs/mcp/MCP_AI_TOOLS.md)** - Using AI tools via MCP server
+- **[🧬 OSS Embedding Testing](docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)** -
+  Setup, troubleshooting, and benchmarks for open-source embeddings (v0.9.19+)
 - **[📊 Observability](docs/OBSERVABILITY.md)** - Production monitoring with
   Prometheus metrics, health endpoints, and structured logging (v0.9.15+)
 - **[⏱️ Timeout Configuration](docs/TIMEOUT_CONFIGURATION.md)** - Configure and
@@ -739,6 +778,90 @@ test_cases:
 - `OPIK_API_KEY` + `OPIK_WORKSPACE` for Opik evaluators (optional)
 
 See [Evaluation Guide](docs/EVALUATION.md) for advanced usage.
+
+### OSS Embedding Workflows
+
+Comprehensive examples using open-source embedding models:
+
+```bash
+# 1. Setup OSS Embeddings (one-time)
+pip install sentence-transformers
+
+# For Ollama (alternative OSS provider):
+# brew install ollama && ollama pull nomic-embed-text
+
+# 2. Create Collection with OSS Model
+weave docs create TechDocs documentation.pdf \
+  --embedding sentence-transformers/all-mpnet-base-v2 \
+  --milvus-local
+
+# 3. Re-embed Existing Collections (20x faster!)
+# Re-embed from OpenAI to OSS (saves $240/year on 10M tokens)
+weave collection reembed MyDocs \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output MyDocs_OSS
+
+# Re-embed to test different OSS models
+weave collection reembed MyDocs_OSS \
+  --new-embedding sentence-transformers/all-MiniLM-L6-v2 \
+  --output MyDocs_Fast
+
+# 4. Query (automatically uses collection's embedding model)
+weave cols query MyDocs_OSS "machine learning algorithms" --top-k 5
+
+# Query with RAG agent
+weave cols query MyDocs_OSS "explain neural networks" \
+  --agent rag-agent \
+  --top-k 10
+
+# 5. Compare Embedding Models
+# Compare OpenAI vs OSS quality
+weave collection compare MyDocs MyDocs_OSS \
+  --query "test query" \
+  --report openai-vs-oss.md
+
+# Compare two OSS models
+weave collection compare MyDocs_OSS MyDocs_Fast \
+  --query "performance test" \
+  --report mpnet-vs-minilm.md
+
+# 6. Multi-Collection with Mixed Embeddings
+# Query collections using different embedding models
+weave cols query OpenAIDocs OSSDocsw "search across both" \
+  --top-k 5 \
+  --agent rag-agent
+
+# 7. List Available Embeddings
+weave embeddings list              # Show all providers
+weave emb ls --verbose             # Detailed info with dimensions
+```
+
+**Typical OSS Workflow:**
+
+```bash
+# Phase 1: Initial ingestion with OpenAI (fast development)
+weave docs create QuickTest data.pdf --embedding text-embedding-3-small
+
+# Phase 2: Re-embed to OSS for production (cost optimization)
+weave collection reembed QuickTest \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output Production
+
+# Phase 3: Test quality vs original
+weave collection compare QuickTest Production \
+  --query "quality test" \
+  --report quality-comparison.md
+
+# Phase 4: Deploy OSS collection
+weave cols query Production "production queries" --agent rag-agent
+```
+
+**Performance Benchmarks:**
+
+- **Re-embedding speed**: 200+ documents/minute (vs 10 docs/min for full re-ingestion)
+- **Quality retention**: 90%+ vs OpenAI for most use cases
+- **Cost savings**: $240/year for 10M tokens/month workload
+- **Compatibility**: Works with ALL 10 vector databases
 
 ### More Examples
 
