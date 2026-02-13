@@ -55,7 +55,7 @@ and features.
 - **Chroma Hybrid**: Falls back to semantic search (no error)
 - **Qdrant Schema**: Immutable after collection creation
 - **Milvus Schema**: Immutable after collection creation
-- **Milvus Image Storage**: VARCHAR limit 65KB (~47KB original). Use `--image-storage s3` for larger images. See [Issue #29](https://github.com/maximilien/weave-cli/issues/29)
+- **Milvus Image Storage**: VARCHAR limit 65KB (~47KB original after base64). **Solution**: Use `--image-storage minio` or `--image-storage s3` for automatic external storage. Images >47KB get thumbnail in VDB + full image in S3/MinIO. See [External Storage Guide](../README.md#external-storage-for-large-images-v0100) and [Issue #29](https://github.com/maximilien/weave-cli/issues/29)
 - **Neo4j Schema**: Not supported - delete and recreate collection instead
 - **OpenSearch Batch**: Sequential operations (no native bulk API yet)
 - **Pinecone Hybrid**: Falls back to semantic search (vector-only database)

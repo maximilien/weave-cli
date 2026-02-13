@@ -572,6 +572,72 @@ weave
 
 ---
 
+## External Storage for Large Images (v0.10.0+)
+
+### Problem: VDB Size Limits
+
+Some vector databases have limits for storing images:
+- **Milvus**: 65KB VARCHAR limit → max ~47KB image (after base64 encoding)
+- **Large images** (100KB-500KB) exceed this limit
+
+### Solution: Automatic External Storage
+
+Weave CLI automatically handles large images using S3/MinIO:
+
+```bash
+# Start MinIO (local testing)
+./scripts/start-minio.sh
+
+# Ingest images - automatic external storage for images >47KB
+weave docs create AuctionImages data/auction-catalog/ \
+  --image-storage minio \
+  --minio-bucket weave-images \
+  --milvus-local
+
+# Query works normally - thumbnails in VDB, full images in MinIO
+weave cols query AuctionImages "vintage watches" --top-k 5
+```
+
+### What Happens Automatically
+
+| Image Size | Storage Location | VDB Fields |
+|-----------|------------------|------------|
+| ≤47KB | Direct in VDB | `image_data` (full base64) |
+| >47KB | MinIO/S3 | `image_thumbnail` (preview) + `image_url` (full-res link) |
+
+### Production with AWS S3
+
+```bash
+# Set credentials
+export AWS_ACCESS_KEY_ID=your-key
+export AWS_SECRET_ACCESS_KEY=your-secret
+
+# Ingest with S3
+weave docs create ProductCatalog images/ \
+  --image-storage s3 \
+  --s3-bucket my-product-images \
+  --s3-region us-west-2 \
+  --milvus-cloud
+```
+
+### Benefits
+
+- ✅ No size limits - store unlimited image sizes
+- ✅ Cost optimization - cheaper S3 for large files
+- ✅ Fast previews - thumbnails in VDB
+- ✅ Full resolution - access via URL when needed
+- ✅ Works with all VDBs - optional for most, required for Milvus
+
+### Storage Options
+
+| Storage | Setup | Cost | Use Case |
+|---------|-------|------|----------|
+| MinIO | `./scripts/start-minio.sh` | FREE | Local dev |
+| AWS S3 | AWS account | $0.023/GB/month | Production |
+| Local | `--image-storage local` | FREE | Testing |
+
+---
+
 ## Notes
 
 - All demo commands are safe to run multiple times
