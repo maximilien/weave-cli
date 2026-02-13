@@ -161,6 +161,7 @@ weave docs create AuctionImages data/images/ \
   --minio-bucket weave-images \
   --milvus-local
 
+# Bucket auto-created if it doesn't exist (v0.9.22+)
 # Images >47KB automatically uploaded to MinIO
 # Thumbnails stored in Milvus for fast preview
 # Full-resolution URLs: http://localhost:9000/weave-images/...
@@ -209,6 +210,7 @@ weave docs create ProductCatalog images/ \
 - ✅ CDN integration - S3 URLs work with CloudFront
 - ✅ Fast previews - thumbnails in VDB for instant display
 - ✅ Full resolution - access original via URL when needed
+- ✅ Auto-bucket creation - buckets created automatically (v0.9.22+)
 
 📖 **See [MinIO Setup Guide](docker/docker-compose.minio.yml)
 for detailed configuration**

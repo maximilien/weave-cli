@@ -70,6 +70,11 @@ func NewS3Storage(config Config) (*MinioStorage, error) {
 
 // Upload stores an image and returns its URL
 func (s *MinioStorage) Upload(ctx context.Context, image []byte, metadata ImageMetadata) (string, error) {
+	// Ensure bucket exists (auto-create if missing)
+	if err := s.ensureBucket(ctx); err != nil {
+		return "", fmt.Errorf("failed to ensure bucket exists: %w", err)
+	}
+
 	// Generate unique key for the image
 	key := s.generateKey(metadata)
 
@@ -295,4 +300,25 @@ func (s *MinioStorage) extractKey(imageURL string) (string, error) {
 	path = strings.TrimPrefix(path, s.bucket+"/")
 
 	return path, nil
+}
+
+// ensureBucket checks if the bucket exists and creates it if it doesn't
+func (s *MinioStorage) ensureBucket(ctx context.Context) error {
+	// Check if bucket exists
+	exists, err := s.client.BucketExists(ctx, s.bucket)
+	if err != nil {
+		return fmt.Errorf("failed to check bucket existence: %w", err)
+	}
+
+	// Create bucket if it doesn't exist
+	if !exists {
+		err = s.client.MakeBucket(ctx, s.bucket, minio.MakeBucketOptions{
+			Region: s.client.EndpointURL().Host, // Use endpoint host as region for MinIO
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create bucket '%s': %w", s.bucket, err)
+		}
+	}
+
+	return nil
 }
