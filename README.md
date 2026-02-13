@@ -126,6 +126,87 @@ OSS embeddings use pre-generated embeddings (via `doc.Embedding` field), making 
 📖 **See [OSS Embedding Testing Guide](docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)
 for setup, troubleshooting, and benchmarks**
 
+### External Storage for Large Images (v0.10.0+)
+
+Some vector databases have size limits for storing images directly. For example, **Milvus has a 65KB VARCHAR limit**, which can only safely store ~47KB images after base64 encoding.
+
+Weave CLI automatically handles large images using **external storage** (S3, MinIO, or local filesystem):
+
+| Storage | Type | Cost | Use Case |
+|---------|------|------|----------|
+| **MinIO** | Self-hosted S3 | FREE | Local development, testing |
+| **AWS S3** | Cloud object storage | Pay-as-you-go | Production, CDN integration |
+| **Local** | Filesystem | FREE | Testing, single-machine |
+
+**How It Works:**
+
+1. Images **≤47KB**: Stored directly in vector database (fast)
+2. Images **>47KB**: Thumbnail (<47KB) stored in VDB, full image in external storage
+3. Automatic: No code changes required - just add flags!
+
+**Quick Start with MinIO (Local):**
+
+```bash
+# Start MinIO (one time)
+./scripts/start-minio.sh
+
+# Ingest images with automatic external storage
+weave docs create AuctionImages data/images/ \
+  --image-storage minio \
+  --minio-bucket weave-images \
+  --milvus-local
+
+# Images >47KB automatically uploaded to MinIO
+# Thumbnails stored in Milvus for fast preview
+# Full-resolution URLs: http://localhost:9000/weave-images/...
+```
+
+**Production with AWS S3:**
+
+```bash
+# Set AWS credentials (or use --s3-access-key/--s3-secret-key)
+export AWS_ACCESS_KEY_ID=your-key
+export AWS_SECRET_ACCESS_KEY=your-secret
+
+# Ingest with S3 storage
+weave docs create ProductCatalog images/ \
+  --image-storage s3 \
+  --s3-bucket my-product-images \
+  --s3-region us-west-2 \
+  --milvus-cloud
+```
+
+**Supported Flags:**
+
+```bash
+--image-storage s3|minio|local  # Storage backend
+--s3-bucket <name>              # S3 bucket name
+--s3-region <region>            # AWS region (default: us-east-1)
+--minio-bucket <name>           # MinIO bucket name
+--minio-endpoint <host:port>    # MinIO endpoint (default: localhost:9000)
+--local-storage-path <path>     # Local storage directory (default: ./storage)
+--store-pdf                     # Also store PDFs in external storage
+```
+
+**What Gets Stored Where:**
+
+| Field | Small Images (≤47KB) | Large Images (>47KB) |
+|-------|---------------------|---------------------|
+| `image_data` | Full base64 image | Empty (cleared) |
+| `image_thumbnail` | Empty | Base64 thumbnail (<47KB) |
+| `image_url` | Empty | S3/MinIO URL |
+| `image_metadata` | Empty | Size, format, storage type |
+
+**Benefits:**
+
+- ✅ No VDB size limits - store unlimited image sizes
+- ✅ Cost optimization - cheaper object storage for large files
+- ✅ CDN integration - S3 URLs work with CloudFront
+- ✅ Fast previews - thumbnails in VDB for instant display
+- ✅ Full resolution - access original via URL when needed
+
+📖 **See [MinIO Setup Guide](docker-compose.minio.yml) for detailed configuration**
+
 ### Basic Usage
 
 ```bash
