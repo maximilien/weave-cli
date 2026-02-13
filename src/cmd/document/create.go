@@ -38,6 +38,13 @@ For PDF files with images:
 - Images include OCR text, EXIF data, and captions when available
 - Use --skip-all-images for text-only extraction (no image processing)
 
+External Storage (v0.10.0+):
+For large images exceeding VDB limits (e.g., Milvus 65KB VARCHAR limit):
+- Use --image-storage to store full-resolution images in S3/MinIO/local filesystem
+- Thumbnails (<47KB) stored in VDB for fast preview
+- Full-resolution images accessible via URL
+- Supports S3 (AWS), MinIO (OSS), or local filesystem
+
 Examples:
   weave docs create MyCollection document.txt
   weave docs create MyCollection image.jpg
@@ -45,7 +52,13 @@ Examples:
   weave docs create WeaveDocs document.pdf --image-collection WeaveImages
   weave docs create RagMeDocs document.pdf --image-col RagMeImages
   weave docs create MyDocs document.pdf --skip-all-images  # text only
-  weave docs create MyCollection document.txt --embedding text-embedding-3-small`,
+  weave docs create MyCollection document.txt --embedding text-embedding-3-small
+
+  # External storage with MinIO (local docker)
+  weave docs create AuctionImages images/ --image-storage minio --minio-bucket auction-images
+
+  # External storage with AWS S3
+  weave docs create AuctionImages images/ --image-storage s3 --s3-bucket my-images --s3-region us-west-2`,
 	Args: cobra.ExactArgs(2),
 	Run:  runDocumentCreate,
 }
@@ -66,6 +79,21 @@ func init() {
 	CreateCmd.Flags().String("append-report", "", "Append to an existing CSV report")
 	CreateCmd.Flags().StringP("embedding", "e", "", "Embedding model to use for this document (e.g., text-embedding-3-small, text-embedding-ada-002)")
 	CreateCmd.Flags().Bool("json", false, "Output in JSON format")
+
+	// External storage flags (v0.10.0+) - for images exceeding VDB limits (e.g., Milvus 65KB)
+	CreateCmd.Flags().String("image-storage", "", "External storage backend for large images: s3, minio, or local (default: none)")
+	CreateCmd.Flags().String("s3-bucket", "", "S3 bucket name for image storage")
+	CreateCmd.Flags().String("s3-region", "us-east-1", "S3 region (default: us-east-1)")
+	CreateCmd.Flags().String("s3-access-key", "", "S3 access key (or set AWS_ACCESS_KEY_ID env var)")
+	CreateCmd.Flags().String("s3-secret-key", "", "S3 secret key (or set AWS_SECRET_ACCESS_KEY env var)")
+	CreateCmd.Flags().String("s3-endpoint", "", "S3 endpoint (optional, for S3-compatible services)")
+	CreateCmd.Flags().String("minio-endpoint", "localhost:9000", "MinIO endpoint (default: localhost:9000)")
+	CreateCmd.Flags().String("minio-bucket", "", "MinIO bucket name for image storage")
+	CreateCmd.Flags().String("minio-access-key", "minioadmin", "MinIO access key (default: minioadmin)")
+	CreateCmd.Flags().String("minio-secret-key", "minioadmin", "MinIO secret key (default: minioadmin)")
+	CreateCmd.Flags().Bool("minio-use-ssl", false, "Use SSL for MinIO connection (default: false)")
+	CreateCmd.Flags().String("local-storage-path", "./storage", "Local filesystem path for image storage (default: ./storage)")
+	CreateCmd.Flags().Bool("store-pdf", false, "Store PDF files in external storage and include URL in chunk metadata")
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
@@ -133,6 +161,45 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	// Smart database selection for single-database operations
 	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs create %s %s", collectionName, filePath))
+
+	// Configure external storage (v0.10.0+)
+	imageStorageType, _ := cmd.Flags().GetString("image-storage")
+	if imageStorageType != "" {
+		dbConfig.ImageStorageType = imageStorageType
+
+		switch imageStorageType {
+		case "s3":
+			dbConfig.ImageStorageBucket, _ = cmd.Flags().GetString("s3-bucket")
+			dbConfig.ImageStorageRegion, _ = cmd.Flags().GetString("s3-region")
+			dbConfig.ImageStorageAccessKey, _ = cmd.Flags().GetString("s3-access-key")
+			dbConfig.ImageStorageSecretKey, _ = cmd.Flags().GetString("s3-secret-key")
+			dbConfig.ImageStorageEndpoint, _ = cmd.Flags().GetString("s3-endpoint")
+			dbConfig.ImageStorageUseSSL = true
+
+			// Fallback to environment variables if not provided
+			if dbConfig.ImageStorageAccessKey == "" {
+				dbConfig.ImageStorageAccessKey = os.Getenv("AWS_ACCESS_KEY_ID")
+			}
+			if dbConfig.ImageStorageSecretKey == "" {
+				dbConfig.ImageStorageSecretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+			}
+
+		case "minio":
+			dbConfig.ImageStorageEndpoint, _ = cmd.Flags().GetString("minio-endpoint")
+			dbConfig.ImageStorageBucket, _ = cmd.Flags().GetString("minio-bucket")
+			dbConfig.ImageStorageAccessKey, _ = cmd.Flags().GetString("minio-access-key")
+			dbConfig.ImageStorageSecretKey, _ = cmd.Flags().GetString("minio-secret-key")
+			dbConfig.ImageStorageUseSSL, _ = cmd.Flags().GetBool("minio-use-ssl")
+
+		case "local":
+			dbConfig.ImageStorageEndpoint, _ = cmd.Flags().GetString("local-storage-path")
+			dbConfig.ImageStorageUseSSL = false
+		}
+
+		// PDF storage configuration
+		storePDF, _ := cmd.Flags().GetBool("store-pdf")
+		dbConfig.PDFStorageEnabled = storePDF
+	}
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:

@@ -1,0 +1,56 @@
+# MinIO Configuration for Weave CLI External Storage
+# Provides S3-compatible object storage for images exceeding VDB limits (e.g., Milvus 65KB)
+#
+# Quick Start:
+#   docker-compose -f docker-compose.minio.yml up -d
+#   Access console: http://localhost:9001 (minioadmin/minioadmin)
+#   Use with weave: --image-storage minio --minio-bucket weave-images
+
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: weave-minio
+    ports:
+      - "9000:9000"  # API port
+      - "9001:9001"  # Console port
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+
+  # Optional: Create default bucket on startup
+  minio-setup:
+    image: minio/mc:latest
+    container_name: weave-minio-setup
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 10;
+      /usr/bin/mc config host add minio http://minio:9000 minioadmin minioadmin;
+      /usr/bin/mc mb minio/weave-images --ignore-existing;
+      /usr/bin/mc mb minio/weave-pdfs --ignore-existing;
+      /usr/bin/mc anonymous set download minio/weave-images;
+      /usr/bin/mc anonymous set download minio/weave-pdfs;
+      echo 'MinIO setup complete! Buckets created: weave-images, weave-pdfs';
+      exit 0;
+      "
+    restart: "no"
+
+volumes:
+  minio-data:
+    driver: local
+
+networks:
+  default:
+    name: weave-network
