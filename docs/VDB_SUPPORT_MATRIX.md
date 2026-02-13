@@ -44,6 +44,7 @@ and features.
 | **Collection Re-embedding** [v0.9.19+] | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **AI Schema Suggestions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | **AI Chunking Suggestions** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Image Storage** | ✅ | ✅ | ⚠️ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **Legend:**
 - ✅ Fully supported
@@ -54,6 +55,7 @@ and features.
 - **Chroma Hybrid**: Falls back to semantic search (no error)
 - **Qdrant Schema**: Immutable after collection creation
 - **Milvus Schema**: Immutable after collection creation
+- **Milvus Image Storage**: VARCHAR limit 65KB (~47KB original). Use `--image-storage s3` for larger images. See [Issue #29](https://github.com/maximilien/weave-cli/issues/29)
 - **Neo4j Schema**: Not supported - delete and recreate collection instead
 - **OpenSearch Batch**: Sequential operations (no native bulk API yet)
 - **Pinecone Hybrid**: Falls back to semantic search (vector-only database)
