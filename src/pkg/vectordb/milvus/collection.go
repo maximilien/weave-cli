@@ -18,19 +18,19 @@ import (
 
 // Collection field names (standardized across all collections)
 const (
-	FieldDocumentID      = "document_id"
-	FieldText            = "text"
-	FieldContent         = "content"
-	FieldImage           = "image"
-	FieldImageData       = "image_data"
-	FieldURL             = "url"
-	FieldEmbedding       = "embedding"
-	FieldMetadata        = "metadata"
-	FieldCreatedAt       = "created_at"
-	FieldUpdatedAt       = "updated_at"
-	FieldImageThumbnail  = "image_thumbnail"  // External storage: thumbnail (base64, <47KB)
-	FieldImageURL        = "image_url"        // External storage: full image URL (S3/MinIO)
-	FieldImageMetadata   = "image_metadata"   // External storage: image metadata (JSON)
+	FieldDocumentID     = "document_id"
+	FieldText           = "text"
+	FieldContent        = "content"
+	FieldImage          = "image"
+	FieldImageData      = "image_data"
+	FieldURL            = "url"
+	FieldEmbedding      = "embedding"
+	FieldMetadata       = "metadata"
+	FieldCreatedAt      = "created_at"
+	FieldUpdatedAt      = "updated_at"
+	FieldImageThumbnail = "image_thumbnail" // External storage: thumbnail (base64, <47KB)
+	FieldImageURL       = "image_url"       // External storage: full image URL (S3/MinIO)
+	FieldImageMetadata  = "image_metadata"  // External storage: image metadata (JSON)
 )
 
 // CreateCollection creates a new Milvus collection with explicit schema
