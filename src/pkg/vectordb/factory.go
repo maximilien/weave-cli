@@ -176,6 +176,36 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 		EmbeddingDimension: cfg.EmbeddingDimension,
 	}
 
+	// Build external storage configuration (v0.10.0+)
+	if cfg.ImageStorageType != "" {
+		newConfig.ImageStorage = &StorageConfig{
+			Enabled:    true,
+			Type:       cfg.ImageStorageType,
+			Endpoint:   cfg.ImageStorageEndpoint,
+			AccessKey:  cfg.ImageStorageAccessKey,
+			SecretKey:  cfg.ImageStorageSecretKey,
+			Region:     cfg.ImageStorageRegion,
+			Bucket:     cfg.ImageStorageBucket,
+			PathPrefix: cfg.ImageStoragePathPrefix,
+			UseSSL:     cfg.ImageStorageUseSSL,
+		}
+	}
+
+	// PDF storage uses same backend as images
+	if cfg.PDFStorageEnabled && cfg.ImageStorageType != "" {
+		newConfig.PDFStorage = &StorageConfig{
+			Enabled:    true,
+			Type:       cfg.ImageStorageType,
+			Endpoint:   cfg.ImageStorageEndpoint,
+			AccessKey:  cfg.ImageStorageAccessKey,
+			SecretKey:  cfg.ImageStorageSecretKey,
+			Region:     cfg.ImageStorageRegion,
+			Bucket:     cfg.ImageStorageBucket,
+			PathPrefix: "pdfs", // Separate path prefix for PDFs
+			UseSSL:     cfg.ImageStorageUseSSL,
+		}
+	}
+
 	return CreateClient(newConfig)
 }
 

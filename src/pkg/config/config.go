@@ -102,6 +102,17 @@ type VectorDBConfig struct {
 	SimulateEmbeddings bool         `yaml:"simulate_embeddings,omitempty"`
 	EmbeddingDimension int          `yaml:"embedding_dimension,omitempty"`
 	Collections        []Collection `yaml:"collections"`
+
+	// External storage configuration (v0.10.0+) - CLI only, not in YAML
+	ImageStorageType       string `yaml:"-"` // s3, minio, local
+	ImageStorageEndpoint   string `yaml:"-"`
+	ImageStorageAccessKey  string `yaml:"-"`
+	ImageStorageSecretKey  string `yaml:"-"`
+	ImageStorageRegion     string `yaml:"-"`
+	ImageStorageBucket     string `yaml:"-"`
+	ImageStoragePathPrefix string `yaml:"-"`
+	ImageStorageUseSSL     bool   `yaml:"-"`
+	PDFStorageEnabled      bool   `yaml:"-"`
 }
 
 // SchemaDefinition represents a named schema that can be used to create collections
