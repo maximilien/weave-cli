@@ -5,6 +5,7 @@ This directory contains asciinema recordings of Weave CLI demonstrations.
 ## Available Recordings
 
 ### Core Demos
+
 - `weave-cli-full-demo.cast` - Complete 5-minute demo showcasing all features
 - `weave-cli-quick-demo.cast` - Quick 2-minute demo for rapid overview
 - `weave-cli-repl-demo.cast` - AI-powered REPL mode demonstration
@@ -12,11 +13,13 @@ This directory contains asciinema recordings of Weave CLI demonstrations.
 - `weave-cli-supabase-demo.cast` - Supabase integration demo
 
 ### OSS Embedding Demos (v0.9.19+) 🆕
+
 - `scripts/oss-embeddings-basic.sh` - Basic OSS embedding workflow (~2 min)
 - `scripts/oss-embeddings-reembed.sh` - Re-embedding demo (20x faster) (~3 min)
 - `scripts/oss-embeddings-compare.sh` - Model comparison and selection (~3 min)
 
 ### Metadata
+
 - `latest-demo-uploads.txt` - **Latest uploaded demo URLs** (automatically updated)
 
 ## Creating Recordings
