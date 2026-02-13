@@ -121,16 +121,21 @@ weave embeddings list
 
 **Works with ALL Vector Databases:**
 
-OSS embeddings use pre-generated embeddings (via `doc.Embedding` field), making them compatible with all 10 supported vector databases - no VDB-specific configuration required!
+OSS embeddings use pre-generated embeddings (via `doc.Embedding` field),
+making them compatible with all 10 supported vector databases - no
+VDB-specific configuration required!
 
 📖 **See [OSS Embedding Testing Guide](docs/guides/OSS_EMBEDDING_TESTING_TIPS.md)
 for setup, troubleshooting, and benchmarks**
 
 ### External Storage for Large Images (v0.10.0+)
 
-Some vector databases have size limits for storing images directly. For example, **Milvus has a 65KB VARCHAR limit**, which can only safely store ~47KB images after base64 encoding.
+Some vector databases have size limits for storing images directly.
+For example, **Milvus has a 65KB VARCHAR limit**, which can only safely
+store ~47KB images after base64 encoding.
 
-Weave CLI automatically handles large images using **external storage** (S3, MinIO, or local filesystem):
+Weave CLI automatically handles large images using **external storage**
+(S3, MinIO, or local filesystem):
 
 | Storage | Type | Cost | Use Case |
 |---------|------|------|----------|
@@ -205,7 +210,8 @@ weave docs create ProductCatalog images/ \
 - ✅ Fast previews - thumbnails in VDB for instant display
 - ✅ Full resolution - access original via URL when needed
 
-📖 **See [MinIO Setup Guide](docker-compose.minio.yml) for detailed configuration**
+📖 **See [MinIO Setup Guide](docker/docker-compose.minio.yml)
+for detailed configuration**
 
 ### Basic Usage
 

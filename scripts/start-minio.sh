@@ -30,7 +30,7 @@ echo ""
 
 # Start MinIO
 cd "$PROJECT_ROOT"
-$COMPOSE_CMD -f docker-compose.minio.yml up -d
+$COMPOSE_CMD -f docker/docker-compose.minio.yml up -d
 
 # Wait for MinIO to be healthy
 echo ""
@@ -59,7 +59,7 @@ if $DOCKER_CMD ps | grep -q weave-minio; then
     echo "     --milvus-local"
     echo ""
     echo "🛑 To stop MinIO:"
-    echo "   $COMPOSE_CMD -f docker-compose.minio.yml down"
+    echo "   $COMPOSE_CMD -f docker/docker-compose.minio.yml down"
     echo ""
 else
     echo "❌ Error: MinIO failed to start"
