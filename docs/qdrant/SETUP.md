@@ -433,12 +433,59 @@ curl https://api.openai.com/v1/models \
 
 ---
 
+## OSS Embedding Providers (v0.9.19+)
+
+Qdrant works with **all embedding providers** since embeddings are generated
+client-side and passed as vectors.
+
+### Quick Start
+
+```bash
+# List available providers
+weave embeddings list
+
+# OpenAI (default)
+weave docs create MyCollection data/ --embedding text-embedding-3-small --qdrant-local
+
+# sentence-transformers (OSS, FREE)
+weave docs create MyCollection data/ \
+  --embedding sentence-transformers/all-mpnet-base-v2 \
+  --qdrant-local
+
+# Ollama (local, FREE)
+weave docs create MyCollection data/ --embedding nomic-embed-text --qdrant-local
+```
+
+### Cost Optimization Workflow
+
+```bash
+# 1. Quick start with OpenAI
+weave docs create QuickTest data.pdf --embedding text-embedding-3-small --qdrant-local
+
+# 2. Re-embed to OSS (20x faster than re-ingestion)
+weave collection reembed QuickTest \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output Production \
+  --qdrant-local
+
+# 3. Compare quality
+weave collection compare QuickTest Production --query "test" --qdrant-local
+
+# Result: 90%+ quality retention, $0 embedding costs
+```
+
+See [OSS Embedding Testing Tips](../guides/OSS_EMBEDDING_TESTING_TIPS.md) for
+detailed setup, benchmarks, and provider comparison.
+
+---
+
 ## Next Steps
 
 1. **Test with Real Data**: Run the integration tests with live Qdrant instances
 2. **Production Validation**: Test at scale with production workloads
 3. **Performance Benchmarking**: Compare with other vector databases
 4. **Advanced Features**: Explore quantization and multi-vector support
+5. **Try OSS Embeddings**: Eliminate embedding costs with free providers
 
 ---
 
@@ -448,6 +495,7 @@ curl https://api.openai.com/v1/models \
 - [Qdrant Cloud](https://cloud.qdrant.io)
 - [Qdrant GitHub](https://github.com/qdrant/qdrant)
 - [weave-cli VDB Support Matrix](../VDB_SUPPORT.md)
+- [OSS Embeddings Guide](../guides/OSS_EMBEDDING_TESTING_TIPS.md) - Free embedding providers
 
 ---
 

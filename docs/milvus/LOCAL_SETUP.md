@@ -512,8 +512,59 @@ weave --milvus-local search vector test_collection \
 weave --milvus-local collections delete test_collection
 ```
 
+## OSS Embedding Providers (v0.9.19+)
+
+Milvus works with **all embedding providers** since embeddings are generated
+client-side and passed as vectors.
+
+### Supported Providers
+
+```bash
+# List available providers
+weave embeddings list
+
+# OpenAI (default)
+weave docs create MyCollection data/ --embedding text-embedding-3-small
+
+# sentence-transformers (OSS, FREE)
+weave docs create MyCollection data/ \
+  --embedding sentence-transformers/all-mpnet-base-v2
+
+# Ollama (local, FREE)
+weave docs create MyCollection data/ --embedding nomic-embed-text
+```
+
+### Cost Optimization
+
+Re-embed existing collections with OSS models to eliminate embedding costs:
+
+```bash
+# Phase 1: Quick start with OpenAI
+weave docs create QuickTest data.pdf --embedding text-embedding-3-small
+
+# Phase 2: Re-embed to OSS for production (20x faster than re-ingestion)
+weave collection reembed QuickTest \
+  --new-embedding sentence-transformers/all-mpnet-base-v2 \
+  --output Production
+
+# Phase 3: Compare quality
+weave collection compare QuickTest Production --query "test queries"
+
+# Result: 90%+ quality, $0 embedding costs
+```
+
+### Performance Notes
+
+- **sentence-transformers**: 90-95% quality vs OpenAI, FREE, Python required
+- **Ollama**: 90-95% quality vs OpenAI, FREE, great for local LLMs
+- **Re-embedding**: 200+ docs/min (vs 10 docs/min full re-ingestion)
+
+See [OSS Embedding Testing Tips](../guides/OSS_EMBEDDING_TESTING_TIPS.md)
+for detailed setup and testing guide.
+
 ## Next Steps
 
 - [Cloud Setup Guide](CLOUD_SETUP.md) - Deploy to Zilliz Cloud
 - [Milvus Documentation](https://milvus.io/docs) - Official Milvus docs
 - [Performance Tuning](https://milvus.io/docs/performance_faq.md) - Optimize for production
+- [OSS Embeddings Guide](../guides/OSS_EMBEDDING_TESTING_TIPS.md) - Free embedding providers
