@@ -5,14 +5,17 @@ package milvus
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
 
 	"github.com/maximilien/weave-cli/src/pkg/logging"
+	"github.com/maximilien/weave-cli/src/pkg/storage"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -25,6 +28,50 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	defer cancel()
 
 	mdoc := a.toMilvusDocument(document)
+
+	// EXTERNAL STORAGE (v0.10.0+): Handle large images using external storage
+	if a.imageStorage != nil && document.ImageData != "" {
+		// Decode base64 image data
+		imageBytes, err := a.decodeImageData(document.ImageData)
+		if err == nil && storage.IsThumbnailNeeded(imageBytes) {
+			logger.Debug("Image exceeds 47KB threshold, using external storage")
+
+			// Generate safe thumbnail (<47KB)
+			thumbnailBase64, err := storage.GenerateSafeThumbnail(imageBytes)
+			if err != nil {
+				logger.Warn("Failed to generate thumbnail: %v", err)
+			} else {
+				// Upload full image to external storage
+				metadata := storage.ImageMetadata{
+					Filename:       fmt.Sprintf("%s.jpg", document.ID),
+					ContentType:    "image/jpeg",
+					Size:           int64(len(imageBytes)),
+					CollectionName: collectionName,
+					DocumentID:     document.ID,
+					Custom:         make(map[string]string),
+				}
+
+				imageURL, err := a.imageStorage.Upload(ctx, imageBytes, metadata)
+				if err != nil {
+					logger.Warn("Failed to upload image to external storage: %v", err)
+				} else {
+					// Store thumbnail and URL in new fields
+					document.ImageThumbnail = thumbnailBase64
+					document.ImageURL = imageURL
+					document.ImageMetadata = map[string]interface{}{
+						"size":         len(imageBytes),
+						"content_type": "image/jpeg",
+						"storage_type": "external",
+					}
+
+					logger.Info("Image uploaded to external storage: %s", imageURL)
+
+					// Clear ImageData to avoid storing large data in VDB
+					mdoc.ImageData = ""
+				}
+			}
+		}
+	}
 
 	// CRITICAL FIX (v0.9.7): Truncate Image field if it exceeds VARCHAR limit
 	// The Image field stores data URLs like "data:image/jpeg;base64,..."
@@ -95,6 +142,10 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		entity.NewColumnJSONBytes(FieldMetadata, [][]byte{mustMarshalJSON(mdoc.Metadata)}),
 		entity.NewColumnInt64(FieldCreatedAt, []int64{mdoc.CreatedAt}),
 		entity.NewColumnInt64(FieldUpdatedAt, []int64{mdoc.UpdatedAt}),
+		// External storage fields (v0.10.0+)
+		entity.NewColumnVarChar(FieldImageThumbnail, []string{document.ImageThumbnail}),
+		entity.NewColumnVarChar(FieldImageURL, []string{document.ImageURL}),
+		entity.NewColumnJSONBytes(FieldImageMetadata, [][]byte{mustMarshalJSON(document.ImageMetadata)}),
 	}
 
 	// Insert data
@@ -135,9 +186,48 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	metadatas := make([][]byte, len(documents))
 	createdAts := make([]int64, len(documents))
 	updatedAts := make([]int64, len(documents))
+	// External storage fields (v0.10.0+)
+	imageThumbnails := make([]string, len(documents))
+	imageURLs := make([]string, len(documents))
+	imageMetadatas := make([][]byte, len(documents))
 
 	for i, doc := range documents {
 		mdoc := a.toMilvusDocument(doc)
+
+		// EXTERNAL STORAGE (v0.10.0+): Handle large images using external storage
+		if a.imageStorage != nil && doc.ImageData != "" {
+			imageBytes, err := a.decodeImageData(doc.ImageData)
+			if err == nil && storage.IsThumbnailNeeded(imageBytes) {
+				// Generate safe thumbnail
+				thumbnailBase64, err := storage.GenerateSafeThumbnail(imageBytes)
+				if err == nil {
+					// Upload full image to external storage
+					metadata := storage.ImageMetadata{
+						Filename:       fmt.Sprintf("%s.jpg", doc.ID),
+						ContentType:    "image/jpeg",
+						Size:           int64(len(imageBytes)),
+						CollectionName: collectionName,
+						DocumentID:     doc.ID,
+						Custom:         make(map[string]string),
+					}
+
+					imageURL, err := a.imageStorage.Upload(ctx, imageBytes, metadata)
+					if err == nil {
+						// Store thumbnail and URL
+						doc.ImageThumbnail = thumbnailBase64
+						doc.ImageURL = imageURL
+						doc.ImageMetadata = map[string]interface{}{
+							"size":         len(imageBytes),
+							"content_type": "image/jpeg",
+							"storage_type": "external",
+						}
+
+						// Clear ImageData to avoid storing large data in VDB
+						mdoc.ImageData = ""
+					}
+				}
+			}
+		}
 
 		// CRITICAL FIX (v0.9.7): Truncate Image field if it exceeds VARCHAR limit
 		const milvusImageVarCharLimit = 2048
@@ -206,6 +296,10 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		metadatas[i] = mustMarshalJSON(mdoc.Metadata)
 		createdAts[i] = mdoc.CreatedAt
 		updatedAts[i] = mdoc.UpdatedAt
+		// External storage fields
+		imageThumbnails[i] = doc.ImageThumbnail
+		imageURLs[i] = doc.ImageURL
+		imageMetadatas[i] = mustMarshalJSON(doc.ImageMetadata)
 	}
 
 	// CRITICAL FIX: Detect actual embedding dimensions from embeddings array
@@ -237,6 +331,10 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		entity.NewColumnJSONBytes(FieldMetadata, metadatas),
 		entity.NewColumnInt64(FieldCreatedAt, createdAts),
 		entity.NewColumnInt64(FieldUpdatedAt, updatedAts),
+		// External storage fields (v0.10.0+)
+		entity.NewColumnVarChar(FieldImageThumbnail, imageThumbnails),
+		entity.NewColumnVarChar(FieldImageURL, imageURLs),
+		entity.NewColumnJSONBytes(FieldImageMetadata, imageMetadatas),
 	}
 
 	// Insert data
@@ -518,4 +616,19 @@ func mustUnmarshalJSON(data []byte) map[string]interface{} {
 		return make(map[string]interface{})
 	}
 	return result
+}
+
+// decodeImageData decodes base64 image data from various formats
+// Supports: "data:image/jpeg;base64,..." or plain base64 string
+func (a *Adapter) decodeImageData(imageData string) ([]byte, error) {
+	// Remove data URL prefix if present
+	if strings.HasPrefix(imageData, "data:") {
+		parts := strings.SplitN(imageData, ",", 2)
+		if len(parts) == 2 {
+			imageData = parts[1]
+		}
+	}
+
+	// Decode base64
+	return base64.StdEncoding.DecodeString(imageData)
 }

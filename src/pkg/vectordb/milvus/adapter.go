@@ -10,13 +10,16 @@ import (
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/reembedding/providers"
+	"github.com/maximilien/weave-cli/src/pkg/storage"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // Adapter wraps the Milvus client to implement the vectordb.VectorDBClient interface
 type Adapter struct {
 	*Client
-	llmClient *llm.OpenAIClient
+	llmClient    *llm.OpenAIClient
+	imageStorage storage.ImageStorage // External storage for images >47KB
+	pdfStorage   storage.ImageStorage // External storage for PDFs
 }
 
 // NewAdapter creates a new Milvus adapter from the vectordb.Config
@@ -48,9 +51,48 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		}
 	}
 
+	// Initialize external storage if configured (v0.10.0+)
+	var imageStorage, pdfStorage storage.ImageStorage
+
+	// Image storage
+	if config.ImageStorage != nil && config.ImageStorage.Enabled {
+		imageStorage, err = storage.NewImageStorage(storage.Config{
+			Type:       storage.StorageType(config.ImageStorage.Type),
+			Endpoint:   config.ImageStorage.Endpoint,
+			AccessKey:  config.ImageStorage.AccessKey,
+			SecretKey:  config.ImageStorage.SecretKey,
+			Region:     config.ImageStorage.Region,
+			Bucket:     config.ImageStorage.Bucket,
+			PathPrefix: config.ImageStorage.PathPrefix,
+			UseSSL:     config.ImageStorage.UseSSL,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize image storage: %w", err)
+		}
+	}
+
+	// PDF storage
+	if config.PDFStorage != nil && config.PDFStorage.Enabled {
+		pdfStorage, err = storage.NewImageStorage(storage.Config{
+			Type:       storage.StorageType(config.PDFStorage.Type),
+			Endpoint:   config.PDFStorage.Endpoint,
+			AccessKey:  config.PDFStorage.AccessKey,
+			SecretKey:  config.PDFStorage.SecretKey,
+			Region:     config.PDFStorage.Region,
+			Bucket:     config.PDFStorage.Bucket,
+			PathPrefix: config.PDFStorage.PathPrefix,
+			UseSSL:     config.PDFStorage.UseSSL,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize PDF storage: %w", err)
+		}
+	}
+
 	return &Adapter{
-		Client:    client,
-		llmClient: llmClient,
+		Client:       client,
+		llmClient:    llmClient,
+		imageStorage: imageStorage,
+		pdfStorage:   pdfStorage,
 	}, nil
 }
 
