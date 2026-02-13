@@ -17,6 +17,11 @@ type Document struct {
 	URL       string                 `json:"url"`
 	Metadata  map[string]interface{} `json:"metadata"`
 	Embedding []float64              `json:"embedding,omitempty"` // Pre-generated embedding (optional)
+
+	// External storage fields (for images exceeding VDB limits, e.g., Milvus 65KB)
+	ImageThumbnail string                 `json:"image_thumbnail,omitempty"` // Small thumbnail (base64, <47KB for Milvus)
+	ImageURL       string                 `json:"image_url,omitempty"`       // Full-resolution image URL (S3/MinIO/etc)
+	ImageMetadata  map[string]interface{} `json:"image_metadata,omitempty"`  // Image metadata (size, format, dimensions)
 }
 
 // QueryOptions represents options for querying the vector database
