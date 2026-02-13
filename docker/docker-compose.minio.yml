@@ -1,10 +1,11 @@
+---
 # MinIO Configuration for Weave CLI External Storage
-# Provides S3-compatible object storage for images exceeding VDB limits (e.g., Milvus 65KB)
+# Provides S3-compatible object storage for images exceeding VDB limits
 #
 # Quick Start:
 #   docker-compose -f docker-compose.minio.yml up -d
 #   Access console: http://localhost:9001 (minioadmin/minioadmin)
-#   Use with weave: --image-storage minio --minio-bucket weave-images
+#   Use: --image-storage minio --minio-bucket weave-images
 
 version: '3.8'
 
