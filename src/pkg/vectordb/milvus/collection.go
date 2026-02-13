@@ -18,16 +18,19 @@ import (
 
 // Collection field names (standardized across all collections)
 const (
-	FieldDocumentID = "document_id"
-	FieldText       = "text"
-	FieldContent    = "content"
-	FieldImage      = "image"
-	FieldImageData  = "image_data"
-	FieldURL        = "url"
-	FieldEmbedding  = "embedding"
-	FieldMetadata   = "metadata"
-	FieldCreatedAt  = "created_at"
-	FieldUpdatedAt  = "updated_at"
+	FieldDocumentID      = "document_id"
+	FieldText            = "text"
+	FieldContent         = "content"
+	FieldImage           = "image"
+	FieldImageData       = "image_data"
+	FieldURL             = "url"
+	FieldEmbedding       = "embedding"
+	FieldMetadata        = "metadata"
+	FieldCreatedAt       = "created_at"
+	FieldUpdatedAt       = "updated_at"
+	FieldImageThumbnail  = "image_thumbnail"  // External storage: thumbnail (base64, <47KB)
+	FieldImageURL        = "image_url"        // External storage: full image URL (S3/MinIO)
+	FieldImageMetadata   = "image_metadata"   // External storage: image metadata (JSON)
 )
 
 // CreateCollection creates a new Milvus collection with explicit schema
@@ -100,6 +103,18 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 			entity.NewField().
 				WithName(FieldUpdatedAt).
 				WithDataType(entity.FieldTypeInt64),
+			// External storage fields (v0.10.0+)
+			entity.NewField().
+				WithName(FieldImageThumbnail).
+				WithDataType(entity.FieldTypeVarChar).
+				WithTypeParams("max_length", "65535"), // Max: ~47KB original (base64 1.37x = ~64KB)
+			entity.NewField().
+				WithName(FieldImageURL).
+				WithDataType(entity.FieldTypeVarChar).
+				WithTypeParams("max_length", "512"), // S3/MinIO URL
+			entity.NewField().
+				WithName(FieldImageMetadata).
+				WithDataType(entity.FieldTypeJSON), // Image metadata (size, format, dimensions)
 		},
 	}
 

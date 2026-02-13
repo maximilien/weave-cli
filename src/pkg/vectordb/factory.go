@@ -63,6 +63,23 @@ type Config struct {
 	// MongoDB-specific configuration
 	VectorDimensions int    `yaml:"vector_dimensions,omitempty"`
 	SimilarityMetric string `yaml:"similarity_metric,omitempty"`
+
+	// External storage configuration (v0.10.0+)
+	ImageStorage *StorageConfig `yaml:"image_storage,omitempty"`
+	PDFStorage   *StorageConfig `yaml:"pdf_storage,omitempty"`
+}
+
+// StorageConfig represents external storage configuration (S3/MinIO/Local)
+type StorageConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	Type       string `yaml:"type"` // "s3", "minio", "local"
+	Endpoint   string `yaml:"endpoint,omitempty"`
+	AccessKey  string `yaml:"access_key,omitempty"`
+	SecretKey  string `yaml:"secret_key,omitempty"`
+	Region     string `yaml:"region,omitempty"`
+	Bucket     string `yaml:"bucket"`
+	PathPrefix string `yaml:"path_prefix,omitempty"`
+	UseSSL     bool   `yaml:"use_ssl"`
 }
 
 // ClientFactory defines the interface for creating vector database clients
