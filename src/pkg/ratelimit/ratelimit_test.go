@@ -217,7 +217,7 @@ func TestDetectProvider(t *testing.T) {
 		{"all-MiniLM-L6-v2", "sentence-transformers"},
 		{"nomic-embed-text", "ollama"},
 		{"unknown-model", "openai"}, // Conservative default
-		{"", "openai"},               // Empty defaults to OpenAI
+		{"", "openai"},              // Empty defaults to OpenAI
 	}
 
 	for _, tt := range tests {

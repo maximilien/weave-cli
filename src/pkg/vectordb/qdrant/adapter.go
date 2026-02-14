@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
+	"github.com/maximilien/weave-cli/src/pkg/reembedding/providers"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -232,8 +233,15 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 
 // SearchSemantic performs semantic search using vector embeddings
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	if a.llmClient == nil {
-		return nil, fmt.Errorf("OpenAI client not configured - cannot generate embeddings")
+	// Get the collection's schema to determine embedding model
+	schema, err := a.GetSchema(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection schema: %w", err)
+	}
+
+	embeddingModel := schema.Vectorizer
+	if embeddingModel == "" {
+		embeddingModel = "text-embedding-3-small" // Fallback default
 	}
 
 	// Get the collection's actual dimensions to verify compatibility
@@ -242,10 +250,33 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("failed to get collection dimensions: %w", err)
 	}
 
-	// Generate embedding for query
-	embedding64, err := a.llmClient.GenerateEmbedding(ctx, query, "text-embedding-3-small")
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	// Check if this is an OpenAI model or OSS model
+	isOpenAI := embeddingModel == "text-embedding-3-small" ||
+		embeddingModel == "text-embedding-3-large" ||
+		embeddingModel == "text-embedding-ada-002"
+
+	// Generate embedding for query using detected model
+	var embedding64 []float64
+	if isOpenAI {
+		// Use LLM client for OpenAI models
+		if a.llmClient == nil {
+			return nil, fmt.Errorf("Qdrant: SearchSemantic requires OpenAI API key for OpenAI embedding models. Please set OPENAI_API_KEY environment variable")
+		}
+		embedding64, err = a.llmClient.GenerateEmbedding(ctx, query, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
+	} else {
+		// Use embedding provider factory for OSS models (sentence-transformers, Ollama, etc.)
+		provider, err := a.createEmbeddingProvider(ctx, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("Qdrant: failed to create embedding provider for model '%s': %w", embeddingModel, err)
+		}
+
+		embedding64, err = provider.GenerateEmbedding(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("Qdrant: failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
 	}
 
 	// Verify dimensions match
@@ -344,10 +375,19 @@ func (a *Adapter) SearchByMetadata(ctx context.Context, collectionName string, m
 
 // GetSchema retrieves the schema for a collection
 func (a *Adapter) GetSchema(ctx context.Context, collectionName string) (*vectordb.CollectionSchema, error) {
-	// Qdrant doesn't have a schema concept like Weaviate
-	// Return a minimal schema
+	// Get collection dimensions to infer embedding model
+	dims, err := a.Client.getCollectionDimensions(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection dimensions: %w", err)
+	}
+
+	// Infer embedding model from dimensions
+	// This is a heuristic since Qdrant doesn't store model metadata
+	vectorizer := inferEmbeddingModelFromDimensions(dims)
+
 	return &vectordb.CollectionSchema{
-		Class: collectionName,
+		Class:      collectionName,
+		Vectorizer: vectorizer,
 	}, nil
 }
 
@@ -440,4 +480,34 @@ func findProtocol(addr string) int {
 		return 7
 	}
 	return -1
+}
+
+// createEmbeddingProvider creates an embedding provider for OSS models
+func (a *Adapter) createEmbeddingProvider(ctx context.Context, modelName string) (providers.EmbeddingProvider, error) {
+	return providers.CreateProvider(ctx, modelName)
+}
+
+// inferEmbeddingModelFromDimensions infers the embedding model from vector dimensions
+// This is a heuristic since Qdrant doesn't store model metadata
+func inferEmbeddingModelFromDimensions(dims int) string {
+	switch dims {
+	case 768:
+		// sentence-transformers/all-mpnet-base-v2 or all-MiniLM-L12-v2
+		return "sentence-transformers/all-mpnet-base-v2"
+	case 384:
+		// sentence-transformers/all-MiniLM-L6-v2
+		return "sentence-transformers/all-MiniLM-L6-v2"
+	case 1536:
+		// OpenAI text-embedding-3-small or text-embedding-ada-002
+		return "text-embedding-3-small"
+	case 3072:
+		// OpenAI text-embedding-3-large
+		return "text-embedding-3-large"
+	case 1024:
+		// Ollama nomic-embed-text
+		return "nomic-embed-text"
+	default:
+		// Conservative fallback: OpenAI
+		return "text-embedding-3-small"
+	}
 }
