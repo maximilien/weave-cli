@@ -13,9 +13,20 @@ import (
 // GetSchema retrieves the schema for a collection
 // Note: MongoDB is schema-less, so we return a default schema
 func (c *Client) GetSchema(ctx context.Context, collectionName string) (*vectordb.CollectionSchema, error) {
+	// Get collection dimensions to infer embedding model
+	dims, err := c.getCollectionDimensions(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection dimensions: %w", err)
+	}
+
+	// Infer embedding model from dimensions
+	// This is a heuristic since MongoDB doesn't store model metadata
+	vectorizer := inferEmbeddingModelFromDimensions(dims)
+
 	// MongoDB doesn't have explicit schemas, return a default schema
 	return &vectordb.CollectionSchema{
-		Class: collectionName,
+		Class:      collectionName,
+		Vectorizer: vectorizer,
 		Properties: []vectordb.SchemaProperty{
 			{
 				Name:     "document_id",
@@ -147,4 +158,29 @@ func (c *Client) ValidateSchema(schema *vectordb.CollectionSchema) error {
 	// MongoDB schemas are flexible - embedding is only required for vector search
 	// Text-only collections (BM25 search) don't need embeddings
 	return nil
+}
+
+// inferEmbeddingModelFromDimensions infers the embedding model from vector dimensions
+// This is a heuristic since MongoDB doesn't store model metadata
+func inferEmbeddingModelFromDimensions(dims int) string {
+	switch dims {
+	case 768:
+		// sentence-transformers/all-mpnet-base-v2 or all-MiniLM-L12-v2
+		return "sentence-transformers/all-mpnet-base-v2"
+	case 384:
+		// sentence-transformers/all-MiniLM-L6-v2
+		return "sentence-transformers/all-MiniLM-L6-v2"
+	case 1536:
+		// OpenAI text-embedding-3-small or text-embedding-ada-002
+		return "text-embedding-3-small"
+	case 3072:
+		// OpenAI text-embedding-3-large
+		return "text-embedding-3-large"
+	case 1024:
+		// Ollama nomic-embed-text
+		return "nomic-embed-text"
+	default:
+		// Conservative fallback: OpenAI
+		return "text-embedding-3-small"
+	}
 }

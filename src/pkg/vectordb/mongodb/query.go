@@ -15,9 +15,15 @@ import (
 
 // SearchSemantic performs semantic search using MongoDB Atlas Vector Search
 func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query string, opts *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	// Check if LLM client is available for embedding generation
-	if a.llmClient == nil {
-		return nil, fmt.Errorf("SearchSemantic requires OpenAI API key for embedding generation. Please set OPENAI_API_KEY environment variable")
+	// Get the collection's schema to determine embedding model
+	schema, err := a.GetSchema(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection schema: %w", err)
+	}
+
+	embeddingModel := schema.Vectorizer
+	if embeddingModel == "" {
+		embeddingModel = "text-embedding-3-small" // Fallback default
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
@@ -31,10 +37,33 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 
 	collection := a.getCollection(collectionName)
 
-	// Generate embedding for query using LLM client
-	queryEmbedding, err := a.llmClient.GenerateEmbedding(ctx, query, "")
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	// Check if this is an OpenAI model or OSS model
+	isOpenAI := embeddingModel == "text-embedding-3-small" ||
+		embeddingModel == "text-embedding-3-large" ||
+		embeddingModel == "text-embedding-ada-002"
+
+	// Generate embedding for query using detected model
+	var queryEmbedding []float64
+	if isOpenAI {
+		// Use LLM client for OpenAI models
+		if a.llmClient == nil {
+			return nil, fmt.Errorf("MongoDB: SearchSemantic requires OpenAI API key for OpenAI embedding models. Please set OPENAI_API_KEY environment variable")
+		}
+		queryEmbedding, err = a.llmClient.GenerateEmbedding(ctx, query, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
+	} else {
+		// Use embedding provider factory for OSS models (sentence-transformers, Ollama, etc.)
+		provider, err := a.createEmbeddingProvider(ctx, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("MongoDB: failed to create embedding provider for model '%s': %w", embeddingModel, err)
+		}
+
+		queryEmbedding, err = provider.GenerateEmbedding(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("MongoDB: failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
 	}
 
 	// Verify dimensions match
