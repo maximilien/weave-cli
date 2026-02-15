@@ -94,6 +94,7 @@ func init() {
 	CreateCmd.Flags().Bool("minio-use-ssl", false, "Use SSL for MinIO connection (default: false)")
 	CreateCmd.Flags().String("local-storage-path", "./storage", "Local filesystem path for image storage (default: ./storage)")
 	CreateCmd.Flags().Bool("store-pdf", false, "Store PDF files in external storage and include URL in chunk metadata")
+	CreateCmd.Flags().IntP("workers", "w", 1, "Number of concurrent workers for parallel document processing (default: 1 for sequential)")
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
@@ -111,6 +112,15 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	createReport, _ := cmd.Flags().GetString("create-report")
 	appendReport, _ := cmd.Flags().GetString("append-report")
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
+	workers, _ := cmd.Flags().GetInt("workers")
+
+	// TODO(Issue #31): Implement parallel processing with worker pool
+	// For now, workers > 1 will show a warning and fall back to sequential
+	if workers > 1 {
+		utils.PrintWarning(fmt.Sprintf("Parallel processing with --workers %d will be implemented in v0.9.25.\nFalling back to sequential processing for now.", workers))
+		workers = 1
+	}
+	_ = workers // Prevent unused variable error
 
 	// If skip-all-images is set, clear the image collection to skip image processing
 	if skipAllImages {
