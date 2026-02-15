@@ -193,11 +193,20 @@ func (a *Adapter) GetSchema(ctx context.Context, name string) (*vectordb.Collect
 		return nil, fmt.Errorf("pinecone client not initialized")
 	}
 
+	// Get index dimensions to infer embedding model
+	dims, err := a.getIndexDimensions(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get index dimensions: %w", err)
+	}
+
+	// Infer embedding model from dimensions
+	// This is a heuristic since Pinecone doesn't store model metadata
+	vectorizer := inferEmbeddingModelFromDimensions(dims)
+
 	// Pinecone doesn't have explicit schemas, return minimal schema with vector info
-	// We don't need to describe the index here since we're just returning a generic schema
 	return &vectordb.CollectionSchema{
 		Class:      name,
-		Vectorizer: "none", // Pinecone expects pre-computed vectors
+		Vectorizer: vectorizer,
 		Properties: []vectordb.SchemaProperty{
 			{
 				Name:     "vector",
@@ -270,4 +279,29 @@ func (a *Adapter) getIndexDimensions(ctx context.Context, name string) (int, err
 	}
 
 	return int(idx.Dimension), nil
+}
+
+// inferEmbeddingModelFromDimensions infers the embedding model from vector dimensions
+// This is a heuristic since Pinecone doesn't store model metadata
+func inferEmbeddingModelFromDimensions(dims int) string {
+	switch dims {
+	case 768:
+		// sentence-transformers/all-mpnet-base-v2 or all-MiniLM-L12-v2
+		return "sentence-transformers/all-mpnet-base-v2"
+	case 384:
+		// sentence-transformers/all-MiniLM-L6-v2
+		return "sentence-transformers/all-MiniLM-L6-v2"
+	case 1536:
+		// OpenAI text-embedding-3-small or text-embedding-ada-002
+		return "text-embedding-3-small"
+	case 3072:
+		// OpenAI text-embedding-3-large
+		return "text-embedding-3-large"
+	case 1024:
+		// Ollama nomic-embed-text
+		return "nomic-embed-text"
+	default:
+		// Conservative fallback: OpenAI
+		return "text-embedding-3-small"
+	}
 }

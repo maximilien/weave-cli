@@ -20,8 +20,15 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
-	if a.llmClient == nil {
-		return nil, fmt.Errorf("OpenAI client not configured for embedding generation")
+	// Get the collection's schema to determine embedding model
+	schema, err := a.GetSchema(ctx, collectionName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get collection schema: %w", err)
+	}
+
+	embeddingModel := schema.Vectorizer
+	if embeddingModel == "" {
+		embeddingModel = "text-embedding-3-small" // Fallback default
 	}
 
 	// Get the index's actual dimensions to verify compatibility
@@ -30,10 +37,33 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		return nil, fmt.Errorf("failed to get index dimensions: %w", err)
 	}
 
-	// Generate embedding for query
-	embeddingFloat64, err := a.llmClient.GenerateEmbedding(ctx, query, "text-embedding-3-small")
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate query embedding: %w", err)
+	// Check if this is an OpenAI model or OSS model
+	isOpenAI := embeddingModel == "text-embedding-3-small" ||
+		embeddingModel == "text-embedding-3-large" ||
+		embeddingModel == "text-embedding-ada-002"
+
+	// Generate embedding for query using detected model
+	var embeddingFloat64 []float64
+	if isOpenAI {
+		// Use LLM client for OpenAI models
+		if a.llmClient == nil {
+			return nil, fmt.Errorf("Pinecone: SearchSemantic requires OpenAI API key for OpenAI embedding models. Please set OPENAI_API_KEY environment variable")
+		}
+		embeddingFloat64, err = a.llmClient.GenerateEmbedding(ctx, query, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
+	} else {
+		// Use embedding provider factory for OSS models (sentence-transformers, Ollama, etc.)
+		provider, err := a.createEmbeddingProvider(ctx, embeddingModel)
+		if err != nil {
+			return nil, fmt.Errorf("Pinecone: failed to create embedding provider for model '%s': %w", embeddingModel, err)
+		}
+
+		embeddingFloat64, err = provider.GenerateEmbedding(ctx, query)
+		if err != nil {
+			return nil, fmt.Errorf("Pinecone: failed to generate query embedding with model '%s': %w", embeddingModel, err)
+		}
 	}
 
 	// Verify dimensions match

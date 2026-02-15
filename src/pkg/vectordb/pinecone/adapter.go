@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/llm"
+	"github.com/maximilien/weave-cli/src/pkg/reembedding/providers"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/pinecone-io/go-pinecone/pinecone"
 )
@@ -121,4 +122,9 @@ func (a *Adapter) getTimeout() time.Duration {
 func (a *Adapter) getTimeoutFor(opType vectordb.OperationType) time.Duration {
 	isCloud := true // Pinecone is cloud-only
 	return vectordb.GetTimeoutForOperation(opType, isCloud, a.config.Timeout)
+}
+
+// createEmbeddingProvider creates an embedding provider for OSS models
+func (a *Adapter) createEmbeddingProvider(ctx context.Context, modelName string) (providers.EmbeddingProvider, error) {
+	return providers.CreateProvider(ctx, modelName)
 }
