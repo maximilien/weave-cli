@@ -89,21 +89,58 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		}
 	}
 
-	// Generate embedding if LLM client is available and document has content
-	if a.llmClient != nil && (document.Content != "" || document.Text != "") {
+	// Get collection's embedding model to ensure correct dimensions
+	schema, err := a.Client.GetSchema(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("Milvus: failed to get collection schema: %w", err)
+	}
+
+	embeddingModel := schema.Vectorizer
+	if embeddingModel == "" {
+		embeddingModel = "text-embedding-3-small" // Fallback default
+	}
+
+	// Determine vector dimensions from model
+	vectorDims := getVectorDimensionsFromModel(embeddingModel)
+
+	// Generate embedding if document has content
+	if document.Content != "" || document.Text != "" {
 		textToEmbed := document.Content
 		if textToEmbed == "" {
 			textToEmbed = document.Text
 		}
 
-		embedding, err := a.llmClient.GenerateEmbedding(ctx, textToEmbed, "")
-		if err != nil {
-			// Log warning but don't fail - allow document creation without embedding
-			fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", document.ID, err)
+		// Check if this is an OpenAI model
+		isOpenAI := embeddingModel == "text-embedding-3-small" ||
+			embeddingModel == "text-embedding-3-large" ||
+			embeddingModel == "text-embedding-ada-002"
+
+		var embedding64 []float64
+		if isOpenAI {
+			// Use LLM client for OpenAI models
+			if a.llmClient != nil {
+				embedding64, err = a.llmClient.GenerateEmbedding(ctx, textToEmbed, embeddingModel)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", document.ID, err)
+				}
+			}
 		} else {
-			// Convert float64 to float32 for Milvus
-			mdoc.Embedding = make([]float32, len(embedding))
-			for i, v := range embedding {
+			// Use embedding provider factory for OSS models
+			provider, err := a.createEmbeddingProvider(ctx, embeddingModel)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: Failed to create embedding provider for model '%s': %v\n", embeddingModel, err)
+			} else {
+				embedding64, err = provider.GenerateEmbedding(ctx, textToEmbed)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s with model '%s': %v\n", document.ID, embeddingModel, err)
+				}
+			}
+		}
+
+		// Convert float64 to float32 for Milvus
+		if embedding64 != nil {
+			mdoc.Embedding = make([]float32, len(embedding64))
+			for i, v := range embedding64 {
 				mdoc.Embedding[i] = float32(v)
 			}
 		}
@@ -111,7 +148,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 
 	// If no embedding was generated, create zero vector with correct dimensions
 	if mdoc.Embedding == nil {
-		mdoc.Embedding = make([]float32, a.config.VectorDimensions)
+		mdoc.Embedding = make([]float32, vectorDims)
 	}
 
 	// Prepare image data as JSON (supports large base64 strings unlike VARCHAR)
@@ -138,7 +175,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 		entity.NewColumnVarChar(FieldImage, []string{mdoc.Image}),
 		entity.NewColumnJSONBytes(FieldImageData, [][]byte{imageDataBytes}),
 		entity.NewColumnVarChar(FieldURL, []string{mdoc.URL}),
-		entity.NewColumnFloatVector(FieldEmbedding, a.config.VectorDimensions, [][]float32{mdoc.Embedding}),
+		entity.NewColumnFloatVector(FieldEmbedding, vectorDims, [][]float32{mdoc.Embedding}),
 		entity.NewColumnJSONBytes(FieldMetadata, [][]byte{mustMarshalJSON(mdoc.Metadata)}),
 		entity.NewColumnInt64(FieldCreatedAt, []int64{mdoc.CreatedAt}),
 		entity.NewColumnInt64(FieldUpdatedAt, []int64{mdoc.UpdatedAt}),
@@ -149,7 +186,7 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	}
 
 	// Insert data
-	_, err := a.client.Insert(ctx, collectionName, "", columns...)
+	_, err = a.client.Insert(ctx, collectionName, "", columns...)
 	if err != nil {
 		logger.Error("Failed to insert document: %v", err)
 		return fmt.Errorf("Milvus: failed to create document: %w", err)
@@ -174,6 +211,25 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	if len(documents) == 0 {
 		return nil
 	}
+
+	// Get collection's embedding model to ensure correct dimensions
+	schema, err := a.Client.GetSchema(ctx, collectionName)
+	if err != nil {
+		return fmt.Errorf("Milvus: failed to get collection schema: %w", err)
+	}
+
+	embeddingModel := schema.Vectorizer
+	if embeddingModel == "" {
+		embeddingModel = "text-embedding-3-small" // Fallback default
+	}
+
+	// Determine vector dimensions from model
+	vectorDims := getVectorDimensionsFromModel(embeddingModel)
+
+	// Check if this is an OpenAI model
+	isOpenAI := embeddingModel == "text-embedding-3-small" ||
+		embeddingModel == "text-embedding-3-large" ||
+		embeddingModel == "text-embedding-ada-002"
 
 	// Prepare data arrays for batch insertion
 	documentIDs := make([]string, len(documents))
@@ -248,21 +304,39 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 			for j, v := range doc.Embedding {
 				mdoc.Embedding[j] = float32(v)
 			}
-		} else if a.llmClient != nil && (doc.Content != "" || doc.Text != "") {
-			// Generate embedding if LLM client is available and document has content
+		} else if doc.Content != "" || doc.Text != "" {
+			// Generate embedding using collection's embedding model
 			textToEmbed := doc.Content
 			if textToEmbed == "" {
 				textToEmbed = doc.Text
 			}
 
-			embedding, err := a.llmClient.GenerateEmbedding(ctx, textToEmbed, "")
-			if err != nil {
-				// Log warning but don't fail - allow document creation without embedding
-				fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", doc.ID, err)
+			var embedding64 []float64
+			if isOpenAI {
+				// Use LLM client for OpenAI models
+				if a.llmClient != nil {
+					embedding64, err = a.llmClient.GenerateEmbedding(ctx, textToEmbed, embeddingModel)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s: %v\n", doc.ID, err)
+					}
+				}
 			} else {
-				// Convert float64 to float32 for Milvus
-				mdoc.Embedding = make([]float32, len(embedding))
-				for j, v := range embedding {
+				// Use embedding provider factory for OSS models
+				provider, err := a.createEmbeddingProvider(ctx, embeddingModel)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: Failed to create embedding provider for model '%s': %v\n", embeddingModel, err)
+				} else {
+					embedding64, err = provider.GenerateEmbedding(ctx, textToEmbed)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Warning: Failed to generate embedding for document %s with model '%s': %v\n", doc.ID, embeddingModel, err)
+					}
+				}
+			}
+
+			// Convert float64 to float32 for Milvus
+			if embedding64 != nil {
+				mdoc.Embedding = make([]float32, len(embedding64))
+				for j, v := range embedding64 {
 					mdoc.Embedding[j] = float32(v)
 				}
 			}
@@ -270,7 +344,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 
 		// If no embedding was generated, create zero vector with correct dimensions
 		if mdoc.Embedding == nil {
-			mdoc.Embedding = make([]float32, a.config.VectorDimensions)
+			mdoc.Embedding = make([]float32, vectorDims)
 		}
 
 		documentIDs[i] = mdoc.DocumentID
@@ -302,22 +376,8 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		imageMetadatas[i] = mustMarshalJSON(doc.ImageMetadata)
 	}
 
-	// CRITICAL FIX: Detect actual embedding dimensions from embeddings array
-	// The config dimensions are from the original collection, but we may be re-embedding
-	// with a different model that has different dimensions (e.g., 768 vs 1536)
-	actualDimensions := 0
-	for _, emb := range embeddings {
-		if len(emb) > 0 {
-			actualDimensions = len(emb)
-			break
-		}
-	}
-
-	// Use actual dimensions if different from config
-	vectorDimensions := a.config.VectorDimensions
-	if actualDimensions > 0 && actualDimensions != a.config.VectorDimensions {
-		vectorDimensions = actualDimensions
-	}
+	// Use dimensions from collection's embedding model (not config default)
+	// This ensures we use correct dimensions for OSS models (768) vs OpenAI (1536)
 
 	// Prepare column data for batch insertion
 	columns := []entity.Column{
@@ -327,7 +387,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		entity.NewColumnVarChar(FieldImage, images),
 		entity.NewColumnJSONBytes(FieldImageData, imageDatas), // JSON field supports large base64 images
 		entity.NewColumnVarChar(FieldURL, urls),
-		entity.NewColumnFloatVector(FieldEmbedding, vectorDimensions, embeddings),
+		entity.NewColumnFloatVector(FieldEmbedding, vectorDims, embeddings),
 		entity.NewColumnJSONBytes(FieldMetadata, metadatas),
 		entity.NewColumnInt64(FieldCreatedAt, createdAts),
 		entity.NewColumnInt64(FieldUpdatedAt, updatedAts),
@@ -338,7 +398,7 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	}
 
 	// Insert data
-	_, err := a.client.Insert(ctx, collectionName, "", columns...)
+	_, err = a.client.Insert(ctx, collectionName, "", columns...)
 	if err != nil {
 		return fmt.Errorf("Milvus: failed to create documents: %w", err)
 	}
