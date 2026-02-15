@@ -42,9 +42,9 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 		if a.llmClient == nil {
 			return nil, fmt.Errorf("Milvus: SearchSemantic requires OpenAI API key for OpenAI embedding models. Please set OPENAI_API_KEY environment variable")
 		}
-		queryEmbedding64, err = a.llmClient.GenerateEmbedding(ctx, query, "")
+		queryEmbedding64, err = a.llmClient.GenerateEmbedding(ctx, query, embeddingModel)
 		if err != nil {
-			return nil, fmt.Errorf("Milvus: failed to generate query embedding: %w", err)
+			return nil, fmt.Errorf("Milvus: failed to generate query embedding with model '%s': %w", embeddingModel, err)
 		}
 	} else {
 		// Use embedding provider factory for OSS models (sentence-transformers, Ollama, etc.)

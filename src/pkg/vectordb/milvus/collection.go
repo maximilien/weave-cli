@@ -54,6 +54,13 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 		description = fmt.Sprintf("%s | vectorizer=%s", description, schema.Vectorizer)
 	}
 
+	// Get vector dimensions from schema's vectorizer (if provided), otherwise use config default
+	vectorDims := c.config.VectorDimensions
+	if schema != nil && schema.Vectorizer != "" {
+		// Infer dimensions from embedding model name
+		vectorDims = getVectorDimensionsFromModel(schema.Vectorizer)
+	}
+
 	milvusSchema := &entity.Schema{
 		CollectionName: name,
 		Description:    description,
@@ -91,7 +98,7 @@ func (c *Client) CreateCollection(ctx context.Context, name string, schema *vect
 			entity.NewField().
 				WithName(FieldEmbedding).
 				WithDataType(entity.FieldTypeFloatVector).
-				WithDim(int64(c.config.VectorDimensions)),
+				WithDim(int64(vectorDims)),
 			// Metadata field (JSON)
 			entity.NewField().
 				WithName(FieldMetadata).
@@ -258,9 +265,9 @@ func (c *Client) GetSchema(ctx context.Context, name string) (*vectordb.Collecti
 		return nil, fmt.Errorf("Milvus: failed to get collection schema: %w", err)
 	}
 
-	// Parse vectorizer from collection description
+	// Try to parse vectorizer from collection description first
 	// Format: "Collection X for vector search | vectorizer=MODEL_NAME"
-	vectorizer := "text-embedding-3-small" // Default fallback
+	vectorizer := ""
 	if desc := coll.Schema.Description; desc != "" {
 		// Look for "vectorizer=" pattern in description
 		if idx := strings.Index(desc, "vectorizer="); idx != -1 {
@@ -273,7 +280,71 @@ func (c *Client) GetSchema(ctx context.Context, name string) (*vectordb.Collecti
 		}
 	}
 
+	// If vectorizer not found in description, infer from vector dimensions
+	if vectorizer == "" {
+		// Find the vector field and get its dimensions
+		dims := 0
+		for _, field := range coll.Schema.Fields {
+			if field.Name == FieldEmbedding {
+				// TypeParams is a map[string]string
+				if dimStr, ok := field.TypeParams["dim"]; ok {
+					var d int
+					fmt.Sscanf(dimStr, "%d", &d)
+					dims = d
+					break
+				}
+			}
+		}
+
+		// Infer model from dimensions
+		vectorizer = inferEmbeddingModelFromDimensions(dims)
+	}
+
 	return &vectordb.CollectionSchema{
 		Vectorizer: vectorizer,
 	}, nil
+}
+
+// inferEmbeddingModelFromDimensions infers the embedding model from vector dimensions
+// This is a heuristic since Milvus doesn't store model metadata natively
+func inferEmbeddingModelFromDimensions(dims int) string {
+	switch dims {
+	case 768:
+		// sentence-transformers/all-mpnet-base-v2 or all-MiniLM-L12-v2
+		return "sentence-transformers/all-mpnet-base-v2"
+	case 384:
+		// sentence-transformers/all-MiniLM-L6-v2
+		return "sentence-transformers/all-MiniLM-L6-v2"
+	case 1536:
+		// OpenAI text-embedding-3-small or text-embedding-ada-002
+		return "text-embedding-3-small"
+	case 3072:
+		// OpenAI text-embedding-3-large
+		return "text-embedding-3-large"
+	case 1024:
+		// Ollama nomic-embed-text
+		return "nomic-embed-text"
+	default:
+		// Conservative fallback: OpenAI
+		return "text-embedding-3-small"
+	}
+}
+
+// getVectorDimensionsFromModel returns the vector dimensions for a given embedding model
+func getVectorDimensionsFromModel(model string) int {
+	switch model {
+	case "sentence-transformers/all-mpnet-base-v2", "sentence-transformers/all-MiniLM-L12-v2":
+		return 768
+	case "sentence-transformers/all-MiniLM-L6-v2":
+		return 384
+	case "text-embedding-3-small", "text-embedding-ada-002":
+		return 1536
+	case "text-embedding-3-large":
+		return 3072
+	case "nomic-embed-text":
+		return 1024
+	default:
+		// Conservative fallback: OpenAI default
+		return 1536
+	}
 }
