@@ -285,7 +285,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
   backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant,
   Neo4j, OpenSearch)
-- 📦 **Batch Processing** - Parallel workers (1-10) for chunk processing, glob patterns for file selection, real-time progress tracking with ETA
+- 📦 **Batch Processing** - Parallel workers (1-10) for chunk processing, glob
+  patterns for file selection, real-time progress tracking with ETA
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
   language, including multi-collection queries

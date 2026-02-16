@@ -20,16 +20,10 @@ import (
 func TestParallelProcessing(t *testing.T) {
 	// Create mock config
 	cfg := &config.VectorDBConfig{
-		Type:    config.VectorDBTypeMock,
-		Enabled: true,
-		MockConfig: &config.MockConfig{
-			Enabled:            true,
-			SimulateEmbeddings: true,
-			EmbeddingDimension: 384,
-			Collections: []config.MockCollection{
-				{Name: "ParallelTestCol", Type: "text", Description: "Test parallel processing"},
-			},
-		},
+		Type:               config.VectorDBTypeMock,
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
 	}
 
 	// Create test file with multiple chunks
@@ -170,16 +164,10 @@ func TestProgressAggregation(t *testing.T) {
 	// This is more of a visual test - we verify it doesn't error
 	// Progress is printed to stderr, so we can't easily capture it in tests
 	cfg := &config.VectorDBConfig{
-		Type:    config.VectorDBTypeMock,
-		Enabled: true,
-		MockConfig: &config.MockConfig{
-			Enabled:            true,
-			SimulateEmbeddings: true,
-			EmbeddingDimension: 384,
-			Collections: []config.MockCollection{
-				{Name: "ProgressTestCol", Type: "text", Description: "Test progress tracking"},
-			},
-		},
+		Type:               config.VectorDBTypeMock,
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
 	}
 
 	tmpDir := t.TempDir()
