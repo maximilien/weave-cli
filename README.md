@@ -285,7 +285,7 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
   backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant,
   Neo4j, OpenSearch)
-- 📦 **Batch Processing** - Parallel processing of entire directories
+- 📦 **Batch Processing** - Parallel workers (1-10) for chunk processing, glob patterns for file selection, real-time progress tracking with ETA
 - 📄 **PDF Support** - Intelligent text extraction and image processing
 - 🔍 **Semantic Search** - Vector-based similarity search with natural
   language, including multi-collection queries
@@ -402,6 +402,62 @@ timeout: 30  # seconds
 
 See **[Timeout Configuration Guide](docs/TIMEOUT_CONFIGURATION.md)** for
 details on operation-specific defaults and troubleshooting.
+
+### Parallel Document Processing (v0.9.27+)
+
+Process documents faster with parallel workers and glob patterns:
+
+```bash
+# Single file with parallel chunk processing
+weave docs create MyCol document.txt --workers 3
+
+# Glob pattern with parallel processing (batch mode)
+weave docs create MyCol "docs/*.pdf" --workers 5
+
+# Multiple text files with progress tracking
+weave docs create MyCol "/path/to/files/*.txt" --workers 4
+
+# Complex glob patterns
+weave docs create MyCol "**/*.md" --workers 3  # Recursive
+
+# Traditional batch command (file-level parallelism)
+weave docs batch --dir ./docs --collection MyCol --parallel 3
+```
+
+**Features:**
+
+- **Progress tracking** - Real-time progress bar with ETA and throughput
+- **Parallel chunk processing** - Split large files across multiple workers
+- **Glob pattern support** - Process multiple files with wildcards
+- **Smart worker capping** - Automatically limited to 1-10 workers
+- **File-level stats** - Success/failure counts for batch processing
+
+**Performance:**
+
+```bash
+# Sequential (workers=1, default)
+weave docs create MyCol large.pdf --chunk-size 5000
+# ⏱ 45 seconds for 10 chunks
+
+# Parallel (workers=3)
+weave docs create MyCol large.pdf --chunk-size 5000 --workers 3
+# ⏱ 15 seconds for 10 chunks (3x faster)
+🚀 Processing 10 chunks with 3 workers...
+🔍 Processing 10 chunks in parallel
+   [==>                 ]  10% (1/10, ETA: 23s)
+   [====>               ]  20% (2/10, ETA: 13s)
+   ...
+   [====================] 100% (10/10)
+✅ All 10 chunks processed successfully (15.2s)
+```
+
+**When to Use:**
+
+- ✅ Large documents (>10 chunks) - Use `--workers 3-5`
+- ✅ Bulk file processing - Use glob patterns: `"*.pdf"`
+- ✅ Time-sensitive ingestion - Parallel workers speed up processing
+- ⚠️ Small files (<5 chunks) - Workers=1 is fine, minimal overhead
+- ⚠️ Rate-limited APIs - Workers respect provider rate limits
 
 ### Configuration Options
 
