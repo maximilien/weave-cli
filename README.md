@@ -212,6 +212,30 @@ weave docs create ProductCatalog images/ \
 - ✅ Full resolution - access original via URL when needed
 - ✅ Auto-bucket creation - buckets created automatically (v0.9.22+)
 
+**PDF Storage (Issue #33):**
+
+Store PDF files in external storage alongside document chunks:
+
+```bash
+# Ingest PDF with external storage
+weave docs create KnowledgeBase document.pdf \
+  --image-storage minio \
+  --minio-bucket my-docs \
+  --store-pdf \
+  --milvus-local
+
+# Each chunk gets these metadata fields:
+# - pdf_minio_key: Storage key (e.g., "pdfs/KnowledgeBase/document.pdf")
+# - pdf_minio_url: Access URL (e.g., "http://localhost:9000/bucket/pdfs/...")
+```
+
+**Use Cases:**
+
+- 📄 Citation & Source Linking - Frontend can link back to original PDFs
+- 🔗 Document Preservation - Keep original PDFs alongside processed chunks
+- 📚 Document Libraries - Build PDF collections with vector search
+- 🔍 Audit Trail - Track source documents for compliance
+
 📖 **See [MinIO Setup Guide](docker/docker-compose.minio.yml)
 for detailed configuration**
 

@@ -23,6 +23,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
 	"github.com/maximilien/weave-cli/src/pkg/progress"
+	"github.com/maximilien/weave-cli/src/pkg/storage"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/maximilien/weave-cli/src/pkg/worker"
@@ -392,7 +393,7 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 	switch ext {
 	case ".pdf":
 		// Process PDF file for generic vectordb client
-		return processPDFFileGeneric(ctx, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, maxMetadataLength)
+		return processPDFFileGeneric(ctx, cfg, client, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, maxMetadataLength)
 	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp":
 		// Image processing not yet implemented for generic vectordb client
 		return fmt.Errorf("image processing not yet implemented for this database type")
@@ -599,8 +600,48 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 }
 
 // processPDFFileGeneric processes a PDF file for generic vectordb clients
-func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, maxMetadataLength int) error {
+func processPDFFileGeneric(ctx context.Context, cfg *config.VectorDBConfig, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, maxMetadataLength int) error {
 	fmt.Printf("📄 Processing PDF: %s\n", filepath.Base(filePath))
+
+	// Upload PDF to external storage if enabled (Issue #33)
+	var pdfMinioKey, pdfMinioURL string
+	if cfg.PDFStorageEnabled && cfg.ImageStorageType != "" {
+		fmt.Println("📤 Uploading PDF to external storage...")
+
+		// Create storage client
+		pdfStorage, err := createPDFStorage(cfg)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to create PDF storage client: %v", err))
+			return err
+		}
+
+		// Read PDF file
+		pdfData, err := os.ReadFile(filePath)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to read PDF file: %v", err))
+			return err
+		}
+
+		// Upload PDF with metadata
+		metadata := storage.ImageMetadata{
+			CollectionName: collectionName,
+			Filename:       filepath.Base(filePath),
+			ContentType:    "application/pdf",
+			Size:           int64(len(pdfData)),
+		}
+
+		url, err := pdfStorage.Upload(ctx, pdfData, metadata)
+		if err != nil {
+			PrintError(fmt.Sprintf("Failed to upload PDF to storage: %v", err))
+			return err
+		}
+
+		// Store for adding to chunk metadata
+		pdfMinioKey = fmt.Sprintf("pdfs/%s/%s", collectionName, filepath.Base(filePath))
+		pdfMinioURL = url
+
+		fmt.Printf("✅ PDF uploaded to storage: %s\n", url)
+	}
 
 	// Extract PDF content using the existing PDF processor
 	fmt.Println("🔍 Extracting content from PDF...")
@@ -628,6 +669,15 @@ func processPDFFileGeneric(ctx context.Context, client vectordb.VectorDBClient, 
 	fmt.Printf("\n📝 Creating text documents (%d chunks):\n", len(textData))
 
 	for i, textDoc := range textData {
+		// Add PDF storage metadata if available (Issue #33)
+		if pdfMinioURL != "" {
+			if textDoc.Metadata == nil {
+				textDoc.Metadata = make(map[string]interface{})
+			}
+			textDoc.Metadata["pdf_minio_key"] = pdfMinioKey
+			textDoc.Metadata["pdf_minio_url"] = pdfMinioURL
+		}
+
 		doc := &vectordb.Document{
 			ID:       textDoc.ID,
 			Text:     textDoc.Content,
@@ -739,6 +789,20 @@ func buildCombinedImageContent(imgData pdf.PDFImageData) string {
 
 	// Join all parts with newline for better readability
 	return strings.Join(parts, "\n\n")
+}
+
+// createPDFStorage creates a storage client for PDF files based on config (Issue #33)
+func createPDFStorage(cfg *config.VectorDBConfig) (storage.ImageStorage, error) {
+	return storage.NewImageStorage(storage.Config{
+		Type:       storage.StorageType(cfg.ImageStorageType),
+		Endpoint:   cfg.ImageStorageEndpoint,
+		AccessKey:  cfg.ImageStorageAccessKey,
+		SecretKey:  cfg.ImageStorageSecretKey,
+		Region:     cfg.ImageStorageRegion,
+		Bucket:     cfg.ImageStorageBucket,
+		PathPrefix: "pdfs", // Separate path prefix for PDFs
+		UseSSL:     cfg.ImageStorageUseSSL,
+	})
 }
 
 func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int) error {
