@@ -1,32 +1,76 @@
 # Next Week Plan - February 17-21, 2026
 
-**Status**: Prepared
-**Mode**: Client0 Feedback + Stretch Goals
-**Current Version**: v0.9.22
+**Status**: Updated (Post v0.9.24)
+**Mode**: Complete Issue #31 + Client0 Support
+**Current Version**: v0.9.24
+**Last Updated**: 2026-02-15
 
 ---
 
-## 🎯 Primary Focus: Client0 Support
+## ✅ Weekend Accomplishments (Feb 14-15)
 
-### Waiting on Client0 Feedback
+### v0.9.24 Released
+- ✅ **Issue #32 CLOSED**: Fixed critical query embedding bug (all VDBs now use collection's model)
+- ✅ **Issue #31 60% DONE**: Rate limiter + worker pool infrastructure complete
+- ✅ **Client0 Unblocked**: Can now query OSS embedding collections (sentence-transformers)
+
+---
+
+## 🎯 Primary Focus: Complete Issue #31 (Parallel Processing)
+
+**Goal**: Ship v0.9.25 with full parallel document ingestion support
+**Estimated Time**: 4-5 hours
+**Client0 Impact**: 2-3x speedup for bulk ingestion (2-3 hours → 45-60 minutes for 10 PDFs with ~2,600 images)
+
+### Current Status (60% Complete)
+✅ **Done**:
+- Rate limiter package (11 tests)
+- Worker pool package (10 tests)
+- `--workers` flag in CLI
+
+🔄 **Remaining (40%)**:
+- Wire worker pool to document ingestion
+- Glob pattern handling for batch processing
+- Progress aggregation across workers
+- Integration tests with real PDFs
+
+### Implementation Tasks
+- [ ] Update `CreateDocument()` to use worker pool when `--workers > 1`
+- [ ] Add file enumeration from glob patterns
+- [ ] Aggregate progress across workers
+- [ ] Handle errors gracefully in parallel mode
+- [ ] Add integration tests
+- [ ] Update documentation with examples
+
+### Test Plan
+- [ ] Unit tests for parallel document processing
+- [ ] Integration test: 10 small PDFs with 3 workers
+- [ ] Integration test: 100 images with 5 workers
+- [ ] Performance comparison: 1 worker vs 3 workers vs 5 workers
+- [ ] Error handling: Partial failures, cancellation
+
+### Documentation Updates
+- [ ] Update `weave docs create --help` with parallel examples
+- [ ] Add performance benchmarks to README
+- [ ] Document rate limiting behavior
+- [ ] Add troubleshooting section
+
+**Target**: Complete by Wednesday (Feb 19) for v0.9.25 release
+
+---
+
+## 🎯 Secondary Focus: Client0 Support
 
 **Current Status**:
-- ✅ v0.9.22 shipped with auto-bucket creation
-- ✅ Issue #30 closed with testing instructions
-- ⏳ Awaiting Client0 testing of auction catalog (250+ images)
-
-**Expected Feedback Areas**:
-1. Bucket auto-creation behavior
-2. Image ingestion performance (200+ images)
-3. Thumbnail quality validation
-4. MinIO storage verification
-5. Any edge cases or bugs
+- ✅ v0.9.24 fixes critical query bug (Issue #32)
+- ✅ OSS embeddings fully working (sentence-transformers)
+- ⏳ Awaiting feedback on v0.9.24 testing
+- 🔄 Parallel ingestion coming in v0.9.25
 
 **Response Plan**:
 - Same-day turnaround on critical issues
-- Point releases (v0.9.23+) as needed
+- Point releases as needed
 - Integration test additions for edge cases
-- Documentation updates for any gotchas
 
 ---
 
@@ -210,33 +254,37 @@
 
 ## ⏰ Time Allocation
 
-**Client0 Support**: As needed (highest priority)
+**Issue #31 (Parallel Processing)**: 4-5 hours (Priority 1)
+**Client0 Support**: As needed (Priority 2)
 
-**Stretch Goals** (if Client0 quiet):
-- **Monday**: Video demos (4 hours)
-- **Tuesday**: External storage tests + extend to Weaviate (6 hours)
-- **Wednesday**: Documentation polish + PDF storage (5 hours)
-- **Thursday**: Performance benchmarking (4 hours)
-- **Friday**: CI/CD setup or Docker image (4 hours)
+**Week Plan**:
+- **Monday**: Complete Issue #31 implementation (4 hours)
+- **Tuesday**: Issue #31 testing + v0.9.25 release (2 hours), Client0 support (as needed)
+- **Wednesday**: Video demos OR external storage tests (4 hours)
+- **Thursday**: Documentation polish OR stretch goals (4 hours)
+- **Friday**: Performance benchmarking OR stretch goals (4 hours)
 
-**Total Available**: ~20-25 hours (if Client0 doesn't need support)
+**Total Available**: ~18-20 hours
 
 ---
 
 ## 📊 Current Status Check
 
-### Completed This Week (Feb 10-13)
+### Completed This Week (Feb 10-15)
 - ✅ v0.9.19: OSS embedding providers
 - ✅ v0.9.21: External storage (S3/MinIO/Local)
 - ✅ v0.9.22: Auto-bucket creation
+- ✅ v0.9.24: Query embedding bug fix + parallel infrastructure
+- ✅ Issue #32: CLOSED (query embedding bug)
+- ✅ Issue #31: 60% complete (rate limiter + worker pool)
 - ✅ VDB-specific docs updated
-- ✅ Week summary documented
+- ✅ Week summaries documented
 
 ### Ready for Next Week
-- ✅ All tests passing
+- ✅ All tests passing (21 new tests for rate limiter + worker pool)
 - ✅ Linting clean
 - ✅ Documentation current
-- ✅ Client0 issues resolved
+- ✅ Client0 unblocked for OSS queries
 - ✅ No known bugs
 
 ---
@@ -350,6 +398,7 @@
 ---
 
 **Prepared**: 2026-02-13
-**Version**: v0.9.22
-**Status**: Ready for Client0 feedback and stretch goals
-**Mindset**: Responsive support + productive stretch work
+**Updated**: 2026-02-15 (Post v0.9.24)
+**Version**: v0.9.24
+**Status**: Ready to complete Issue #31 + Client0 support
+**Mindset**: Finish parallel processing + responsive support
