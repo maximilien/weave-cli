@@ -22,6 +22,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/image"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
+	"github.com/maximilien/weave-cli/src/pkg/progress"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 	"github.com/maximilien/weave-cli/src/pkg/worker"
@@ -472,6 +473,11 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 	// Parallel processing (workers > 1)
 	fmt.Printf("🚀 Processing %d chunks with %d workers...\n", len(chunks), workers)
 
+	// Create progress reporter
+	reporter := progress.NewReporter(true)
+	reporter.SetTotal(len(chunks))
+	reporter.Start(fmt.Sprintf("Processing %d chunks in parallel", len(chunks)))
+
 	// Create worker pool
 	pool := worker.NewPool(worker.Config{
 		Workers:        workers,
@@ -485,6 +491,36 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 	var failureCount atomic.Int32
 	chunkSizes := getChunkSizes(chunks)
 
+	// Start goroutine to process results as they come in
+	resultsDone := make(chan bool)
+	fatalError := make(chan error, 1)
+
+	go func() {
+		for result := range pool.Results() {
+			if result.Success {
+				successCount.Add(1)
+				reporter.UpdateProgress(fmt.Sprintf("Chunk %s completed", result.TaskID))
+			} else {
+				failureCount.Add(1)
+				reporter.UpdateProgress(fmt.Sprintf("Chunk %s failed", result.TaskID))
+				if result.Error != nil {
+					// Check for fatal errors (collection not found)
+					errStr := result.Error.Error()
+					if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+						select {
+						case fatalError <- result.Error:
+						default:
+						}
+					} else {
+						PrintError(fmt.Sprintf("Failed to create %s: %s", result.TaskID, SimplifyError(result.Error)))
+					}
+				}
+			}
+		}
+		close(resultsDone)
+	}()
+
+	// Submit all tasks
 	for i, chunk := range chunks {
 		chunkIndex := i // Capture loop variable
 		chunkText := chunk
@@ -530,38 +566,33 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 		})
 	}
 
-	// Wait for all tasks and close channels (this closes both tasks and results channels)
+	// Wait for all tasks to complete (closes tasks and results channels)
 	pool.Wait()
 
-	// Process results (results channel is closed after Wait, so this will drain it)
-	resultsProcessed := 0
-	for result := range pool.Results() {
-		resultsProcessed++
-		if result.Success {
-			successCount.Add(1)
-		} else {
-			failureCount.Add(1)
-			if result.Error != nil {
-				// Check for fatal errors (collection not found)
-				errStr := result.Error.Error()
-				if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
-					return result.Error
-				}
-				PrintError(fmt.Sprintf("Failed to create %s: %s", result.TaskID, SimplifyError(result.Error)))
-			}
-		}
+	// Wait for results processing goroutine to finish
+	<-resultsDone
+
+	// Check for fatal errors
+	select {
+	case err := <-fatalError:
+		reporter.Complete(fmt.Sprintf("Failed: %s", err.Error()))
+		return err
+	default:
 	}
 
 	success := int(successCount.Load())
 	failures := int(failureCount.Load())
 
 	if success == 0 {
+		reporter.Complete(fmt.Sprintf("Failed to create any chunks"))
 		return fmt.Errorf("failed to create any document chunks")
 	}
 
 	if failures > 0 {
+		reporter.Complete(fmt.Sprintf("Completed with %d/%d chunks successful", success, len(chunks)))
 		PrintWarning(fmt.Sprintf("Processed %d chunks: %d succeeded, %d failed", len(chunks), success, failures))
 	} else {
+		reporter.Complete(fmt.Sprintf("All %d chunks processed successfully", len(chunks)))
 		PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks, %d workers)", filepath.Base(filePath), success, workers))
 	}
 	return nil
