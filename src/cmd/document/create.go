@@ -54,6 +54,11 @@ Examples:
   weave docs create MyDocs document.pdf --skip-all-images  # text only
   weave docs create MyCollection document.txt --embedding text-embedding-3-small
 
+  # Glob patterns for batch processing
+  weave docs create MyCollection "*.pdf" --workers 3
+  weave docs create MyCollection "docs/**/*.txt" --workers 5
+  weave docs create MyCollection "images/*.{jpg,png}" --workers 4
+
   # External storage with MinIO (local docker)
   weave docs create AuctionImages images/ --image-storage minio --minio-bucket auction-images
 
@@ -121,6 +126,25 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	if workers > 10 {
 		utils.PrintWarning(fmt.Sprintf("Workers capped at 10 (requested: %d) to prevent resource exhaustion", workers))
 		workers = 10
+	}
+
+	// Check if filePath is a glob pattern (contains *, ?, [, or **)
+	isGlobPattern := utils.IsGlobPattern(filePath)
+	if isGlobPattern {
+		// Expand glob pattern and process multiple files
+		files, err := utils.ExpandGlobPattern(filePath)
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Failed to expand glob pattern '%s': %v", filePath, err))
+			os.Exit(1)
+		}
+		if len(files) == 0 {
+			utils.PrintError(fmt.Sprintf("No files match glob pattern: %s", filePath))
+			os.Exit(1)
+		}
+
+		// Process multiple files with glob pattern
+		runGlobDocumentCreate(cmd, args, files, collectionName, chunkSize, imageCollection, skipAllImages, skipSmallImages, minImageSize, batchSize, maxMetadataLength, createReport, appendReport, embeddingModel, workers)
+		return
 	}
 
 	// If skip-all-images is set, clear the image collection to skip image processing
@@ -252,6 +276,135 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 		utils.CreateMockDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode)
 	default:
 		utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+		os.Exit(1)
+	}
+}
+
+func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, collectionName string, chunkSize int, imageCollection string, skipAllImages bool, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, createReport string, appendReport string, embeddingModel string, workers int) {
+	// Load configuration
+	cfg, err := utils.LoadConfigWithInteractiveHelp()
+	if err != nil {
+		os.Exit(1)
+	}
+
+	// Get selected databases
+	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
+	if err != nil {
+		utils.PrintError(fmt.Sprintf("Failed to get database selection: %v", err))
+		os.Exit(1)
+	}
+
+	ctx := context.Background()
+
+	// Smart database selection for single-database operations
+	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs create %s <glob-pattern>", collectionName))
+
+	// Process image collection flags
+	if skipAllImages {
+		imageCollection = ""
+	} else {
+		imageCol, _ := cmd.Flags().GetString("image-col")
+		imageCols, _ := cmd.Flags().GetString("image-cols")
+		if imageCollection == "" {
+			imageCollection = imageCol
+		}
+		if imageCollection == "" {
+			imageCollection = imageCols
+		}
+	}
+
+	// Determine report path
+	reportPath := ""
+	reportMode := ""
+	if createReport != "" || appendReport != "" {
+		if createReport != "" {
+			reportPath = createReport
+			reportMode = "create"
+		} else {
+			reportPath = appendReport
+			reportMode = "append"
+		}
+		if reportPath == "" {
+			reportPath = "glob-batch-report.csv"
+		}
+	}
+
+	// Configure external storage if specified
+	imageStorageType, _ := cmd.Flags().GetString("image-storage")
+	if imageStorageType != "" {
+		dbConfig.ImageStorageType = imageStorageType
+		switch imageStorageType {
+		case "s3":
+			dbConfig.ImageStorageBucket, _ = cmd.Flags().GetString("s3-bucket")
+			dbConfig.ImageStorageRegion, _ = cmd.Flags().GetString("s3-region")
+			dbConfig.ImageStorageAccessKey, _ = cmd.Flags().GetString("s3-access-key")
+			dbConfig.ImageStorageSecretKey, _ = cmd.Flags().GetString("s3-secret-key")
+			dbConfig.ImageStorageEndpoint, _ = cmd.Flags().GetString("s3-endpoint")
+			dbConfig.ImageStorageUseSSL = true
+			if dbConfig.ImageStorageAccessKey == "" {
+				dbConfig.ImageStorageAccessKey = os.Getenv("AWS_ACCESS_KEY_ID")
+			}
+			if dbConfig.ImageStorageSecretKey == "" {
+				dbConfig.ImageStorageSecretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+			}
+		case "minio":
+			dbConfig.ImageStorageEndpoint, _ = cmd.Flags().GetString("minio-endpoint")
+			dbConfig.ImageStorageBucket, _ = cmd.Flags().GetString("minio-bucket")
+			dbConfig.ImageStorageAccessKey, _ = cmd.Flags().GetString("minio-access-key")
+			dbConfig.ImageStorageSecretKey, _ = cmd.Flags().GetString("minio-secret-key")
+			dbConfig.ImageStorageUseSSL, _ = cmd.Flags().GetBool("minio-use-ssl")
+		case "local":
+			dbConfig.ImageStorageEndpoint, _ = cmd.Flags().GetString("local-storage-path")
+			dbConfig.ImageStorageUseSSL = false
+		}
+		storePDF, _ := cmd.Flags().GetBool("store-pdf")
+		dbConfig.PDFStorageEnabled = storePDF
+	}
+
+	// Print summary
+	fmt.Printf("📂 Processing %d files from glob pattern\n", len(files))
+	fmt.Printf("   Collection: %s\n", collectionName)
+	fmt.Printf("   Workers: %d\n", workers)
+	fmt.Printf("   Files: %v\n", files)
+
+	// Process each file
+	successCount := 0
+	failureCount := 0
+	for i, file := range files {
+		fmt.Printf("\n[%d/%d] Processing: %s\n", i+1, len(files), file)
+
+		var err error
+		switch dbConfig.Type {
+		case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
+			err = utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, file, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers)
+		case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud,
+			config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud,
+			config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud,
+			config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud,
+			config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud,
+			config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
+			err = utils.CreateDocument(ctx, dbConfig, collectionName, file, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers)
+		case config.VectorDBTypeMock:
+			utils.CreateMockDocument(ctx, dbConfig, collectionName, file, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode)
+		default:
+			utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			failureCount++
+			continue
+		}
+
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Failed: %v", err))
+			failureCount++
+		} else {
+			successCount++
+		}
+	}
+
+	// Print final summary
+	fmt.Printf("\n📊 Glob Processing Complete\n")
+	fmt.Printf("   ✅ Success: %d/%d files\n", successCount, len(files))
+	if failureCount > 0 {
+		fmt.Printf("   ❌ Failed: %d/%d files\n", failureCount, len(files))
 		os.Exit(1)
 	}
 }

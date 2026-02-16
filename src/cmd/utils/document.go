@@ -479,7 +479,6 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 		QueueSize:      workers * 2,
 	})
 	pool.Start()
-	defer pool.Stop()
 
 	// Submit tasks for each chunk
 	var successCount atomic.Int32
@@ -531,10 +530,10 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 		})
 	}
 
-	// Wait for all tasks to complete and collect results
+	// Wait for all tasks and close channels (this closes both tasks and results channels)
 	pool.Wait()
 
-	// Process results
+	// Process results (results channel is closed after Wait, so this will drain it)
 	resultsProcessed := 0
 	for result := range pool.Results() {
 		resultsProcessed++
