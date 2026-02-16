@@ -114,13 +114,14 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
 	workers, _ := cmd.Flags().GetInt("workers")
 
-	// TODO(Issue #31): Implement parallel processing with worker pool
-	// For now, workers > 1 will show a warning and fall back to sequential
-	if workers > 1 {
-		utils.PrintWarning(fmt.Sprintf("Parallel processing with --workers %d will be implemented in v0.9.25.\nFalling back to sequential processing for now.", workers))
+	// Validate workers parameter
+	if workers < 1 {
 		workers = 1
 	}
-	_ = workers // Prevent unused variable error
+	if workers > 10 {
+		utils.PrintWarning(fmt.Sprintf("Workers capped at 10 (requested: %d) to prevent resource exhaustion", workers))
+		workers = 10
+	}
 
 	// If skip-all-images is set, clear the image collection to skip image processing
 	if skipAllImages {
@@ -213,37 +214,37 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
-		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
-		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
-		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
-		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
-		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
-		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
-		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel); err != nil {
+		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
 			utils.PrintError(utils.FormatCreationError("document", err))
 			os.Exit(1)
 		}

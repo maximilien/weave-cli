@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/fatih/color"
@@ -23,6 +24,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/pdf"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
+	"github.com/maximilien/weave-cli/src/pkg/worker"
 	"github.com/spf13/viper"
 )
 
@@ -370,7 +372,7 @@ func validateEmbeddingForCollection(ctx context.Context, client *weaviate.Client
 
 // CreateWeaviateDocument creates a Weaviate document
 // CreateDocument creates a document using the vectordb abstraction (works for all DB types)
-func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string) error {
+func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int) error {
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -395,12 +397,12 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 		return fmt.Errorf("image processing not yet implemented for this database type")
 	default:
 		// Process as text file with chunking
-		return processTextFileGeneric(ctx, client, collectionName, filePath, chunkSize)
+		return processTextFileGeneric(ctx, client, collectionName, filePath, chunkSize, workers, embeddingModel)
 	}
 }
 
 // processTextFileGeneric processes a text file with chunking for generic vectordb clients
-func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int) error {
+func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient, collectionName, filePath string, chunkSize int, workers int, embeddingModel string) error {
 	// Convert to absolute path for consistent storage_path
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
@@ -418,50 +420,151 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 	// Chunk the text content first to get total count
 	chunks := chunkText(string(content), chunkSize)
 
-	// Create documents for each chunk
-	successCount := 0
-	for i, chunk := range chunks {
-		docID := uuid.New().String()
-		now := time.Now().Format(time.RFC3339)
+	// Sequential processing (workers == 1)
+	if workers == 1 {
+		// Create documents for each chunk
+		successCount := 0
+		for i, chunk := range chunks {
+			docID := uuid.New().String()
+			now := time.Now().Format(time.RFC3339)
 
-		doc := &vectordb.Document{
-			ID:      docID,
-			Text:    chunk,
-			Content: chunk,
-			URL:     fmt.Sprintf("file://%s#chunk-%d", absPath, i),
-			Metadata: map[string]interface{}{
-				"id":                docID,
-				"filename":          filepath.Base(filePath),
-				"original_filename": filepath.Base(filePath),
-				"file_size":         len(content),
-				"date_added":        now,
-				"storage_path":      absPath,
-				"type":              "text",
-				"is_chunked":        len(chunks) > 1,
-				"total_chunks":      len(chunks),
-				"chunk_index":       i,
-				"chunk_sizes":       getChunkSizes(chunks),
-			},
-		}
-
-		err := client.CreateDocument(ctx, collectionName, doc)
-		if err != nil {
-			// Check if this is a "collection not found" error - fail fast
-			errStr := err.Error()
-			if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
-				return fmt.Errorf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName)
+			doc := &vectordb.Document{
+				ID:      docID,
+				Text:    chunk,
+				Content: chunk,
+				URL:     fmt.Sprintf("file://%s#chunk-%d", absPath, i),
+				Metadata: map[string]interface{}{
+					"id":                docID,
+					"filename":          filepath.Base(filePath),
+					"original_filename": filepath.Base(filePath),
+					"file_size":         len(content),
+					"date_added":        now,
+					"storage_path":      absPath,
+					"type":              "text",
+					"is_chunked":        len(chunks) > 1,
+					"total_chunks":      len(chunks),
+					"chunk_index":       i,
+					"chunk_sizes":       getChunkSizes(chunks),
+				},
 			}
-			PrintError(fmt.Sprintf("Failed to create document chunk %d: %s", i, SimplifyError(err)))
-			continue
+
+			err := client.CreateDocument(ctx, collectionName, doc)
+			if err != nil {
+				// Check if this is a "collection not found" error - fail fast
+				errStr := err.Error()
+				if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+					return fmt.Errorf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName)
+				}
+				PrintError(fmt.Sprintf("Failed to create document chunk %d: %s", i, SimplifyError(err)))
+				continue
+			}
+			successCount++
 		}
-		successCount++
+
+		if successCount == 0 {
+			return fmt.Errorf("failed to create any document chunks")
+		}
+
+		PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
+		return nil
 	}
 
-	if successCount == 0 {
+	// Parallel processing (workers > 1)
+	fmt.Printf("🚀 Processing %d chunks with %d workers...\n", len(chunks), workers)
+
+	// Create worker pool
+	pool := worker.NewPool(worker.Config{
+		Workers:        workers,
+		EmbeddingModel: embeddingModel,
+		QueueSize:      workers * 2,
+	})
+	pool.Start()
+	defer pool.Stop()
+
+	// Submit tasks for each chunk
+	var successCount atomic.Int32
+	var failureCount atomic.Int32
+	chunkSizes := getChunkSizes(chunks)
+
+	for i, chunk := range chunks {
+		chunkIndex := i // Capture loop variable
+		chunkText := chunk
+
+		pool.Submit(worker.Task{
+			ID:       fmt.Sprintf("chunk-%d", chunkIndex),
+			FilePath: filePath,
+			Process: func(taskCtx context.Context) error {
+				docID := uuid.New().String()
+				now := time.Now().Format(time.RFC3339)
+
+				doc := &vectordb.Document{
+					ID:      docID,
+					Text:    chunkText,
+					Content: chunkText,
+					URL:     fmt.Sprintf("file://%s#chunk-%d", absPath, chunkIndex),
+					Metadata: map[string]interface{}{
+						"id":                docID,
+						"filename":          filepath.Base(filePath),
+						"original_filename": filepath.Base(filePath),
+						"file_size":         len(content),
+						"date_added":        now,
+						"storage_path":      absPath,
+						"type":              "text",
+						"is_chunked":        len(chunks) > 1,
+						"total_chunks":      len(chunks),
+						"chunk_index":       chunkIndex,
+						"chunk_sizes":       chunkSizes,
+					},
+				}
+
+				err := client.CreateDocument(taskCtx, collectionName, doc)
+				if err != nil {
+					// Check if this is a "collection not found" error - fail fast
+					errStr := err.Error()
+					if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+						return fmt.Errorf("Collection '%s' not found. Create it first with: weave cols create %s", collectionName, collectionName)
+					}
+					return err
+				}
+				return nil
+			},
+		})
+	}
+
+	// Wait for all tasks to complete and collect results
+	pool.Wait()
+
+	// Process results
+	resultsProcessed := 0
+	for result := range pool.Results() {
+		resultsProcessed++
+		if result.Success {
+			successCount.Add(1)
+		} else {
+			failureCount.Add(1)
+			if result.Error != nil {
+				// Check for fatal errors (collection not found)
+				errStr := result.Error.Error()
+				if strings.Contains(errStr, "can't find collection") || strings.Contains(errStr, "collection not found") {
+					return result.Error
+				}
+				PrintError(fmt.Sprintf("Failed to create %s: %s", result.TaskID, SimplifyError(result.Error)))
+			}
+		}
+	}
+
+	success := int(successCount.Load())
+	failures := int(failureCount.Load())
+
+	if success == 0 {
 		return fmt.Errorf("failed to create any document chunks")
 	}
 
-	PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks)", filepath.Base(filePath), successCount))
+	if failures > 0 {
+		PrintWarning(fmt.Sprintf("Processed %d chunks: %d succeeded, %d failed", len(chunks), success, failures))
+	} else {
+		PrintSuccess(fmt.Sprintf("Successfully created document: %s (%d chunks, %d workers)", filepath.Base(filePath), success, workers))
+	}
 	return nil
 }
 
@@ -608,7 +711,10 @@ func buildCombinedImageContent(imgData pdf.PDFImageData) string {
 	return strings.Join(parts, "\n\n")
 }
 
-func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string) error {
+func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int) error {
+	// Note: Weaviate-specific document processing does not yet support parallel processing
+	// For now, workers parameter is accepted but ignored
+	_ = workers
 	client, err := CreateWeaviateClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
