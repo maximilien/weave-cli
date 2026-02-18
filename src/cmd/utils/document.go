@@ -372,9 +372,22 @@ func validateEmbeddingForCollection(ctx context.Context, client *weaviate.Client
 	return nil
 }
 
-// CreateWeaviateDocument creates a Weaviate document
+// DocumentExistsByFilename checks if any document with the given filename already exists in a collection.
+// Uses SearchByMetadata with limit=1 to avoid scanning large collections.
+// Returns (true, nil) if found, (false, nil) if not found, (false, err) on query failure.
+func DocumentExistsByFilename(ctx context.Context, client vectordb.VectorDBClient, collectionName, filename string) (bool, error) {
+	results, err := client.SearchByMetadata(ctx, collectionName, map[string]interface{}{
+		"filename": filename,
+	}, &vectordb.QueryOptions{TopK: 1})
+	if err != nil {
+		// Don't block ingestion on a failed check — caller should treat error as "not found"
+		return false, err
+	}
+	return len(results) > 0, nil
+}
+
 // CreateDocument creates a document using the vectordb abstraction (works for all DB types)
-func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int) error {
+func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int, skipExisting bool) error {
 	client, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		PrintError(fmt.Sprintf("Failed to create client: %v", err))
@@ -385,6 +398,16 @@ func CreateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionN
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		PrintError(fmt.Sprintf("File not found: %s", filePath))
 		return err
+	}
+
+	// --skip-existing: check if document with this filename is already in the collection
+	if skipExisting {
+		filename := filepath.Base(filePath)
+		exists, checkErr := DocumentExistsByFilename(ctx, client, collectionName, filename)
+		if checkErr == nil && exists {
+			PrintInfo(fmt.Sprintf("⏭️  Skipping (already ingested): %s", filename))
+			return nil
+		}
 	}
 
 	// Determine file type and process accordingly
@@ -805,7 +828,7 @@ func createPDFStorage(cfg *config.VectorDBConfig) (storage.ImageStorage, error) 
 	})
 }
 
-func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int) error {
+func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, collectionName, filePath string, chunkSize int, imageCollection string, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, reportPath string, reportMode string, embeddingModel string, workers int, skipExisting bool) error {
 	// Note: Weaviate-specific document processing does not yet support parallel processing
 	// For now, workers parameter is accepted but ignored
 	_ = workers
@@ -819,6 +842,19 @@ func CreateWeaviateDocument(ctx context.Context, cfg *config.VectorDBConfig, col
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		PrintError(fmt.Sprintf("File not found: %s", filePath))
 		return err
+	}
+
+	// --skip-existing: check if document with this filename is already in the collection
+	if skipExisting {
+		filename := filepath.Base(filePath)
+		// Use CreateVectorDBClient for the interface-compatible client needed by DocumentExistsByFilename
+		if vdbClient, vdbErr := CreateVectorDBClient(cfg); vdbErr == nil {
+			exists, checkErr := DocumentExistsByFilename(ctx, vdbClient, collectionName, filename)
+			if checkErr == nil && exists {
+				PrintInfo(fmt.Sprintf("⏭️  Skipping (already ingested): %s", filename))
+				return nil
+			}
+		}
 	}
 
 	// Validate embedding model if provided
