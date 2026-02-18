@@ -195,6 +195,11 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	// Flush to make data available for search
 	err = a.client.Flush(ctx, collectionName, false)
 	if err != nil {
+		if isFlushTimeout(err) {
+			logger.Warn("[non-fatal] Flush timeout (documents are stored, flush will complete async): %v", err)
+			logger.Info("Document created successfully (with non-fatal flush timeout)")
+			return nil
+		}
 		logger.Error("Failed to flush collection: %v", err)
 		return fmt.Errorf("Milvus: failed to flush collection: %w", err)
 	}
@@ -406,6 +411,12 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	// Flush to make data available for search
 	err = a.client.Flush(ctx, collectionName, false)
 	if err != nil {
+		if isFlushTimeout(err) {
+			// Non-fatal: documents are stored, Milvus will flush async
+			batchLogger := logging.WithCollection("milvus", collectionName)
+			batchLogger.Warn("[non-fatal] Flush timeout on batch insert (documents are stored, flush will complete async): %v", err)
+			return nil
+		}
 		return fmt.Errorf("Milvus: failed to flush collection: %w", err)
 	}
 
@@ -691,4 +702,20 @@ func (a *Adapter) decodeImageData(imageData string) ([]byte, error) {
 
 	// Decode base64
 	return base64.StdEncoding.DecodeString(imageData)
+}
+
+// isFlushTimeout returns true if the error is a non-fatal Milvus flush timeout.
+// Milvus flush timeouts (DeadlineExceeded on the Flush RPC) are non-fatal:
+// the insert already succeeded and Milvus will flush async under memory pressure.
+func isFlushTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	if err == context.DeadlineExceeded {
+		return true
+	}
+	errStr := err.Error()
+	// Match gRPC DeadlineExceeded codes from Milvus flush responses
+	return strings.Contains(errStr, "DeadlineExceeded") ||
+		strings.Contains(errStr, "deadline exceeded")
 }
