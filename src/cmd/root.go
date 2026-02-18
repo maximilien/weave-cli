@@ -490,22 +490,22 @@ func LoadConfigWithOverrides() (*config.Config, error) {
 
 // printHeader prints a colored header message
 func printHeader(message string) {
-	color.New(color.FgBlue, color.Bold).Printf("🔧 %s\n", message)
+	color.New(color.FgBlue, color.Bold).Fprintf(os.Stderr, "🔧 %s\n", message)
 }
 
 // printSuccess prints a colored success message
 func printSuccess(message string) {
-	color.New(color.FgGreen).Printf("✅ %s\n", message)
+	color.New(color.FgGreen).Fprintf(os.Stderr, "✅ %s\n", message)
 }
 
 // printWarning prints a colored warning message
 func printWarning(message string) {
-	color.New(color.FgYellow).Printf("⚠️  %s\n", message)
+	color.New(color.FgYellow).Fprintf(os.Stderr, "⚠️  %s\n", message)
 }
 
 // printError prints a colored error message
 func printError(message string) {
-	color.New(color.FgRed).Printf("❌ %s\n", message)
+	color.New(color.FgRed).Fprintf(os.Stderr, "❌ %s\n", message)
 }
 
 // initColor initializes color settings based on the no-color flag

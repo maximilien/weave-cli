@@ -69,14 +69,14 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 	if !force {
 		utils.PrintWarning(fmt.Sprintf("⚠️  Are you sure you want to delete ALL documents from collection '%s'? This action cannot be undone.", collectionName))
 		if !utils.ConfirmAction("") {
-			fmt.Println("Operation cancelled")
+			fmt.Fprintln(os.Stderr, "Operation cancelled")
 			return
 		}
 
 		// Second confirmation with prominent red warning
 		utils.PrintError("🚨 This will permanently delete ALL documents. Type 'yes' to confirm:")
 		if !utils.ConfirmAction("") {
-			fmt.Println("Operation cancelled")
+			fmt.Fprintln(os.Stderr, "Operation cancelled")
 			return
 		}
 	}

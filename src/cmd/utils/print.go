@@ -12,29 +12,31 @@ import (
 	"github.com/fatih/color"
 )
 
-// PrintError prints an error message in red
+// PrintError prints an error message in red to stderr.
+// Errors are diagnostic output and must not contaminate stdout JSON.
 func PrintError(message string) {
-	color.New(color.FgRed).Printf("❌ %s\n", message)
+	color.New(color.FgRed).Fprintln(os.Stderr, "❌ "+message)
 }
 
-// PrintSuccess prints a success message in green
+// PrintSuccess prints a success message in green to stderr.
+// Progress/status output goes to stderr so stdout stays clean for JSON.
 func PrintSuccess(message string) {
-	color.New(color.FgGreen).Printf("✅ %s\n", message)
+	color.New(color.FgGreen).Fprintln(os.Stderr, "✅ "+message)
 }
 
-// PrintWarning prints a warning message in yellow
+// PrintWarning prints a warning message in yellow to stderr.
 func PrintWarning(message string) {
-	color.New(color.FgYellow).Printf("⚠️  %s\n", message)
+	color.New(color.FgYellow).Fprintln(os.Stderr, "⚠️  "+message)
 }
 
-// PrintInfo prints an info message in blue
+// PrintInfo prints an info message in blue to stderr.
 func PrintInfo(message string) {
-	color.New(color.FgBlue).Printf("ℹ️  %s\n", message)
+	color.New(color.FgBlue).Fprintln(os.Stderr, "ℹ️  "+message)
 }
 
-// PrintHeader prints a header message in bold cyan
+// PrintHeader prints a header message in bold cyan to stderr.
 func PrintHeader(message string) {
-	color.New(color.FgCyan, color.Bold).Printf("📋 %s\n", message)
+	color.New(color.FgCyan, color.Bold).Fprintln(os.Stderr, "📋 "+message)
 }
 
 // ConfirmAction prompts the user for confirmation

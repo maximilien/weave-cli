@@ -177,7 +177,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	progress.FinishScanning(len(files))
 
 	if len(files) == 0 {
-		fmt.Println("No files found matching criteria")
+		fmt.Fprintln(os.Stderr, "No files found matching criteria")
 		return nil
 	}
 
@@ -207,16 +207,16 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 	// Print summary if not quiet and not writing to file
 	if !quiet && reportFile == "" {
-		fmt.Println()
-		fmt.Printf("📊 Ingestion %s\n", report.Status)
-		fmt.Printf("   Files processed: %d/%d\n", report.FilesProcessed, report.FilesScanned)
-		fmt.Printf("   Documents created: %d\n", report.DocumentsCreated)
-		fmt.Printf("   Duration: %.2fs\n", report.Duration)
+		fmt.Fprintln(os.Stderr)
+		fmt.Fprintf(os.Stderr, "📊 Ingestion %s\n", report.Status)
+		fmt.Fprintf(os.Stderr, "   Files processed: %d/%d\n", report.FilesProcessed, report.FilesScanned)
+		fmt.Fprintf(os.Stderr, "   Documents created: %d\n", report.DocumentsCreated)
+		fmt.Fprintf(os.Stderr, "   Duration: %.2fs\n", report.Duration)
 		if report.ThroughputFiles > 0 {
-			fmt.Printf("   Throughput: %.2f files/sec, %.2f docs/sec\n", report.ThroughputFiles, report.ThroughputDocs)
+			fmt.Fprintf(os.Stderr, "   Throughput: %.2f files/sec, %.2f docs/sec\n", report.ThroughputFiles, report.ThroughputDocs)
 		}
 		if report.FilesFailed > 0 {
-			fmt.Printf("   ⚠️  Failed: %d files\n", report.FilesFailed)
+			fmt.Fprintf(os.Stderr, "   ⚠️  Failed: %d files\n", report.FilesFailed)
 		}
 	}
 

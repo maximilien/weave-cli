@@ -24,12 +24,12 @@ func LoadConfigWithInteractiveHelp() (*config.Config, error) {
 			dbConfig, dbErr := cfg.GetDefaultDatabase()
 			if dbErr == nil && dbConfig.Type == config.VectorDBTypeMock {
 				// We're using mock database as fallback - warn and offer to configure
-				color.New(color.FgYellow).Println("\n⚠️  Warning: No configuration found, using mock database for testing")
-				fmt.Println()
+				color.New(color.FgYellow).Fprintln(os.Stderr, "\n⚠️  Warning: No configuration found, using mock database for testing")
+				fmt.Fprintln(os.Stderr)
 
 				// Format and display configuration error with tips
 				formattedErr := config.FormatConfigError(configErr)
-				fmt.Println(formattedErr)
+				fmt.Fprintln(os.Stderr, formattedErr)
 
 				// Prompt user to fix configuration
 				shouldFix, promptErr := config.PromptToFixConfig(configErr)
@@ -52,9 +52,9 @@ func LoadConfigWithInteractiveHelp() (*config.Config, error) {
 				}
 
 				// User declined, continue with mock
-				fmt.Println()
+				fmt.Fprintln(os.Stderr)
 				PrintInfo("Continuing with mock database. Set environment variables or create .env file to use real database.")
-				fmt.Println()
+				fmt.Fprintln(os.Stderr)
 			}
 		}
 		return cfg, nil
@@ -139,7 +139,7 @@ func HandleConfigError(err error, exitOnError bool) bool {
 	// Print the formatted error
 	if formattedErr != err.Error() {
 		// Enhanced error message
-		color.New(color.FgRed).Println(formattedErr)
+		color.New(color.FgRed).Fprintln(os.Stderr, formattedErr)
 	} else {
 		// Standard error
 		PrintError(fmt.Sprintf("Configuration error: %v", err))
@@ -158,11 +158,11 @@ func PrintConfigTips() {
 		return
 	}
 
-	color.New(color.FgCyan).Println("\n💡 Configuration Tips:")
-	fmt.Println()
-	fmt.Println("  • Use 'weave config show' to see your current configuration")
-	fmt.Println("  • Use 'weave config create --env' to create a new .env file")
-	fmt.Println("  • Use 'weave config update --env' to update an existing .env file")
-	fmt.Println("  • Set VECTOR_DB_TYPE=mock for testing without a real database")
-	fmt.Println()
+	color.New(color.FgCyan).Fprintln(os.Stderr, "\n💡 Configuration Tips:")
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "  • Use 'weave config show' to see your current configuration")
+	fmt.Fprintln(os.Stderr, "  • Use 'weave config create --env' to create a new .env file")
+	fmt.Fprintln(os.Stderr, "  • Use 'weave config update --env' to update an existing .env file")
+	fmt.Fprintln(os.Stderr, "  • Set VECTOR_DB_TYPE=mock for testing without a real database")
+	fmt.Fprintln(os.Stderr)
 }
