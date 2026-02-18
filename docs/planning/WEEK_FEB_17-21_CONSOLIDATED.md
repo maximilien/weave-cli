@@ -37,14 +37,18 @@
 
 ### Open Issues (Updated)
 1. ~~**Issue #31**: Parallel processing~~ - **COMPLETE** ✅ (v0.9.27)
-2. **Issue #29**: Milvus 65KB limit (likely fixed by external storage v0.9.21-23)
-3. **Issue #21**: Image ingestion tests across all VDBs
-4. **Issue #16**: Code audit for v1.0
-5. **Issue #15**: Documentation updates
-6. **Issue #14**: Different agents with configs
-7. **Issue #12**: Helpful tips on -h
-8. **Issue #11**: Streamline commands
-9. **Issue #8**: Test PDFs from different years
+2. ~~**Issue #33**: PDF storage in MinIO~~ - **COMPLETE** ✅ (v0.9.27, Mon Feb 17)
+3. **Issue #36**: `--top-k` flag alias — 1h fix (v0.9.28)
+4. **Issue #35**: JSON output purity + stderr fix — 4h (v0.9.28)
+5. **Issue #34**: `--timeout` per-file flag — 2h (v0.9.28)
+6. **Issue #37**: `--skip-existing` idempotent ingestion — 3h (v0.9.28)
+7. **Issue #40**: Non-fatal flush timeout classification — 2h (v0.9.28)
+8. **Issue #38**: `weave docs create-batch` — 10h (v0.9.29, next week)
+9. **Issue #39**: `weave docs status` dashboard — 5h (v0.9.29, next week)
+10. **Issue #29**: Milvus 65KB limit (likely fixed by external storage v0.9.21-23)
+11. **Issue #21**: Image ingestion tests across all VDBs
+12. **Issue #16**: Code audit for v1.0
+13. **Issue #15**: Documentation updates
 
 ---
 
@@ -65,100 +69,74 @@
 
 ---
 
-### Tuesday, Feb 18 (4 hours work) - OPTIONS
+### Tuesday, Feb 18 (4 hours work) - v0.9.28 Reliability Fixes
+
+**Goal**: Ship v0.9.28 — the "it just works" release for Client0
 
 **Client Check** (30 min):
-- Check for Client0/Client1 feedback on v0.9.27
-- Monitor GitHub issues
+- Check Client0/Client1 feedback on v0.9.27 + Issue #33
 
-**Option A - Issue #29 Verification** (Quick Win):
-- Test Milvus external storage with >65KB images (30 min)
-- Verify thumbnails work correctly
-- Close Issue #29 if successful
-- **Remaining**: 3 hours for other work
+**Issue #36** — `--top-k` flag alias (1 hour):
+- Add hyphen alias for `--top_k` in `cols query`
+- Audit all other flags for underscore/hyphen inconsistency
+- Fixes Client0's TypeScript frontend compatibility
 
-**Option B - Video Demos** (High Value):
-- Record oss-embeddings-basic.cast (~1 hour)
-- Record oss-embeddings-reembed.cast (~1 hour)
-- Record oss-embeddings-compare.cast (~1 hour)
-- Upload to asciinema.org + update README (30 min)
+**Issue #35** — JSON output purity + stderr fix (3 hours):
+- Route all non-JSON output to stderr when `--json` is set
+- Stop treating sentence-transformers tqdm stderr as error
+- Add `--quiet` flag to suppress all progress/info output
+- Tests + lint
 
-**Option C - Issue #21** (Testing):
-- Image ingestion tests across VDBs (3-4 hours)
-- Test Weaviate, Qdrant, Chroma, MongoDB
-- Document results
-
-**Recommendation**: Issue #29 (quick win) + Video Demos
+**Deliverable**: Issues #36 + #35 merged, v0.9.28-pre ready
 
 ---
 
-### Wednesday, Feb 19 (4 hours work) - OPTIONS
+### Wednesday, Feb 19 (4 hours work) - v0.9.28 continued
 
-**Option A - Performance Benchmarking**:
-- OSS re-embedding speed benchmarks (1 hour)
-- External storage upload speed (1 hour)
-- Cost analysis documentation (1 hour)
-- Create BENCHMARKS.md (1 hour)
+**Issue #34** — `--timeout` per-file flag (2 hours):
+- Wire `context.WithTimeout` into `CreateDocument` from flag
+- Support `30s`, `5m`, `2h` syntax
+- Clear timeout error message + non-zero exit
+- Tests
 
-**Option B - Documentation Polish**:
-- Link checker automation (1 hour)
-- Spell check pass (1 hour)
-- Code example testing (1 hour)
-- Consistency check (1 hour)
+**Issue #40** — Non-fatal flush timeout classification (2 hours):
+- Detect Milvus `DeadlineExceeded` flush errors in adapter
+- Log at WARN with `[non-fatal]` tag instead of ERROR
+- Exit 0 if only non-fatal errors occurred
+- Tests
 
-**Option C - Issue #21 Continued**:
-- Complete image ingestion tests
-- Document matrix of VDB support
-- Create test report
-
-**Recommendation**: Performance benchmarking (complements v0.9.27)
+**Deliverable**: All 4 v0.9.28 issues complete → **release v0.9.28** 🚀
 
 ---
 
-### Thursday, Feb 20 (4 hours work)
+### Thursday, Feb 20 (4 hours work) - v0.9.28 + start #37
 
-**Focus**: Stretch goals OR Client1 support
+**Morning** (1 hour):
+- Client check, respond to any feedback on v0.9.28
+- Issue #29 quick verification (30 min) — close if resolved by external storage
 
-**Stretch Goal Options**:
+**Issue #37** — `--skip-existing` idempotent ingestion (3 hours):
+- Add `DocumentExistsBySource()` check before ingesting each file
+- `--skip-existing` flag skips files already in collection by `source_document`
+- `--overwrite` flag replaces existing (makes current behavior explicit)
+- Tests across Milvus + mock adapters
 
-1. **Video Demos** (3-4 hours)
-   - Record `oss-embeddings-basic.cast` (~2 min)
-   - Record `oss-embeddings-reembed.cast` (~3 min)
-   - Record `oss-embeddings-compare.cast` (~3 min)
-   - Upload to asciinema.org
-   - Update README with links
-
-2. **External Storage Integration Tests** (2-3 hours)
-   - Test with various image sizes (10KB, 50KB, 100KB, 500KB, 1MB)
-   - Verify thumbnail quality
-   - Benchmark upload performance
-   - Test S3 (not just MinIO)
-
-3. **Documentation Polish** (2-3 hours)
-   - Link checking automation
-   - Spell check pass
-   - Code example testing
-   - Consistency check
-
-**Deliverable**: At least 1 stretch goal completed
+**Deliverable**: Issue #37 complete, PR open
 
 ---
 
-### Friday, Feb 21 (4 hours work)
-
-**Focus**: Week wrap-up + planning
+### Friday, Feb 21 (4 hours work) - v0.9.28 wrap-up + planning
 
 **Morning** (2 hours):
-- Complete any remaining stretch goals
-- Update VDB_SUPPORT_MATRIX.md
-- Clean up planning docs
+- Merge Issue #37 → **release v0.9.28 final** with all 5 fixes
+- Update week plan doc + next week plan
 
 **Afternoon** (2 hours):
-- Performance benchmarking (if not done)
-- Prepare next week plan
+- Write next week plan (v0.9.29: Issue #38 `create-batch` + Issue #39 `docs status`)
+- Issue #38 design doc — checkpoint format, flag spec, retry logic
 - GitHub issues triage
 
-**Deliverable**: Week summary document + next week plan
+**Deliverable**: v0.9.28 released, next week plan ready, Issue #38 designed
 
 ---
 
@@ -167,25 +145,28 @@
 ### Must Have (Primary Focus)
 - ✅ Client0/Client1 support (responsive, same-day turnaround)
 - ✅ **Issue #31 complete** - DONE! v0.9.27 released 🎉
+- ✅ **Issue #33 complete** - PDF storage in MinIO, Mon Feb 17 🎉
 - ✅ All tests passing (no regressions)
-- [ ] Issue #29 verified/closed (30 min task) - REMAINING
+- [ ] **v0.9.28 released** — Issues #34 + #35 + #36 + #37 + #40 (Tue-Fri)
 
-### Should Have (Stretch Goals)
-- [ ] Video demos recorded (3 demos) - HIGH PRIORITY for Tue/Wed
-- [ ] Performance benchmarks documented - GOOD for Wed
-- [ ] Documentation polish complete
-- [ ] External storage integration tests
+### Should Have (Client0 Reliability)
+- [ ] Issue #36: `--top-k` alias (1h, Tue)
+- [ ] Issue #35: JSON purity + stderr fix (4h, Tue)
+- [ ] Issue #34: `--timeout` flag (2h, Wed)
+- [ ] Issue #40: Non-fatal flush errors (2h, Wed)
+- [ ] Issue #37: `--skip-existing` (3h, Thu)
 
 ### Nice to Have (Bonus)
-- [ ] External storage extended to 2+ more VDBs
-- [ ] Image ingestion tests (Issue #21) started
-- [ ] CI/CD pipeline started
+- [ ] Issue #29 verified/closed (30 min, Thu)
+- [ ] Issue #38 designed for next week
+- [ ] Client feedback on v0.9.28 incorporated
 
 ### Monday Achievements ✅
 - Issue #31: Parallel processing (100% complete)
+- Issue #33: PDF storage in MinIO (100% complete)
 - v0.9.27: Released with full test coverage
-- 8 commits, 5 features, all tests passing
-- Performance: 3x speedup demonstrated
+- Client0 ingestion analysis: 7 new GitHub issues (#34-40)
+- Planning doc: CLIENT0_INGESTION_IMPROVEMENTS.md
 
 ---
 
