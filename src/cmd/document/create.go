@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	"github.com/maximilien/weave-cli/src/pkg/config"
@@ -100,6 +101,7 @@ func init() {
 	CreateCmd.Flags().String("local-storage-path", "./storage", "Local filesystem path for image storage (default: ./storage)")
 	CreateCmd.Flags().Bool("store-pdf", false, "Store PDF files in external storage and include URL in chunk metadata")
 	CreateCmd.Flags().IntP("workers", "w", 1, "Number of concurrent workers for parallel document processing (default: 1 for sequential)")
+	CreateCmd.Flags().String("timeout", "", "Per-file ingestion timeout (e.g., 30s, 5m, 2h). Exits with error if exceeded. Default: no timeout")
 }
 
 func runDocumentCreate(cmd *cobra.Command, args []string) {
@@ -118,6 +120,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	appendReport, _ := cmd.Flags().GetString("append-report")
 	embeddingModel, _ := cmd.Flags().GetString("embedding")
 	workers, _ := cmd.Flags().GetInt("workers")
+	timeoutStr, _ := cmd.Flags().GetString("timeout")
 
 	// Validate workers parameter
 	if workers < 1 {
@@ -126,6 +129,17 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	if workers > 10 {
 		utils.PrintWarning(fmt.Sprintf("Workers capped at 10 (requested: %d) to prevent resource exhaustion", workers))
 		workers = 10
+	}
+
+	// Parse timeout duration
+	var timeoutDuration time.Duration
+	if timeoutStr != "" {
+		var err error
+		timeoutDuration, err = time.ParseDuration(timeoutStr)
+		if err != nil {
+			utils.PrintError(fmt.Sprintf("Invalid --timeout value '%s': use units like 30s, 5m, 2h", timeoutStr))
+			os.Exit(1)
+		}
 	}
 
 	// Check if filePath is a glob pattern (contains *, ?, [, or **)
@@ -143,7 +157,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 		}
 
 		// Process multiple files with glob pattern
-		runGlobDocumentCreate(cmd, args, files, collectionName, chunkSize, imageCollection, skipAllImages, skipSmallImages, minImageSize, batchSize, maxMetadataLength, createReport, appendReport, embeddingModel, workers)
+		runGlobDocumentCreate(cmd, args, files, collectionName, chunkSize, imageCollection, skipAllImages, skipSmallImages, minImageSize, batchSize, maxMetadataLength, createReport, appendReport, embeddingModel, workers, timeoutDuration)
 		return
 	}
 
@@ -192,7 +206,13 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
+	// Build context with optional timeout
 	ctx := context.Background()
+	if timeoutDuration > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, timeoutDuration)
+		defer cancel()
+	}
 
 	// Smart database selection for single-database operations
 	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs create %s %s", collectionName, filePath))
@@ -239,37 +259,37 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	switch dbConfig.Type {
 	case config.VectorDBTypeCloud, config.VectorDBTypeLocal:
 		if err := utils.CreateWeaviateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud:
 		if err := utils.CreateDocument(ctx, dbConfig, collectionName, filePath, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode, embeddingModel, workers); err != nil {
-			utils.PrintError(utils.FormatCreationError("document", err))
+			utils.PrintError(formatCreateError(filePath, timeoutStr, err))
 			os.Exit(1)
 		}
 	case config.VectorDBTypeMock:
@@ -280,7 +300,7 @@ func runDocumentCreate(cmd *cobra.Command, args []string) {
 	}
 }
 
-func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, collectionName string, chunkSize int, imageCollection string, skipAllImages bool, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, createReport string, appendReport string, embeddingModel string, workers int) {
+func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, collectionName string, chunkSize int, imageCollection string, skipAllImages bool, skipSmallImages bool, minImageSize int, batchSize int, maxMetadataLength int, createReport string, appendReport string, embeddingModel string, workers int, timeoutDuration time.Duration) {
 	// Load configuration
 	cfg, err := utils.LoadConfigWithInteractiveHelp()
 	if err != nil {
@@ -294,10 +314,10 @@ func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, co
 		os.Exit(1)
 	}
 
-	ctx := context.Background()
+	baseCtx := context.Background()
 
 	// Smart database selection for single-database operations
-	dbConfig := utils.HandleSingleDatabaseSelection(ctx, selection, cfg, collectionName, fmt.Sprintf("weave docs create %s <glob-pattern>", collectionName))
+	dbConfig := utils.HandleSingleDatabaseSelection(baseCtx, selection, cfg, collectionName, fmt.Sprintf("weave docs create %s <glob-pattern>", collectionName))
 
 	// Process image collection flags
 	if skipAllImages {
@@ -362,16 +382,29 @@ func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, co
 	}
 
 	// Print summary
-	fmt.Printf("📂 Processing %d files from glob pattern\n", len(files))
-	fmt.Printf("   Collection: %s\n", collectionName)
-	fmt.Printf("   Workers: %d\n", workers)
-	fmt.Printf("   Files: %v\n", files)
+	fmt.Fprintf(os.Stderr, "📂 Processing %d files from glob pattern\n", len(files))
+	fmt.Fprintf(os.Stderr, "   Collection: %s\n", collectionName)
+	fmt.Fprintf(os.Stderr, "   Workers: %d\n", workers)
+	if timeoutDuration > 0 {
+		fmt.Fprintf(os.Stderr, "   Timeout per file: %s\n", timeoutDuration)
+	}
 
 	// Process each file
 	successCount := 0
 	failureCount := 0
+	timeoutStr := ""
+	if timeoutDuration > 0 {
+		timeoutStr = timeoutDuration.String()
+	}
 	for i, file := range files {
-		fmt.Printf("\n[%d/%d] Processing: %s\n", i+1, len(files), file)
+		fmt.Fprintf(os.Stderr, "\n[%d/%d] Processing: %s\n", i+1, len(files), file)
+
+		// Build per-file context with optional timeout
+		ctx := baseCtx
+		var cancel context.CancelFunc
+		if timeoutDuration > 0 {
+			ctx, cancel = context.WithTimeout(baseCtx, timeoutDuration)
+		}
 
 		var err error
 		switch dbConfig.Type {
@@ -388,12 +421,19 @@ func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, co
 			utils.CreateMockDocument(ctx, dbConfig, collectionName, file, chunkSize, imageCollection, skipSmallImages, minImageSize, batchSize, maxMetadataLength, reportPath, reportMode)
 		default:
 			utils.PrintError(fmt.Sprintf("Unknown vector database type: %s", dbConfig.Type))
+			if cancel != nil {
+				cancel()
+			}
 			failureCount++
 			continue
 		}
 
+		if cancel != nil {
+			cancel()
+		}
+
 		if err != nil {
-			utils.PrintError(fmt.Sprintf("Failed: %v", err))
+			utils.PrintError(formatCreateError(file, timeoutStr, err))
 			failureCount++
 		} else {
 			successCount++
@@ -401,10 +441,21 @@ func runGlobDocumentCreate(cmd *cobra.Command, args []string, files []string, co
 	}
 
 	// Print final summary
-	fmt.Printf("\n📊 Glob Processing Complete\n")
-	fmt.Printf("   ✅ Success: %d/%d files\n", successCount, len(files))
+	fmt.Fprintf(os.Stderr, "\n📊 Glob Processing Complete\n")
+	fmt.Fprintf(os.Stderr, "   ✅ Success: %d/%d files\n", successCount, len(files))
 	if failureCount > 0 {
-		fmt.Printf("   ❌ Failed: %d/%d files\n", failureCount, len(files))
+		fmt.Fprintf(os.Stderr, "   ❌ Failed: %d/%d files\n", failureCount, len(files))
 		os.Exit(1)
 	}
+}
+
+// formatCreateError returns a user-friendly error message, detecting timeout specifically.
+func formatCreateError(filePath, timeoutStr string, err error) string {
+	if err == context.DeadlineExceeded || (err != nil && err.Error() == "context deadline exceeded") {
+		if timeoutStr != "" {
+			return fmt.Sprintf("Timed out after %s: %s", timeoutStr, filePath)
+		}
+		return fmt.Sprintf("Timed out: %s", filePath)
+	}
+	return utils.FormatCreationError("document", err)
 }
