@@ -44,7 +44,7 @@ func TestParallelProcessing(t *testing.T) {
 	t.Run("SequentialProcessing", func(t *testing.T) {
 		// Test with workers=1 (sequential)
 		start := time.Now()
-		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 1)
+		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 1, false)
 		elapsed := time.Since(start)
 
 		if err != nil {
@@ -56,7 +56,7 @@ func TestParallelProcessing(t *testing.T) {
 	t.Run("ParallelProcessing3Workers", func(t *testing.T) {
 		// Test with workers=3 (parallel)
 		start := time.Now()
-		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 3)
+		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 3, false)
 		elapsed := time.Since(start)
 
 		if err != nil {
@@ -68,7 +68,7 @@ func TestParallelProcessing(t *testing.T) {
 	t.Run("ParallelProcessing5Workers", func(t *testing.T) {
 		// Test with workers=5 (parallel)
 		start := time.Now()
-		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 5)
+		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 5, false)
 		elapsed := time.Since(start)
 
 		if err != nil {
@@ -80,7 +80,7 @@ func TestParallelProcessing(t *testing.T) {
 	t.Run("WorkerValidation", func(t *testing.T) {
 		// Workers should be capped at 10
 		// The function validates internally, so this should still work
-		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 15)
+		err := utils.CreateDocument(ctx, cfg, "ParallelTestCol", testFile, 200, "", false, 0, 10, 2000, "", "", "", 15, false)
 		if err != nil {
 			t.Errorf("Worker validation failed: %v", err)
 		}
@@ -185,7 +185,7 @@ func TestProgressAggregation(t *testing.T) {
 
 	t.Run("ProgressWithParallelWorkers", func(t *testing.T) {
 		// Process with workers=4 - progress should be displayed
-		err := utils.CreateDocument(ctx, cfg, "ProgressTestCol", testFile, 100, "", false, 0, 10, 2000, "", "", "", 4)
+		err := utils.CreateDocument(ctx, cfg, "ProgressTestCol", testFile, 100, "", false, 0, 10, 2000, "", "", "", 4, false)
 		if err != nil {
 			t.Errorf("Progress tracking test failed: %v", err)
 		}
