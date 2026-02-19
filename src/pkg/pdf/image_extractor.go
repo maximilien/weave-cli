@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -163,6 +164,29 @@ func extractImagesWithFallback(filePath, tempDir string, skipSmallImages bool, m
 	return imageData, nil
 }
 
+// parsePageNumberFromFilename extracts the PDF page number from pdfcpu's output filename.
+// pdfcpu names extracted images as: {pdfname}_{pageNr}_{imgName}.{ext}
+// e.g. "catalogue_001_Im0.jpg" → page 1, "catalogue_012_Im3.png" → page 12.
+// Falls back to imageIndex+1 if the filename doesn't match the expected pattern.
+func parsePageNumberFromFilename(imagePath string, imageIndex int) int {
+	base := filepath.Base(imagePath)
+	// Remove extension
+	noExt := strings.TrimSuffix(base, filepath.Ext(base))
+	// Split on underscore — format is {name}_{page}_{imgname}
+	// We want the second-to-last underscore segment (page number)
+	parts := strings.Split(noExt, "_")
+	// Need at least 3 parts: name, page, imgname
+	if len(parts) >= 3 {
+		// Page number is the second-to-last segment
+		pageStr := parts[len(parts)-2]
+		if pageNum, err := strconv.Atoi(pageStr); err == nil && pageNum > 0 {
+			return pageNum
+		}
+	}
+	// Fallback: use sequential index (old behavior)
+	return imageIndex + 1
+}
+
 // processExtractedImage processes a single extracted image
 func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFImageData, error) {
 	// Read image file
@@ -206,16 +230,22 @@ func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFIma
 		metadata[key] = value
 	}
 
+	// Parse actual page number from pdfcpu's filename (e.g. "catalogue_003_Im0.jpg" → page 3).
+	// This is the critical fix for Issue #41: images were previously associated with the wrong
+	// text chunks because sequential imageIndex was used instead of the actual PDF page number.
+	pageNumber := parsePageNumberFromFilename(imagePath, imageIndex)
+	metadata["page_number"] = pageNumber
+
 	return &PDFImageData{
 		ID:         uuid.New().String(),
 		ImageData:  base64Data,
 		Image:      dataURL,
-		URL:        fmt.Sprintf("file://%s#image-%d", sourcePDF, imageIndex),
+		URL:        fmt.Sprintf("file://%s#page-%d-image-%d", sourcePDF, pageNumber, imageIndex),
 		Metadata:   metadata,
 		OCRText:    ocrText,
 		EXIFData:   exifData,
-		Caption:    fmt.Sprintf("Image %d from %s", imageIndex+1, filepath.Base(sourcePDF)),
-		PageNumber: imageIndex + 1,
+		Caption:    fmt.Sprintf("Image %d (page %d) from %s", imageIndex+1, pageNumber, filepath.Base(sourcePDF)),
+		PageNumber: pageNumber,
 		ImageIndex: imageIndex,
 		SourcePDF:  sourcePDF,
 	}, nil
