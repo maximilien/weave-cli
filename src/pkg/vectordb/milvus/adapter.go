@@ -59,6 +59,7 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		imageStorage, err = storage.NewImageStorage(storage.Config{
 			Type:       storage.StorageType(config.ImageStorage.Type),
 			Endpoint:   config.ImageStorage.Endpoint,
+			LocalPath:  config.ImageStorage.LocalPath,
 			AccessKey:  config.ImageStorage.AccessKey,
 			SecretKey:  config.ImageStorage.SecretKey,
 			Region:     config.ImageStorage.Region,
@@ -76,6 +77,7 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		pdfStorage, err = storage.NewImageStorage(storage.Config{
 			Type:       storage.StorageType(config.PDFStorage.Type),
 			Endpoint:   config.PDFStorage.Endpoint,
+			LocalPath:  config.PDFStorage.LocalPath,
 			AccessKey:  config.PDFStorage.AccessKey,
 			SecretKey:  config.PDFStorage.SecretKey,
 			Region:     config.PDFStorage.Region,
