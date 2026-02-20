@@ -1,210 +1,203 @@
 # Planning Documents
 
-**Last Updated**: 2026-01-12
-**Current Version**: v0.9.1
-**Next Release**: v0.9.2 (Test Coverage Focus)
+**Last Updated**: 2026-02-20
+**Current Version**: v0.9.29 (hotfix #42 pending)
+**Status**: Awaiting Client0 feedback, prep for next week
+
+---
+
+## Current Status
+
+### Week Feb 17-21 ✅ COMPLETE
+- ✅ v0.9.27: Parallel processing (Issue #31) + PDF storage (Issue #33)
+- ✅ v0.9.28: All 5 Client0 ingestion improvements shipped
+- ✅ Issue #41: Image-page association bug fixed (hotfix)
+- ✅ Issue #42: Image metadata fields discovered (hotfix pending Mon)
+
+**Impact**: Client0's 255-line bash wrapper reduced to ~10 lines
+
+### Week Feb 24-28 (Current)
+- **Mon AM**: Issue #42 hotfix (CRITICAL - 15 min)
+- **Mon PM-Thu**: Issue #38 `weave docs create-batch` implementation
+- **Thu-Fri**: Issue #39 `weave docs status` dashboard
+- **Target**: v0.9.29 release Friday
+
+See archived: `docs/archive/planning/feb-2026/WEEK_FEB_24-28_PLAN.md`
 
 ---
 
 ## Active Plans
 
-### 🚨 Multi-Modal RAG Support (NEW - Jan 16, 2026) - BLOCKER
+### Strategic Roadmap Documents
 
-**Multi-Modal RAG for Image Collections**
-- **Status**: Planning - Ready for Implementation
-- **Priority**: ⭐⭐⭐ HIGHEST - BLOCKER for production deployment
-- **Issue**: Image collections not returning results with rag-agent
-- **Impact**: Critical - blocks client deployment of multi-modal RAG
-- **Document**: **[MULTIMODAL_RAG_SUPPORT.md](./MULTIMODAL_RAG_SUPPORT.md)** ⭐⭐⭐
-  **READ THIS FIRST**
-- **Root Cause**: Context builder ignores `Image` and `ImageData` fields
-- **Emergency Fix**: 2-3 hours (update `context_builder.go`)
-- **Implementation Plan**:
-  - Phase 1: Emergency fix (TODAY - 2-3 hours) - unblock production
-  - Phase 2: Enhanced image citations (Next week - 1-2 days)
-  - Phase 3: Multi-modal embeddings with CLIP (Future - 2-3 weeks)
+📄 **[V1_0_ROADMAP.md](./V1_0_ROADMAP.md)**
+- Path to v1.0 production release
+- Feature prioritization
+- Timeline and milestones
 
-### Multi-Agent Orchestration (NEW - Jan 16, 2026)
-
-🤖 **Multi-Agent Feature Planning**
-- **Status**: Planning & Design
-- **Priority**: ⭐⭐ Medium-High
-- **Goal**: Enable agent chaining (e.g., RAG → web search if no docs)
-- **Documents**:
-  - **[DECISION_POINTS.md](./DECISION_POINTS.md)** - Quick reference for key decisions ⭐ **Start here**
-  - **[MULTI_AGENT_ORCHESTRATION.md](./MULTI_AGENT_ORCHESTRATION.md)** - Detailed analysis and implementation plan
-  - **[MULTI_AGENT_EXAMPLES.md](./MULTI_AGENT_EXAMPLES.md)** - Real-world use cases and examples
-- **Implementation**: 3 phases (2-3 weeks total)
-  - Phase 1: Basic sequential chaining (2-3 days)
-  - Phase 2: Smart handoff conditions (3-4 days)
-  - Phase 3: Declarative configs (5-7 days)
-
-### This Week (Jan 13-17, 2026)
-
-📋 **[WEEK_OF_2026-01-13.md](./WEEK_OF_2026-01-13.md)**
-- **Focus**: Test Coverage Improvement
-- **Goal**: v0.9.2 release with 60%+ unit test coverage
-- **Key Tasks**:
-  - Set up mock framework
-  - Add unit tests for Qdrant, Weaviate, MongoDB
-  - Establish CI coverage tracking
-  - Create testing documentation
-
-📊 **[TEST_AUDIT_2026-01-12.md](./TEST_AUDIT_2026-01-12.md)**
-- **Focus**: Comprehensive test coverage analysis
-- **Current State**: 50% (Qdrant only), minimal unit tests
-- **Target**: 70%+ coverage across all VDBs
-- **Priority**: #1 blocker for v1.0.0
-
----
-
-## Strategic Options (Future Planning)
-
-These documents outline potential focus areas for upcoming releases. Not all will be implemented - they represent options for discussion and prioritization.
-
-### Option 1: New Features
-📄 **[OPTION_1_NEW_FEATURES.md](./OPTION_1_NEW_FEATURES.md)**
-- **Status**: Partially Complete (4/7 features)
-- **Priority**: ⭐⭐⭐ High
-- **Completed**:
-  - ✅ Pipeline commands (batch ingestion)
-  - ✅ Interactive REPL mode
-  - ✅ MCP client integration
-  - ✅ AI schema suggestion
-- **Remaining**:
-  - Progress bars
-  - JSON/YAML output enhancements
-  - Collection statistics
-
-### Option 2: VDB Expansion
-📄 **[OPTION_2_VDB_EXPANSION.md](./OPTION_2_VDB_EXPANSION.md)**
-- **Status**: Planning
-- **Priority**: ⭐ Medium
-- **Target VDBs**:
-  - LanceDB
-  - Redis Stack
-  - Vespa
-  - Typesense
-  - Marqo
-
-### Option 3: Production Hardening
-📄 **[OPTION_3_PRODUCTION_HARDENING.md](./OPTION_3_PRODUCTION_HARDENING.md)**
-- **Status**: Planning
-- **Priority**: ⭐⭐ High
-- **Focus Areas**:
-  - Structured logging (zerolog)
-  - Prometheus metrics
-  - OpenTelemetry tracing
-  - Circuit breakers
-  - Connection pooling
-  - Security hardening
-
-### Option 4: Testing & Quality
-📄 **[OPTION_4_TESTING_QUALITY.md](./OPTION_4_TESTING_QUALITY.md)**
-- **Status**: ⚡ **ACTIVE** (This Week's Focus)
-- **Priority**: ⭐⭐⭐ Highest
-- **See**: [TEST_AUDIT_2026-01-12.md](./TEST_AUDIT_2026-01-12.md)
-- **Note**: This is our current top priority
-
-### Option 5: Community
-📄 **[OPTION_5_COMMUNITY.md](./OPTION_5_COMMUNITY.md)**
-- **Status**: Planning
-- **Priority**: ⭐ Medium
-- **Focus Areas**:
-  - Video tutorials
-  - Blog posts
-  - Conference talks
-  - Community forum
-  - Plugin system
-
----
-
-## Reference Documents
-
-### Vector DB Integrations
 📄 **[VECTOR_DB_INTEGRATIONS.md](./VECTOR_DB_INTEGRATIONS.md)**
-- Comprehensive overview of all VDB integrations
-- Status, capabilities, limitations
+- Status of all 10+ VDB integrations
+- Capabilities and limitations
 - Integration patterns
 
 ---
 
-## Completed Plans (Archived)
+## Agent & Evaluation System
 
-Completed planning documents have been moved to `docs/archive/planning/`:
+### Multi-Agent Orchestration
+🤖 **Multi-Agent Feature Planning**
+- **Status**: Design complete, implementation paused
+- **Documents**:
+  - **[DECISION_POINTS.md](./DECISION_POINTS.md)** - Quick reference ⭐ Start here
+  - **[MULTI_AGENT_ORCHESTRATION.md](./MULTI_AGENT_ORCHESTRATION.md)** - Detailed design
+  - **[MULTI_AGENT_EXAMPLES.md](./MULTI_AGENT_EXAMPLES.md)** - Real-world use cases
 
-- ✅ **AGENT_VDB_SUPPORT_AND_PROGRESS.md** (v0.9.1)
-  - Multi-VDB agent support
-  - Query progress indicators
+### Agent Evaluation System
+📊 **Agent Evaluation & Quality**
+- **Status**: Research phase
+- **Documents**:
+  - **[AGENT_EVALUATION_SYSTEM.md](./AGENT_EVALUATION_SYSTEM.md)** - System design
+  - **[AGENT_EVAL_UPDATES.md](./AGENT_EVAL_UPDATES.md)** - Progress updates
+  - **[OPIK_INTEGRATION_STRATEGY.md](./OPIK_INTEGRATION_STRATEGY.md)** - Opik integration
+  - **[PLUGGABLE_EVALUATOR_DESIGN.md](./PLUGGABLE_EVALUATOR_DESIGN.md)** - Pluggable architecture
+  - **[PLUGGABLE_EVALUATORS_IMPLEMENTATION.md](./PLUGGABLE_EVALUATORS_IMPLEMENTATION.md)**
+  - **[OPIK_EVALUATOR_PORT_OPTION_B.md](./OPIK_EVALUATOR_PORT_OPTION_B.md)**
+  - **[OPIK_API_INTEGRATION.md](./OPIK_API_INTEGRATION.md)**
+  - **[CUSTOM_EVALUATORS_DESIGN.md](./CUSTOM_EVALUATORS_DESIGN.md)**
 
-- ✅ **RAG_AGENT_FEATURE.md** (v0.9.0)
-  - RAG agent system implementation
-  - Agent YAML configuration
-  - Citation formats
+---
 
-- ✅ **VDB_EMBEDDING_ARCHITECTURE_FIX.md** (v0.9.1)
-  - Embedding dimension verification
-  - Dimension mismatch error handling
-  - All 10 VDBs updated
+## Feature Planning
 
-- ✅ **VDB_AGENT_TESTING_PLAN.md** (v0.9.1)
-  - Agent testing across all VDBs
-  - Verification completed
+### VDB Lifecycle Management
+📄 **[VDB_LIFECYCLE_MANAGEMENT.md](./VDB_LIFECYCLE_MANAGEMENT.md)**
+- Collection backup/restore
+- Migration between VDBs
+- Disaster recovery
 
-See `docs/archive/planning/` for historical context.
+### Integration Tests
+📄 **[INTEGRATION_TEST_PLAN.md](./INTEGRATION_TEST_PLAN.md)**
+- Cross-VDB integration testing
+- Test coverage improvements
+
+📄 **[NEXT_SESSION_VDB_TESTS.md](./NEXT_SESSION_VDB_TESTS.md)**
+- VDB-specific test plans
+
+📄 **[TEST_AUDIT_2026-01-12.md](./TEST_AUDIT_2026-01-12.md)**
+- Historical test coverage audit
+
+### Feature Options (Strategic Planning)
+
+📄 **[OPTION_1_NEW_FEATURES.md](./OPTION_1_NEW_FEATURES.md)** - New capabilities
+📄 **[OPTION_2_VDB_EXPANSION.md](./OPTION_2_VDB_EXPANSION.md)** - Additional VDBs
+📄 **[OPTION_3_PRODUCTION_HARDENING.md](./OPTION_3_PRODUCTION_HARDENING.md)** - Observability
+📄 **[OPTION_4_TESTING_QUALITY.md](./OPTION_4_TESTING_QUALITY.md)** - Test coverage
+📄 **[OPTION_5_COMMUNITY.md](./OPTION_5_COMMUNITY.md)** - Community building
+
+### Recent Feature Plans (Feb 2026)
+
+📄 **[NEW_FEATURES_2026-02-03.md](./NEW_FEATURES_2026-02-03.md)**
+📄 **[TESTING_QUALITY_2026-02-03.md](./TESTING_QUALITY_2026-02-03.md)**
+📄 **[PRODUCTION_HARDENING_2026-02-03.md](./PRODUCTION_HARDENING_2026-02-03.md)**
+📄 **[CONFIG_FIX_FEATURE.md](./CONFIG_FIX_FEATURE.md)**
+
+---
+
+## Archived Plans
+
+### February 2026 Week Plans
+Moved to `docs/archive/planning/feb-2026/`:
+- ✅ `WEEK_FEB_17-21_CONSOLIDATED.md` - v0.9.27, v0.9.28 releases
+- ✅ `WEEK_FEB_24-28_PLAN.md` - Current week (Issue #38, #39)
+- ✅ `CLIENT0_INGESTION_IMPROVEMENTS.md` - Pain point analysis
+- ✅ `ISSUE_38_CREATE_BATCH_DESIGN.md` - Batch ingestion design
+- ✅ `OSS_FEATURES_CLIENT0.md` - OSS stack features
+- ✅ `OSS_EXECUTION_PLAN.md` - OSS implementation plan
+- ✅ `BATCH_REEMBEDDING_SPEC.md` - Re-embedding specification
+- ✅ `NEXT_STEPS.md` - Old next steps doc
+
+### Historical Planning (Jan 2026 and earlier)
+See `docs/archive/planning/`:
+- Agent VDB support (v0.9.1)
+- RAG agent system (v0.9.0)
+- Embedding architecture fixes
+- Test coverage plans
+- Multi-modal RAG
+
+---
+
+## Session Summaries
+
+📄 **[SESSION_SUMMARY_2026-01-12.md](./SESSION_SUMMARY_2026-01-12.md)**
+- Latest session summary (Jan 12)
+
+📄 **[ROADMAP_2026-01-14.md](./ROADMAP_2026-01-14.md)**
+- Mid-January roadmap snapshot
+
+📄 **[WEEKEND_AND_NEXT_WEEK.md](./WEEKEND_AND_NEXT_WEEK.md)**
+- Weekend planning template
+
+📄 **[THIS_WEEK_PLAN.md](./THIS_WEEK_PLAN.md)**
+- Current week template
+
+📄 **[AUDIT_AND_CLEANUP_2026-02-09.md](./AUDIT_AND_CLEANUP_2026-02-09.md)**
+- Audit summary (Feb 9)
+
+📄 **[DOC_AUDIT_2026-02-10.md](./DOC_AUDIT_2026-02-10.md)**
+- Documentation audit (Feb 10)
+
+---
+
+## Integration Guides
+
+📄 **[integrations/AIRFLOW.md](./integrations/AIRFLOW.md)**
+📄 **[integrations/ARGO_WORKFLOWS.md](./integrations/ARGO_WORKFLOWS.md)**
+📄 **[integrations/GITHUB_ACTIONS.md](./integrations/GITHUB_ACTIONS.md)**
+
+---
+
+## MCP Integration
+
+📄 **[mcp/MCP_AI_TOOLS.md](./mcp/MCP_AI_TOOLS.md)**
+- Model Context Protocol integration
+- AI tool support
 
 ---
 
 ## Planning Process
 
-### How to Use These Documents
-
-1. **Review Active Plans** - Check WEEK_OF_*.md for current week's priorities
-2. **Reference Strategic Options** - OPTION_*.md provide context for future decisions
-3. **Check Archived Plans** - See docs/archive/planning/ for completed work
-
-### Creating New Plans
-
-When creating new planning documents:
-
-1. **Start with clear status** - Planning, Active, Completed
-2. **Define success criteria** - What does "done" look like?
-3. **Estimate effort** - Hours/days required
-4. **Set priority** - ⭐ Low, ⭐⭐ Medium, ⭐⭐⭐ High
-5. **Archive when complete** - Move to docs/archive/planning/
-
 ### Document Lifecycle
-
 ```
 Planning → Active → Completed → Archived
    ↓         ↓          ↓           ↓
 OPTION_*.md  WEEK_*.md  ✅ Tag    docs/archive/
 ```
 
+### Archive Structure
+```
+docs/archive/planning/
+├── feb-2026/          # February 2026 week plans
+├── README.md          # Archive index
+└── [older plans]      # Pre-Jan 2026 plans
+```
+
 ---
 
 ## Path to v1.0.0
 
-**Current**: v0.9.1
-**Next**: v0.9.2 (Test Coverage)
-**Then**: v0.9.3, v0.9.4, v0.9.5
-**Release Candidate**: v1.0.0-rc1
-**MAJOR RELEASE**: v1.0.0 🎉
-
-**Target Date**: Mid-February 2026
+**Current**: v0.9.29 (in progress)
+**Next**: v0.9.30, v0.9.31, ...
+**Target**: v1.0.0 (production ready)
 
 **v1.0.0 Criteria**:
 - ✅ 10+ VDBs fully supported
-- ✅ Test coverage >70%
-- ✅ Production hardening complete
-- ✅ Comprehensive documentation
-- ✅ Strong community adoption
-
-See [WEEK_OF_2026-01-13.md](./WEEK_OF_2026-01-13.md) for detailed roadmap.
+- ✅ Batch ingestion with checkpointing
+- ✅ Image ingestion + external storage
+- ⏳ Test coverage >70%
+- ⏳ Production observability
+- ⏳ Comprehensive documentation
 
 ---
-
-## Contact
 
 **Maintainer**: @maximilien
 **Repository**: https://github.com/maximilien/weave-cli
