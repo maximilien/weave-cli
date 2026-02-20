@@ -460,6 +460,12 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 		}
 	}
 
+	// Extract image URL (external storage for large images)
+	var imageURL string
+	if imageURLCol := result.GetColumn(FieldImageURL); imageURLCol != nil {
+		imageURL = imageURLCol.(*entity.ColumnVarChar).Data()[0]
+	}
+
 	url := result.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[0]
 
 	var metadata map[string]interface{}
@@ -468,7 +474,7 @@ func (c *Client) GetDocument(ctx context.Context, collectionName, documentID str
 		metadata = mustUnmarshalJSON(metadataBytes)
 	}
 
-	return c.fromMilvusDocument(docID, text, content, image, imageData, url, metadata), nil
+	return c.fromMilvusDocument(docID, text, content, image, imageData, imageURL, url, metadata), nil
 }
 
 // UpdateDocument updates an existing document (delete + insert)
@@ -641,6 +647,12 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 			}
 		}
 
+		// Extract image URL (external storage for large images)
+		var imageURL string
+		if imageURLCol := result.GetColumn(FieldImageURL); imageURLCol != nil {
+			imageURL = imageURLCol.(*entity.ColumnVarChar).Data()[i]
+		}
+
 		url := result.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[i]
 
 		var metadata map[string]interface{}
@@ -659,7 +671,7 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 			}
 		}
 
-		documents[i] = c.fromMilvusDocument(docID, text, content, image, imageData, url, metadata)
+		documents[i] = c.fromMilvusDocument(docID, text, content, image, imageData, imageURL, url, metadata)
 	}
 
 	return documents, nil
