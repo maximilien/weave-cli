@@ -1,8 +1,8 @@
 # Week Plan: February 24-28, 2026
 
-**Status**: 🚀 Starting fresh — v0.9.28 shipped Friday Feb 21
-**Current Version**: v0.9.28 (released Wed Feb 18)
-**Last Updated**: 2026-02-21 (Friday)
+**Status**: 🚀 Starting fresh — v0.9.28 shipped Friday Feb 21, Issue #41 fixed Friday Feb 21
+**Current Version**: v0.9.28 (released Wed Feb 18) + hotfix #41 (Feb 21) + hotfix #42 (pending)
+**Last Updated**: 2026-02-21 (Friday PM)
 **Work Schedule**: 4 hours/day, ~1 hour/day for client support
 
 ---
@@ -21,8 +21,34 @@ All 7 Client0 ingestion improvement issues shipped:
 | #40 | Non-fatal Milvus flush timeout | v0.9.28 |
 | #37 | `--skip-existing` idempotent ingestion | v0.9.28 |
 | #29 | Milvus 65KB limit verified closed | v0.9.28 |
+| #41 | Image-page association bug (wrong images) | v0.9.28-hotfix |
 
 **Impact**: Client0 bash script (255 lines) is now ~10 lines. All pain points P1-P11 addressed.
+
+---
+
+## 🚨 BREAKING: Issue #42 Discovered Friday PM
+
+**Issue #42**: Image documents missing `image_base64` and `image_url` fields after ingestion
+
+**Severity**: 🔴 **CRITICAL** — images are ingested but inaccessible (no data/URL in metadata)
+
+**Root cause**: Milvus `fromMilvusDocument` puts `ImageData` in `Document.ImageData` field but never copies it to `Metadata` map (Weaviate does this at `client_queries.go:600`). Client apps query metadata, not Document fields.
+
+**Fix** (10 min): In `src/pkg/vectordb/milvus/client.go` `fromMilvusDocument()`, add:
+```go
+if imageData != "" {
+    if metadata == nil {
+        metadata = make(map[string]interface{})
+    }
+    metadata["image_base64"] = imageData
+}
+if image != "" && strings.HasPrefix(image, "http") {
+    metadata["image_url"] = image
+}
+```
+
+**Monday priority**: Fix #42 **before** starting #38. Client0 cannot use their image collections until this is fixed.
 
 ---
 
@@ -30,18 +56,20 @@ All 7 Client0 ingestion improvement issues shipped:
 
 **Theme**: "Batch ingestion & observability"
 
-**Target issues**:
-- **Issue #38**: `weave docs create-batch` — 10h (primary, Mon-Thu)
-- **Issue #39**: `weave docs status` dashboard — 5h (secondary, Thu-Fri)
+**Target issues** (UPDATED):
+- **Issue #42**: Image metadata fields missing — **10 min (Mon AM, URGENT)**
+- **Issue #38**: `weave docs create-batch` — 10h (Mon PM-Thu)
+- **Issue #39**: `weave docs status` dashboard — 5h (Thu-Fri)
 
-**Deliverable**: v0.9.29 released by Friday with both features shipped.
+**Deliverable**: v0.9.29-hotfix (Mon AM), then v0.9.29 (Fri) with both features shipped.
 
 ---
 
-## 📊 Open Issues (Updated Feb 21)
+## 📊 Open Issues (Updated Feb 21 PM)
 
 | # | Priority | Issue | Target | Est. |
 |---|----------|-------|--------|------|
+| #42 | P0 🔴🔴 | Image fields missing (`image_base64`, `image_url`) | v0.9.29-hotfix | 10 min |
 | #38 | P1 🔴 | `weave docs create-batch` — glob + checkpoint + retry + delay | v0.9.29 | 10h |
 | #39 | P2 🟠 | `weave docs status` dashboard — collection status + --watch | v0.9.29 | 5h |
 | #21 | P3 🟡 | Image ingestion tests across all VDBs | v0.9.30 | 8h |
@@ -49,18 +77,24 @@ All 7 Client0 ingestion improvement issues shipped:
 | #15 | P4 🟡 | Documentation updates | v1.0-pre | 10h |
 | #14 | P5 🟢 | Agent configs (different agent types) | v1.0 | 15h |
 | #12 | P5 🟢 | Tips on `command -h` | v1.0 | 3h |
-| #11 | P5 🟢 | Streamline commands + shortcuts | v1.0 | 5h |
+| #11 | P5 🟢 | Streamline commands and shortcuts | v1.0 | 5h |
 | #8  | P5 🟢 | Extract various PDF versions for testing | v0.9.x | 4h |
 
 ---
 
-## 🗓️ Daily Breakdown (4 hrs/day + 1 hr client support)
+## 🗓️ Daily Breakdown (UPDATED for Issue #42)
 
-### Monday, Feb 24 — Issue #38 core (4 hours)
+### Monday, Feb 24 — Issue #42 hotfix + Issue #38 core (4 hours)
 
-**Client check** (30 min):
-- Check Client0/Client1 feedback on v0.9.28
-- Respond to any issues before diving in
+**URGENT: Issue #42 fix** (15 min):
+- Fix `src/pkg/vectordb/milvus/client.go` `fromMilvusDocument()` — add `image_base64` and `image_url` to metadata map
+- Build + lint
+- Commit + push → v0.9.29-hotfix tag
+- Close Issue #42
+
+**Client check** (15 min):
+- Notify Client0 of hotfix
+- Check for additional feedback on v0.9.28
 
 **Issue #38 — `create-batch` core** (3.5 hours):
 1. Create `src/cmd/document/create_batch.go` — new `CreateBatchCmd`
@@ -70,7 +104,7 @@ All 7 Client0 ingestion improvement issues shipped:
 5. Checkpoint load/save (JSON format per design doc)
 6. Per-file delay between ingestions
 
-**Deliverable**: Basic `create-batch` working for sequential mode with checkpoint
+**Deliverable**: v0.9.29-hotfix released + basic `create-batch` working for sequential mode with checkpoint
 
 ---
 
@@ -146,6 +180,7 @@ All 7 Client0 ingestion improvement issues shipped:
 ## 🎯 Weekly Goals
 
 ### Must Have
+- [ ] **Issue #42 hotfix released** (Mon AM, 15 min)
 - [ ] Issue #38: `weave docs create-batch` complete
 - [ ] Issue #39: `weave docs status` complete
 - [ ] v0.9.29 released by Friday
@@ -167,11 +202,31 @@ All 7 Client0 ingestion improvement issues shipped:
 ## ⏰ Time Allocation
 
 **Daily**:
-- 09:00-09:30: Client support window
+- 09:00-09:15: Issue #42 hotfix (Mon only)
+- 09:15-09:30: Client support window
 - 09:30-12:30: Primary work block (3 hours)
 - 13:00-14:00: Secondary work block (1 hour)
 
 **Weekly Total**: ~20 hours (15h dev + 5h client support)
+
+---
+
+## 🔮 Issue #42 Details (CRITICAL)
+
+**Symptom**: Client0 queries return image documents with `type: image` but **no `image_base64` or `image_url` fields** in metadata. Images are inaccessible.
+
+**Root cause**: Milvus stores image data in dedicated `FieldImageData` column (not metadata). When querying, `fromMilvusDocument()` correctly extracts `ImageData` from the column and puts it in `Document.ImageData`, but this field is never copied to `Document.Metadata`. Client apps only see metadata.
+
+**Weaviate comparison**: `client_queries.go:600` adds `image_base64` to metadata after query:
+```go
+if imageData, ok := resultItem["image_data"].(string); ok && imageData != "" {
+    metadata["image_base64"] = imageData
+}
+```
+
+**Fix location**: `src/pkg/vectordb/milvus/client.go` `fromMilvusDocument()` — add same logic.
+
+**Impact**: **BLOCKS** Client0 image retrieval. They cannot use their 6,591-document image collection until fixed.
 
 ---
 
@@ -196,7 +251,10 @@ See `ISSUE_38_CREATE_BATCH_DESIGN.md` for full spec.
 - `src/cmd/document/status.go` — Issue #39 command
 - `src/cmd/document/create_batch_test.go` — unit tests
 
-### Modified Files
+### Modified Files (Hotfix #42)
+- **`src/pkg/vectordb/milvus/client.go`** — `fromMilvusDocument()` add image fields to metadata
+
+### Modified Files (Issue #38)
 - `src/cmd/document/document.go` — register new commands
 - `src/cmd/document/batch.go` — wire real `--skip-existing` (remove TODO stub)
 
@@ -206,5 +264,5 @@ See `ISSUE_38_CREATE_BATCH_DESIGN.md` for full spec.
 
 ---
 
-**Prepared**: 2026-02-21 (Friday)
+**Prepared**: 2026-02-21 (Friday PM, updated for Issue #42)
 **Previous week**: `docs/planning/WEEK_FEB_17-21_CONSOLIDATED.md`
