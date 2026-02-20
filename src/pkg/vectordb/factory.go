@@ -74,6 +74,7 @@ type StorageConfig struct {
 	Enabled    bool   `yaml:"enabled"`
 	Type       string `yaml:"type"` // "s3", "minio", "local"
 	Endpoint   string `yaml:"endpoint,omitempty"`
+	LocalPath  string `yaml:"local_path,omitempty"` // For local storage type
 	AccessKey  string `yaml:"access_key,omitempty"`
 	SecretKey  string `yaml:"secret_key,omitempty"`
 	Region     string `yaml:"region,omitempty"`
@@ -182,6 +183,7 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 			Enabled:    true,
 			Type:       cfg.ImageStorageType,
 			Endpoint:   cfg.ImageStorageEndpoint,
+			LocalPath:  cfg.ImageStorageEndpoint, // For local storage, this contains the path
 			AccessKey:  cfg.ImageStorageAccessKey,
 			SecretKey:  cfg.ImageStorageSecretKey,
 			Region:     cfg.ImageStorageRegion,
@@ -197,6 +199,7 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 			Enabled:    true,
 			Type:       cfg.ImageStorageType,
 			Endpoint:   cfg.ImageStorageEndpoint,
+			LocalPath:  cfg.ImageStorageEndpoint, // For local storage, this contains the path
 			AccessKey:  cfg.ImageStorageAccessKey,
 			SecretKey:  cfg.ImageStorageSecretKey,
 			Region:     cfg.ImageStorageRegion,
