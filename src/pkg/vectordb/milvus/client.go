@@ -239,9 +239,26 @@ func (c *Client) fromMilvusDocument(
 	content string,
 	image string,
 	imageData string,
+	imageURL string,
 	url string,
 	metadata map[string]interface{},
 ) *vectordb.Document {
+	// Fix for Issue #42: Add image fields to metadata map for client access
+	// Client apps query metadata, not Document.ImageData/Image fields directly
+	if metadata == nil {
+		metadata = make(map[string]interface{})
+	}
+
+	// Add image_base64 for small images stored inline
+	if imageData != "" {
+		metadata["image_base64"] = imageData
+	}
+
+	// Add image_url for large images in external storage (MinIO/S3)
+	if imageURL != "" {
+		metadata["image_url"] = imageURL
+	}
+
 	return &vectordb.Document{
 		ID:        documentID,
 		Text:      text,

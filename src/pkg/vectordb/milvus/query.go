@@ -73,7 +73,7 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 	// Output fields to retrieve
 	outputFields := []string{
 		FieldDocumentID, FieldText, FieldContent,
-		FieldImage, FieldImageData, FieldURL, FieldMetadata,
+		FieldImage, FieldImageData, FieldImageURL, FieldURL, FieldMetadata,
 	}
 
 	// Search parameters
@@ -126,7 +126,7 @@ func (c *Client) SearchBM25(ctx context.Context, collectionName, query string, o
 
 	outputFields := []string{
 		FieldDocumentID, FieldText, FieldContent,
-		FieldImage, FieldImageData, FieldURL, FieldMetadata,
+		FieldImage, FieldImageData, FieldImageURL, FieldURL, FieldMetadata,
 	}
 
 	// Query documents matching the expression
@@ -197,7 +197,7 @@ func (c *Client) SearchByMetadata(ctx context.Context, collectionName string, me
 
 	outputFields := []string{
 		FieldDocumentID, FieldText, FieldContent,
-		FieldImage, FieldImageData, FieldURL, FieldMetadata,
+		FieldImage, FieldImageData, FieldImageURL, FieldURL, FieldMetadata,
 	}
 
 	// Query documents matching metadata
@@ -253,6 +253,12 @@ func (a *Adapter) parseSearchResults(results []client.SearchResult) ([]*vectordb
 			}
 		}
 
+		// Extract image URL (external storage for large images)
+		var imageURL string
+		if imageURLCol := result.Fields.GetColumn(FieldImageURL); imageURLCol != nil {
+			imageURL = imageURLCol.(*entity.ColumnVarChar).Data()[i]
+		}
+
 		url := result.Fields.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[i]
 
 		var metadata map[string]interface{}
@@ -272,7 +278,7 @@ func (a *Adapter) parseSearchResults(results []client.SearchResult) ([]*vectordb
 		}
 
 		queryResults = append(queryResults, &vectordb.QueryResult{
-			Document: *a.fromMilvusDocument(docID, text, content, image, imageData, url, metadata),
+			Document: *a.fromMilvusDocument(docID, text, content, image, imageData, imageURL, url, metadata),
 			Score:    float64(score),
 		})
 	}
@@ -311,6 +317,12 @@ func (c *Client) parseQueryResults(result client.ResultSet, defaultScore float64
 			}
 		}
 
+		// Extract image URL (external storage for large images)
+		var imageURL string
+		if imageURLCol := result.GetColumn(FieldImageURL); imageURLCol != nil {
+			imageURL = imageURLCol.(*entity.ColumnVarChar).Data()[i]
+		}
+
 		url := result.GetColumn(FieldURL).(*entity.ColumnVarChar).Data()[i]
 
 		var metadata map[string]interface{}
@@ -330,7 +342,7 @@ func (c *Client) parseQueryResults(result client.ResultSet, defaultScore float64
 		}
 
 		queryResults = append(queryResults, &vectordb.QueryResult{
-			Document: *c.fromMilvusDocument(docID, text, content, image, imageData, url, metadata),
+			Document: *c.fromMilvusDocument(docID, text, content, image, imageData, imageURL, url, metadata),
 			Score:    defaultScore,
 		})
 	}

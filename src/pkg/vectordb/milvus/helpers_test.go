@@ -273,6 +273,7 @@ func TestClient_FromMilvusDocument(t *testing.T) {
 		"Test content",
 		"image-id",
 		"base64-data",
+		"",
 		"https://example.com",
 		metadata,
 	)
