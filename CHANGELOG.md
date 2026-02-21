@@ -12,10 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed - Image Metadata & Local Storage 🔧
 
 - **Image Metadata Fields in Milvus** (Issue #42, Part 1)
-  - Large images (≥65KB) stored in MinIO/S3 now return `image_url` in metadata
-  - Fixed all 3 query functions to extract `FieldImageURL` from Milvus results
-  - Populate both `image_base64` (small images) and `image_url` (large images) in metadata map
-  - **Impact**: Client0's 6,591-document image collection now fully accessible
+  - Large images (≥65KB) stored in MinIO/S3 now return `image_url` in
+    metadata
+  - Fixed all 3 query functions to extract `FieldImageURL` from Milvus
+    results
+  - Populate both `image_base64` (small) and `image_url` (large) in
+    metadata map
+  - **Impact**: Client0's 6,591-document image collection fully accessible
   - Commit: 589cc89
 
 - **Local Storage Initialization** (Issue #42, Part 2)
@@ -33,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Client0 Verification ✅
 
 **Test Results** (v0.9.30):
+
 - ✅ Local storage directory creation working
 - ✅ Large images (1.5MB) stored to filesystem
 - ✅ Query results include `image_url` field
