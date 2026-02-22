@@ -2,8 +2,11 @@
 
 **Status**: 📋 Proposal
 **Goal**: Reduce client onboarding from weeks to <1 day
-**Inspired by**: Docker Compose, Kubernetes Helm, Rails/Laravel stack management
-**Version**: 1.0 (Draft)
+**Inspired by**: Kubernetes Helm, Terraform, Rails migrations
+**Runtime**: Kubernetes (Kind/Minikube local, EKS/GKE cloud)
+**Container Runtime**: Podman (OSS-first) with Docker fallback
+**Dashboard**: Next.js/TypeScript (reuses Client0 codebase)
+**Version**: 1.1 (Draft - Updated)
 
 ---
 
@@ -44,7 +47,14 @@ weave stack up
 # Result: Running dashboard with ingested data and evaluations
 ```
 
-**Key Innovation**: Declarative YAML + Automated Orchestration + Self-Healing Monitoring
+**Key Innovation**: Kubernetes-Native + Helm Charts + Declarative YAML + Self-Healing
+
+**Technology Stack**:
+- **Orchestration**: Kubernetes (Helm charts for packaging)
+- **Local Dev**: Kind or Minikube (K8s in containers/VMs)
+- **Cloud Deploy**: AWS EKS, GCP GKE (production-ready)
+- **Container Runtime**: Podman (OSS-first), Docker (fallback)
+- **Dashboard**: Next.js/TypeScript (template from Client0)
 
 ---
 
@@ -93,25 +103,44 @@ weave stack up
 
 ```
 weave-stack/
-├── weave-stack.yaml         # Main stack definition
-├── .env                     # Secrets (API keys)
+├── weave-stack.yaml         # Main stack definition (Helm values)
+├── .env                     # Secrets (API keys, pulled into K8s secrets)
 ├── config.yaml              # weave-cli config (auto-generated from stack)
 ├── data/                    # Source documents
 │   ├── pdfs/
 │   ├── docs/
 │   └── ...
-├── docker-compose.yaml      # Auto-generated from stack.yaml
+├── kubernetes/              # Auto-generated K8s manifests
+│   ├── Chart.yaml           # Helm chart metadata
+│   ├── values.yaml          # Generated from weave-stack.yaml
+│   ├── templates/
+│   │   ├── vectordb.yaml    # VDB deployment + service
+│   │   ├── storage.yaml     # MinIO/S3 deployment
+│   │   ├── ingestion-job.yaml  # K8s Job for data ingestion
+│   │   ├── dashboard.yaml   # Next.js dashboard deployment
+│   │   └── secrets.yaml     # K8s secrets from .env
+│   └── kustomization.yaml   # Kustomize overlays (dev/staging/prod)
 ├── .weave-state/            # Stack runtime state
+│   ├── cluster.json         # Cluster info (Kind/Minikube/EKS/GKE)
 │   ├── services.json        # Service health status
-│   ├── ingestion.json       # Ingestion checkpoints
+│   ├── ingestion.json       # Ingestion checkpoints (K8s ConfigMap)
 │   ├── evaluations.json     # Eval results
 │   └── dashboard.json       # Dashboard status
-└── logs/                    # Centralized logs
+└── logs/                    # Centralized logs (kubectl logs)
     ├── vdb/
     ├── ingestion/
     ├── evals/
     └── dashboard/
 ```
+
+**Kubernetes Resources Generated**:
+- **Deployments**: VectorDB (Milvus/Qdrant), MinIO, Dashboard
+- **Jobs**: Data ingestion, evaluations (run-to-completion)
+- **Services**: LoadBalancer for dashboard, ClusterIP for internal
+- **ConfigMaps**: weave-cli config, ingestion checkpoints
+- **Secrets**: API keys (.env → K8s Secret)
+- **PersistentVolumeClaims**: VDB data, MinIO storage
+- **CronJobs**: Scheduled re-ingestion, backup (optional)
 
 ---
 
@@ -121,7 +150,7 @@ weave-stack/
 
 ```bash
 # Initialize a new stack (creates weave-stack.yaml template)
-weave stack init [--template <name>]
+weave stack init [--template <name>] [--runtime kind|minikube|eks|gke]
 
 # Run interactive wizard to configure stack
 weave stack wizard
@@ -129,11 +158,18 @@ weave stack wizard
 # Validate stack configuration
 weave stack validate
 
-# Show what will be deployed (dry-run)
+# Show what will be deployed (Helm/K8s dry-run)
 weave stack plan
 
-# Deploy all services + ingest data + run evals + start dashboard
-weave stack up [--detach] [--skip-ingestion] [--skip-evals]
+# Deploy everything to Kubernetes
+weave stack up [--runtime kind|minikube|eks|gke] \
+               [--skip-ingestion] [--skip-evals]
+
+# Examples:
+#   weave stack up --runtime kind         # Local dev (Kind cluster)
+#   weave stack up --runtime minikube     # Local dev (Minikube)
+#   weave stack up --runtime eks          # AWS production
+#   weave stack up --runtime gke          # GCP production
 
 # Show real-time status of all components
 weave stack status [--watch] [--json]
@@ -141,20 +177,45 @@ weave stack status [--watch] [--json]
 # Monitor ingestion/eval progress
 weave stack monitor [--component <name>]
 
-# View logs from all services
+# View logs from all services (kubectl logs under the hood)
 weave stack logs [--service <name>] [--follow]
 
 # Update stack after changing weave-stack.yaml
 weave stack update [--component <name>]
 
-# Restart specific component
+# Restart specific component (kubectl rollout restart)
 weave stack restart <component>
 
-# Stop all services (preserve data)
+# Stop all services (preserve PVCs)
 weave stack down
 
-# Destroy everything (including data)
+# Destroy everything (including PVCs and data)
 weave stack destroy [--force]
+```
+
+### Kubernetes-Specific Commands
+
+```bash
+# Cluster management
+weave stack cluster create --runtime kind|minikube  # Create local cluster
+weave stack cluster delete                          # Delete cluster
+weave stack cluster info                            # Show cluster details
+
+# Get generated Helm chart
+weave stack helm chart                              # Show Chart.yaml
+weave stack helm values                             # Show values.yaml
+weave stack helm template                           # helm template output
+
+# Direct kubectl access
+weave stack kubectl -- get pods                     # Run kubectl commands
+weave stack kubectl -- describe svc dashboard       # Kubectl passthrough
+
+# Port forwarding (for local access)
+weave stack port-forward dashboard 3000:3000        # Access dashboard locally
+
+# Scale deployments
+weave stack scale vectordb --replicas 2             # Scale VDB (if supported)
+weave stack scale dashboard --replicas 3            # Scale dashboard
 ```
 
 ### Day Two Operations
@@ -194,26 +255,103 @@ name: "auctionsmax-ai"
 description: "Rare camera auction RAG system"
 
 # ========================================
+# Kubernetes Runtime
+# ========================================
+runtime:
+  # Kubernetes cluster configuration
+  kubernetes:
+    # Runtime options: kind, minikube, eks, gke
+    provider: kind       # Default: Kind for local dev
+
+    # Kind-specific settings
+    kind:
+      name: weave-stack
+      config:
+        nodes: 1         # Single-node for dev, 3+ for prod simulation
+        kubeadm_config_patches:
+          - |
+            kind: ClusterConfiguration
+            apiServer:
+              extraArgs:
+                enable-admission-plugins: NodeRestriction,PodSecurity
+
+    # Minikube-specific settings
+    minikube:
+      driver: podman     # OSS-first! Fallback: docker, kvm2, hyperkit
+      cpus: 4
+      memory: "16384"    # 16GB for Milvus + ingestion
+      addons:
+        - ingress
+        - metrics-server
+
+    # EKS settings (AWS production)
+    eks:
+      region: us-west-2
+      node_groups:
+        - name: weave-workers
+          instance_type: m5.xlarge
+          desired_size: 3
+          min_size: 1
+          max_size: 5
+
+    # GKE settings (GCP production)
+    gke:
+      zone: us-central1-a
+      node_pools:
+        - name: weave-workers
+          machine_type: n1-standard-4
+          node_count: 3
+          auto_scaling:
+            min_node_count: 1
+            max_node_count: 5
+
+  # Container runtime preference (for Minikube)
+  container_runtime: podman  # Options: podman (OSS-first), docker
+
+# ========================================
 # Infrastructure
 # ========================================
 infrastructure:
   # Vector Database
   vectordb:
-    type: milvus-local  # Options: milvus-local, milvus-cloud, qdrant-local, weaviate-local, etc.
+    type: milvus         # Options: milvus, qdrant, weaviate
     version: "2.3.0"
+
+    # Kubernetes-specific
+    kubernetes:
+      deployment:
+        replicas: 1      # Single replica for dev, 3+ for HA
+        storage_class: standard  # K8s StorageClass for PVCs
+        pvc_size: "50Gi"
+
     resources:
-      memory: "12G"      # Learned from Client0: image ingestion needs 8-10G
-      cpu: "4"
+      requests:
+        memory: "8Gi"    # Minimum guaranteed
+        cpu: "2"
+      limits:
+        memory: "12Gi"   # Maximum allowed (prevents OOM kill of other pods)
+        cpu: "4"
+
     config:
       similarity_metric: COSINE
       database: default
 
-    # Health checks (for auto-restart)
+    # Health checks (K8s liveness/readiness probes)
     health:
-      endpoint: http://localhost:9091/healthz
-      interval: 30s
-      retries: 10
-      startup_timeout: 60s
+      liveness:
+        http_get:
+          path: /healthz
+          port: 9091
+        initial_delay_seconds: 30
+        period_seconds: 30
+        failure_threshold: 3
+
+      readiness:
+        http_get:
+          path: /healthz
+          port: 9091
+        initial_delay_seconds: 10
+        period_seconds: 10
 
   # LLM Provider
   llm:
@@ -408,37 +546,88 @@ evaluations:
     dashboard_webhook: null  # Future: POST results to dashboard
 
 # ========================================
-# Dashboard (Optional)
+# Dashboard (Next.js/TypeScript from Client0)
 # ========================================
 dashboard:
   enabled: true
   type: web              # Options: web, cli, none
 
   web:
-    framework: nextjs    # What Client0 uses
-    port: 3000
-    host: localhost
+    # Template source: Client0's auctionsmax-ai/frontend/
+    framework: nextjs
+    language: typescript # TypeScript-first for type safety
+    version: "14.x"      # Next.js 14 (App Router)
 
-    # Auto-generated API routes
+    # Kubernetes deployment
+    kubernetes:
+      deployment:
+        replicas: 2      # HA for production
+        image:
+          build: true    # Build from Client0 template
+          registry: null # Or push to registry (ECR, GCR, Docker Hub)
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+      service:
+        type: LoadBalancer  # Expose externally
+        port: 3000
+        annotations:
+          # For cloud load balancers
+          service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+
+      ingress:
+        enabled: true
+        hostname: weave-dashboard.example.com
+        tls:
+          enabled: true
+          secret_name: dashboard-tls
+
+    # Auto-generated from Client0 template
+    features:
+      - search_interface     # /app/page.tsx
+      - image_search         # /app/images/page.tsx
+      - eval_dashboard       # /app/evals/page.tsx
+      - health_monitoring    # /app/health/page.tsx
+
+    # API routes (auto-generated from weave-stack.yaml collections)
     api:
       - path: /api/search
         collection: AuctionListings
+        methods: [GET, POST]
+        auth: optional
+
       - path: /api/search-images
         collection: AuctionImages
+        methods: [GET, POST]
+        auth: optional
+
       - path: /api/health
         type: healthcheck
+        methods: [GET]
 
-    # Environment
+    # Environment (from .env + K8s Secrets)
     env_file: .env
+    env_vars:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://vectordb:19530
 
-    # Deployment
+    # Build configuration
     build:
-      command: npm run build
-      output: .next
+      dockerfile: Dockerfile.dashboard  # Auto-generated
+      context: ./dashboard
+      target: production
+      cache: true
 
-    start:
-      command: npm run dev
+    # Development mode (local only)
+    dev:
       hot_reload: true
+      port: 3000
+      command: npm run dev
 
 # ========================================
 # Operational Settings
@@ -1112,56 +1301,82 @@ Proceed? (y/n):
 
 ## Implementation Plan
 
-### Phase 1: Core Stack Management (Week 1-2)
+**Priority**: Kubernetes-first, Docker Compose second
+**Container Runtime**: Podman (OSS-first), Docker fallback
+**Dashboard**: Next.js/TypeScript (Client0 template)
+**Local K8s**: Kind preferred, Minikube secondary
+**Cloud K8s**: AWS EKS, GCP GKE
 
-**Goal**: `weave stack up` deploys VDB + ingests data
+---
+
+### Phase 1: Kubernetes Foundation + Local Dev (Week 1-2)
+
+**Goal**: `weave stack up --runtime kind` deploys VDB to local K8s
 
 **Deliverables**:
-- [ ] `weave stack init` - Generate template `weave-stack.yaml`
-- [ ] `weave stack validate` - Parse and validate YAML
-- [ ] `weave stack plan` - Show deployment plan (dry-run)
-- [ ] `weave stack up` - Deploy VDB + create collections + ingest data
-- [ ] `weave stack down` - Stop services
-- [ ] `weave stack status` - Show component health
+- [ ] `weave stack init` - Generate `weave-stack.yaml` + Helm chart skeleton
+- [ ] `weave stack validate` - Parse YAML + validate Helm values
+- [ ] `weave stack cluster create --runtime kind` - Create Kind cluster with podman
+- [ ] `weave stack plan` - Show Helm template output (dry-run)
+- [ ] `weave stack up --runtime kind` - Deploy to Kind with Helm
+- [ ] `weave stack status` - K8s pod/service health via kubectl
+- [ ] `weave stack down` - Helm uninstall (preserve PVCs)
+- [ ] Podman detection + fallback to Docker
 
 **Files**:
-- `src/cmd/stack/init.go`
-- `src/cmd/stack/validate.go`
-- `src/cmd/stack/plan.go`
-- `src/cmd/stack/up.go`
-- `src/cmd/stack/down.go`
-- `src/cmd/stack/status.go`
+- `src/cmd/stack/init.go` - Generate stack.yaml + Helm chart
+- `src/cmd/stack/cluster.go` - Kind/Minikube cluster management
+- `src/cmd/stack/validate.go` - YAML + Helm validation
+- `src/cmd/stack/plan.go` - `helm template` wrapper
+- `src/cmd/stack/up.go` - `helm install` orchestration
+- `src/cmd/stack/down.go` - `helm uninstall` orchestration
+- `src/cmd/stack/status.go` - `kubectl get pods/svc` wrapper
 - `src/pkg/stack/config.go` - Parse weave-stack.yaml
-- `src/pkg/stack/orchestrator.go` - Deployment logic
-- `src/pkg/stack/health.go` - Health checks
+- `src/pkg/stack/helm.go` - Helm chart generation
+- `src/pkg/stack/kubernetes.go` - kubectl/Kind/podman interactions
+- `templates/helm/weave-stack/` - Base Helm chart templates
+  - `Chart.yaml`
+  - `values.yaml`
+  - `templates/vectordb.yaml`
+  - `templates/storage.yaml`
+  - `templates/ingestion-job.yaml`
 
 **Testing**:
-- Unit tests for YAML parsing
-- Integration test: Deploy Milvus + ingest 3 PDFs
-- Verify checkpoint/resume works
+- Unit tests for YAML → Helm values conversion
+- Integration test: `weave stack up --runtime kind` + verify Milvus pod running
+- Test podman driver for Kind
+- Verify PVC creation for VDB storage
 
-### Phase 2: Self-Healing & Monitoring (Week 3)
+### Phase 2: Data Ingestion (K8s Jobs) + Checkpointing (Week 3)
 
-**Goal**: Auto-restart on failure + real-time progress
+**Goal**: Deploy ingestion as K8s Job with checkpoint/resume
 
 **Deliverables**:
-- [ ] `weave stack monitor` - Real-time progress dashboard
-- [ ] `weave stack logs` - Centralized log viewer
-- [ ] Health check auto-restart
-- [ ] OOM detection + Milvus restart
-- [ ] Checkpoint save/resume
+- [ ] Generate `ingestion-job.yaml` Helm template
+- [ ] K8s ConfigMap for checkpoints (`.weave-state/ingestion.json`)
+- [ ] Ingestion Job with retry logic (K8s `restartPolicy: OnFailure`)
+- [ ] `weave stack monitor` - Watch Job progress via `kubectl logs -f`
+- [ ] `weave stack logs --service ingestion` - kubectl logs wrapper
+- [ ] K8s liveness/readiness probes for VDB
+- [ ] OOM detection via K8s events + auto-restart
 
 **Files**:
-- `src/cmd/stack/monitor.go`
-- `src/cmd/stack/logs.go`
-- `src/pkg/stack/health.go` (extend)
-- `src/pkg/stack/checkpoint.go`
-- `.weave-state/` state directory structure
+- `src/pkg/stack/ingestion.go` - Generate ingestion Job YAML
+- `src/pkg/stack/checkpoint.go` - ConfigMap checkpoint management
+- `src/cmd/stack/monitor.go` - Watch Job status
+- `src/cmd/stack/logs.go` - kubectl logs wrapper
+- `templates/helm/weave-stack/templates/ingestion-job.yaml`
+- `templates/helm/weave-stack/templates/checkpoint-configmap.yaml`
+
+**K8s Resources**:
+- **Job**: `weave-ingestion` (runs weave-cli in container)
+- **ConfigMap**: `weave-checkpoints` (stores ingestion state)
+- **PersistentVolumeClaim**: `data-pvc` (mounts source PDFs)
 
 **Testing**:
-- Simulate Milvus crash → verify auto-restart
-- Kill ingestion mid-way → verify resume
-- Monitor UI shows real-time progress
+- Deploy Job → verify ingests 3 PDFs into Milvus
+- Kill Job mid-ingestion → verify resume from checkpoint
+- Simulate Milvus OOM → verify K8s restarts pod
 
 ### Phase 3: Wizard & Templates (Week 4)
 
@@ -1210,52 +1425,109 @@ Proceed? (y/n):
 - Export → destroy → import → verify restored
 - Add new file → update → verify ingested
 
-### Phase 5: Evaluations & Dashboard (Week 6)
+### Phase 5: Dashboard (Next.js/TypeScript from Client0) (Week 6)
 
-**Goal**: Integrated evals + dashboard deployment
+**Goal**: Deploy Client0's dashboard template to K8s
 
 **Deliverables**:
-- [ ] `weave stack eval` - Run evaluation suites
-- [ ] Dashboard auto-deploy (Next.js)
-- [ ] API route generation
-- [ ] Eval results in dashboard
+- [ ] Extract Client0 `/Users/maximilien/github/auctionsmax-ai/frontend/` as template
+- [ ] Parameterize for collection names, API endpoints
+- [ ] Generate `dashboard.yaml` Helm template (Deployment + Service + Ingress)
+- [ ] Auto-generate API routes from `weave-stack.yaml` collections
+- [ ] Build Next.js Docker image (multi-stage with TypeScript)
+- [ ] K8s LoadBalancer or Ingress for external access
+- [ ] Environment injection via K8s Secrets
 
 **Files**:
-- `src/cmd/stack/eval.go`
-- `src/pkg/stack/evaluations.go`
-- `src/pkg/stack/dashboard.go`
-- `templates/dashboard/` - Next.js starter
+- `src/pkg/stack/dashboard.go` - Generate dashboard manifests
+- `templates/helm/weave-stack/templates/dashboard.yaml`
+- `templates/dashboard/` - Client0 Next.js template
+  - `package.json` (TypeScript dependencies)
+  - `app/` (Next.js 14 App Router)
+  - `app/api/search/route.ts` (generated from collections)
+  - `app/page.tsx` (search interface)
+  - `Dockerfile` (multi-stage build)
+
+**K8s Resources**:
+- **Deployment**: `weave-dashboard` (replicas: 2 for HA)
+- **Service**: LoadBalancer type (exposes port 3000)
+- **Ingress** (optional): TLS + hostname mapping
+- **Secret**: API keys, environment variables
 
 **Testing**:
-- Run evals → verify metrics collected
-- Deploy dashboard → verify search works
-- Check eval results in UI
+- Deploy dashboard → access via `kubectl port-forward`
+- Verify search works against Milvus in K8s
+- Test auto-generated API routes
+
+### Phase 6: Cloud Deployment (EKS/GKE) + Evaluations (Week 7)
+
+**Goal**: Production-ready cloud deployment + eval Jobs
+
+**Deliverables**:
+- [ ] `weave stack up --runtime eks` - Deploy to AWS EKS
+- [ ] `weave stack up --runtime gke` - Deploy to GCP GKE
+- [ ] Terraform generation for EKS/GKE clusters (optional)
+- [ ] Evaluation K8s Job (similar to ingestion)
+- [ ] CronJob for scheduled re-ingestion
+- [ ] Prometheus + Grafana dashboards (optional)
+
+**Files**:
+- `src/pkg/stack/cloud.go` - EKS/GKE cluster creation
+- `src/pkg/stack/evaluations.go` - Eval Job generation
+- `templates/helm/weave-stack/templates/eval-job.yaml`
+- `templates/helm/weave-stack/templates/cronjob.yaml`
+- `templates/terraform/` (optional)
+
+**Testing**:
+- Deploy to EKS → verify public dashboard accessible
+- Run eval Job → verify metrics stored in ConfigMap
+- Test CronJob triggers re-ingestion
+
+### Phase 7: Docker Compose Fallback (Week 8)
+
+**Goal**: Support Docker Compose for simpler local dev
+
+**Deliverables**:
+- [ ] Generate `docker-compose.yaml` from `weave-stack.yaml`
+- [ ] `weave stack up --runtime compose` - Use Docker Compose
+- [ ] Podman Compose support
+- [ ] Feature parity with K8s (ingestion, dashboard, evals)
+
+**Files**:
+- `src/pkg/stack/compose.go` - Generate docker-compose.yaml
+- `templates/compose/` - Compose templates
+
+**Why Last**: K8s-first ensures we design for production from day 1.
+Docker Compose is a convenience, not the primary target.
 
 ---
 
-## Open Questions
+## Answered Questions
 
-1. **Docker Compose vs Kubernetes**:
-   - Start with Docker Compose for simplicity?
-   - Add Kubernetes support later for production?
+1. **✅ Kubernetes First**: Kind/Minikube local, EKS/GKE cloud
+2. **✅ Dashboard**: Next.js/TypeScript (Client0 template reuse)
+3. **✅ Cloud**: AWS EKS, GCP GKE (production-ready)
+4. **✅ Container Runtime**: Podman (OSS), Docker fallback
+5. **✅ Local K8s**: Kind preferred, Minikube secondary
 
-2. **Dashboard Framework**:
-   - Generate Next.js boilerplate?
-   - Support other frameworks (Streamlit, Gradio)?
-   - Or just expose API, let users choose UI?
+## Remaining Open Questions
 
-3. **Cloud Deployment**:
-   - Support cloud VDBs (Milvus Cloud, Qdrant Cloud)?
-   - Generate Terraform for AWS/GCP/Azure?
-   - Or focus on local-first?
-
-4. **Observability**:
+1. **Observability**:
    - Integrate Prometheus + Grafana?
-   - Or build custom monitoring?
+   - Or rely on cloud-native (CloudWatch, Stackdriver)?
 
-5. **Multi-Tenancy**:
-   - Support multiple stacks on same machine?
-   - Namespace collision prevention?
+2. **Multi-Tenancy**:
+   - K8s namespaces per stack?
+   - Or single namespace with label selectors?
+
+3. **Helm Chart Distribution**:
+   - Publish to Helm registry (ArtifactHub)?
+   - Or bundle with weave-cli?
+
+4. **Secrets Management**:
+   - K8s Secrets (basic)?
+   - External Secrets Operator (AWS Secrets Manager, GCP Secret Manager)?
+   - Sealed Secrets?
 
 ---
 
