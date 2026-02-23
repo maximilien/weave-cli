@@ -56,6 +56,8 @@ weave stack up
 - **Container Runtime**: Podman (OSS-first), Docker (fallback)
 - **Dashboard**: Next.js/TypeScript (template from Client0)
 
+NOTE: I anticipate other dashboards or tests apps. Client0 dashboard is a GREAT start but need to be able to configure other "apps" in future.
+
 ---
 
 ## Problem Statement
