@@ -5,6 +5,7 @@ package stack
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	stackpkg "github.com/maximilien/weave-cli/src/pkg/stack"
@@ -58,9 +59,31 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 
-	// TODO: Show deployed services (Phase 1 Day 4+)
+	// Show deployed services
 	utils.PrintInfo("Services:")
-	utils.PrintInfo("  ⏳ Service status tracking (coming in Phase 1 Day 4)")
+
+	// Get pods
+	selector := fmt.Sprintf("app.kubernetes.io/instance=%s", clusterInfo.Name)
+	pods, err := stackpkg.GetPods(selector, clusterInfo.Context)
+	if err != nil {
+		utils.PrintWarning(fmt.Sprintf("  Failed to get pods: %v", err))
+	} else if len(pods) == 0 {
+		utils.PrintInfo("  No services deployed yet")
+		utils.PrintInfo("  Run: weave stack up --runtime kind")
+	} else {
+		// Print table header
+		fmt.Printf("\n  %-40s %-20s %-10s %-10s\n", "Name", "Status", "Ready", "Restarts")
+		fmt.Printf("  %s\n", strings.Repeat("-", 85))
+
+		// Print pods
+		for _, pod := range pods {
+			fmt.Printf("  %-40s %-20s %-10s %-10s\n",
+				pod.Name,
+				pod.Status,
+				pod.Ready,
+				pod.Restarts)
+		}
+	}
 
 	fmt.Println()
 

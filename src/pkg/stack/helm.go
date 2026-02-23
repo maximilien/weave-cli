@@ -6,6 +6,7 @@ package stack
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
@@ -208,8 +209,114 @@ func GenerateHelmChart(config *StackConfig, outputDir string) error {
 		return fmt.Errorf("failed to save Helm values: %w", err)
 	}
 
-	// TODO: Copy template files from templates/helm/weave-stack/
-	// For now, we assume they exist in the output directory
+	// Copy template files from templates/helm/weave-stack/
+	if err := CopyHelmTemplates(outputDir); err != nil {
+		return fmt.Errorf("failed to copy Helm templates: %w", err)
+	}
+
+	return nil
+}
+
+// CopyHelmTemplates copies Helm chart templates to output directory
+func CopyHelmTemplates(outputDir string) error {
+	// Get weave-cli root directory (assume we're in src/pkg/stack/)
+	// Navigate to templates/helm/weave-stack/
+	templateDir := "templates/helm/weave-stack"
+
+	// Copy Chart.yaml
+	if err := copyFile(
+		filepath.Join(templateDir, "Chart.yaml"),
+		filepath.Join(outputDir, "Chart.yaml"),
+	); err != nil {
+		return fmt.Errorf("failed to copy Chart.yaml: %w", err)
+	}
+
+	// Copy templates directory
+	templatesDir := filepath.Join(templateDir, "templates")
+	outputTemplatesDir := filepath.Join(outputDir, "templates")
+
+	if err := os.MkdirAll(outputTemplatesDir, 0755); err != nil {
+		return fmt.Errorf("failed to create templates directory: %w", err)
+	}
+
+	// Copy all template files
+	templateFiles := []string{
+		"_helpers.tpl",
+		"milvus-deployment.yaml",
+		"milvus-service.yaml",
+		"vectordb-pvc.yaml",
+	}
+
+	for _, file := range templateFiles {
+		src := filepath.Join(templatesDir, file)
+		dst := filepath.Join(outputTemplatesDir, file)
+		if err := copyFile(src, dst); err != nil {
+			return fmt.Errorf("failed to copy %s: %w", file, err)
+		}
+	}
+
+	return nil
+}
+
+// copyFile copies a file from src to dst
+func copyFile(src, dst string) error {
+	data, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	// Ensure destination directory exists
+	dir := filepath.Dir(dst)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+
+	return os.WriteFile(dst, data, 0644)
+}
+
+// HelmInstall installs a Helm chart
+func HelmInstall(chartPath, releaseName, namespace string, timeout string, context string) error {
+	args := []string{
+		"install",
+		releaseName,
+		chartPath,
+		"--namespace", namespace,
+		"--create-namespace",
+		"--wait",
+		"--timeout", timeout,
+	}
+
+	// Add kubeconfig context if provided
+	if context != "" {
+		args = append(args, "--kube-context", context)
+	}
+
+	cmd := exec.Command("helm", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("helm install failed: %w\nOutput: %s", err, string(output))
+	}
+
+	return nil
+}
+
+// HelmUninstall uninstalls a Helm release
+func HelmUninstall(releaseName, namespace string, context string) error {
+	args := []string{
+		"uninstall",
+		releaseName,
+		"--namespace", namespace,
+	}
+
+	if context != "" {
+		args = append(args, "--kube-context", context)
+	}
+
+	cmd := exec.Command("helm", args...)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("helm uninstall failed: %w\nOutput: %s", err, string(output))
+	}
 
 	return nil
 }

@@ -5,6 +5,7 @@ package stack
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	stackpkg "github.com/maximilien/weave-cli/src/pkg/stack"
@@ -107,13 +108,34 @@ func runUp(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to generate Helm chart: %w", err)
 	}
 
-	utils.PrintSuccess(fmt.Sprintf("✅ Generated Helm values: %s/values.yaml", helmDir))
+	utils.PrintSuccess(fmt.Sprintf("✅ Generated Helm chart: %s/", helmDir))
 
-	// TODO: Step 3: Deploy infrastructure (Phase 1 Day 4)
-	utils.PrintInfo("⏳ Infrastructure deployment (coming in Phase 1 Day 4)")
+	// Step 3: Deploy infrastructure
+	utils.PrintInfo("Deploying to Kubernetes...")
 
-	// TODO: Step 4: Wait for services (Phase 1 Day 4)
-	utils.PrintInfo("⏳ Service health checks (coming in Phase 1 Day 4)")
+	// Helm install
+	releaseName := config.Name
+	namespace := "default"
+	timeout := "5m"
+
+	if err := stackpkg.HelmInstall(helmDir, releaseName, namespace, timeout, clusterInfo.Context); err != nil {
+		return fmt.Errorf("failed to install Helm chart: %w", err)
+	}
+
+	utils.PrintSuccess("✅ Helm chart installed successfully!")
+
+	// Step 4: Wait for pods to be ready
+	utils.PrintInfo("Waiting for pods to be ready...")
+
+	selector := fmt.Sprintf("app.kubernetes.io/instance=%s", releaseName)
+	waitTimeout := 5 * time.Minute
+
+	if err := stackpkg.WaitForPods(selector, clusterInfo.Context, waitTimeout); err != nil {
+		utils.PrintWarning(fmt.Sprintf("Pods not ready yet: %v", err))
+		utils.PrintInfo("Check status with: weave stack status")
+	} else {
+		utils.PrintSuccess("✅ All pods are ready!")
+	}
 
 	fmt.Println()
 	utils.PrintSuccess("🎉 Stack deployment initiated!")
