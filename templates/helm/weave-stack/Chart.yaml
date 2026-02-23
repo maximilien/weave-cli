@@ -1,3 +1,4 @@
+---
 apiVersion: v2
 name: weave-stack
 description: RAG Stack for weave-cli with VectorDB, LLM, and Dashboard
