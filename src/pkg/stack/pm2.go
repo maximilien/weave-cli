@@ -61,7 +61,7 @@ func GeneratePM2Config(config *StackConfig, outputPath string) error {
 // PM2Start starts the dashboard with PM2
 func PM2Start(appName, configPath string) error {
 	// Check if PM2 is installed
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return fmt.Errorf("pm2 not installed (install: npm install -g pm2)")
 	}
 
@@ -80,7 +80,7 @@ func PM2Start(appName, configPath string) error {
 
 // PM2Stop stops the PM2 process
 func PM2Stop(appName string) error {
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return fmt.Errorf("pm2 not installed")
 	}
 
@@ -97,7 +97,7 @@ func PM2Stop(appName string) error {
 
 // PM2Restart restarts the PM2 process
 func PM2Restart(appName string) error {
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return fmt.Errorf("pm2 not installed")
 	}
 
@@ -112,7 +112,7 @@ func PM2Restart(appName string) error {
 
 // PM2Status returns the PM2 process status
 func PM2Status(appName string) (string, error) {
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return "", fmt.Errorf("pm2 not installed")
 	}
 
@@ -128,7 +128,7 @@ func PM2Status(appName string) (string, error) {
 
 // PM2Logs streams logs from PM2
 func PM2Logs(appName string, lines int, follow bool) error {
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return fmt.Errorf("pm2 not installed")
 	}
 
@@ -146,7 +146,7 @@ func PM2Logs(appName string, lines int, follow bool) error {
 
 // PM2List lists all PM2 processes
 func PM2List() (string, error) {
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return "", fmt.Errorf("pm2 not installed")
 	}
 
@@ -161,7 +161,7 @@ func PM2List() (string, error) {
 
 // PM2Monit opens PM2 monitoring interface
 func PM2Monit() error {
-	if !commandExists("pm2") {
+	if !CommandExists("pm2") {
 		return fmt.Errorf("pm2 not installed")
 	}
 
@@ -173,8 +173,8 @@ func PM2Monit() error {
 	return cmd.Run()
 }
 
-// commandExists checks if a command is available in PATH
-func commandExists(cmd string) bool {
+// CommandExists checks if a command is available in PATH
+func CommandExists(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	return err == nil
 }

@@ -87,6 +87,12 @@ func runStatus(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 
+	// Show dashboard status if configured
+	config, err := stackpkg.LoadStackConfig("")
+	if err == nil && config != nil && config.Dashboard != nil && config.Dashboard.Enabled {
+		showDashboardStatus(config)
+	}
+
 	// Show next steps
 	fmt.Println("Useful commands:")
 	fmt.Printf("  kubectl --context %s get pods\n", clusterInfo.Context)
@@ -94,4 +100,55 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	fmt.Println("  weave stack down  # Stop the stack")
 
 	return nil
+}
+
+// showDashboardStatus displays the dashboard status
+func showDashboardStatus(config *stackpkg.StackConfig) {
+	utils.PrintInfo("Dashboard:")
+
+	if config.Dashboard.Runtime == "pm2" && config.Dashboard.PM2 != nil {
+		appName := config.Dashboard.PM2.AppName
+
+		// Check if PM2 is available
+		if !stackpkg.CommandExists("pm2") {
+			fmt.Printf("  Status:   ⚠️  PM2 not installed\n")
+			fmt.Printf("  Install:  npm install -g pm2\n")
+			fmt.Println()
+			return
+		}
+
+		// Get PM2 status
+		status, err := stackpkg.PM2Status(appName)
+		if err != nil {
+			fmt.Printf("  Status:   ⚠️  Error getting status\n")
+			fmt.Printf("  Error:    %v\n", err)
+		} else if status == "" || strings.Contains(status, "doesn't exist") || strings.Contains(status, "not found") {
+			fmt.Printf("  Status:   ⏹️  Not running\n")
+			fmt.Printf("  Start:    weave stack dashboard start\n")
+		} else {
+			// Parse PM2 status output for key info
+			if strings.Contains(status, "online") {
+				fmt.Printf("  Status:   ✅ Running\n")
+			} else if strings.Contains(status, "stopped") {
+				fmt.Printf("  Status:   ⏹️  Stopped\n")
+			} else if strings.Contains(status, "errored") {
+				fmt.Printf("  Status:   ❌ Errored\n")
+			} else {
+				fmt.Printf("  Status:   ❓ Unknown\n")
+			}
+
+			fmt.Printf("  App:      %s\n", appName)
+
+			// Show useful commands
+			fmt.Printf("  Monitor:  pm2 monit\n")
+			fmt.Printf("  Logs:     weave stack dashboard logs\n")
+		}
+	} else if config.Dashboard.Runtime == "kubernetes" {
+		fmt.Printf("  Runtime:  Kubernetes (managed with pods above)\n")
+	} else {
+		fmt.Printf("  Runtime:  %s\n", config.Dashboard.Runtime)
+		fmt.Printf("  Status:   Manual management\n")
+	}
+
+	fmt.Println()
 }

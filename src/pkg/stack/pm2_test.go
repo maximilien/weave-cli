@@ -148,17 +148,17 @@ func TestGeneratePM2Config_WithDefaults(t *testing.T) {
 
 func TestCommandExists(t *testing.T) {
 	// Test with a command that should exist
-	assert.True(t, commandExists("ls"), "ls should exist on system")
+	assert.True(t, CommandExists("ls"), "ls should exist on system")
 
 	// Test with a command that shouldn't exist
-	assert.False(t, commandExists("nonexistent-command-12345"), "nonexistent command should return false")
+	assert.False(t, CommandExists("nonexistent-command-12345"), "nonexistent command should return false")
 }
 
 func TestPM2Start_NoPM2Installed(t *testing.T) {
 	// This test validates error handling when PM2 is not installed
 	// We can't actually test PM2 start without PM2 installed
 
-	if commandExists("pm2") {
+	if CommandExists("pm2") {
 		t.Skip("Skipping: PM2 is installed, can't test 'not installed' case")
 	}
 
@@ -168,7 +168,7 @@ func TestPM2Start_NoPM2Installed(t *testing.T) {
 }
 
 func TestPM2Stop_NoPM2Installed(t *testing.T) {
-	if commandExists("pm2") {
+	if CommandExists("pm2") {
 		t.Skip("Skipping: PM2 is installed, can't test 'not installed' case")
 	}
 
@@ -216,8 +216,8 @@ func TestDashboardConfigWithPM2(t *testing.T) {
 		Type:    "web",
 		Runtime: "pm2",
 		PM2: &PM2Config{
-			AppName:  "dashboard",
-			Script:   "dist/index.js",
+			AppName:   "dashboard",
+			Script:    "dist/index.js",
 			Instances: 1,
 		},
 	}
