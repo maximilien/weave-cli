@@ -1,0 +1,61 @@
+# Default values for weave-stack
+# This file will be overwritten by values generated from weave-stack.yaml
+
+# Stack metadata
+stack:
+  name: weave-stack
+  version: "1.0"
+
+# VectorDB configuration
+vectordb:
+  type: milvus
+  version: "2.3.0"
+  replicas: 1
+
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "2"
+    limits:
+      memory: "12Gi"
+      cpu: "4"
+
+  storage:
+    class: "standard"
+    size: "50Gi"
+
+  service:
+    type: ClusterIP
+    port: 19530
+    metricsPort: 9091
+
+  health:
+    liveness:
+      path: /healthz
+      port: 9091
+      initialDelaySeconds: 30
+      periodSeconds: 30
+      failureThreshold: 3
+    readiness:
+      path: /healthz
+      port: 9091
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+# Image storage (MinIO for multimodal)
+imageStorage:
+  enabled: false
+  type: minio
+  replicas: 1
+
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1"
+
+  storage:
+    class: "standard"
+    size: "20Gi"

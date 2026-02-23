@@ -12,3 +12,4 @@ ignore: |
   .github/workflows/ci.yml
   examples/ci-cd/
   config.yaml
+  templates/helm/weave-stack/templates/

@@ -1,0 +1,61 @@
+{{- if eq .Values.vectordb.type "milvus" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "weave-stack.fullname" . }}-milvus
+  labels:
+    {{- include "weave-stack.vectordb.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.vectordb.replicas }}
+  selector:
+    matchLabels:
+      {{- include "weave-stack.vectordb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "weave-stack.vectordb.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: milvus
+        image: "milvusdb/milvus:v{{ .Values.vectordb.version }}"
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: ETCD_USE_EMBED
+          value: "true"
+        - name: COMMON_STORAGETYPE
+          value: "local"
+        ports:
+        - name: milvus
+          containerPort: {{ .Values.vectordb.service.port }}
+          protocol: TCP
+        - name: metrics
+          containerPort: {{ .Values.vectordb.service.metricsPort }}
+          protocol: TCP
+        resources:
+          requests:
+            memory: {{ .Values.vectordb.resources.requests.memory }}
+            cpu: {{ .Values.vectordb.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.vectordb.resources.limits.memory }}
+            cpu: {{ .Values.vectordb.resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.vectordb.health.liveness.path }}
+            port: {{ .Values.vectordb.health.liveness.port }}
+          initialDelaySeconds: {{ .Values.vectordb.health.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.vectordb.health.liveness.periodSeconds }}
+          failureThreshold: {{ .Values.vectordb.health.liveness.failureThreshold }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.vectordb.health.readiness.path }}
+            port: {{ .Values.vectordb.health.readiness.port }}
+          initialDelaySeconds: {{ .Values.vectordb.health.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.vectordb.health.readiness.periodSeconds }}
+        volumeMounts:
+        - name: milvus-data
+          mountPath: /var/lib/milvus
+      volumes:
+      - name: milvus-data
+        persistentVolumeClaim:
+          claimName: {{ include "weave-stack.fullname" . }}-vectordb-data
+{{- end }}

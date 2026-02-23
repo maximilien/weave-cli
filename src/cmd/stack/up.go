@@ -98,8 +98,16 @@ func runUp(cmd *cobra.Command, args []string) error {
 
 	fmt.Println()
 
-	// TODO: Step 2: Generate Helm charts (Phase 1 Day 3)
-	utils.PrintInfo("⏳ Helm chart generation (coming in Phase 1 Day 3)")
+	// Step 2: Generate Helm charts
+	utils.PrintInfo("Generating Helm charts...")
+
+	// Generate values.yaml from stack config
+	helmDir := "kubernetes"
+	if err := stackpkg.GenerateHelmChart(config, helmDir); err != nil {
+		return fmt.Errorf("failed to generate Helm chart: %w", err)
+	}
+
+	utils.PrintSuccess(fmt.Sprintf("✅ Generated Helm values: %s/values.yaml", helmDir))
 
 	// TODO: Step 3: Deploy infrastructure (Phase 1 Day 4)
 	utils.PrintInfo("⏳ Infrastructure deployment (coming in Phase 1 Day 4)")

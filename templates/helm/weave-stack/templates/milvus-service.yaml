@@ -1,0 +1,21 @@
+{{- if eq .Values.vectordb.type "milvus" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "weave-stack.fullname" . }}-milvus
+  labels:
+    {{- include "weave-stack.vectordb.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.vectordb.service.type }}
+  ports:
+  - name: milvus
+    port: {{ .Values.vectordb.service.port }}
+    targetPort: milvus
+    protocol: TCP
+  - name: metrics
+    port: {{ .Values.vectordb.service.metricsPort }}
+    targetPort: metrics
+    protocol: TCP
+  selector:
+    {{- include "weave-stack.vectordb.selectorLabels" . | nindent 4 }}
+{{- end }}

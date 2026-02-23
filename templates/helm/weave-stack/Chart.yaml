@@ -1,0 +1,15 @@
+apiVersion: v2
+name: weave-stack
+description: RAG Stack for weave-cli with VectorDB, LLM, and Dashboard
+version: 0.1.0
+appVersion: "1.0"
+type: application
+keywords:
+  - rag
+  - vectordb
+  - milvus
+  - llm
+  - ai
+maintainers:
+  - name: dr.max
+    email: noreply@weave-cli.dev

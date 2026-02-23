@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "weave-stack.fullname" . }}-vectordb-data
+  labels:
+    {{- include "weave-stack.vectordb.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.vectordb.storage.class }}
+  resources:
+    requests:
+      storage: {{ .Values.vectordb.storage.size }}
