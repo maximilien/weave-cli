@@ -259,7 +259,9 @@ type PhaseConfig struct {
 // DashboardConfig defines dashboard configuration
 type DashboardConfig struct {
 	Enabled bool          `yaml:"enabled"`
-	Type    string        `yaml:"type"` // "web", "cli", "none"
+	Type    string        `yaml:"type"`    // "web", "cli", "none"
+	Runtime string        `yaml:"runtime"` // "pm2", "kubernetes", "docker", "manual"
+	PM2     *PM2Config    `yaml:"pm2,omitempty"`
 	Web     *WebDashboard `yaml:"web,omitempty"`
 }
 
@@ -275,6 +277,25 @@ type WebDashboard struct {
 	EnvVars    map[string]string    `yaml:"env_vars,omitempty"`
 	Build      *BuildConfig         `yaml:"build,omitempty"`
 	Dev        *DevConfig           `yaml:"dev,omitempty"`
+}
+
+// PM2Config defines PM2 process manager configuration
+type PM2Config struct {
+	AppName          string            `yaml:"app_name"`
+	Script           string            `yaml:"script"`             // Path to entry point (e.g., "dist/index.js")
+	Cwd              string            `yaml:"cwd,omitempty"`      // Working directory
+	Instances        int               `yaml:"instances"`          // Number of instances (1 for most dashboards)
+	MaxMemoryRestart string            `yaml:"max_memory_restart"` // e.g., "1G"
+	Autorestart      bool              `yaml:"autorestart"`
+	Watch            bool              `yaml:"watch"`
+	ErrorLog         string            `yaml:"error_log"`
+	OutLog           string            `yaml:"out_log"`
+	LogDateFormat    string            `yaml:"log_date_format,omitempty"`
+	MergeLogs        bool              `yaml:"merge_logs"`
+	MinUptime        string            `yaml:"min_uptime"`   // e.g., "10s"
+	MaxRestarts      int               `yaml:"max_restarts"` // Max restarts within min_uptime
+	KillTimeout      int               `yaml:"kill_timeout"` // Milliseconds
+	Env              map[string]string `yaml:"env,omitempty"`
 }
 
 // APIRoute defines an API route
