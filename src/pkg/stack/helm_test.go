@@ -189,6 +189,11 @@ func TestSaveHelmValues(t *testing.T) {
 }
 
 func TestGenerateHelmChart(t *testing.T) {
+	// Skip if not in project root (templates not accessible from test dir)
+	if _, err := os.Stat("templates/helm/weave-stack"); os.IsNotExist(err) {
+		t.Skip("Skipping: templates directory not found (run from project root)")
+	}
+
 	tmpDir := t.TempDir()
 	outputDir := filepath.Join(tmpDir, "helm-chart")
 
@@ -214,4 +219,98 @@ func TestGenerateHelmChart(t *testing.T) {
 	valuesPath := filepath.Join(outputDir, "values.yaml")
 	_, err = os.Stat(valuesPath)
 	require.NoError(t, err)
+
+	// Verify Chart.yaml was copied
+	chartPath := filepath.Join(outputDir, "Chart.yaml")
+	_, err = os.Stat(chartPath)
+	require.NoError(t, err)
+
+	// Verify templates directory exists
+	templatesDir := filepath.Join(outputDir, "templates")
+	_, err = os.Stat(templatesDir)
+	require.NoError(t, err)
+}
+
+func TestCopyHelmTemplates(t *testing.T) {
+	// Skip if not in project root (templates not accessible from test dir)
+	if _, err := os.Stat("templates/helm/weave-stack"); os.IsNotExist(err) {
+		t.Skip("Skipping: templates directory not found (run from project root)")
+	}
+
+	tmpDir := t.TempDir()
+	outputDir := filepath.Join(tmpDir, "kubernetes")
+
+	err := CopyHelmTemplates(outputDir)
+	require.NoError(t, err)
+
+	// Verify Chart.yaml was copied
+	chartPath := filepath.Join(outputDir, "Chart.yaml")
+	_, err = os.Stat(chartPath)
+	require.NoError(t, err, "Chart.yaml should exist")
+
+	// Verify templates directory was created
+	templatesDir := filepath.Join(outputDir, "templates")
+	_, err = os.Stat(templatesDir)
+	require.NoError(t, err, "templates directory should exist")
+
+	// Verify key template files were copied
+	expectedFiles := []string{
+		"_helpers.tpl",
+		"milvus-deployment.yaml",
+		"milvus-service.yaml",
+		"vectordb-pvc.yaml",
+	}
+
+	for _, file := range expectedFiles {
+		filePath := filepath.Join(templatesDir, file)
+		_, err = os.Stat(filePath)
+		require.NoError(t, err, "%s should exist", file)
+	}
+
+	// Verify Chart.yaml content is valid
+	data, err := os.ReadFile(chartPath)
+	require.NoError(t, err)
+
+	var chart map[string]interface{}
+	err = yaml.Unmarshal(data, &chart)
+	require.NoError(t, err, "Chart.yaml should be valid YAML")
+
+	// Check required fields
+	assert.Equal(t, "weave-stack", chart["name"])
+	assert.NotEmpty(t, chart["version"])
+	assert.NotEmpty(t, chart["description"])
+}
+
+func TestCopyFile(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create source file
+	srcPath := filepath.Join(tmpDir, "source.txt")
+	content := []byte("test content")
+	err := os.WriteFile(srcPath, content, 0644)
+	require.NoError(t, err)
+
+	// Copy file
+	dstPath := filepath.Join(tmpDir, "subdir", "dest.txt")
+	err = copyFile(srcPath, dstPath)
+	require.NoError(t, err)
+
+	// Verify destination file exists and has same content
+	_, err = os.Stat(dstPath)
+	require.NoError(t, err)
+
+	dstContent, err := os.ReadFile(dstPath)
+	require.NoError(t, err)
+	assert.Equal(t, content, dstContent)
+}
+
+func TestCopyFileNonExistent(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Try to copy non-existent file
+	srcPath := filepath.Join(tmpDir, "nonexistent.txt")
+	dstPath := filepath.Join(tmpDir, "dest.txt")
+
+	err := copyFile(srcPath, dstPath)
+	assert.Error(t, err, "should error when source doesn't exist")
 }
