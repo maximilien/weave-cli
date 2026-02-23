@@ -28,13 +28,13 @@ kubectl get pods    # Verifies Milvus is healthy
 
 ## Day-by-Day Breakdown
 
-### Day 1 (Mon Feb 24): Project Structure + Core Types
+### Day 1 (Mon Feb 24): Project Structure + Core Types ✅ COMPLETE
 
 **Tasks**:
-- [ ] Create `src/cmd/stack/` directory structure
-- [ ] Define core types in `src/pkg/stack/types.go`
-- [ ] Implement `weave stack init` (generate minimal YAML)
-- [ ] Basic YAML parsing
+- [x] Create `src/cmd/stack/` directory structure
+- [x] Define core types in `src/pkg/stack/types.go`
+- [x] Implement `weave stack init` (generate minimal YAML)
+- [x] Basic YAML parsing
 
 **Deliverables**:
 ```go
@@ -73,13 +73,13 @@ weave stack init --template quickstart
 
 ---
 
-### Day 2 (Tue Feb 25): Kind Cluster Management
+### Day 2 (Tue Feb 25): Kind Cluster Management ✅ COMPLETE
 
 **Tasks**:
-- [ ] Implement `weave stack cluster create --runtime kind`
-- [ ] Detect podman vs docker
-- [ ] Create Kind cluster with podman provider
-- [ ] Store cluster info in `.weave-state/cluster.json`
+- [x] Implement `weave stack cluster create --runtime kind`
+- [x] Detect podman vs docker
+- [x] Create Kind cluster with podman provider
+- [x] Store cluster info in `.weave-state/cluster.json`
 
 **Deliverables**:
 ```go
@@ -126,13 +126,13 @@ weave stack cluster create --runtime kind
 
 ---
 
-### Day 3 (Wed Feb 26): Helm Chart Generation
+### Day 3 (Wed Feb 26): Helm Chart Generation ✅ COMPLETE
 
 **Tasks**:
-- [ ] Create base Helm chart in `templates/helm/weave-stack/`
-- [ ] Generate `values.yaml` from `weave-stack.yaml`
-- [ ] Implement Milvus deployment template
-- [ ] Add PVC for Milvus data
+- [x] Create base Helm chart in `templates/helm/weave-stack/`
+- [x] Generate `values.yaml` from `weave-stack.yaml`
+- [x] Implement Milvus deployment template
+- [x] Add PVC for Milvus data
 
 **Deliverables**:
 ```yaml
@@ -566,27 +566,27 @@ After Phase 1 is complete:
 
 **Each day, update here**:
 
-### Day 1 Status (Mon Feb 24):
-- [ ] Core types defined
-- [ ] `weave stack init` working
-- [ ] YAML parsing tested
+### Day 1 Status (Mon Feb 24): ✅ COMPLETE
+- [x] Core types defined
+- [x] `weave stack init` working
+- [x] YAML parsing tested
 
-### Day 2 Status (Tue Feb 25):
-- [ ] Kind cluster creation working
-- [ ] podman detection working
-- [ ] Cluster info saved
+### Day 2 Status (Tue Feb 25): ✅ COMPLETE
+- [x] Kind cluster creation working
+- [x] podman detection working
+- [x] Cluster info saved
 
-### Day 3 Status (Wed Feb 26):
-- [ ] Helm chart generated
-- [ ] Milvus template created
-- [ ] Values substitution working
+### Day 3 Status (Wed Feb 26): ✅ COMPLETE
+- [x] Helm chart generated
+- [x] Milvus template created
+- [x] Values substitution working
 
-### Day 4 Status (Thu Feb 27):
-- [ ] `weave stack up` working
+### Day 4 Status (Thu Feb 27): 🚧 IN PROGRESS
+- [ ] `weave stack up` working (helm install)
 - [ ] Milvus pod Running
 - [ ] Status command working
 
-### Day 5 Status (Fri Mar 1):
+### Day 5 Status (Fri Mar 1): ⏳ PLANNED
 - [ ] kubectl passthrough working
 - [ ] Port forwarding working
 - [ ] Logs streaming working
