@@ -1120,6 +1120,205 @@ allows seamless switching between different vector database backends.
 See **[📚 Vector DB Abstraction Guide](docs/VECTOR_DB_ABSTRACTION.md)** for
 implementation details and adding new database support.
 
+## Weave Stack - Kubernetes RAG Management
+
+**NEW in v0.10.0**: Deploy and manage complete RAG systems with Kubernetes.
+
+Weave Stack orchestrates full-stack RAG deployments including vector databases, data ingestion pipelines, and web dashboards - all managed via Kubernetes (Kind, Minikube, EKS, GKE) with Helm charts.
+
+### Quick Start
+
+```bash
+# 1. Initialize stack configuration
+weave stack init --template quickstart --runtime kind
+
+# 2. Review and customize weave-stack.yaml
+cat weave-stack.yaml
+
+# 3. Deploy to local Kubernetes
+weave stack up --runtime kind
+
+# 4. Check status
+weave stack status
+
+# 5. View logs
+weave stack logs milvus --follow
+
+# 6. Access services
+weave stack port-forward milvus 19530:19530
+
+# 7. Stop stack
+weave stack down
+```
+
+### Templates
+
+Choose from pre-configured stack templates:
+
+| Template | Description | Components |
+|----------|-------------|------------|
+| **quickstart** | Minimal RAG stack | Milvus, 1 collection, local K8s |
+| **production** | Full production stack | Collections, evals, dashboard |
+| **multimodal** | Text + image support | PDF text + image extraction |
+| **oss** | 100% open source | Ollama + sentence-transformers |
+
+```bash
+# Production stack with evaluations and dashboard
+weave stack init --template production --runtime kind
+
+# Multimodal stack for images + text
+weave stack init --template multimodal --runtime kind
+
+# OSS stack (no API keys required)
+weave stack init --template oss --runtime kind
+```
+
+### Stack Management Commands
+
+```bash
+# Initialize new stack
+weave stack init [--template quickstart|production|multimodal|oss] [--runtime kind|minikube]
+
+# Validate configuration
+weave stack validate
+
+# Deploy stack
+weave stack up --runtime kind [--timeout 5m]
+
+# Check stack health
+weave stack status
+
+# View component logs
+weave stack logs [service] [--follow] [--tail 100]
+
+# Run kubectl commands with auto-context
+weave stack kubectl -- get pods
+weave stack kubectl -- describe svc weave-stack-milvus
+
+# Forward ports to services
+weave stack port-forward milvus 19530:19530
+weave stack port-forward dashboard 3000:3000
+
+# Dashboard management (PM2)
+weave stack dashboard start
+weave stack dashboard stop
+weave stack dashboard restart
+weave stack dashboard status
+weave stack dashboard logs
+
+# Stop and cleanup
+weave stack down
+```
+
+### Dashboard Runtime Options
+
+Weave Stack supports **PM2** for production-grade dashboard lifecycle management:
+
+```yaml
+# weave-stack.yaml
+dashboard:
+  enabled: true
+  runtime: pm2  # Process manager with monitoring
+
+  pm2:
+    app_name: my-dashboard
+    script: dist/index.js
+    cwd: /path/to/frontend
+    instances: 1
+    max_memory_restart: "1G"
+    autorestart: true
+    env:
+      NODE_ENV: production
+      FRONTEND_PORT: 8050
+```
+
+**PM2 Features:**
+- Automatic restarts on crashes
+- Memory-based restart policies
+- Log rotation and management
+- Process monitoring
+- Zero-downtime reloads
+
+```bash
+# Start dashboard
+weave stack dashboard start
+
+# Check status
+weave stack dashboard status
+
+# View logs
+weave stack dashboard logs --follow
+
+# Restart
+weave stack dashboard restart
+
+# Stop
+weave stack dashboard stop
+```
+
+### Kubernetes Runtime Support
+
+| Runtime | Type | Status | Use Case |
+|---------|------|--------|----------|
+| **kind** | Local | ✅ Ready | Development, testing |
+| **minikube** | Local | ✅ Ready | Development, testing |
+| **EKS** | AWS Cloud | 🚧 Planned | Production (AWS) |
+| **GKE** | GCP Cloud | 🚧 Planned | Production (GCP) |
+
+```bash
+# Local development with Kind
+weave stack up --runtime kind
+
+# Local with Minikube
+weave stack up --runtime minikube
+
+# Skip cluster creation (use existing)
+weave stack up --skip-cluster-creation
+```
+
+### Requirements
+
+For local Kubernetes deployments:
+
+```bash
+# macOS
+brew install kubectl helm kind
+
+# Linux
+# kubectl: https://kubernetes.io/docs/tasks/tools/
+# helm: https://helm.sh/docs/intro/install/
+# kind: https://kind.sigs.k8s.io/docs/user/quick-start/
+```
+
+### Testing
+
+Basic integration tests (no K8s required):
+
+```bash
+./test-stack-basic.sh
+```
+
+Full K8s deployment tests (requires kubectl, helm, kind):
+
+```bash
+./test-stack-phase1.sh
+```
+
+### Architecture
+
+Weave Stack uses:
+- **Kubernetes** for container orchestration
+- **Helm** for package management
+- **PM2** for dashboard process management
+- **kind/minikube** for local development
+- **Custom Helm charts** generated from weave-stack.yaml
+
+Files:
+- `weave-stack.yaml` - Stack configuration
+- `kubernetes/` - Generated Helm charts
+- `.weave-state/` - Cluster state and metadata
+- `ecosystem.config.js` - Generated PM2 config (when using PM2)
+
 ## Development
 
 ```bash

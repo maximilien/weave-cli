@@ -51,6 +51,7 @@ print_help() {
     echo "Commands:"
     echo "  unit        Run only unit tests"
     echo "  integration Run only integration tests"
+    echo "  stack       Run weave stack integration tests"
     echo "  fast        Run fast tests (unit + mock integration)"
     echo "  all         Run all tests (unit + integration)"
     echo "  coverage    Run tests with coverage report"
@@ -71,6 +72,7 @@ print_help() {
     echo "Examples:"
     echo "  ./test.sh unit                    # Run only unit tests"
     echo "  ./test.sh integration             # Run all integration tests"
+    echo "  ./test.sh stack                   # Run weave stack integration tests"
     echo "  ./test.sh integration --weaviate  # Run only Weaviate integration tests"
     echo "  ./test.sh integration --milvus    # Run only Milvus integration tests"
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
@@ -132,6 +134,9 @@ case "${1:-unit}" in
         RUN_UNIT_TESTS=false
         RUN_INTEGRATION_TESTS=true
         RUN_COVERAGE=false
+        ;;
+    "stack")
+        # Stack tests handled separately below
         ;;
     "fast")
         RUN_UNIT_TESTS=true
@@ -1080,11 +1085,85 @@ run_coverage_tests() {
 # }
 
 
+# Run weave stack integration tests
+run_stack_tests() {
+    print_header "Weave Stack Integration Tests"
+
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    TEST_DIR="/tmp/weave-stack-test-$$"
+    TESTS_PASSED=0
+    TESTS_FAILED=0
+
+    mkdir -p "$TEST_DIR"
+    cd "$TEST_DIR"
+
+    # Test 1: init
+    print_status "Test 1: weave stack init"
+    if "$SCRIPT_DIR/bin/weave" stack init --runtime kind --quiet-config > /tmp/init.log 2>&1; then
+        if [ -f "weave-stack.yaml" ]; then
+            print_success "✓ Test 1 passed: weave-stack.yaml created"
+            ((TESTS_PASSED++))
+        else
+            print_error "✗ Test 1 failed: weave-stack.yaml not found"
+            ((TESTS_FAILED++))
+        fi
+    else
+        print_error "✗ Test 1 failed: init command failed"
+        cat /tmp/init.log
+        ((TESTS_FAILED++))
+    fi
+
+    # Test 2: validate
+    print_status "Test 2: weave stack validate"
+    if "$SCRIPT_DIR/bin/weave" stack validate --quiet-config > /dev/null 2>&1; then
+        print_success "✓ Test 2 passed: configuration valid"
+        ((TESTS_PASSED++))
+    else
+        print_error "✗ Test 2 failed: validation failed"
+        ((TESTS_FAILED++))
+    fi
+
+    # Test 3: all templates
+    for template in production multimodal oss; do
+        print_status "Test: template $template"
+        rm -rf *
+        if "$SCRIPT_DIR/bin/weave" stack init --template "$template" --runtime kind --quiet-config > /dev/null 2>&1; then
+            if "$SCRIPT_DIR/bin/weave" stack validate --quiet-config > /dev/null 2>&1; then
+                print_success "✓ Template $template valid"
+                ((TESTS_PASSED++))
+            else
+                print_error "✗ Template $template validation failed"
+                ((TESTS_FAILED++))
+            fi
+        else
+            print_error "✗ Template $template init failed"
+            ((TESTS_FAILED++))
+        fi
+    done
+
+    # Cleanup
+    cd "$SCRIPT_DIR"
+    rm -rf "$TEST_DIR"
+
+    echo ""
+    echo "Stack Test Summary:"
+    echo "  Passed: $TESTS_PASSED"
+    echo "  Failed: $TESTS_FAILED"
+
+    if [ $TESTS_FAILED -gt 0 ]; then
+        return 1
+    fi
+    return 0
+}
+
 # Run tests based on command
 # Track overall exit code
 overall_exit_code=0
 
-if [ "$RUN_UNIT_TESTS" = true ] && [ "$RUN_INTEGRATION_TESTS" = true ]; then
+if [ "${1:-unit}" = "stack" ]; then
+    run_stack_tests
+    overall_exit_code=$?
+elif [ "$RUN_UNIT_TESTS" = true ] && [ "$RUN_INTEGRATION_TESTS" = true ]; then
     # Check if this is a fast test run
     if [ "${1:-unit}" = "fast" ]; then
         run_fast_tests
