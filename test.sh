@@ -72,7 +72,9 @@ print_help() {
     echo "Examples:"
     echo "  ./test.sh unit                    # Run only unit tests"
     echo "  ./test.sh integration             # Run all integration tests"
-    echo "  ./test.sh stack                   # Run weave stack integration tests"
+    echo "  ./test.sh stack                   # Run weave stack tests only"
+    echo "  ./test.sh stack integration       # Run stack tests + all integration tests"
+    echo "  ./test.sh stack integration --weaviate  # Run stack tests + Weaviate integration"
     echo "  ./test.sh integration --weaviate  # Run only Weaviate integration tests"
     echo "  ./test.sh integration --milvus    # Run only Milvus integration tests"
     echo "  ./test.sh integration --supabase  # Run only Supabase integration tests"
@@ -1161,8 +1163,25 @@ run_stack_tests() {
 overall_exit_code=0
 
 if [ "${1:-unit}" = "stack" ]; then
-    run_stack_tests
-    overall_exit_code=$?
+    # Check if second argument is "integration"
+    if [ "${2:-}" = "integration" ]; then
+        # Run stack tests first
+        run_stack_tests
+        stack_exit_code=$?
+
+        # Then run integration tests
+        run_integration_tests "${@:3}"
+        integration_exit_code=$?
+
+        # Set overall exit code (fail if either failed)
+        if [ $stack_exit_code -ne 0 ] || [ $integration_exit_code -ne 0 ]; then
+            overall_exit_code=1
+        fi
+    else
+        # Just run stack tests
+        run_stack_tests
+        overall_exit_code=$?
+    fi
 elif [ "$RUN_UNIT_TESTS" = true ] && [ "$RUN_INTEGRATION_TESTS" = true ]; then
     # Check if this is a fast test run
     if [ "${1:-unit}" = "fast" ]; then
