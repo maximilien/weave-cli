@@ -39,6 +39,8 @@ func init() {
 	stackCmd.AddCommand(stack.DownCmd)
 	stackCmd.AddCommand(stack.StatusCmd)
 	stackCmd.AddCommand(stack.LogsCmd)
+	stackCmd.AddCommand(stack.KubectlCmd)
+	stackCmd.AddCommand(stack.PortForwardCmd)
 	stackCmd.AddCommand(stack.DashboardCmd)
 	// More commands will be added in subsequent phases
 }
