@@ -1124,7 +1124,9 @@ implementation details and adding new database support.
 
 **NEW in v0.10.0**: Deploy and manage complete RAG systems with Kubernetes.
 
-Weave Stack orchestrates full-stack RAG deployments including vector databases, data ingestion pipelines, and web dashboards - all managed via Kubernetes (Kind, Minikube, EKS, GKE) with Helm charts.
+Weave Stack orchestrates full-stack RAG deployments including vector databases,
+data ingestion pipelines, and web dashboards - all managed via Kubernetes
+(Kind, Minikube, EKS, GKE) with Helm charts.
 
 ### Quick Start
 
@@ -1233,6 +1235,7 @@ dashboard:
 ```
 
 **PM2 Features:**
+
 - Automatic restarts on crashes
 - Memory-based restart policies
 - Log rotation and management
@@ -1307,6 +1310,7 @@ Full K8s deployment tests (requires kubectl, helm, kind):
 ### Architecture
 
 Weave Stack uses:
+
 - **Kubernetes** for container orchestration
 - **Helm** for package management
 - **PM2** for dashboard process management
@@ -1314,6 +1318,7 @@ Weave Stack uses:
 - **Custom Helm charts** generated from weave-stack.yaml
 
 Files:
+
 - `weave-stack.yaml` - Stack configuration
 - `kubernetes/` - Generated Helm charts
 - `.weave-state/` - Cluster state and metadata
