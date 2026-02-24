@@ -1143,13 +1143,16 @@ weave stack up --runtime kind
 # 4. Check status
 weave stack status
 
-# 5. View logs
+# 5. Ingest data (NEW in v0.10.1)
+weave stack ingest Documents data/pdfs/
+
+# 6. View logs
 weave stack logs milvus --follow
 
-# 6. Access services
+# 7. Access services
 weave stack port-forward milvus 19530:19530
 
-# 7. Stop stack
+# 8. Stop stack
 weave stack down
 ```
 
@@ -1190,6 +1193,9 @@ weave stack up --runtime kind [--timeout 5m]
 # Check stack health
 weave stack status
 
+# Ingest data into stack (NEW in v0.10.1)
+weave stack ingest <collection> <data-path> [--embedding <model>] [--chunk-size N]
+
 # View component logs
 weave stack logs [service] [--follow] [--tail 100]
 
@@ -1210,6 +1216,44 @@ weave stack dashboard logs
 
 # Stop and cleanup
 weave stack down
+```
+
+### Data Ingestion (NEW in v0.10.1)
+
+Ingest data directly into your deployed stack with automatic connection handling:
+
+```bash
+# Basic ingestion
+weave stack ingest Documents data/pdfs/
+
+# With custom embedding model
+weave stack ingest Docs data/ \
+  --embedding text-embedding-3-large \
+  --chunk-size 1000
+
+# Parallel ingestion
+weave stack ingest Docs data/ \
+  --parallel-workers 4 \
+  --batch-size 20
+
+# Image ingestion
+weave stack ingest Images data/images/ --type image
+```
+
+**Features:**
+- Auto-detects deployed stack
+- Port-forwards to Milvus internally
+- Uses existing ingestion pipeline
+- Progress tracking
+- Supports all embedding models
+- Parallel processing
+
+**Complete RAG Workflow:**
+```bash
+weave stack up --runtime kind         # Deploy
+weave stack ingest Docs data/         # Ingest
+weave stack port-forward milvus 19530:19530  # Access
+weave cols query Docs "search query"  # Query
 ```
 
 ### Dashboard Runtime Options
