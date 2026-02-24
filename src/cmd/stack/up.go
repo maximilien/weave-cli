@@ -63,6 +63,11 @@ func runUp(cmd *cobra.Command, args []string) error {
 	// Override provider in config
 	config.Runtime.Kubernetes.Provider = runtime
 
+	// Check dependencies
+	if err := stackpkg.CheckDependencies(runtime); err != nil {
+		return err
+	}
+
 	// Step 1: Create cluster (if needed)
 	var clusterInfo *stackpkg.ClusterInfo
 	if !upSkipClusterCreation {
@@ -78,7 +83,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 		}
 
 		if err != nil {
-			return fmt.Errorf("failed to create cluster: %w", err)
+			return stackpkg.EnhanceClusterError(err, runtime)
 		}
 
 		utils.PrintSuccess(fmt.Sprintf("✅ Cluster created: %s", clusterInfo.Name))
@@ -119,7 +124,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	timeout := "5m"
 
 	if err := stackpkg.HelmInstall(helmDir, releaseName, namespace, timeout, clusterInfo.Context); err != nil {
-		return fmt.Errorf("failed to install Helm chart: %w", err)
+		return stackpkg.EnhanceHelmError(err, helmDir, releaseName)
 	}
 
 	utils.PrintSuccess("✅ Helm chart installed successfully!")
