@@ -1241,6 +1241,7 @@ weave stack ingest Images data/images/ --type image
 ```
 
 **Features:**
+
 - Auto-detects deployed stack
 - Port-forwards to Milvus internally
 - Uses existing ingestion pipeline
@@ -1249,6 +1250,7 @@ weave stack ingest Images data/images/ --type image
 - Parallel processing
 
 **Complete RAG Workflow:**
+
 ```bash
 weave stack up --runtime kind         # Deploy
 weave stack ingest Docs data/         # Ingest
