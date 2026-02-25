@@ -217,11 +217,41 @@ func GenerateHelmChart(config *StackConfig, outputDir string) error {
 	return nil
 }
 
+// getTemplateDir returns the absolute path to the templates directory
+func getTemplateDir() (string, error) {
+	// Try to find templates relative to executable
+	exe, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	// Binary is at bin/weave, templates at templates/
+	exeDir := filepath.Dir(exe)
+	rootDir := filepath.Dir(exeDir) // Go up from bin/ to root
+
+	templateDir := filepath.Join(rootDir, "templates")
+
+	// Check if templates directory exists
+	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		// Fallback: check current directory (for development)
+		if _, err := os.Stat("templates"); err == nil {
+			return "templates", nil
+		}
+		return "", fmt.Errorf("templates directory not found at %s or ./templates", templateDir)
+	}
+
+	return templateDir, nil
+}
+
 // CopyHelmTemplates copies Helm chart templates to output directory
 func CopyHelmTemplates(outputDir string) error {
-	// Get weave-cli root directory (assume we're in src/pkg/stack/)
-	// Navigate to templates/helm/weave-stack/
-	templateDir := "templates/helm/weave-stack"
+	// Get templates directory
+	templatesRoot, err := getTemplateDir()
+	if err != nil {
+		return fmt.Errorf("failed to locate templates: %w", err)
+	}
+
+	templateDir := filepath.Join(templatesRoot, "helm/weave-stack")
 
 	// Copy Chart.yaml
 	if err := copyFile(

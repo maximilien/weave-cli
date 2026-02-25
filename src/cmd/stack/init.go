@@ -134,12 +134,12 @@ func generateQuickstartTemplate(runtime string) *stackpkg.StackConfig {
 				Version: "2.3.0",
 				Resources: stackpkg.ResourceRequirements{
 					Requests: stackpkg.ResourceLimits{
-						Memory: "8Gi",
-						CPU:    "2",
+						Memory: "2Gi", // Reduced for local K8s (Kind/Minikube typically have 8GB)
+						CPU:    "1",
 					},
 					Limits: stackpkg.ResourceLimits{
-						Memory: "12Gi",
-						CPU:    "4",
+						Memory: "4Gi", // Reasonable limit for development
+						CPU:    "2",
 					},
 				},
 			},

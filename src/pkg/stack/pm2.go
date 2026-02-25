@@ -32,8 +32,14 @@ func GeneratePM2Config(config *StackConfig, outputPath string) error {
 		pm2Config.LogDateFormat = "YYYY-MM-DD HH:mm:ss Z"
 	}
 
+	// Get templates directory
+	templatesRoot, err := getTemplateDir()
+	if err != nil {
+		return fmt.Errorf("failed to locate templates: %w", err)
+	}
+
 	// Load template
-	tmplPath := "templates/pm2/ecosystem.config.js"
+	tmplPath := filepath.Join(templatesRoot, "pm2/ecosystem.config.js")
 	tmpl, err := template.ParseFiles(tmplPath)
 	if err != nil {
 		return fmt.Errorf("failed to load PM2 template: %w", err)
