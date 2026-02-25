@@ -19,6 +19,7 @@ spec:
       - name: milvus
         image: "milvusdb/milvus:v{{ .Values.vectordb.version }}"
         imagePullPolicy: IfNotPresent
+        command: ["milvus", "run", "standalone"]
         env:
         - name: ETCD_USE_EMBED
           value: "true"
