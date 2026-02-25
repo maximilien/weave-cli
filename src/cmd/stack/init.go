@@ -301,11 +301,15 @@ func setRuntimeDefaults(config *stackpkg.StackConfig, runtime string) {
 		}
 	case "minikube":
 		config.Runtime.Kubernetes.Minikube = &stackpkg.MinikubeConfig{
-			Driver: "podman", // OSS-first
-			CPUs:   4,
-			Memory: "16384",
+			Driver: "docker", // More reliable than podman for minikube
+			CPUs:   2,
+			Memory: "4096", // 4GB - works on most systems (podman machines often default to 8GB)
 			Addons: []string{"ingress", "metrics-server"},
 		}
+		// Note: For podman driver, ensure your podman machine has sufficient memory:
+		//   podman machine set --memory 8192 podman-machine-default
+		// For Docker Desktop, ensure version >= 20.10.0
+		config.Runtime.ContainerRuntime = "docker"
 	case "eks":
 		config.Runtime.Kubernetes.EKS = &stackpkg.EKSConfig{
 			Region: "us-west-2",

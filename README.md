@@ -1333,11 +1333,36 @@ For local Kubernetes deployments:
 # macOS
 brew install kubectl helm kind
 
+# Optional: Minikube (for local testing)
+brew install minikube
+
 # Linux
 # kubectl: https://kubernetes.io/docs/tasks/tools/
 # helm: https://helm.sh/docs/intro/install/
 # kind: https://kind.sigs.k8s.io/docs/user/quick-start/
+# minikube: https://minikube.sigs.k8s.io/docs/start/
 ```
+
+#### Minikube Troubleshooting
+
+**Podman memory limits**:
+
+```bash
+# Check current memory
+podman machine list
+
+# Increase if needed (requires restart)
+podman machine stop
+podman machine set --memory 8192 podman-machine-default
+podman machine start
+```
+
+**Docker version requirements**:
+
+- Requires Docker Desktop >= 20.10.0
+- If using podman-as-docker, use podman driver instead
+
+**Recommended**: Use Kind for local development (more reliable, faster startup)
 
 ### Testing
 
