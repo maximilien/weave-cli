@@ -1,204 +1,201 @@
-# Planning Documents
+# Weave CLI Planning Documents
 
-**Last Updated**: 2026-02-20
-**Current Version**: v0.9.29 (hotfix #42 pending)
-**Status**: Awaiting Client0 feedback, prep for next week
-
----
-
-## Current Status
-
-### Week Feb 17-21 ✅ COMPLETE
-- ✅ v0.9.27: Parallel processing (Issue #31) + PDF storage (Issue #33)
-- ✅ v0.9.28: All 5 Client0 ingestion improvements shipped
-- ✅ Issue #41: Image-page association bug fixed (hotfix)
-- ✅ Issue #42: Image metadata fields discovered (hotfix pending Mon)
-
-**Impact**: Client0's 255-line bash wrapper reduced to ~10 lines
-
-### Week Feb 24-28 (Current)
-- **Mon AM**: Issue #42 hotfix (CRITICAL - 15 min)
-- **Mon PM-Thu**: Issue #38 `weave docs create-batch` implementation
-- **Thu-Fri**: Issue #39 `weave docs status` dashboard
-- **Target**: v0.9.29 release Friday
-
-See archived: `docs/archive/planning/feb-2026/WEEK_FEB_24-28_PLAN.md`
+**Current Status**: v0.10.2 - Production Ready
+**Current Phase**: Phase 2 Planning (EKS/GKE Cloud Deployments)
+**Last Updated**: Feb 25, 2026
 
 ---
 
-## Active Plans
+## 📋 Active Planning Documents
 
-### Strategic Roadmap Documents
+### Phase 2: Cloud Deployments (NEXT)
 
-📄 **[V1_0_ROADMAP.md](./V1_0_ROADMAP.md)**
-- Path to v1.0 production release
-- Feature prioritization
-- Timeline and milestones
+**Status**: ✅ Ready to start
 
-📄 **[VECTOR_DB_INTEGRATIONS.md](./VECTOR_DB_INTEGRATIONS.md)**
-- Status of all 10+ VDB integrations
-- Capabilities and limitations
-- Integration patterns
+1. **[WEAVE_STACK_PHASE_2_PLAN.md](WEAVE_STACK_PHASE_2_PLAN.md)** - Master plan
+   - Week 1: EKS + GKE support
+   - Week 2: Production features (TLS, secrets, monitoring, backup)
+   - Timeline: 2 weeks
+   - Target: v0.11.0 by March 8, 2026
 
----
+2. **[PHASE_2_ITEMS.md](PHASE_2_ITEMS.md)** - Task checklist
+   - All Phase 2 tasks with checkboxes
+   - Testing requirements
+   - Documentation requirements
+   - Success criteria
 
-## Agent & Evaluation System
+### Recent Validations
 
-### Multi-Agent Orchestration
-🤖 **Multi-Agent Feature Planning**
-- **Status**: Design complete, implementation paused
-- **Documents**:
-  - **[DECISION_POINTS.md](./DECISION_POINTS.md)** - Quick reference ⭐ Start here
-  - **[MULTI_AGENT_ORCHESTRATION.md](./MULTI_AGENT_ORCHESTRATION.md)** - Detailed design
-  - **[MULTI_AGENT_EXAMPLES.md](./MULTI_AGENT_EXAMPLES.md)** - Real-world use cases
+3. **[PRODUCTION_READINESS_AUDIT_RESULTS.md](PRODUCTION_READINESS_AUDIT_RESULTS.md)** - Production audit ⭐
+   - ✅ 3 critical bugs found and fixed
+   - Template path resolution
+   - Resource allocation
+   - Milvus command
+   - **Result**: v0.10.2 production ready
 
-### Agent Evaluation System
-📊 **Agent Evaluation & Quality**
-- **Status**: Research phase
-- **Documents**:
-  - **[AGENT_EVALUATION_SYSTEM.md](./AGENT_EVALUATION_SYSTEM.md)** - System design
-  - **[AGENT_EVAL_UPDATES.md](./AGENT_EVAL_UPDATES.md)** - Progress updates
-  - **[OPIK_INTEGRATION_STRATEGY.md](./OPIK_INTEGRATION_STRATEGY.md)** - Opik integration
-  - **[PLUGGABLE_EVALUATOR_DESIGN.md](./PLUGGABLE_EVALUATOR_DESIGN.md)** - Pluggable architecture
-  - **[PLUGGABLE_EVALUATORS_IMPLEMENTATION.md](./PLUGGABLE_EVALUATORS_IMPLEMENTATION.md)**
-  - **[OPIK_EVALUATOR_PORT_OPTION_B.md](./OPIK_EVALUATOR_PORT_OPTION_B.md)**
-  - **[OPIK_API_INTEGRATION.md](./OPIK_API_INTEGRATION.md)**
-  - **[CUSTOM_EVALUATORS_DESIGN.md](./CUSTOM_EVALUATORS_DESIGN.md)**
+4. **[CLIENT0_PRODUCTION_READINESS_AUDIT.md](CLIENT0_PRODUCTION_READINESS_AUDIT.md)** - Audit plan
+   - Testing strategy
+   - Documentation requirements
+   - Timeline and deliverables
 
----
+5. **[MINIKUBE_VALIDATION_RESULTS.md](MINIKUBE_VALIDATION_RESULTS.md)** - Minikube validation
+   - Environmental constraints documented
+   - Code abstraction verified
+   - Recommended: Use Kind for local dev
 
-## Feature Planning
-
-### VDB Lifecycle Management
-📄 **[VDB_LIFECYCLE_MANAGEMENT.md](./VDB_LIFECYCLE_MANAGEMENT.md)**
-- Collection backup/restore
-- Migration between VDBs
-- Disaster recovery
-
-### Integration Tests
-📄 **[INTEGRATION_TEST_PLAN.md](./INTEGRATION_TEST_PLAN.md)**
-- Cross-VDB integration testing
-- Test coverage improvements
-
-📄 **[NEXT_SESSION_VDB_TESTS.md](./NEXT_SESSION_VDB_TESTS.md)**
-- VDB-specific test plans
-
-📄 **[TEST_AUDIT_2026-01-12.md](./TEST_AUDIT_2026-01-12.md)**
-- Historical test coverage audit
-
-### Feature Options (Strategic Planning)
-
-📄 **[OPTION_1_NEW_FEATURES.md](./OPTION_1_NEW_FEATURES.md)** - New capabilities
-📄 **[OPTION_2_VDB_EXPANSION.md](./OPTION_2_VDB_EXPANSION.md)** - Additional VDBs
-📄 **[OPTION_3_PRODUCTION_HARDENING.md](./OPTION_3_PRODUCTION_HARDENING.md)** - Observability
-📄 **[OPTION_4_TESTING_QUALITY.md](./OPTION_4_TESTING_QUALITY.md)** - Test coverage
-📄 **[OPTION_5_COMMUNITY.md](./OPTION_5_COMMUNITY.md)** - Community building
-
-### Recent Feature Plans (Feb 2026)
-
-📄 **[NEW_FEATURES_2026-02-03.md](./NEW_FEATURES_2026-02-03.md)**
-📄 **[TESTING_QUALITY_2026-02-03.md](./TESTING_QUALITY_2026-02-03.md)**
-📄 **[PRODUCTION_HARDENING_2026-02-03.md](./PRODUCTION_HARDENING_2026-02-03.md)**
-📄 **[CONFIG_FIX_FEATURE.md](./CONFIG_FIX_FEATURE.md)**
+6. **[PRE_PHASE_2_VALIDATION.md](PRE_PHASE_2_VALIDATION.md)** - Pre-Phase 2 checklist
+   - Local runtime validation
+   - Kind vs Minikube analysis
 
 ---
 
-## Archived Plans
+## ✅ Phase 1: Complete (v0.10.0 + v0.10.1)
 
-### February 2026 Week Plans
-Moved to `docs/archive/planning/feb-2026/`:
-- ✅ `WEEK_FEB_17-21_CONSOLIDATED.md` - v0.9.27, v0.9.28 releases
-- ✅ `WEEK_FEB_24-28_PLAN.md` - Current week (Issue #38, #39)
-- ✅ `CLIENT0_INGESTION_IMPROVEMENTS.md` - Pain point analysis
-- ✅ `ISSUE_38_CREATE_BATCH_DESIGN.md` - Batch ingestion design
-- ✅ `OSS_FEATURES_CLIENT0.md` - OSS stack features
-- ✅ `OSS_EXECUTION_PLAN.md` - OSS implementation plan
-- ✅ `BATCH_REEMBEDDING_SPEC.md` - Re-embedding specification
-- ✅ `NEXT_STEPS.md` - Old next steps doc
+**Delivered**:
+- ✅ Stack init/validate/up/down/status
+- ✅ 4 templates (quickstart, production, multimodal, oss)
+- ✅ Helm deployment and pod monitoring
+- ✅ PM2 dashboard integration
+- ✅ kubectl passthrough and port-forward
+- ✅ Log streaming
+- ✅ Error handling with troubleshooting tips
+- ✅ Dependency pre-flight checks
+- ✅ **Data ingestion** (v0.10.1)
+- ✅ Integration tests
+- ✅ Documentation
 
-### Historical Planning (Jan 2026 and earlier)
-See `docs/archive/planning/`:
-- Agent VDB support (v0.9.1)
-- RAG agent system (v0.9.0)
-- Embedding architecture fixes
-- Test coverage plans
-- Multi-modal RAG
-
----
-
-## Session Summaries
-
-📄 **[SESSION_SUMMARY_2026-01-12.md](./SESSION_SUMMARY_2026-01-12.md)**
-- Latest session summary (Jan 12)
-
-📄 **[ROADMAP_2026-01-14.md](./ROADMAP_2026-01-14.md)**
-- Mid-January roadmap snapshot
-
-📄 **[WEEKEND_AND_NEXT_WEEK.md](./WEEKEND_AND_NEXT_WEEK.md)**
-- Weekend planning template
-
-📄 **[THIS_WEEK_PLAN.md](./THIS_WEEK_PLAN.md)**
-- Current week template
-
-📄 **[AUDIT_AND_CLEANUP_2026-02-09.md](./AUDIT_AND_CLEANUP_2026-02-09.md)**
-- Audit summary (Feb 9)
-
-📄 **[DOC_AUDIT_2026-02-10.md](./DOC_AUDIT_2026-02-10.md)**
-- Documentation audit (Feb 10)
-
----
-
-## Integration Guides
-
-📄 **[integrations/AIRFLOW.md](./integrations/AIRFLOW.md)**
-📄 **[integrations/ARGO_WORKFLOWS.md](./integrations/ARGO_WORKFLOWS.md)**
-📄 **[integrations/GITHUB_ACTIONS.md](./integrations/GITHUB_ACTIONS.md)**
-
----
-
-## MCP Integration
-
-📄 **[mcp/MCP_AI_TOOLS.md](./mcp/MCP_AI_TOOLS.md)**
-- Model Context Protocol integration
-- AI tool support
-
----
-
-## Planning Process
-
-### Document Lifecycle
-```
-Planning → Active → Completed → Archived
-   ↓         ↓          ↓           ↓
-OPTION_*.md  WEEK_*.md  ✅ Tag    docs/archive/
+**Complete RAG Workflow**:
+```bash
+weave stack up --runtime kind
+weave stack ingest Documents data/
+weave cols query Documents "search"
+weave stack down
 ```
 
-### Archive Structure
-```
-docs/archive/planning/
-├── feb-2026/          # February 2026 week plans
-├── README.md          # Archive index
-└── [older plans]      # Pre-Jan 2026 plans
-```
+**Phase 1 Docs**: Archived to `../archive/planning/phase-1/`
 
 ---
 
-## Path to v1.0.0
+## 🎯 Next Steps
 
-**Current**: v0.9.29 (in progress)
-**Next**: v0.9.30, v0.9.31, ...
-**Target**: v1.0.0 (production ready)
+### Immediate (Tomorrow - Client0 Meeting)
 
-**v1.0.0 Criteria**:
-- ✅ 10+ VDBs fully supported
-- ✅ Batch ingestion with checkpointing
-- ✅ Image ingestion + external storage
-- ⏳ Test coverage >70%
-- ⏳ Production observability
-- ⏳ Comprehensive documentation
+**Ready to Demo**:
+- ✅ v0.10.2 tagged and ready
+- ✅ Getting started guide complete: `../CLIENT0_GETTING_STARTED.md`
+- ✅ All critical bugs fixed
+- ✅ Full RAG workflow tested
+
+### This Week
+
+**Start Phase 2 - EKS Support** (3-4 days):
+1. Update weave-stack.yaml schema for EKS config
+2. Implement EKS cluster creation (src/pkg/stack/eks.go)
+3. Add EKS-specific Helm values
+4. Test EKS deployment end-to-end
+5. Document EKS setup
+
+### Next Week
+
+**GKE Support** (3-4 days):
+- Similar to EKS but for GCP
+- Complete Week 1 of Phase 2
+
+**Production Features** (Week 2):
+- TLS/SSL certificates
+- Secrets management
+- Monitoring & observability
+- Backup & restore
 
 ---
 
-**Maintainer**: @maximilien
-**Repository**: https://github.com/maximilien/weave-cli
-**Issues**: https://github.com/maximilien/weave-cli/issues
+## 📚 Documentation Structure
+
+### User-Facing Docs
+
+- `/docs/CLIENT0_GETTING_STARTED.md` - Quick start for Client0 ⭐
+- `/docs/guides/WEAVE_STACK_QUICKSTART.md` - Comprehensive guide
+- `/README.md` - Main project README
+
+### Planning Docs (This Directory)
+
+**Active** (7 docs):
+- Phase 2 plans and checklists
+- Recent validation results
+- Current status tracking
+
+**Archived** (`../archive/planning/`):
+- ✅ 40+ completed Phase 1 plans
+- ✅ Old audits and summaries
+- ✅ Historical planning docs
+- ✅ Completed feature designs
+
+---
+
+## 🏗️ Architecture Decisions
+
+### Runtime Abstraction
+
+**Status**: ✅ Validated and working
+
+Pattern proven with Kind and Minikube, ready to extend to EKS/GKE:
+
+```go
+// Abstraction works for local and cloud
+func CreateKindCluster(config *StackConfig) (*ClusterInfo, error)
+func CreateMinikubeCluster(config *StackConfig) (*ClusterInfo, error)
+// Phase 2:
+func CreateEKSCluster(config *StackConfig) (*ClusterInfo, error)
+func CreateGKECluster(config *StackConfig) (*ClusterInfo, error)
+```
+
+### Template Discovery
+
+**Status**: ✅ Fixed in v0.10.2
+
+Uses `os.Executable()` to find templates relative to binary:
+- Works from any directory
+- Development fallback to `./templates`
+- Portable across environments
+
+### Resource Defaults
+
+**Status**: ✅ Optimized for local K8s
+
+- **Local** (Kind/Minikube): 2Gi request, 4Gi limit
+- **Cloud** (Phase 2): Configurable per environment
+- Users can override in weave-stack.yaml
+
+---
+
+## 📊 Release History
+
+- **v0.10.2** (Feb 25, 2026) - Production ready, critical bugs fixed ⭐
+- **v0.10.1** (Feb 24, 2026) - Added stack ingest command
+- **v0.10.0** (Feb 24, 2026) - Phase 1 complete
+- **v0.9.x** - Pre-stack releases
+
+---
+
+## 🔗 Quick Links
+
+**Planning**:
+- Current phase: [WEAVE_STACK_PHASE_2_PLAN.md](WEAVE_STACK_PHASE_2_PLAN.md)
+- Task list: [PHASE_2_ITEMS.md](PHASE_2_ITEMS.md)
+
+**Recent Work**:
+- Production audit: [PRODUCTION_READINESS_AUDIT_RESULTS.md](PRODUCTION_READINESS_AUDIT_RESULTS.md) ⭐
+- Minikube validation: [MINIKUBE_VALIDATION_RESULTS.md](MINIKUBE_VALIDATION_RESULTS.md)
+
+**User Docs**:
+- Getting started: [../CLIENT0_GETTING_STARTED.md](../CLIENT0_GETTING_STARTED.md) ⭐
+- Stack guide: [../guides/WEAVE_STACK_QUICKSTART.md](../guides/WEAVE_STACK_QUICKSTART.md)
+
+**Archive**:
+- Phase 1 plans: [../archive/planning/phase-1/](../archive/planning/phase-1/)
+- Old planning: [../archive/planning/](../archive/planning/)
+
+---
+
+**Last Updated**: Feb 25, 2026
+**Next Review**: After Phase 2 Week 1 (EKS/GKE implementation)
