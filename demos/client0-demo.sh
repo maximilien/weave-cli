@@ -149,39 +149,13 @@ echo
 sleep 2
 
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Step 5: Setup Port-Forward${NC}"
+echo -e "${BLUE}  Step 5: Ingest Data${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 echo
-echo -e "${GREEN}▶ Setting up port-forward to Milvus...${NC}"
+echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/${NC}"
 echo
 
-# Start port-forward in background
-"$WEAVE" stack port-forward milvus 19530:19530 --quiet-config >/dev/null 2>&1 &
-PF_PID=$!
-
-# Wait for port-forward to establish
-sleep 3
-
-echo -e "${GREEN}✓ Port-forward established (localhost:19530)${NC}"
-echo
-
-# Create .env file with Milvus connection
-cat > .env <<EOF
-MILVUS_HOST=localhost
-MILVUS_PORT=19530
-EOF
-
-# Pause
-sleep 2
-
-echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Step 6: Ingest Data${NC}"
-echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo
-echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/ --milvus-local${NC}"
-echo
-
-"$WEAVE" stack ingest "$COLLECTION" data/ --milvus-local --quiet-config
+"$WEAVE" stack ingest "$COLLECTION" data/ --quiet-config
 
 echo
 echo -e "${GREEN}✓ Data ingestion complete${NC}"
@@ -191,11 +165,28 @@ echo
 sleep 2
 
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Step 7: Query Your Data${NC}"
+echo -e "${BLUE}  Step 6: Query Your Data${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
+echo
+echo -e "${GREEN}▶ Setting up port-forward to Milvus...${NC}"
+
+# Start port-forward in background
+"$WEAVE" stack port-forward milvus 19530:19530 --quiet-config >/dev/null 2>&1 &
+PF_PID=$!
+
+# Wait for port-forward to establish
+sleep 3
+
+echo -e "${GREEN}✓ Port-forward established${NC}"
 echo
 echo -e "${GREEN}▶ Querying: 'RAG tool features'${NC}"
 echo
+
+# Create .env file with Milvus connection
+cat > .env <<EOF
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+EOF
 
 "$WEAVE" cols query "$COLLECTION" "RAG tool features" \
     --milvus-local \
@@ -213,7 +204,7 @@ kill $PF_PID 2>/dev/null || true
 sleep 2
 
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  Step 8: Clean Up${NC}"
+echo -e "${BLUE}  Step 7: Clean Up${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 echo
 echo -e "${GREEN}▶ weave stack down${NC}"
