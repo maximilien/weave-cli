@@ -202,8 +202,14 @@ func validateMilvus(db *VectorDBConfig, prefix string, result *ValidationResult)
 		}
 	}
 
-	// Warn about vector dimensions (but this is usually set in weave-stack.yaml for stack commands)
+	// Warn about vector dimensions (but skip if weave-stack.yaml exists - dimensions are managed there)
 	if db.VectorDimensions <= 0 {
+		// Skip this warning if weave-stack.yaml exists (stack commands manage dimensions separately)
+		if _, err := os.Stat("weave-stack.yaml"); err == nil {
+			// weave-stack.yaml exists, dimensions are managed there, skip warning
+			return
+		}
+
 		// Provide smart suggestions based on common embedding models
 		suggestion := "Set 'vector_dimensions' to match your embedding model:\n" +
 			"    • text-embedding-3-small (OpenAI): 1536\n" +
