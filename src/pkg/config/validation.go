@@ -202,12 +202,20 @@ func validateMilvus(db *VectorDBConfig, prefix string, result *ValidationResult)
 		}
 	}
 
-	// Warn about vector dimensions
+	// Warn about vector dimensions (but this is usually set in weave-stack.yaml for stack commands)
 	if db.VectorDimensions <= 0 {
+		// Provide smart suggestions based on common embedding models
+		suggestion := "Set 'vector_dimensions' to match your embedding model:\n" +
+			"    • text-embedding-3-small (OpenAI): 1536\n" +
+			"    • text-embedding-3-large (OpenAI): 3072\n" +
+			"    • all-MiniLM-L6-v2 (sentence-transformers): 384\n" +
+			"    • CLIP (multimodal): 512\n" +
+			"    Or run: weave config update --env"
+
 		result.Warnings = append(result.Warnings, ValidationWarning{
 			Field:      prefix + ".vector_dimensions",
-			Message:    "Vector dimensions not set (may cause issues with embeddings)",
-			Suggestion: "Set 'vector_dimensions' to match your embedding model (e.g., 384, 1536, 3072)",
+			Message:    "Vector dimensions not set (required for embeddings)",
+			Suggestion: suggestion,
 		})
 	}
 }

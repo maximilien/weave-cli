@@ -31,7 +31,7 @@ func CreateKindCluster(config *StackConfig) (*ClusterInfo, error) {
 
 	// Check if cluster already exists
 	if clusterExists(kindConfig.Name) {
-		return nil, fmt.Errorf("cluster '%s' already exists (use 'weave stack down' to remove it first)", kindConfig.Name)
+		return nil, fmt.Errorf("cluster '%s' already exists\n\nOptions:\n  1. Use existing cluster: weave stack up --skip-cluster-creation\n  2. Remove existing cluster: weave stack down\n  3. Delete cluster manually: kind delete cluster --name %s", kindConfig.Name, kindConfig.Name)
 	}
 
 	// Generate Kind config file if custom config specified
