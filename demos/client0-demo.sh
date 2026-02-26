@@ -175,7 +175,7 @@ echo
 echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/ --vector-db-type milvus-local${NC}"
 echo
 
-"$WEAVE" stack ingest "$COLLECTION" data/ --vector-db-type milvus-local --quiet-config
+MILVUS_HOST=localhost MILVUS_PORT=19530 "$WEAVE" stack ingest "$COLLECTION" data/ --vector-db-type milvus-local --quiet-config
 
 echo
 echo -e "${GREEN}✓ Data ingestion complete${NC}"
@@ -191,7 +191,7 @@ echo
 echo -e "${GREEN}▶ Querying: 'RAG tool features'${NC}"
 echo
 
-"$WEAVE" cols query "$COLLECTION" "RAG tool features" \
+MILVUS_HOST=localhost MILVUS_PORT=19530 "$WEAVE" cols query "$COLLECTION" "RAG tool features" \
     --vector-db-type milvus-local \
     --quiet-config \
     --no-tips
