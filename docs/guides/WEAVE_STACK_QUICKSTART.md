@@ -194,7 +194,14 @@ Resources:
 
 ### 6. Ingest Data
 
+**Prerequisites:**
+- OpenAI API key set in environment
+- Stack must be running (`weave stack status` to verify)
+
 ```bash
+# Check stack is running (should show "Running" status)
+weave stack status
+
 # Create sample data
 mkdir -p data
 cat > data/quickstart.txt <<EOF
@@ -203,8 +210,11 @@ It supports multiple vector databases including Milvus, Qdrant, and Weaviate.
 Deploy complete RAG stacks to Kubernetes with a single command.
 EOF
 
-# Set OpenAI API key
-export OPENAI_API_KEY="your-api-key-here"
+# Set OpenAI API key (required for embeddings)
+export OPENAI_API_KEY="sk-..."  # Replace with your actual key
+
+# Verify API key is set
+echo "API key set: ${OPENAI_API_KEY:0:8}..."  # Shows first 8 chars
 
 # Ingest documents
 weave stack ingest Documents data/
@@ -219,6 +229,10 @@ weave stack ingest Documents data/
 ✅ Ingested 1 documents (3 chunks)
 ✅ 🎉 Ingestion complete!
 ```
+
+**Common Issues:**
+- **"OPENAI_API_KEY environment variable is required"**: Set the API key with `export OPENAI_API_KEY="sk-..."`
+- **"failed to create VDB client"**: Ensure stack is running with `weave stack status`
 
 ### 7. Query Your Data
 

@@ -62,8 +62,15 @@ func runStatus(cmd *cobra.Command, args []string) error {
 	// Show deployed services
 	utils.PrintInfo("Services:")
 
-	// Get pods
-	selector := fmt.Sprintf("app.kubernetes.io/instance=%s", clusterInfo.Name)
+	// Load stack config to get Helm release name
+	stackConfig, err := stackpkg.LoadStackConfig("")
+	if err != nil {
+		utils.PrintWarning(fmt.Sprintf("  Failed to load stack config: %v", err))
+		return nil
+	}
+
+	// Get pods using Helm release name (not cluster name)
+	selector := fmt.Sprintf("app.kubernetes.io/instance=%s", stackConfig.Name)
 	pods, err := stackpkg.GetPods(selector, clusterInfo.Context)
 	if err != nil {
 		utils.PrintWarning(fmt.Sprintf("  Failed to get pods: %v", err))
