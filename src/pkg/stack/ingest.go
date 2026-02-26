@@ -89,7 +89,7 @@ func IngestToStack(cfg IngestConfig) error {
 	milvusConfig := &config.VectorDBConfig{
 		Type:             "milvus-local",
 		Name:             "stack-milvus",
-		URL:              fmt.Sprintf("localhost:%d", cfg.MilvusLocalPort),
+		Address:          fmt.Sprintf("localhost:%d", cfg.MilvusLocalPort),
 		VectorDimensions: getEmbeddingDimensions(cfg.EmbeddingModel),
 		Timeout:          30,
 	}
