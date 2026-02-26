@@ -165,6 +165,12 @@ sleep 3
 echo -e "${GREEN}✓ Port-forward established (localhost:19530)${NC}"
 echo
 
+# Create .env file with Milvus connection
+cat > .env <<EOF
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+EOF
+
 # Pause
 sleep 2
 
@@ -175,7 +181,7 @@ echo
 echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/ --vector-db-type milvus-local${NC}"
 echo
 
-MILVUS_HOST=localhost MILVUS_PORT=19530 "$WEAVE" stack ingest "$COLLECTION" data/ --vector-db-type milvus-local --quiet-config
+"$WEAVE" stack ingest "$COLLECTION" data/ --vector-db-type milvus-local --quiet-config
 
 echo
 echo -e "${GREEN}✓ Data ingestion complete${NC}"
@@ -191,7 +197,7 @@ echo
 echo -e "${GREEN}▶ Querying: 'RAG tool features'${NC}"
 echo
 
-MILVUS_HOST=localhost MILVUS_PORT=19530 "$WEAVE" cols query "$COLLECTION" "RAG tool features" \
+"$WEAVE" cols query "$COLLECTION" "RAG tool features" \
     --vector-db-type milvus-local \
     --quiet-config \
     --no-tips
