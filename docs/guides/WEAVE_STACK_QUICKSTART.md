@@ -192,7 +192,59 @@ Resources:
   Memory: 4.2Gi/8.0Gi (52%)
 ```
 
-### 6. View Logs
+### 6. Ingest Data
+
+```bash
+# Create sample data
+mkdir -p data
+cat > data/quickstart.txt <<EOF
+Weave Stack is a production-ready RAG deployment tool.
+It supports multiple vector databases including Milvus, Qdrant, and Weaviate.
+Deploy complete RAG stacks to Kubernetes with a single command.
+EOF
+
+# Set OpenAI API key
+export OPENAI_API_KEY="your-api-key-here"
+
+# Ingest documents
+weave stack ingest Documents data/
+```
+
+**Expected output:**
+```
+ℹ️  Ingesting data from: data/
+ℹ️  Collection: Documents
+ℹ️  Type: text
+✅ ✅ Connected to Milvus
+✅ Ingested 1 documents (3 chunks)
+✅ 🎉 Ingestion complete!
+```
+
+### 7. Query Your Data
+
+```bash
+# Port-forward to Milvus (in background)
+weave stack port-forward milvus 19530:19530 &
+
+# Wait for port-forward to establish
+sleep 3
+
+# Query the data
+weave cols query Documents "RAG deployment" --milvus-local
+```
+
+**Expected results:**
+```
+📄 Results for query: "RAG deployment"
+
+1. Document: quickstart.txt (Score: 0.89)
+   "Weave Stack is a production-ready RAG deployment tool..."
+
+2. Document: quickstart.txt (Score: 0.85)
+   "Deploy complete RAG stacks to Kubernetes with a single command..."
+```
+
+### 8. View Logs (Debugging)
 
 ```bash
 # Stream logs from Milvus
@@ -205,32 +257,21 @@ weave stack logs milvus --tail 50
 weave stack logs --follow
 ```
 
-### 7. Access Services
+### 9. Advanced: kubectl Access
 
 ```bash
-# Port-forward to vector database (command abstracts VDB type from weave-stack.yaml)
-# For Milvus: forwards port 19530
-# For Qdrant: forwards port 6333
-# For Weaviate: forwards port 8080
-weave stack port-forward vectordb 19530:19530
+# Port-forward to vector database
+weave stack port-forward milvus 19530:19530     # Milvus
+weave stack port-forward qdrant 6333:6333      # Qdrant
+weave stack port-forward weaviate 8080:8080    # Weaviate
 
-# Or use service-specific name
-weave stack port-forward milvus 19530:19530     # If using Milvus
-weave stack port-forward qdrant 6333:6333      # If using Qdrant
-weave stack port-forward weaviate 8080:8080    # If using Weaviate
-```
-
-**In another terminal:**
-```bash
-# Now you can connect to Milvus at localhost:19530
-weave vdb info milvus-local
-
-# Or use kubectl directly
+# Use kubectl directly
 weave stack kubectl -- get pods
 weave stack kubectl -- describe svc my-rag-stack-milvus
+weave stack kubectl -- logs -l app=milvus --tail=50
 ```
 
-### 8. Stop Stack
+### 10. Stop Stack
 
 ```bash
 # Stop and cleanup (deletes cluster)
