@@ -178,10 +178,10 @@ echo -e "${BLUE}═════════════════════�
 echo -e "${BLUE}  Step 6: Ingest Data${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 echo
-echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/ --vector-db-type milvus-local${NC}"
+echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/ --milvus-local${NC}"
 echo
 
-"$WEAVE" stack ingest "$COLLECTION" data/ --vector-db-type milvus-local --quiet-config
+"$WEAVE" stack ingest "$COLLECTION" data/ --milvus-local --quiet-config
 
 echo
 echo -e "${GREEN}✓ Data ingestion complete${NC}"
@@ -198,7 +198,7 @@ echo -e "${GREEN}▶ Querying: 'RAG tool features'${NC}"
 echo
 
 "$WEAVE" cols query "$COLLECTION" "RAG tool features" \
-    --vector-db-type milvus-local \
+    --milvus-local \
     --quiet-config \
     --no-tips
 
