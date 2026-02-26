@@ -106,7 +106,7 @@ export OPENAI_API_KEY="your-key-here"
 weave stack ingest Documents data/
 ```
 
-###Step 6: Query Your Data
+### Step 6: Query Your Data
 
 ```bash
 # Port-forward to Milvus
