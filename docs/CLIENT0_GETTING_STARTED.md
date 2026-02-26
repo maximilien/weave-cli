@@ -53,9 +53,17 @@ cd weave-cli
 mkdir my-rag-project
 cd my-rag-project
 
-# Initialize with quickstart template
+# Initialize with quickstart template (uses Milvus)
 weave stack init --template quickstart --runtime kind
+
+# For other vector databases, edit weave-stack.yaml after init:
+# - Milvus (default): infrastructure.vectordb.type = "milvus"
+# - Qdrant: infrastructure.vectordb.type = "qdrant"
+# - Weaviate: infrastructure.vectordb.type = "weaviate"
+# - Chroma: infrastructure.vectordb.type = "chroma"
 ```
+
+**Note**: This guide uses Milvus (Client0's choice). For other vector databases, see [WEAVE_STACK_QUICKSTART.md](guides/WEAVE_STACK_QUICKSTART.md) for configuration options.
 
 This creates:
 - `weave-stack.yaml` - Stack configuration
@@ -228,6 +236,16 @@ weave stack ingest Documents data/ \
   --chunk-size 1000 \
   --parallel-workers 4 \
   --batch-size 20
+
+# Ingest images from PDFs (multimodal template)
+weave stack ingest Images data/pdfs/ \
+  --type image \
+  --embedding clip-vit
+
+# Ingest images from directory
+weave stack ingest Photos data/images/ \
+  --type image \
+  --embedding clip-vit
 ```
 
 ### Debugging
@@ -492,6 +510,11 @@ weave stack kubectl -- describe pod <name>
 # Cleanup
 weave stack down
 kind delete cluster --name weave-stack
+
+# Other useful commands
+weave stack logs <service>          # View logs
+weave stack port-forward <service>  # Port forward
+weave stack kubectl -- <command>    # Run kubectl
 ```
 
 ---

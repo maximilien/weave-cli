@@ -1,7 +1,7 @@
 # Weave Stack Quick Start Guide
 
-**Version**: v0.10.0 (Phase 1)
-**Last Updated**: 2025-02-24
+**Version**: v0.10.2 (Production Ready)
+**Last Updated**: 2025-02-26
 
 This guide walks through deploying your first RAG stack with Weave Stack on local Kubernetes.
 
@@ -208,8 +208,16 @@ weave stack logs --follow
 ### 7. Access Services
 
 ```bash
-# Forward Milvus gRPC port (19530)
-weave stack port-forward milvus 19530:19530
+# Port-forward to vector database (command abstracts VDB type from weave-stack.yaml)
+# For Milvus: forwards port 19530
+# For Qdrant: forwards port 6333
+# For Weaviate: forwards port 8080
+weave stack port-forward vectordb 19530:19530
+
+# Or use service-specific name
+weave stack port-forward milvus 19530:19530     # If using Milvus
+weave stack port-forward qdrant 6333:6333      # If using Qdrant
+weave stack port-forward weaviate 8080:8080    # If using Weaviate
 ```
 
 **In another terminal:**
@@ -244,6 +252,16 @@ weave stack down
 ```
 
 ## Stack Templates
+
+Weave Stack supports multiple vector databases. Each template can be configured with any supported VDB by editing `weave-stack.yaml`:
+
+**Supported Vector Databases**:
+- **Milvus** (local/cloud) - Default in quickstart and production templates
+- **Qdrant** (local/cloud) - Available in all templates
+- **Weaviate** (local/cloud) - Available in all templates
+- **Chroma** (local/cloud) - Available in all templates
+
+**To change VDB**: Edit `infrastructure.vectordb.type` in `weave-stack.yaml` after running `weave stack init`.
 
 ### Quickstart (Default)
 
@@ -323,7 +341,7 @@ weave stack status
 # Logs
 weave stack logs [service] [--follow] [--tail <lines>]
 
-# Stop
+# Stop  
 weave stack down
 ```
 
