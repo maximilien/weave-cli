@@ -54,16 +54,16 @@ func runLogs(cmd *cobra.Command, args []string) error {
 	if len(args) > 0 {
 		// Specific service requested
 		service := args[0]
-		// Map common service names to labels
+		// Map common service names to labels (using 'app' label which is set in deployment)
 		switch service {
 		case "milvus", "vectordb", "vector-db":
-			selector = fmt.Sprintf("app.kubernetes.io/name=milvus,app.kubernetes.io/instance=%s", clusterInfo.Name)
+			selector = "app=milvus"
 		default:
-			// Generic selector
-			selector = fmt.Sprintf("app=%s,app.kubernetes.io/instance=%s", service, clusterInfo.Name)
+			// Generic selector using app label
+			selector = fmt.Sprintf("app=%s", service)
 		}
 	} else {
-		// No service specified - show all stack logs
+		// No service specified - show all stack logs using instance label
 		selector = fmt.Sprintf("app.kubernetes.io/instance=%s", clusterInfo.Name)
 	}
 
