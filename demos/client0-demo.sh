@@ -18,6 +18,18 @@ NC='\033[0m'
 DEMO_DIR="/tmp/client0-demo"
 COLLECTION="ClientDocuments"
 
+# Use local weave binary if available, otherwise use installed
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WEAVE_CLI_ROOT="$(dirname "$SCRIPT_DIR")"
+if [ -f "$WEAVE_CLI_ROOT/bin/weave" ]; then
+    WEAVE="$WEAVE_CLI_ROOT/bin/weave"
+    echo -e "${GREEN}Using local weave binary: $WEAVE${NC}"
+else
+    WEAVE="weave"
+    echo -e "${YELLOW}Using installed weave binary${NC}"
+fi
+echo
+
 echo -e "${BLUE}═══════════════════════════════════════════════════${NC}"
 echo -e "${BLUE}  Weave Stack Demo for Client0${NC}"
 echo -e "${BLUE}  Version: v0.10.2 (Production Ready)${NC}"
@@ -43,7 +55,7 @@ echo
 if [ -d "$DEMO_DIR" ]; then
     echo -e "${YELLOW}Cleaning up previous demo...${NC}"
     cd "$DEMO_DIR"
-    weave stack down --quiet-config 2>/dev/null || true
+    "$WEAVE" stack down --quiet-config 2>/dev/null || true
     rm -rf "$DEMO_DIR"
 fi
 
@@ -58,7 +70,7 @@ echo
 echo -e "${GREEN}▶ weave stack init --template quickstart --runtime kind${NC}"
 echo
 
-weave stack init --template quickstart --runtime kind --quiet-config
+"$WEAVE" stack init --template quickstart --runtime kind --quiet-config
 
 echo
 echo -e "${GREEN}✓ Stack initialized${NC}"
@@ -81,7 +93,7 @@ echo "  3. Deploy Milvus vector database"
 echo "  4. Wait for pods to be ready"
 echo
 
-weave stack up --runtime kind --quiet-config
+"$WEAVE" stack up --runtime kind --quiet-config
 
 echo
 echo -e "${GREEN}✓ Stack deployed successfully${NC}"
@@ -97,7 +109,7 @@ echo
 echo -e "${GREEN}▶ weave stack status${NC}"
 echo
 
-weave stack status --quiet-config
+"$WEAVE" stack status --quiet-config
 
 echo
 
@@ -143,7 +155,7 @@ echo
 echo -e "${GREEN}▶ weave stack ingest $COLLECTION data/${NC}"
 echo
 
-weave stack ingest "$COLLECTION" data/ --quiet-config
+"$WEAVE" stack ingest "$COLLECTION" data/ --quiet-config
 
 echo
 echo -e "${GREEN}✓ Data ingestion complete${NC}"
@@ -159,7 +171,7 @@ echo
 echo -e "${GREEN}▶ Setting up port-forward to Milvus...${NC}"
 
 # Start port-forward in background
-weave stack port-forward milvus 19530:19530 --quiet-config >/dev/null 2>&1 &
+"$WEAVE" stack port-forward milvus 19530:19530 --quiet-config >/dev/null 2>&1 &
 PF_PID=$!
 
 # Wait for port-forward to establish
@@ -170,7 +182,7 @@ echo
 echo -e "${GREEN}▶ Querying: 'RAG tool features'${NC}"
 echo
 
-weave cols query "$COLLECTION" "RAG tool features" \
+"$WEAVE" cols query "$COLLECTION" "RAG tool features" \
     --vector-db-type milvus-local \
     --quiet-config \
     --no-tips
@@ -192,7 +204,7 @@ echo
 echo -e "${GREEN}▶ weave stack down${NC}"
 echo
 
-weave stack down --quiet-config
+"$WEAVE" stack down --quiet-config
 
 echo
 echo -e "${GREEN}✓ Stack stopped and cleaned up${NC}"
