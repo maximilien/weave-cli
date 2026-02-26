@@ -50,7 +50,15 @@ func (p *PortForwardContext) Stop() {
 // StartMilvusPortForward starts port forwarding to Milvus
 func StartMilvusPortForward(clusterInfo *ClusterInfo) (*PortForwardContext, error) {
 	localPort := 19530
-	serviceName := fmt.Sprintf("%s-milvus", clusterInfo.Name)
+
+	// Load stack config to get Helm release name
+	stackConfig, err := LoadStackConfig("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to load stack config: %w", err)
+	}
+
+	// Service pattern: {helmReleaseName}-weave-stack-milvus
+	serviceName := fmt.Sprintf("%s-weave-stack-milvus", stackConfig.Name)
 
 	// Create context with cancel
 	ctx, cancel := context.WithCancel(context.Background())
@@ -165,6 +173,9 @@ func IngestToStack(cfg IngestConfig) error {
 			utils.PrintError(fmt.Sprintf("  %s: %s", e.File, e.Error))
 		}
 	}
+
+	// Give Milvus time to flush and persist data before stopping port-forward
+	time.Sleep(3 * time.Second)
 
 	return nil
 }
