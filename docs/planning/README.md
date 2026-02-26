@@ -24,26 +24,34 @@
    - Documentation requirements
    - Success criteria
 
+### Future Enhancements
+
+3. **[MULTI_VDB_SUPPORT_PLAN.md](MULTI_VDB_SUPPORT_PLAN.md)** - Multi-VDB support plan
+   - VDB abstraction layer (not hardcoded to Milvus)
+   - Helm templates for Qdrant, Weaviate, Chroma
+   - Local and cloud support for each VDB
+   - Timeline: 4 weeks (Phase 2+)
+
 ### Recent Validations
 
-3. **[PRODUCTION_READINESS_AUDIT_RESULTS.md](PRODUCTION_READINESS_AUDIT_RESULTS.md)** - Production audit ⭐
+4. **[PRODUCTION_READINESS_AUDIT_RESULTS.md](PRODUCTION_READINESS_AUDIT_RESULTS.md)** - Production audit ⭐
    - ✅ 3 critical bugs found and fixed
    - Template path resolution
    - Resource allocation
    - Milvus command
    - **Result**: v0.10.2 production ready
 
-4. **[CLIENT0_PRODUCTION_READINESS_AUDIT.md](CLIENT0_PRODUCTION_READINESS_AUDIT.md)** - Audit plan
+5. **[CLIENT0_PRODUCTION_READINESS_AUDIT.md](CLIENT0_PRODUCTION_READINESS_AUDIT.md)** - Audit plan
    - Testing strategy
    - Documentation requirements
    - Timeline and deliverables
 
-5. **[MINIKUBE_VALIDATION_RESULTS.md](MINIKUBE_VALIDATION_RESULTS.md)** - Minikube validation
+6. **[MINIKUBE_VALIDATION_RESULTS.md](MINIKUBE_VALIDATION_RESULTS.md)** - Minikube validation
    - Environmental constraints documented
    - Code abstraction verified
    - Recommended: Use Kind for local dev
 
-6. **[PRE_PHASE_2_VALIDATION.md](PRE_PHASE_2_VALIDATION.md)** - Pre-Phase 2 checklist
+7. **[PRE_PHASE_2_VALIDATION.md](PRE_PHASE_2_VALIDATION.md)** - Pre-Phase 2 checklist
    - Local runtime validation
    - Kind vs Minikube analysis
 
@@ -119,7 +127,7 @@ weave stack down
 
 ### Planning Docs (This Directory)
 
-**Active** (7 docs):
+**Active** (8 docs):
 - Phase 2 plans and checklists
 - Recent validation results
 - Current status tracking
