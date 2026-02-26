@@ -55,16 +55,25 @@ func runPortForward(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no active stack found (run: weave stack up --runtime kind)")
 	}
 
+	// Load stack config to get Helm release name
+	stackConfig, err := stackpkg.LoadStackConfig("")
+	if err != nil {
+		return fmt.Errorf("failed to load stack config: %w", err)
+	}
+
+	// Helm release name is the stack name, service pattern: {release}-weave-stack-{service}
+	helmReleaseName := stackConfig.Name
+
 	// Determine service name
 	var serviceName string
 	switch service {
 	case "milvus", "vectordb", "vector-db":
-		serviceName = fmt.Sprintf("%s-milvus", clusterInfo.Name)
+		serviceName = fmt.Sprintf("%s-weave-stack-milvus", helmReleaseName)
 	case "dashboard", "ui", "web":
-		serviceName = fmt.Sprintf("%s-dashboard", clusterInfo.Name)
+		serviceName = fmt.Sprintf("%s-weave-stack-dashboard", helmReleaseName)
 	default:
 		// Generic service name
-		serviceName = fmt.Sprintf("%s-%s", clusterInfo.Name, service)
+		serviceName = fmt.Sprintf("%s-weave-stack-%s", helmReleaseName, service)
 	}
 
 	// Build kubectl port-forward command
