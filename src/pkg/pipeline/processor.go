@@ -224,10 +224,11 @@ func (p *Processor) processPDF(ctx context.Context, file FileInfo) ([]*vectordb.
 		metadata["file_hash"] = file.Hash
 
 		doc := &vectordb.Document{
-			ID:       uuid.New().String(),
-			Text:     text.Content,
-			Content:  text.Content,
-			Metadata: metadata,
+			ID:        uuid.New().String(),
+			Text:      text.Content,
+			Content:   text.Content,
+			Embedding: embedding,
+			Metadata:  metadata,
 		}
 
 		documents = append(documents, doc)
@@ -271,10 +272,11 @@ func (p *Processor) processText(ctx context.Context, file FileInfo) ([]*vectordb
 	metadata["file_hash"] = file.Hash
 
 	doc := &vectordb.Document{
-		ID:       uuid.New().String(),
-		Text:     text,
-		Content:  text,
-		Metadata: metadata,
+		ID:        uuid.New().String(),
+		Text:      text,
+		Content:   text,
+		Embedding: embedding,
+		Metadata:  metadata,
 	}
 
 	return []*vectordb.Document{doc}, nil
@@ -314,10 +316,11 @@ func (p *Processor) processJSON(ctx context.Context, file FileInfo) ([]*vectordb
 	metadata["file_hash"] = file.Hash
 
 	doc := &vectordb.Document{
-		ID:       uuid.New().String(),
-		Text:     text,
-		Content:  text,
-		Metadata: metadata,
+		ID:        uuid.New().String(),
+		Text:      text,
+		Content:   text,
+		Embedding: embedding,
+		Metadata:  metadata,
 	}
 
 	return []*vectordb.Document{doc}, nil
@@ -357,10 +360,11 @@ func (p *Processor) processYAML(ctx context.Context, file FileInfo) ([]*vectordb
 	metadata["file_hash"] = file.Hash
 
 	doc := &vectordb.Document{
-		ID:       uuid.New().String(),
-		Text:     text,
-		Content:  text,
-		Metadata: metadata,
+		ID:        uuid.New().String(),
+		Text:      text,
+		Content:   text,
+		Embedding: embedding,
+		Metadata:  metadata,
 	}
 
 	return []*vectordb.Document{doc}, nil

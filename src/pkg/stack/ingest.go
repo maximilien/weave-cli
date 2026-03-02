@@ -14,6 +14,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/pipeline"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // IngestConfig holds configuration for stack ingestion
@@ -72,7 +73,6 @@ func StartMilvusPortForward(clusterInfo *ClusterInfo) (*PortForwardContext, erro
 	// Capture stderr to see if port-forward fails
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	fmt.Printf("DEBUG: Starting port-forward: kubectl port-forward svc/%s %d:19530 --context %s\n", serviceName, localPort, clusterInfo.Context)
 
 	// Start port forwarding in background
 	if err := cmd.Start(); err != nil {
@@ -81,9 +81,7 @@ func StartMilvusPortForward(clusterInfo *ClusterInfo) (*PortForwardContext, erro
 	}
 
 	// Wait for port forwarding to be ready
-	fmt.Printf("DEBUG: Waiting for port-forward to establish...\n")
 	time.Sleep(2 * time.Second)
-	fmt.Printf("DEBUG: Port-forward should be ready on localhost:%d\n", localPort)
 
 	return &PortForwardContext{
 		LocalPort: localPort,
@@ -106,17 +104,10 @@ func IngestToStack(cfg IngestConfig) error {
 	}
 
 	// Create VDB client
-	fmt.Printf("DEBUG: Creating VDB client with config:\n")
-	fmt.Printf("  Type: %s\n", milvusConfig.Type)
-	fmt.Printf("  Name: %s\n", milvusConfig.Name)
-	fmt.Printf("  Address: %s\n", milvusConfig.Address)
-	fmt.Printf("  VectorDimensions: %d\n", milvusConfig.VectorDimensions)
-
 	vdbClient, err := utils.CreateVectorDBClient(milvusConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create VDB client: %w", err)
 	}
-	fmt.Printf("DEBUG: VDB client created successfully (type: %T)\n", vdbClient)
 
 	// Create LLM client for embeddings
 	apiKey := os.Getenv("OPENAI_API_KEY")
@@ -161,17 +152,32 @@ func IngestToStack(cfg IngestConfig) error {
 	utils.PrintInfo(fmt.Sprintf("Found %d files to process", len(files)))
 	fmt.Println()
 
+	// Ensure collection exists (auto-create if needed)
+	collectionExists, err := vdbClient.CollectionExists(ctx, cfg.CollectionName)
+	if err != nil {
+		return fmt.Errorf("failed to check collection existence: %w", err)
+	}
+
+	if !collectionExists {
+		utils.PrintInfo(fmt.Sprintf("Collection '%s' does not exist, creating...", cfg.CollectionName))
+		schema := &vectordb.CollectionSchema{
+			Class:      cfg.CollectionName,
+			Vectorizer: cfg.EmbeddingModel,
+		}
+		if err := vdbClient.CreateCollection(ctx, cfg.CollectionName, schema); err != nil {
+			return fmt.Errorf("failed to create collection: %w", err)
+		}
+		utils.PrintInfo(fmt.Sprintf("✅ Created collection: %s", cfg.CollectionName))
+	}
+
 	// Create processor
-	fmt.Printf("DEBUG: Creating processor with collection: %s\n", options.Collection)
 	processor := pipeline.NewProcessor(vdbClient, llmClient, options, progress)
 
 	// Process files
-	fmt.Printf("DEBUG: Processing %d files...\n", len(files))
 	report, err := processor.ProcessFiles(ctx, files)
 	if err != nil {
 		return fmt.Errorf("processing failed: %w", err)
 	}
-	fmt.Printf("DEBUG: Processing complete. Documents created: %d\n", report.DocumentsCreated)
 
 	// Show summary
 	fmt.Println()
