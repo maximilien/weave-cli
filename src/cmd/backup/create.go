@@ -178,14 +178,14 @@ func runBackupCreate(cmd *cobra.Command, args []string) error {
 		// Convert to backup documents
 		for _, doc := range docs {
 			backupDoc := backuppkg.BackupDocument{
-				ID:        doc.ID,
-				Content:   doc.Content,
-				Text:      doc.Text,
-				Embedding: doc.Embedding,
-				Metadata:  doc.Metadata,
-				Image:     doc.Image,
-				ImageData: doc.ImageData,
-				URL:       doc.URL,
+				ID:             doc.ID,
+				Content:        doc.Content,
+				Text:           doc.Text,
+				Embedding:      doc.Embedding,
+				Metadata:       doc.Metadata,
+				Image:          doc.Image,
+				ImageData:      doc.ImageData,
+				URL:            doc.URL,
 				ImageThumbnail: doc.ImageThumbnail,
 				ImageURL:       doc.ImageURL,
 				ImageMetadata:  doc.ImageMetadata,

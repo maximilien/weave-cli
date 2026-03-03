@@ -31,6 +31,7 @@ Example workflow:
 
 func init() {
 	rootCmd.AddCommand(stackCmd)
+	stackCmd.GroupID = "data"
 
 	// Add all stack subcommands
 	stackCmd.AddCommand(stack.InitCmd)
@@ -43,5 +44,6 @@ func init() {
 	stackCmd.AddCommand(stack.PortForwardCmd)
 	stackCmd.AddCommand(stack.DashboardCmd)
 	stackCmd.AddCommand(stack.IngestCmd)
+	stackCmd.AddCommand(stack.BackupCmd)
 	// More commands will be added in subsequent phases
 }

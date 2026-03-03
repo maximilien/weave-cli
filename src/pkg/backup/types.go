@@ -9,10 +9,10 @@ import (
 
 // BackupFormat represents the structure of a .weavebak backup file
 type BackupFormat struct {
-	Version   string            `json:"version"`
-	Metadata  BackupMetadata    `json:"metadata"`
-	Schema    BackupSchema      `json:"schema,omitempty"`
-	Documents []BackupDocument  `json:"documents"`
+	Version   string           `json:"version"`
+	Metadata  BackupMetadata   `json:"metadata"`
+	Schema    BackupSchema     `json:"schema,omitempty"`
+	Documents []BackupDocument `json:"documents"`
 }
 
 // BackupMetadata contains metadata about the backup
@@ -29,9 +29,9 @@ type BackupMetadata struct {
 
 // BackupSchema contains the collection schema
 type BackupSchema struct {
-	VectorDimensions int            `json:"vector_dimensions"`
-	SimilarityMetric string         `json:"similarity_metric,omitempty"`
-	Fields           []SchemaField  `json:"fields,omitempty"`
+	VectorDimensions int           `json:"vector_dimensions"`
+	SimilarityMetric string        `json:"similarity_metric,omitempty"`
+	Fields           []SchemaField `json:"fields,omitempty"`
 }
 
 // SchemaField represents a field in the collection schema
@@ -71,33 +71,33 @@ type CreateOptions struct {
 
 // RestoreOptions holds options for backup restoration
 type RestoreOptions struct {
-	BackupFile     string
-	Collection     string // Optional: override collection name
-	VDBType        string
-	Overwrite      bool
-	Quiet          bool
+	BackupFile string
+	Collection string // Optional: override collection name
+	VDBType    string
+	Overwrite  bool
+	Quiet      bool
 }
 
 // ValidationResult holds the result of backup validation
 type ValidationResult struct {
-	Valid            bool
-	Version          string
-	Collection       string
-	TotalDocuments   int
-	BackupSizeBytes  int64
-	Errors           []string
-	Warnings         []string
+	Valid           bool
+	Version         string
+	Collection      string
+	TotalDocuments  int
+	BackupSizeBytes int64
+	Errors          []string
+	Warnings        []string
 }
 
 // BackupInfo holds information about a backup file
 type BackupInfo struct {
-	FilePath         string
-	FileName         string
-	Collection       string
-	VDBType          string
-	TotalDocuments   int
-	BackupSizeBytes  int64
-	CreatedAt        time.Time
-	WeaveVersion     string
-	Compressed       bool
+	FilePath        string
+	FileName        string
+	Collection      string
+	VDBType         string
+	TotalDocuments  int
+	BackupSizeBytes int64
+	CreatedAt       time.Time
+	WeaveVersion    string
+	Compressed      bool
 }
