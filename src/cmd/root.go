@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	backupcmd "github.com/maximilien/weave-cli/src/cmd/backup"
 	chunkingcmd "github.com/maximilien/weave-cli/src/cmd/chunking"
 	configcmd "github.com/maximilien/weave-cli/src/cmd/config"
 	mcpcmd "github.com/maximilien/weave-cli/src/cmd/mcp"
@@ -225,6 +226,9 @@ func init() {
 
 	rootCmd.AddCommand(vdbcmd.VDBCmd)
 	vdbcmd.VDBCmd.GroupID = "config"
+
+	rootCmd.AddCommand(backupcmd.BackupCmd)
+	backupcmd.BackupCmd.GroupID = "data"
 
 	rootCmd.AddCommand(servecmd.ServeCmd)
 	servecmd.ServeCmd.GroupID = "config"
