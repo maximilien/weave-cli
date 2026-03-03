@@ -14,16 +14,16 @@ import (
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
 	backuppkg "github.com/maximilien/weave-cli/src/pkg/backup"
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	stackpkg "github.com/maximilien/weave-cli/src/pkg/stack"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
-	"github.com/maximilien/weave-cli/src/pkg/config"
 )
 
 var (
-	backupOutputFile string
-	backupCompress   bool
+	backupOutputFile     string
+	backupCompress       bool
 	backupAllCollections bool
-	backupBatchSize  int
+	backupBatchSize      int
 )
 
 // BackupCmd represents the stack backup command
