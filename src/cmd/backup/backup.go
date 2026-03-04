@@ -54,5 +54,7 @@ Use cases:
 func init() {
 	// Add subcommands
 	BackupCmd.AddCommand(CreateCmd)
-	// TODO: Add restore, list, validate commands
+	BackupCmd.AddCommand(RestoreCmd)
+	BackupCmd.AddCommand(ListCmd)
+	// TODO: Add validate command
 }
