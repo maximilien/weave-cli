@@ -305,6 +305,9 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
   multi-agent system, schema suggestions, and chunking recommendations
 - ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
   (AI Agent mode) with real-time progress feedback
+- 💾 **Backup & Restore** - Portable `.weavebak` files with 65-95% compression.
+  Cross-VDB migration, disaster recovery, and automated snapshots. Works with all
+  15+ VDBs. See [Backup Guide](docs/guides/BACKUP_RESTORE.md) (v0.11.0+)
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
   backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant,
@@ -341,6 +344,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 
 ### Guides
 
+- **[💾 Backup & Restore](docs/guides/BACKUP_RESTORE.md)** - Complete backup/
+  restore guide with disaster recovery, cross-VDB migration, and automation examples (v0.11.0+)
 - **[🤖 AI Agents](docs/guides/WEAVE_CLI_AI.md)** - REPL mode with natural
   language query system
 - **[⚙️ Agent Management](docs/AGENT_MANAGEMENT.md)** - Create, customize, and

@@ -1,7 +1,7 @@
 # Weave CLI Roadmap
 
-**Last Updated**: 2026-02-09
-**Current Version**: v0.9.18
+**Last Updated**: 2026-03-05
+**Current Version**: v0.10.3 (unreleased: v0.11.0)
 
 ## Overview
 
@@ -10,6 +10,47 @@ unified interface. This roadmap outlines completed milestones and upcoming
 features.
 
 ## Version History
+
+### 🚀 v0.11.0 (2026-03-07) - Backup & Restore (In Progress)
+
+**Status**: In Progress (Release: March 7, 2026)
+
+**Features:**
+
+- ✅ **Backup/Restore System** (Issue #43)
+  - Create portable `.weavebak` files from any collection
+  - Restore to same or different VDB type (cross-VDB migration)
+  - Gzip compression (65-95% size reduction)
+  - Validation with integrity checks
+  - List and inspect backup metadata
+  - Works with all 15+ supported VDBs
+  - Performance: 195 docs/sec backup, 18 docs/sec restore
+- ✅ **Weave Stack Integration**
+  - Backup stack collections via `weave stack backup`
+  - All collections backup with `--all` flag
+  - Automatic port-forwarding to Milvus
+- ✅ **Data Safety**
+  - Prevent data loss before infrastructure changes
+  - Fast disaster recovery (minutes, not hours)
+  - Regular snapshots via cron jobs
+  - Complete preservation (embeddings + metadata + images)
+
+**Performance:**
+
+- Backup: 195-272 docs/sec
+- Restore: 18 docs/sec
+- Compression: 65-95% (gzip)
+- Tested: 2-301 documents
+- Designed for: 2,636+ documents
+
+**Documentation:**
+
+- ✅ Comprehensive backup/restore guide
+- ✅ CLI help text for all commands
+- ✅ Real-world use case examples
+- ✅ Troubleshooting guide
+
+**See**: `docs/guides/BACKUP_RESTORE.md`
 
 ### ✅ v0.9.18 (2026-02-09) - Client0 Features
 

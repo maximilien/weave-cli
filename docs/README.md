@@ -7,13 +7,15 @@ Complete documentation for the Weave CLI vector database management tool.
 ### Core Documentation
 
 - **[User Guide](USER_GUIDE.md)** - Complete feature documentation and usage guide
-- **[Changelog](CHANGELOG.md)** - Version history and release notes
+- **[Roadmap](ROADMAP.md)** - Version history, upcoming features, and release plan
 - **[VDB Support Matrix](VDB_SUPPORT.md)** - Feature comparison across databases
 
 ### 📖 Guides
 
 User guides for specific features and workflows:
 
+- **[Backup & Restore](guides/BACKUP_RESTORE.md)** - Complete backup/restore guide with examples
+- **[Weave Stack Quickstart](guides/WEAVE_STACK_QUICKSTART.md)** - Local development stack setup
 - **[AI Agents](guides/WEAVE_CLI_AI.md)** - Natural language query system with GPT-4o
 - **[Batch Processing](guides/BATCH_DOCS_CREATION.md)** - Parallel document processing
 - **[Vector DB Abstraction](guides/VECTOR_DB_ABSTRACTION.md)** - Multi-database architecture
@@ -80,6 +82,7 @@ Historical and reference documentation:
 
 ### By Topic
 
+- **Backup & Restore**: [Backup Guide](guides/BACKUP_RESTORE.md)
 - **Configuration**: [User Guide - Configuration](USER_GUIDE.md#configuration)
 - **AI/Natural Language**: [AI Agents Guide](guides/WEAVE_CLI_AI.md)
 - **Batch Processing**: [Batch Docs Guide](guides/BATCH_DOCS_CREATION.md)
@@ -95,6 +98,7 @@ Historical and reference documentation:
 ### By Use Case
 
 - **Getting Started**: [User Guide](USER_GUIDE.md)
+- **Backup/Restore Collections**: [Backup Guide](guides/BACKUP_RESTORE.md)
 - **Adding Documents**: [User Guide - Documents](USER_GUIDE.md#documents)
 - **Searching**: [User Guide - Search](USER_GUIDE.md#search)
 - **Managing Collections**: [User Guide - Collections](USER_GUIDE.md#collections)
