@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -67,6 +68,11 @@ func init() {
 func runBackupCreate(cmd *cobra.Command, args []string) error {
 	collection := args[0]
 	createOpts.Collection = collection
+
+	// Add .gz extension if compressing and not already present
+	if createOpts.Compress && !strings.HasSuffix(createOpts.OutputFile, ".gz") {
+		createOpts.OutputFile += ".gz"
+	}
 
 	ctx := context.Background()
 

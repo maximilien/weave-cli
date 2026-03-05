@@ -56,5 +56,5 @@ func init() {
 	BackupCmd.AddCommand(CreateCmd)
 	BackupCmd.AddCommand(RestoreCmd)
 	BackupCmd.AddCommand(ListCmd)
-	// TODO: Add validate command
+	BackupCmd.AddCommand(ValidateCmd)
 }
