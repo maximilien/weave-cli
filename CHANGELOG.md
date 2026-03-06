@@ -7,7 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.11.0] - 2026-03-07
+## [0.11.1] - 2026-03-06
+
+### Fixed - Critical Bug 🔥
+
+- **Milvus Backup Missing Embeddings** (Issue #51)
+  - Fixed `ListDocuments()` to explicitly include `FieldEmbedding` in outputFields
+  - Milvus wildcard `"*"` does NOT include vector fields (must specify explicitly)
+  - Added embedding extraction from FloatVector column
+  - Added float32 to float64 conversion for Document type
+  - **Impact**: Backup/restore now works correctly with vector embeddings
+  - **Testing**: Verified with AuctionResults (127 docs, 1536-dim embeddings)
+  - **Before**: All documents missing embeddings, validation failed
+  - **After**: All documents include embeddings, validation passes
+  - Commit: 9d4503f
+
+## [0.11.0] - 2026-03-06
 
 ### Added - Backup & Restore 💾
 
