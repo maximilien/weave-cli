@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-03-07
+
+### Added - Backup & Restore 💾
+
+- **Backup/Restore System** (Issue #43)
+  - `weave backup create` - Export collections to portable `.weavebak` files
+  - `weave backup restore` - Restore from backups with cross-VDB migration
+  - `weave backup validate` - Check backup integrity before restore
+  - `weave backup list` - Inventory and inspect backup files
+  - `weave stack backup` - Backup Weave Stack collections
+  - **Performance**: 195-272 docs/sec backup, 18 docs/sec restore
+  - **Compression**: 65-95% size reduction with gzip
+  - **Compatibility**: Works with all 15+ supported VDBs
+  - **Features**:
+    - Portable .weavebak format (JSON + optional gzip)
+    - Complete preservation (embeddings, metadata, images)
+    - Batch processing with progress tracking
+    - Collection rename on restore
+    - Overwrite existing collections
+    - Auto-detection of compression
+  - Commits: 3da73e3, 1433939, 4296686, 777f379
+
+### Fixed
+
+- **Compression Filename** (Issue #43)
+  - Auto-add `.gz` extension when `--compress` flag is used
+  - Fixes restore failures with compressed backups
+  - Commit: 777f379
+
+### Documentation
+
+- **Comprehensive Backup Guide** (400+ lines)
+  - Complete command reference (create, restore, validate, list)
+  - Real-world use cases (disaster recovery, cron jobs, migration)
+  - Performance metrics and optimization tips
+  - Troubleshooting guide and FAQ
+  - File: `docs/guides/BACKUP_RESTORE.md`
+- **Updated Core Docs**
+  - README.md: Key Features + Guides section
+  - docs/README.md: Navigation and structure
+  - docs/ROADMAP.md: v0.11.0 entry with metrics
+- **Release Notes**: docs/releases/RELEASE_v0.11.0.md
+
+### Changed
+
+- Moved Week 11 planning docs to `docs/archive/mar-2026/`
+- Updated documentation navigation for easier discovery
+
 ## [0.9.30] - 2026-02-20
 
 ### Fixed - Image Metadata & Local Storage 🔧
