@@ -345,7 +345,8 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 ### Guides
 
 - **[💾 Backup & Restore](docs/guides/BACKUP_RESTORE.md)** - Complete backup/
-  restore guide with disaster recovery, cross-VDB migration, and automation examples (v0.11.0+)
+  restore guide with disaster recovery, cross-VDB migration, and automation
+  examples (v0.11.0+)
 - **[🤖 AI Agents](docs/guides/WEAVE_CLI_AI.md)** - REPL mode with natural
   language query system
 - **[⚙️ Agent Management](docs/AGENT_MANAGEMENT.md)** - Create, customize, and
