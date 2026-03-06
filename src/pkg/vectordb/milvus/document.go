@@ -592,9 +592,11 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 	defer cancel()
 
 	// Query all documents with pagination
+	// IMPORTANT: Must explicitly include FieldEmbedding (vectors not included in "*")
 	outputFields := []string{
 		FieldDocumentID, FieldText, FieldContent,
 		FieldImage, FieldImageData, FieldURL, FieldMetadata,
+		FieldEmbedding, // Vector field - required for backup/restore
 	}
 
 	// Milvus requires limit when using empty expression
@@ -671,7 +673,22 @@ func (c *Client) ListDocuments(ctx context.Context, collectionName string, limit
 			}
 		}
 
-		documents[i] = c.fromMilvusDocument(docID, text, content, image, imageData, imageURL, url, metadata)
+		// Extract embedding vector (CRITICAL for backup/restore)
+		var embedding []float64
+		if embeddingCol := result.GetColumn(FieldEmbedding); embeddingCol != nil {
+			if floatVecCol, ok := embeddingCol.(*entity.ColumnFloatVector); ok {
+				// Convert []float32 to []float64
+				float32Vec := floatVecCol.Data()[i]
+				embedding = make([]float64, len(float32Vec))
+				for j, v := range float32Vec {
+					embedding[j] = float64(v)
+				}
+			}
+		}
+
+		doc := c.fromMilvusDocument(docID, text, content, image, imageData, imageURL, url, metadata)
+		doc.Embedding = embedding // Set the embedding vector
+		documents[i] = doc
 	}
 
 	return documents, nil
