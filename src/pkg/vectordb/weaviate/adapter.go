@@ -91,6 +91,7 @@ func (a *Adapter) convertDocumentFromWeaviate(doc *Document) *vectordb.Document 
 		ImageData: doc.ImageData,
 		URL:       doc.URL,
 		Metadata:  doc.Metadata,
+		Embedding: doc.Embedding, // CRITICAL for backup/restore
 	}
 }
 

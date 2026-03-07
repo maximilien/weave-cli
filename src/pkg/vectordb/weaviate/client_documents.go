@@ -22,6 +22,7 @@ type Document struct {
 	ImageData string                 `json:"image_data"`
 	URL       string                 `json:"url"`
 	Metadata  map[string]interface{} `json:"metadata"`
+	Embedding []float64              `json:"embedding"` // Vector embedding - CRITICAL for backup/restore
 }
 
 // ListDocuments returns a list of documents in a collection
@@ -190,12 +191,14 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 	}
 
 	// Build a query with the actual properties from the schema (excluding large fields)
+	// IMPORTANT: Must include vector field for backup/restore functionality
 	query := fmt.Sprintf(`
 		{
 			Get {
 				%s(limit: %d) {
 					_additional {
 						id
+						vector
 					}
 	`, collectionName, limit)
 
@@ -274,10 +277,19 @@ func (c *Client) listDocumentsBasic(ctx context.Context, collectionName string, 
 				if itemMap, ok := item.(map[string]interface{}); ok {
 					doc := Document{}
 
-					// Extract ID
+					// Extract ID and embedding (CRITICAL for backup/restore)
 					if additional, ok := itemMap["_additional"].(map[string]interface{}); ok {
 						if id, ok := additional["id"].(string); ok {
 							doc.ID = id
+						}
+						// Extract vector embedding
+						if vector, ok := additional["vector"].([]interface{}); ok {
+							doc.Embedding = make([]float64, len(vector))
+							for i, v := range vector {
+								if floatVal, ok := v.(float64); ok {
+									doc.Embedding[i] = floatVal
+								}
+							}
 						}
 					}
 
