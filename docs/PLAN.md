@@ -1,23 +1,30 @@
 # Weave CLI Development Plan
 
-**Last Updated**: 2026-03-06
-**Current Version**: v0.11.1
+**Last Updated**: 2026-03-07
+**Current Version**: v0.11.2
 
 ---
 
-## 🎯 Current Status (v0.11.1)
+## 🎯 Current Status (v0.11.2)
 
 ### Recently Shipped ✅
+- **v0.11.2** (2026-03-07): Critical Weaviate bug fix
+  - Fixed Weaviate backups to include vector embeddings (Issue #52)
+  - Same root cause as Milvus Issue #51
+  - Tested with DemoDocs (38 docs, 1024-dim vectors)
+  - File size: 1.11 MB (was 324 KB without embeddings)
+  - Both major VDBs (Milvus + Weaviate) now working correctly
+
+- **v0.11.1** (2026-03-06): Critical Milvus bug fix
+  - Fixed Milvus backups to include vector embeddings (Issue #51)
+  - Tested with AuctionResults (127 docs, 1536-dim vectors)
+  - Validation now passes
+
 - **v0.11.0** (2026-03-06): Backup & Restore system
   - 4 commands: create, restore, validate, list
   - Portable .weavebak format with compression
   - Works with all 15+ VDBs
   - Performance: 195-272 docs/sec backup, 18 docs/sec restore
-
-- **v0.11.1** (2026-03-06): Critical bug fix
-  - Fixed Milvus backups to include vector embeddings
-  - Tested with 127 docs (1536-dim vectors)
-  - Validation now passes
 
 ### Active Focus
 - **Client0 Feedback**: Monitoring production usage with 2,636+ doc datasets
@@ -141,15 +148,19 @@
 **Tasks**:
 - [ ] Monitor Client0's v0.11.1 usage
 - [ ] Gather performance metrics from production
-- [ ] Fix any critical bugs (<24h response time)
-- [ ] Test backup/restore with other VDBs (Weaviate, Qdrant, Supabase)
+- [x] **DONE (Mar 7)**: Fix critical Weaviate bug (Issue #52) - released v0.11.2
+- [x] **DONE (Mar 7)**: Test backup/restore with Weaviate (verified embeddings working)
+- [x] **DONE (Mar 7)**: Test backup/restore with Milvus (revalidated v0.11.1 fix)
+- [ ] Test backup/restore with other VDBs (Qdrant, Supabase) - deferred
 - [ ] Add performance benchmarks to docs
 - [ ] Improve error messages based on feedback
 
 **Deliverables**:
-- Performance report with real-world data
-- Updated documentation with Client0 metrics
-- Bug fixes as needed (v0.11.2 if critical)
+- ✅ **v0.11.2 Released**: Critical Weaviate embedding fix (Mar 7)
+- ✅ **Issue #52**: Created and documented Weaviate bug
+- ✅ **Testing**: Verified both Milvus and Weaviate backup/restore with embeddings
+- Performance report with real-world data (pending Client0 feedback)
+- Updated documentation with Client0 metrics (pending)
 
 ### Sprint 2 (Mar 14-20): Remote Storage Foundation
 
