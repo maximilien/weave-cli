@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-03-07
+
+### Fixed - Critical Bug 🔥
+
+- **Weaviate Backup Missing Embeddings** (Issue #52)
+  - Fixed `listDocumentsBasic()` to include `vector` field in GraphQL
+    `_additional` selection
+  - Weaviate GraphQL requires explicit `_additional { vector }` to retrieve
+    embeddings
+  - Added `Embedding []float64` field to Document struct
+  - Added embedding extraction from GraphQL result (convert `[]interface{}`
+    to `[]float64`)
+  - Updated adapter to pass through Embedding field
+  - **Impact**: Backup/restore now works correctly with vector embeddings
+    for Weaviate
+  - **Testing**: Verified with DemoDocs (38 docs, 1024-dim embeddings)
+  - **Before**: All documents missing embeddings (0 dimensions),
+    validation failed
+  - **After**: All documents include embeddings, file size increased from
+    324 KB to 1.11 MB
+  - Commit: e1f974b
+
 ## [0.11.1] - 2026-03-06
 
 ### Fixed - Critical Bug 🔥
