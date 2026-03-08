@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Metadata Dimension Detection**
+  - Backup now detects actual vector dimensions from first document
+  - Eliminates validation warnings for dimension mismatches
+  - **Before**: Used config default (1536), caused false validation errors
+  - **After**: Detects actual dimensions (e.g., 1024), validation passes cleanly
+  - Commit: 0530121
+
+### Improved
+
+- **Restore Messaging**
+  - Clarified "Source VDB" vs "Target VDB" in restore output
+  - Added cross-VDB migration notice when applicable
+  - Improved UX for understanding what's being restored where
+  - Commit: 0530121
+
 ## [0.11.2] - 2026-03-07
 
 ### Fixed - Critical Bug 🔥

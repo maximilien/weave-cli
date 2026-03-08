@@ -146,11 +146,13 @@
 **Focus**: Stabilization and validation
 
 **Tasks**:
-- [ ] Monitor Client0's v0.11.1 usage
+- [ ] Monitor Client0's v0.11.1/v0.11.2 usage
 - [ ] Gather performance metrics from production
 - [x] **DONE (Mar 7)**: Fix critical Weaviate bug (Issue #52) - released v0.11.2
 - [x] **DONE (Mar 7)**: Test backup/restore with Weaviate (verified embeddings working)
 - [x] **DONE (Mar 7)**: Test backup/restore with Milvus (revalidated v0.11.1 fix)
+- [x] **DONE (Mar 8)**: Fix metadata dimension detection (eliminates validation warnings)
+- [x] **DONE (Mar 8)**: Improve restore messaging (clearer source→target VDB)
 - [ ] Test backup/restore with other VDBs (Qdrant, Supabase) - deferred
 - [ ] Add performance benchmarks to docs
 - [ ] Improve error messages based on feedback
@@ -159,6 +161,7 @@
 - ✅ **v0.11.2 Released**: Critical Weaviate embedding fix (Mar 7)
 - ✅ **Issue #52**: Created and documented Weaviate bug
 - ✅ **Testing**: Verified both Milvus and Weaviate backup/restore with embeddings
+- ✅ **Weekend Improvements**: Dimension detection + restore messaging (Mar 8)
 - Performance report with real-world data (pending Client0 feedback)
 - Updated documentation with Client0 metrics (pending)
 
@@ -315,10 +318,14 @@ These are small improvements that can be done in 1-2 hours:
 ## 📝 Notes
 
 ### Lessons Learned (v0.11.x)
-1. **Milvus Wildcard**: `"*"` does NOT include vector fields - must specify explicitly
-2. **Testing**: Need collections with actual embeddings for E2E tests
-3. **Documentation**: Comprehensive guides are essential for adoption
-4. **Compression**: 65-95% reduction makes a huge difference for large collections
+1. **Vector Fields Are Special**: Both Milvus and Weaviate require explicit requests
+   - Milvus: `"*"` wildcard does NOT include vector fields
+   - Weaviate: Must include `_additional { vector }`
+2. **Actual > Config**: Always detect actual values from data, not config defaults
+3. **Testing**: Need collections with actual embeddings for E2E tests (DemoDocs: 38 docs perfect)
+4. **Documentation**: Comprehensive guides are essential for adoption
+5. **Compression**: 65-95% reduction makes a huge difference for large collections
+6. **UX Matters**: Clear messaging (source→target VDB) as important as bug fixes
 
 ### Architecture Decisions
 1. **File Format**: JSON + gzip for portability and debugging
@@ -328,6 +335,30 @@ These are small improvements that can be done in 1-2 hours:
 
 ### Community Feedback
 - (To be updated as feedback comes in)
+
+---
+
+## 📅 Next Week (Mar 10-14)
+
+**Focus**: Complete Sprint 1, gather Client0 feedback, plan Sprint 2
+
+### Monday (Mar 10)
+- Check GitHub for weekend feedback
+- Contact Client0 for v0.11.2 usage reports
+- Update PLAN.md with Client0 input
+- Decide: Release v0.11.3 or continue to Sprint 2
+
+### Tuesday-Wednesday (Mar 11-12)
+- Fix any critical bugs (<24h response)
+- Create performance report with real-world data
+- Update documentation with learnings
+- Test other VDBs if time permits
+
+### Thursday-Friday (Mar 13-14)
+- Sprint 1 retrospective
+- Sprint 2 detailed planning
+- Begin remote storage design
+- Set up S3/MinIO development environment
 
 ---
 
