@@ -88,32 +88,18 @@ func runBackupRestore(cmd *cobra.Command, args []string) error {
 		utils.PrintInfo(fmt.Sprintf("   Version: %s", backup.Version))
 		utils.PrintInfo(fmt.Sprintf("   Collection: %s", backup.Metadata.Collection))
 		utils.PrintInfo(fmt.Sprintf("   Documents: %d", len(backup.Documents)))
-		utils.PrintInfo(fmt.Sprintf("   VDB Type: %s", backup.Metadata.VDBType))
+		utils.PrintInfo(fmt.Sprintf("   Source VDB: %s", backup.Metadata.VDBType))
 		utils.PrintInfo(fmt.Sprintf("   Created: %s", backup.Metadata.CreatedAt.Format(time.RFC3339)))
 		fmt.Println()
 	}
 
-	// Determine collection name
-	collectionName := restoreOpts.Collection
-	if collectionName == "" {
-		collectionName = backup.Metadata.Collection
-	}
-
-	if !restoreOpts.Quiet {
-		if restoreOpts.Collection != "" {
-			utils.PrintInfo(fmt.Sprintf("🔄 Restoring to collection: %s (renamed from %s)", collectionName, backup.Metadata.Collection))
-		} else {
-			utils.PrintInfo(fmt.Sprintf("🔄 Restoring to collection: %s", collectionName))
-		}
-	}
-
-	// Load configuration
+	// Load configuration to determine target VDB
 	cfg, err := utils.LoadConfigWithInteractiveHelp()
 	if err != nil {
 		return err
 	}
 
-	// Get selected VDB
+	// Get selected VDB (target for restore)
 	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
 	if err != nil {
 		return fmt.Errorf("failed to determine vector databases: %w", err)
@@ -132,8 +118,24 @@ func runBackupRestore(cmd *cobra.Command, args []string) error {
 
 	restoreOpts.VDBType = string(vdbConfig.Type)
 
+	// Determine collection name
+	collectionName := restoreOpts.Collection
+	if collectionName == "" {
+		collectionName = backup.Metadata.Collection
+	}
+
 	if !restoreOpts.Quiet {
+		if restoreOpts.Collection != "" {
+			utils.PrintInfo(fmt.Sprintf("🔄 Restoring to collection: %s (renamed from %s)", collectionName, backup.Metadata.Collection))
+		} else {
+			utils.PrintInfo(fmt.Sprintf("🔄 Restoring to collection: %s", collectionName))
+		}
 		utils.PrintInfo(fmt.Sprintf("   Target VDB: %s", vdbConfig.Type))
+
+		// Show cross-VDB migration notice if applicable
+		if string(vdbConfig.Type) != backup.Metadata.VDBType {
+			utils.PrintInfo(fmt.Sprintf("   ✨ Cross-VDB migration: %s → %s", backup.Metadata.VDBType, vdbConfig.Type))
+		}
 		fmt.Println()
 	}
 

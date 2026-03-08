@@ -147,7 +147,8 @@ func runBackupCreate(cmd *cobra.Command, args []string) error {
 		embeddingModel = "text-embedding-3-small"
 	}
 
-	// Estimate vector dimensions from model name
+	// We'll detect actual vector dimensions from first document
+	// Start with config default, but update after first batch
 	vectorDims := vdbConfig.VectorDimensions
 	if vectorDims == 0 {
 		vectorDims = 1536 // default
@@ -197,6 +198,15 @@ func runBackupCreate(cmd *cobra.Command, args []string) error {
 				ImageMetadata:  doc.ImageMetadata,
 			}
 			backup.Documents = append(backup.Documents, backupDoc)
+
+			// Detect actual vector dimensions from first document with embedding
+			if exported == 0 && len(doc.Embedding) > 0 {
+				actualDims := len(doc.Embedding)
+				if actualDims != vectorDims {
+					backup.Metadata.VectorDimensions = actualDims
+					vectorDims = actualDims
+				}
+			}
 		}
 
 		exported += len(docs)
