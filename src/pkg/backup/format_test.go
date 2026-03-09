@@ -300,3 +300,237 @@ func TestBackupMetadata(t *testing.T) {
 		t.Errorf("CreatedAt timestamp seems too old: %v", backup.Metadata.CreatedAt)
 	}
 }
+
+// Test validation with missing document ID
+func TestValidateBackup_MissingDocumentID(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "backup-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	backup := NewBackupFormat("TestCollection", "milvus-local", "text-embedding-3-small", 1536)
+	backup.Documents = []BackupDocument{
+		{
+			ID:        "", // Missing ID
+			Content:   "Test",
+			Embedding: make([]float64, 1536),
+		},
+	}
+
+	outputPath := filepath.Join(tmpDir, "missing-id.weavebak")
+	if err := WriteBackup(backup, outputPath, false); err != nil {
+		t.Fatalf("Failed to write backup: %v", err)
+	}
+
+	result, err := ValidateBackup(outputPath)
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if result.Valid {
+		t.Error("Expected invalid backup due to missing ID")
+	}
+
+	if len(result.Errors) == 0 {
+		t.Error("Expected validation errors for missing ID")
+	}
+}
+
+// Test validation with missing embedding
+func TestValidateBackup_MissingEmbedding(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "backup-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	backup := NewBackupFormat("TestCollection", "milvus-local", "text-embedding-3-small", 1536)
+	backup.Documents = []BackupDocument{
+		{
+			ID:        "doc1",
+			Content:   "Test",
+			Embedding: []float64{}, // Empty embedding
+		},
+	}
+
+	outputPath := filepath.Join(tmpDir, "missing-embedding.weavebak")
+	if err := WriteBackup(backup, outputPath, false); err != nil {
+		t.Fatalf("Failed to write backup: %v", err)
+	}
+
+	result, err := ValidateBackup(outputPath)
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if result.Valid {
+		t.Error("Expected invalid backup due to missing embedding")
+	}
+
+	if len(result.Errors) == 0 {
+		t.Error("Expected validation errors for missing embedding")
+	}
+}
+
+// Test validation with missing collection name
+func TestValidateBackup_MissingCollection(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "backup-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	backup := NewBackupFormat("", "milvus-local", "text-embedding-3-small", 1536) // Empty collection name
+	backup.Documents = []BackupDocument{
+		{
+			ID:        "doc1",
+			Content:   "Test",
+			Embedding: make([]float64, 1536),
+		},
+	}
+
+	outputPath := filepath.Join(tmpDir, "missing-collection.weavebak")
+	if err := WriteBackup(backup, outputPath, false); err != nil {
+		t.Fatalf("Failed to write backup: %v", err)
+	}
+
+	result, err := ValidateBackup(outputPath)
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if result.Valid {
+		t.Error("Expected invalid backup due to missing collection")
+	}
+
+	if len(result.Errors) == 0 {
+		t.Error("Expected validation errors for missing collection")
+	}
+}
+
+// Test validation with invalid vector dimensions
+func TestValidateBackup_InvalidVectorDimensions(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "backup-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	backup := NewBackupFormat("TestCollection", "milvus-local", "text-embedding-3-small", 0) // Invalid dimensions
+	backup.Documents = []BackupDocument{
+		{
+			ID:        "doc1",
+			Content:   "Test",
+			Embedding: []float64{},
+		},
+	}
+
+	outputPath := filepath.Join(tmpDir, "invalid-dims.weavebak")
+	if err := WriteBackup(backup, outputPath, false); err != nil {
+		t.Fatalf("Failed to write backup: %v", err)
+	}
+
+	result, err := ValidateBackup(outputPath)
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if result.Valid {
+		t.Error("Expected invalid backup due to invalid vector dimensions")
+	}
+
+	if len(result.Errors) == 0 {
+		t.Error("Expected validation errors for invalid dimensions")
+	}
+}
+
+// Test validation warnings for empty backup
+func TestValidateBackup_EmptyDocuments(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "backup-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	backup := NewBackupFormat("TestCollection", "milvus-local", "text-embedding-3-small", 1536)
+	backup.Documents = []BackupDocument{} // No documents
+
+	outputPath := filepath.Join(tmpDir, "empty.weavebak")
+	if err := WriteBackup(backup, outputPath, false); err != nil {
+		t.Fatalf("Failed to write backup: %v", err)
+	}
+
+	result, err := ValidateBackup(outputPath)
+	if err != nil {
+		t.Fatalf("Validation failed: %v", err)
+	}
+
+	if !result.Valid {
+		t.Error("Expected valid backup (empty is valid, just warned)")
+	}
+
+	if len(result.Warnings) == 0 {
+		t.Error("Expected warnings for empty backup")
+	}
+
+	if result.TotalDocuments != 0 {
+		t.Errorf("Expected 0 documents, got %d", result.TotalDocuments)
+	}
+}
+
+// Test validation warnings for version mismatch
+func TestValidateBackup_VersionWarnings(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "backup-test-*")
+	if err != nil {
+		t.Fatalf("Failed to create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	tests := []struct {
+		name        string
+		version     string
+		expectWarn  bool
+		warnMessage string
+	}{
+		{"No version", "", true, "version not specified"},
+		{"Wrong version", "0.9.0", true, "version mismatch"},
+		{"Correct version", BackupVersion, false, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			backup := NewBackupFormat("TestCollection", "milvus-local", "text-embedding-3-small", 1536)
+			backup.Version = tt.version
+			backup.Documents = []BackupDocument{
+				{
+					ID:        "doc1",
+					Content:   "Test",
+					Embedding: make([]float64, 1536),
+				},
+			}
+
+			outputPath := filepath.Join(tmpDir, tt.name+".weavebak")
+			if err := WriteBackup(backup, outputPath, false); err != nil {
+				t.Fatalf("Failed to write backup: %v", err)
+			}
+
+			result, err := ValidateBackup(outputPath)
+			if err != nil {
+				t.Fatalf("Validation failed: %v", err)
+			}
+
+			if !result.Valid {
+				t.Errorf("Expected valid backup, got invalid: %v", result.Errors)
+			}
+
+			if tt.expectWarn && len(result.Warnings) == 0 {
+				t.Errorf("Expected warnings for %s", tt.name)
+			}
+
+			if !tt.expectWarn && len(result.Warnings) > 0 {
+				t.Errorf("Expected no warnings for %s, got: %v", tt.name, result.Warnings)
+			}
+		})
+	}
+}
