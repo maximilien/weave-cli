@@ -13,15 +13,21 @@ import (
 )
 
 var (
-	ingestEmbedding      string
-	ingestChunkSize      int
-	ingestParallelWorker int
-	ingestBatchSize      int
-	ingestType           string
-	ingestRestartEvery   int
-	ingestRestartDelay   int
-	ingestAll            bool
-	ingestParallel       int
+	ingestEmbedding       string
+	ingestChunkSize       int
+	ingestParallelWorker  int
+	ingestBatchSize       int
+	ingestType            string
+	ingestRestartEvery    int
+	ingestRestartDelay    int
+	ingestAll             bool
+	ingestParallel        int
+	ingestAutoRestart     bool
+	ingestMaxRetries      int
+	ingestResumeFrom      string
+	ingestCheckpointEvery int
+	ingestCheckpointFile  string
+	ingestSkipFailed      bool
 )
 
 // IngestCmd represents the ingest command
@@ -74,6 +80,12 @@ func init() {
 	IngestCmd.Flags().IntVar(&ingestRestartDelay, "restart-delay", 15, "Seconds to wait after Milvus restart")
 	IngestCmd.Flags().BoolVar(&ingestAll, "all", false, "Ingest all collections from weave-stack.yaml")
 	IngestCmd.Flags().IntVar(&ingestParallel, "parallel", 0, "Process N collections concurrently (0=sequential)")
+	IngestCmd.Flags().BoolVar(&ingestAutoRestart, "auto-restart", false, "Automatically restart Milvus on connection failures")
+	IngestCmd.Flags().IntVar(&ingestMaxRetries, "max-retries", 3, "Maximum retry attempts for failed files (with auto-restart)")
+	IngestCmd.Flags().StringVar(&ingestResumeFrom, "resume-from", "", "Resume ingestion from specific file")
+	IngestCmd.Flags().IntVar(&ingestCheckpointEvery, "checkpoint-every", 1, "Save progress checkpoint every N files")
+	IngestCmd.Flags().StringVar(&ingestCheckpointFile, "checkpoint-file", ".weave-ingest-checkpoint", "Path to checkpoint file")
+	IngestCmd.Flags().BoolVar(&ingestSkipFailed, "skip-failed", false, "Skip files that fail after max-retries (don't abort)")
 }
 
 func runIngest(cmd *cobra.Command, args []string) error {
@@ -148,6 +160,12 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		RestartDelay:    ingestRestartDelay,
 		ClusterInfo:     clusterInfo,
 		PortForwardCtx:  &portForwardCtx,
+		AutoRestart:     ingestAutoRestart,
+		MaxRetries:      ingestMaxRetries,
+		ResumeFrom:      ingestResumeFrom,
+		CheckpointEvery: ingestCheckpointEvery,
+		CheckpointFile:  ingestCheckpointFile,
+		SkipFailed:      ingestSkipFailed,
 	})
 
 	if err != nil {
@@ -237,6 +255,11 @@ func runIngestAll(cmd *cobra.Command, args []string) error {
 			RestartDelay:    ingestRestartDelay,
 			ClusterInfo:     clusterInfo,
 			PortForwardCtx:  &portForwardCtx,
+			AutoRestart:     ingestAutoRestart,
+			MaxRetries:      ingestMaxRetries,
+			CheckpointEvery: ingestCheckpointEvery,
+			CheckpointFile:  fmt.Sprintf(".weave-ingest-%s.checkpoint", collectionName),
+			SkipFailed:      ingestSkipFailed,
 		}
 
 		// Run ingestion

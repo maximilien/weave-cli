@@ -212,30 +212,30 @@ type EmbeddingConfig struct {
 
 // IngestionConfig defines data ingestion pipeline
 type IngestionConfig struct {
-	ParallelWorkers int                           `yaml:"parallel_workers,omitempty"`
-	BatchSize       int                           `yaml:"batch_size,omitempty"`
-	Retry           *RetryConfig                  `yaml:"retry,omitempty"`
-	Timeout         *TimeoutConfig                `yaml:"timeout,omitempty"`
-	Checkpoint      *CheckpointConfig             `yaml:"checkpoint,omitempty"`
-	Monitoring      *MonitoringConfig             `yaml:"monitoring,omitempty"`
-	Phases          []PhaseConfig                 `yaml:"phases,omitempty"`
+	ParallelWorkers int                               `yaml:"parallel_workers,omitempty"`
+	BatchSize       int                               `yaml:"batch_size,omitempty"`
+	Retry           *RetryConfig                      `yaml:"retry,omitempty"`
+	Timeout         *TimeoutConfig                    `yaml:"timeout,omitempty"`
+	Checkpoint      *CheckpointConfig                 `yaml:"checkpoint,omitempty"`
+	Monitoring      *MonitoringConfig                 `yaml:"monitoring,omitempty"`
+	Phases          []PhaseConfig                     `yaml:"phases,omitempty"`
 	Collections     map[string]CollectionIngestConfig `yaml:"collections,omitempty"` // Per-collection ingestion
 }
 
 // CollectionIngestConfig defines ingestion for a specific collection
 type CollectionIngestConfig struct {
-	Source          string   `yaml:"source"`           // File path or glob pattern
-	Embedding       string   `yaml:"embedding,omitempty"`
-	Type            string   `yaml:"type,omitempty"`   // "text" or "image"
-	Images          bool     `yaml:"images,omitempty"`
-	ImageStorage    string   `yaml:"image_storage,omitempty"`
-	MinioBucket     string   `yaml:"minio_bucket,omitempty"`
-	ChunkSize       int      `yaml:"chunk_size,omitempty"`
-	Workers         int      `yaml:"workers,omitempty"`
-	BatchSize       int      `yaml:"batch_size,omitempty"`
-	RestartEvery    int      `yaml:"restart_every,omitempty"`
-	SkipAllImages   bool     `yaml:"skip_all_images,omitempty"`
-	Flags           []string `yaml:"flags,omitempty"` // Additional CLI flags
+	Source        string   `yaml:"source"` // File path or glob pattern
+	Embedding     string   `yaml:"embedding,omitempty"`
+	Type          string   `yaml:"type,omitempty"` // "text" or "image"
+	Images        bool     `yaml:"images,omitempty"`
+	ImageStorage  string   `yaml:"image_storage,omitempty"`
+	MinioBucket   string   `yaml:"minio_bucket,omitempty"`
+	ChunkSize     int      `yaml:"chunk_size,omitempty"`
+	Workers       int      `yaml:"workers,omitempty"`
+	BatchSize     int      `yaml:"batch_size,omitempty"`
+	RestartEvery  int      `yaml:"restart_every,omitempty"`
+	SkipAllImages bool     `yaml:"skip_all_images,omitempty"`
+	Flags         []string `yaml:"flags,omitempty"` // Additional CLI flags
 }
 
 // RetryConfig defines retry behavior

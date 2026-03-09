@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/maximilien/weave-cli/src/cmd/utils"
@@ -32,6 +33,12 @@ type IngestConfig struct {
 	RestartDelay     int                  // Seconds to wait after restart
 	ClusterInfo      *ClusterInfo         // Needed for restart
 	PortForwardCtx   **PortForwardContext // Pointer to pointer so we can update it
+	AutoRestart      bool                 // Automatically restart on failures
+	MaxRetries       int                  // Maximum retry attempts (with auto-restart)
+	ResumeFrom       string               // Resume from specific file
+	CheckpointEvery  int                  // Save checkpoint every N files
+	CheckpointFile   string               // Path to checkpoint file
+	SkipFailed       bool                 // Skip files that fail after max retries
 }
 
 // PortForwardContext holds port forwarding context
@@ -156,6 +163,60 @@ func IngestToStack(cfg IngestConfig) error {
 	utils.PrintInfo(fmt.Sprintf("Found %d files to process", len(files)))
 	fmt.Println()
 
+	// Load checkpoint if checkpoint features are enabled
+	var checkpoint *IngestCheckpoint
+	if cfg.AutoRestart || cfg.ResumeFrom != "" || cfg.CheckpointEvery > 0 {
+		checkpoint, err = LoadCheckpoint(cfg.CheckpointFile)
+		if err != nil {
+			return fmt.Errorf("failed to load checkpoint: %w", err)
+		}
+
+		if checkpoint != nil {
+			utils.PrintInfo(fmt.Sprintf("📋 Loaded checkpoint from %s", cfg.CheckpointFile))
+			utils.PrintInfo(fmt.Sprintf("   Completed: %d files", len(checkpoint.CompletedFiles)))
+			if len(checkpoint.FailedFiles) > 0 {
+				utils.PrintWarning(fmt.Sprintf("   Failed: %d files", len(checkpoint.FailedFiles)))
+			}
+			fmt.Println()
+		}
+	}
+
+	// Filter files based on checkpoint and --resume-from
+	filePathsToProcess := make([]string, len(files))
+	for i, f := range files {
+		filePathsToProcess[i] = f.Path
+	}
+
+	filteredPaths, skippedCount, err := FilterFilesFromCheckpoint(filePathsToProcess, checkpoint, cfg.ResumeFrom)
+	if err != nil {
+		return fmt.Errorf("failed to filter files: %w", err)
+	}
+
+	if skippedCount > 0 {
+		utils.PrintInfo(fmt.Sprintf("⏭️  Skipped %d already completed files", skippedCount))
+		fmt.Println()
+	}
+
+	if len(filteredPaths) == 0 {
+		utils.PrintSuccess("✅ All files already processed!")
+		return nil
+	}
+
+	// Rebuild files list with filtered paths
+	filteredFiles := []pipeline.FileInfo{}
+	for _, path := range filteredPaths {
+		for _, f := range files {
+			if f.Path == path {
+				filteredFiles = append(filteredFiles, f)
+				break
+			}
+		}
+	}
+
+	files = filteredFiles
+	utils.PrintInfo(fmt.Sprintf("Processing %d files", len(files)))
+	fmt.Println()
+
 	// Ensure collection exists (auto-create if needed)
 	collectionExists, err := vdbClient.CollectionExists(ctx, cfg.CollectionName)
 	if err != nil {
@@ -174,13 +235,28 @@ func IngestToStack(cfg IngestConfig) error {
 		utils.PrintInfo(fmt.Sprintf("✅ Created collection: %s", cfg.CollectionName))
 	}
 
+	// Initialize checkpoint if enabled
+	if (cfg.AutoRestart || cfg.ResumeFrom != "" || cfg.CheckpointEvery > 0) && checkpoint == nil {
+		filePathsForCheckpoint := make([]string, len(files))
+		for i, f := range files {
+			filePathsForCheckpoint[i] = f.Path
+		}
+		checkpoint = InitCheckpoint(cfg.CollectionName, filePathsForCheckpoint, nil)
+	}
+
 	// Create processor
 	processor := pipeline.NewProcessor(vdbClient, llmClient, options, progress)
 
-	// Process files with restart support
+	// Process files with auto-restart or checkpoint support
 	var report *pipeline.IngestReport
-	if cfg.RestartEvery > 0 {
-		// Process files in batches with restarts
+	if cfg.AutoRestart {
+		// Process with auto-restart and retry logic
+		report, err = processFilesWithAutoRestart(ctx, processor, files, cfg, vdbClient, llmClient, options, progress, checkpoint)
+		if err != nil {
+			return fmt.Errorf("processing with auto-restart failed: %w", err)
+		}
+	} else if cfg.RestartEvery > 0 {
+		// Process files in batches with scheduled restarts
 		report, err = processFilesWithRestarts(ctx, processor, files, cfg, vdbClient, llmClient, options, progress)
 		if err != nil {
 			return fmt.Errorf("processing with restarts failed: %w", err)
@@ -355,4 +431,173 @@ func restartMilvus(clusterInfo *ClusterInfo) error {
 	}
 
 	return nil
+}
+
+// processFilesWithAutoRestart processes files with auto-restart on failures
+func processFilesWithAutoRestart(ctx context.Context, processor *pipeline.Processor, files []pipeline.FileInfo, cfg IngestConfig, vdbClient vectordb.VectorDBClient, llmClient *llm.OpenAIClient, options *pipeline.IngestOptions, progress *pipeline.ProgressTracker, checkpoint *IngestCheckpoint) (*pipeline.IngestReport, error) {
+	totalFiles := len(files)
+	totalProcessed := 0
+	totalCreated := 0
+	totalFailed := 0
+	startTime := time.Now()
+
+	utils.PrintInfo(fmt.Sprintf("🔄 Auto-restart enabled: Max %d retries per file", cfg.MaxRetries))
+	if cfg.CheckpointEvery > 0 {
+		utils.PrintInfo(fmt.Sprintf("💾 Checkpoint enabled: Saving every %d files to %s", cfg.CheckpointEvery, cfg.CheckpointFile))
+	}
+	fmt.Println()
+
+	// Process files one by one with retry logic
+	for fileIdx, file := range files {
+		fileNum := fileIdx + 1
+		utils.PrintInfo(fmt.Sprintf("[%d/%d] Processing: %s", fileNum, totalFiles, filepath.Base(file.Path)))
+
+		// Check if file previously failed
+		var previousFailure *FailedFile
+		if checkpoint != nil {
+			previousFailure = checkpoint.GetFailedFile(file.Path)
+		}
+
+		retryCount := 0
+		if previousFailure != nil {
+			retryCount = previousFailure.Attempts
+		}
+
+		var lastError error
+		success := false
+
+		// Retry loop
+		for attempt := 0; attempt <= cfg.MaxRetries; attempt++ {
+			if attempt > 0 {
+				utils.PrintWarning(fmt.Sprintf("   Retry %d/%d", attempt, cfg.MaxRetries))
+			}
+
+			// Process single file
+			report, err := processor.ProcessFiles(ctx, []pipeline.FileInfo{file})
+
+			if err == nil && report.FilesFailed == 0 {
+				// Success!
+				success = true
+				totalProcessed++
+				totalCreated += report.DocumentsCreated
+				utils.PrintSuccess(fmt.Sprintf("   ✅ Completed: %d documents created", report.DocumentsCreated))
+
+				// Mark file as completed in checkpoint
+				if checkpoint != nil {
+					checkpoint.MarkFileCompleted(file.Path)
+				}
+				break
+			}
+
+			// Failure - check if it's a connection error
+			lastError = err
+			if err != nil {
+				utils.PrintError(fmt.Sprintf("   ❌ Error: %v", err))
+			}
+
+			// Check if we should restart and retry
+			if attempt < cfg.MaxRetries {
+				utils.PrintWarning(fmt.Sprintf("   🔄 Restarting Milvus and retrying..."))
+
+				// Stop current port-forward
+				if cfg.PortForwardCtx != nil && *cfg.PortForwardCtx != nil {
+					(*cfg.PortForwardCtx).Stop()
+				}
+
+				// Restart Milvus pod
+				if err := restartMilvus(cfg.ClusterInfo); err != nil {
+					return nil, fmt.Errorf("failed to restart Milvus: %w", err)
+				}
+
+				// Wait for restart
+				utils.PrintInfo(fmt.Sprintf("   ⏳ Waiting %d seconds for Milvus to restart...", cfg.RestartDelay))
+				time.Sleep(time.Duration(cfg.RestartDelay) * time.Second)
+
+				// Restart port-forward
+				newPortForward, err := StartMilvusPortForward(cfg.ClusterInfo)
+				if err != nil {
+					return nil, fmt.Errorf("failed to restart port forwarding: %w", err)
+				}
+
+				// Update the port-forward context
+				if cfg.PortForwardCtx != nil {
+					*cfg.PortForwardCtx = newPortForward
+				}
+
+				// Recreate VDB client with new port
+				milvusConfig := &config.VectorDBConfig{
+					Type:             "milvus-local",
+					Name:             "stack-milvus",
+					Address:          fmt.Sprintf("localhost:%d", newPortForward.LocalPort),
+					VectorDimensions: getEmbeddingDimensions(cfg.EmbeddingModel),
+					Timeout:          30,
+				}
+
+				newVDBClient, err := utils.CreateVectorDBClient(milvusConfig)
+				if err != nil {
+					return nil, fmt.Errorf("failed to recreate VDB client: %w", err)
+				}
+
+				// Recreate processor with new client
+				processor = pipeline.NewProcessor(newVDBClient, llmClient, options, progress)
+
+				utils.PrintSuccess("   ✅ Milvus restarted and reconnected")
+			}
+		}
+
+		// Handle failure after all retries
+		if !success {
+			totalFailed++
+			retryCount += cfg.MaxRetries + 1
+
+			if cfg.SkipFailed {
+				utils.PrintWarning(fmt.Sprintf("   ⚠️  Skipped after %d failed attempts", cfg.MaxRetries+1))
+
+				// Mark file as failed in checkpoint
+				if checkpoint != nil {
+					errMsg := "unknown error"
+					if lastError != nil {
+						errMsg = lastError.Error()
+					}
+					checkpoint.MarkFileFailed(file.Path, retryCount, errMsg)
+				}
+			} else {
+				// Abort entire job
+				if checkpoint != nil {
+					SaveCheckpoint(checkpoint, cfg.CheckpointFile)
+				}
+				return nil, fmt.Errorf("file failed after %d attempts: %s (use --skip-failed to continue)", cfg.MaxRetries+1, file.Path)
+			}
+		}
+
+		// Save checkpoint every N files
+		if checkpoint != nil && cfg.CheckpointEvery > 0 && fileNum%cfg.CheckpointEvery == 0 {
+			if err := SaveCheckpoint(checkpoint, cfg.CheckpointFile); err != nil {
+				utils.PrintWarning(fmt.Sprintf("Failed to save checkpoint: %v", err))
+			} else {
+				utils.PrintInfo(fmt.Sprintf("💾 Checkpoint saved (%d files completed)", len(checkpoint.CompletedFiles)))
+			}
+		}
+
+		fmt.Println()
+	}
+
+	// Save final checkpoint
+	if checkpoint != nil {
+		if err := SaveCheckpoint(checkpoint, cfg.CheckpointFile); err != nil {
+			utils.PrintWarning(fmt.Sprintf("Failed to save final checkpoint: %v", err))
+		}
+	}
+
+	// Return aggregate report
+	return &pipeline.IngestReport{
+		Status:           "success",
+		StartTime:        startTime,
+		EndTime:          time.Now(),
+		Duration:         time.Since(startTime).Seconds(),
+		FilesScanned:     totalFiles,
+		FilesProcessed:   totalProcessed,
+		DocumentsCreated: totalCreated,
+		FilesFailed:      totalFailed,
+	}, nil
 }
