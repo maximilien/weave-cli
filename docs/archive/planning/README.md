@@ -6,9 +6,16 @@ This directory contains historical planning documents from the Weave CLI develop
 
 ```
 docs/archive/planning/
-├── feb-2026/              # February 2026 week plans
-├── [legacy plans]         # Pre-2026 plans (listed below)
-└── README.md             # This file
+├── 2025-nov/              # November 2025 (v0.7.0-v0.7.1)
+├── 2025-dec/              # December 2025 (v0.7.2)
+├── 2026-jan/              # January 2026 (v0.9.0-v0.9.1)
+├── 2026-feb/              # February 2026 (v0.9.27-v0.9.29)
+├── feb-2026/              # February 2026 feature specs
+├── features/              # Feature design specifications
+├── strategic/             # Strategic planning & roadmaps
+├── phase-1/               # Phase 1 development plans
+├── weave-stack/           # Weave Stack specific plans
+└── README.md              # This file
 ```
 
 ---
@@ -41,46 +48,62 @@ docs/archive/planning/
 
 ---
 
-## Legacy Planning Documents (2025)
+## 2025 Planning Documents (Nov-Dec)
 
-### January 2026 Plans
-See `docs/archive/planning/` (not in feb-2026/ subdirectory):
-- **WEEK_OF_2026-01-13.md** - Test coverage focus
-- **NEXT_STEPS_2026-01-20.md** - Multi-modal RAG planning
-- **AGENT_VDB_SUPPORT_AND_PROGRESS.md** - Multi-VDB agent support (v0.9.1)
-- **RAG_AGENT_FEATURE.md** - RAG agent system (v0.9.0)
-- **VDB_AGENT_TESTING_PLAN.md** - Agent testing across VDBs
-- **VDB_EMBEDDING_ARCHITECTURE_FIX.md** - Embedding dimension fixes
+### November 2025 (`2025-nov/`)
+- Qdrant integration completion (v0.7.0)
+- Neo4j integration (v0.7.1)
+- Initial VDB expansion work
+- TODOs for Pinecone, Redis, Neo4j
 
-### December 2025 Plans
-- **WORK_PLAN-2025-12-03.md** (v0.7.2) - Chroma integration
-- **WORK_PLAN-chroma.md** - Chroma implementation details
-
-### November 2025 Plans
-- **WORK_PLAN-2025-11-29.md** (v0.7.0) - Qdrant integration completion
-- **WORK_PLAN-neo4j.md** (v0.7.1) - Neo4j integration
-- **SESSION_SUMMARY_2025-11-28.md** - Qdrant completion session
-
-### Next Steps & TODOs
-- **NEXT_STEPS.md** (v0.7.0) - Post-Qdrant planning
-- **NEXT_STEPS_neo4j.md** - Neo4j planning
-- **NEXT_STEPS_tomorrow.md** - Daily Neo4j plan
-- **TODOs.md** - General project todos (superseded)
-- **TODOs-neo4j.md** - Neo4j checklist (completed)
-- **TODOs-pinecone.md** - Pinecone planning (future)
-- **TODOs-redis.md** - Redis planning (future)
-
-### Progress Tracking
-- **REPL_PROGRESS.md** - REPL mode implementation progress
+### December 2025 (`2025-dec/`)
+- Chroma integration (v0.7.2)
+- Work plans for Chroma and Neo4j
+- Next steps planning
 
 ---
 
-## Current Planning Documents
+## 2026 Planning Documents
+
+### January 2026 (`2026-jan/`)
+- RAG agent system (v0.9.0-v0.9.1)
+- Multi-VDB agent support
+- Multi-modal RAG planning
+- Test coverage focus
+- Embedding architecture fixes
+
+### February 2026 (`2026-feb/` and `feb-2026/`)
+- Client0 ingestion improvements (v0.9.27-v0.9.29)
+- Batch processing features
+- External storage implementation
+- Agent evaluation system
+- Week plans for Feb 17-28
+
+### Feature Specifications (`features/`)
+- Agent evaluation system
+- Pluggable evaluators
+- Multi-agent orchestration
+- External storage
+- VDB lifecycle management
+- Weave Stack PM2 dashboard
+- Opik API integration
+
+### Strategic Planning (`strategic/`)
+- V1.0 roadmap
+- Vector DB integrations matrix
+- 5 strategic options analysis
+- Testing & quality plans
+- Production hardening
+- Community building
+
+---
+
+## Current Planning
 
 For active planning, see:
-- **docs/planning/README.md** - Active planning index
-- **docs/planning/V1_0_ROADMAP.md** - Path to v1.0
-- **docs/planning/VECTOR_DB_INTEGRATIONS.md** - VDB status
+- **docs/PLAN.md** - Sprint planning & roadmap
+- **docs/archive/mar-2026/** - March 2026 active work
+- **CHANGELOG.md** - Release tracking
 
 ---
 
@@ -98,5 +121,6 @@ Documents are moved here when:
 
 ---
 
-**Last Updated**: 2026-02-20
-**Current Version**: v0.9.29 (in progress)
+**Last Updated**: 2026-03-09
+**Current Version**: v0.11.2
+**Archive Reorganized**: March 9, 2026 - Consolidated 74 planning docs into organized structure
