@@ -45,5 +45,6 @@ func init() {
 	stackCmd.AddCommand(stack.DashboardCmd)
 	stackCmd.AddCommand(stack.IngestCmd)
 	stackCmd.AddCommand(stack.BackupCmd)
+	stackCmd.AddCommand(stack.CollectionsCmd)
 	// More commands will be added in subsequent phases
 }
