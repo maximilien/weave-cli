@@ -139,23 +139,25 @@
 
 ## 🎯 Recommended Execution Plan
 
-### **This Week (Mar 10-13): Cleanup Sprint**
+### **⚠️ EMERGENCY SPRINT: THIS WEEK (Mar 10-14)**
 
-**Goal**: Close all fixed issues, verify no regressions
+**Goal**: Implement ALL critical features immediately - Client0 blocked in production
 
-**Tasks**:
+**Updated Timeline** (moved from next week to THIS WEEK):
 1. ✅ Review all open issues (DONE)
 2. ✅ Create action plan (DONE)
-3. [ ] Verify bugs #45-50, #52 are fixed
-4. [ ] Close verified issues with commit references
-5. [ ] Update CHANGELOG.md with bug fixes
-6. [ ] Contact Client0 with status update
+3. [ ] **TODAY**: Implement #53 (collections reset) - 4-6h
+4. [ ] **Tue-Wed**: Implement #56 (restart-every) - 8-12h
+5. [ ] **Wed-Thu**: Implement #54 (auto-restart + checkpoints) - 12-16h
+6. [ ] **Thu-Fri**: Implement #55 (ingest --all) - 10-14h
+7. [ ] **Fri**: Close bugs #45-50, #52 + test everything
+8. [ ] **Weekend if needed**: Final testing + v0.12.0 release
 
-**Time**: 4-6 hours
+**Total Time**: 38-54 hours in 5 days (aggressive but doable)
 
 ---
 
-### **Next Week (Mar 14-20): Client0 Feature Sprint**
+### **Original Timeline (Deferred)**
 
 **Goal**: Implement all high-priority features for production use
 
