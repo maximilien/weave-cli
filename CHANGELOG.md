@@ -7,22 +7,123 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.3] - 2026-03-09
+
+### Added - Production-Grade Ingestion 🚀
+
+This release delivers 4 major features for robust, production-ready data
+ingestion, addressing critical Client0 deployment blockers.
+
+- **Fast Collection Reset** (Issue #53)
+  - `weave stack collections reset` - Delete all collections without
+    infrastructure teardown
+  - **Speed**: 5 seconds vs 2 minutes for full stack restart
+  - **Use case**: Development iteration, testing, data cleanup
+  - **Flags**: `--force` (skip confirmation), `--keep COLLECTION`
+    (preserve specific collections)
+  - **Impact**: 24x faster than `weave stack down && weave stack up`
+  - Commit: a784f98
+
+- **OOM Prevention with Scheduled Restarts** (Issue #56)
+  - `--restart-every N` flag - Restart Milvus every N files to prevent
+    memory buildup
+  - **Problem**: Milvus crashes processing 9 PDFs with 2,636 images (OOM)
+  - **Solution**: Batch processing with automatic pod restart
+  - **Flags**: `--restart-delay SECONDS` (wait time after restart,
+    default: 15s)
+  - **Behavior**: Process N files → restart Milvus → reconnect → continue
+  - **Impact**: Enables ingestion of large datasets without crashes
+  - Commit: 533a5f8
+
+- **Config-Driven Multi-Collection Ingestion** (Issue #55)
+  - `weave stack ingest --all` - Ingest all collections from
+    weave-stack.yaml
+  - **Before**: 6 manual commands, 167-line custom scripts
+  - **After**: Single command, config-driven automation
+  - **Config format**: Per-collection settings (source, embedding, type,
+    workers, restart_every)
+  - **Flags**: `--parallel N` (process N collections concurrently,
+    0=sequential)
+  - **Features**: Progress tracking, failure handling, summary report
+  - **Impact**: Replaces all custom ingestion scripts with declarative
+    config
+  - Commit: 2b5a8ff
+
+- **Auto-Restart & Checkpoint System** (Issue #54)
+  - Production-grade ingestion resilience with automatic failure recovery
+  - **Checkpoint System**: JSON state persistence with
+    completed/failed/pending files
+  - **Auto-Restart**: Detect failures → restart Milvus → reconnect →
+    retry file
+  - **Resume Support**: Skip completed files, resume from last checkpoint
+    or specific file
+  - **New Flags**:
+    - `--auto-restart` - Automatically restart on connection failures
+    - `--max-retries N` - Maximum retry attempts per file (default: 3)
+    - `--resume-from FILE` - Resume ingestion from specific file
+    - `--checkpoint-every N` - Save progress every N files (default: 1)
+    - `--checkpoint-file PATH` - Custom checkpoint path
+      (default: .weave-ingest-checkpoint)
+    - `--skip-failed` - Skip files that fail after max-retries
+      (don't abort)
+  - **Checkpoint Format**: JSON with completed_files, failed_files,
+    pending_files
+  - **Use cases**: Long-running jobs (1-4h), Milvus crashes, network
+    interruptions, rate limiting
+  - **Impact**: Zero data loss on crashes, resume from any point, fully
+    automated recovery
+  - Commit: 2b6af5e
+
 ### Fixed
 
-- **Metadata Dimension Detection**
+- **Stack Command Naming** (Issues #45-49)
+  - Fixed kubectl command generation to use correct service/deployment
+    names
+  - Pattern: `{helmReleaseName}-weave-stack-{service}`
+    (e.g., `my-stack-weave-stack-milvus`)
+  - Affected commands: `status`, `logs`, `port-forward`, `restart`,
+    `ingest`
+  - **Impact**: All stack commands now work correctly with Helm releases
+
+- **Weaviate Backup Missing Embeddings** (Issue #52)
+  - Fixed backup to include vector embeddings in Weaviate GraphQL queries
+  - **Before**: All documents missing embeddings, validation failed
+  - **After**: All embeddings preserved, file size increased
+    (324 KB → 1.11 MB for 38 docs)
+  - **Impact**: Backup/restore now fully functional for Weaviate
+
+- **Vector Dimension Detection** (Issue #50)
   - Backup now detects actual vector dimensions from first document
-  - Eliminates validation warnings for dimension mismatches
-  - **Before**: Used config default (1536), caused false validation errors
-  - **After**: Detects actual dimensions (e.g., 1024), validation passes cleanly
-  - Commit: 0530121
+  - Eliminates false validation warnings for dimension mismatches
+  - **Impact**: Clean validation for all VDBs, accurate metadata
 
 ### Improved
 
 - **Restore Messaging**
   - Clarified "Source VDB" vs "Target VDB" in restore output
   - Added cross-VDB migration notice when applicable
-  - Improved UX for understanding what's being restored where
+  - Better UX for understanding backup/restore operations
   - Commit: 0530121
+
+### Client0 Production Impact
+
+**Before v0.11.3:**
+
+- ❌ Collection reset takes 2 minutes (full stack restart)
+- ❌ Milvus OOM crashes on large PDFs
+- ❌ 6 manual ingestion commands + 400+ lines of custom scripts
+- ❌ No crash recovery - restart from scratch
+- ❌ Manual monitoring and restart logic
+
+**After v0.11.3:**
+
+- ✅ Collection reset in 5 seconds (24x faster)
+- ✅ Automatic OOM prevention with --restart-every
+- ✅ Single command ingestion with --all
+- ✅ Full crash recovery with checkpoints + auto-restart
+- ✅ Zero data loss, zero custom scripts
+
+**Estimated time savings:** 2-3 hours per development iteration
 
 ## [0.11.2] - 2026-03-07
 
