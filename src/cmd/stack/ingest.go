@@ -18,6 +18,8 @@ var (
 	ingestParallelWorker int
 	ingestBatchSize      int
 	ingestType           string
+	ingestRestartEvery   int
+	ingestRestartDelay   int
 )
 
 // IngestCmd represents the ingest command
@@ -60,6 +62,8 @@ func init() {
 	IngestCmd.Flags().IntVar(&ingestParallelWorker, "parallel-workers", 1, "Number of parallel workers")
 	IngestCmd.Flags().IntVar(&ingestBatchSize, "batch-size", 10, "Batch size for ingestion")
 	IngestCmd.Flags().StringVar(&ingestType, "type", "text", "Collection type (text or image)")
+	IngestCmd.Flags().IntVar(&ingestRestartEvery, "restart-every", 0, "Restart Milvus every N files (0=no restart, helps prevent OOM)")
+	IngestCmd.Flags().IntVar(&ingestRestartDelay, "restart-delay", 15, "Seconds to wait after Milvus restart")
 }
 
 func runIngest(cmd *cobra.Command, args []string) error {
@@ -107,6 +111,10 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	// Run ingestion using existing pipeline
 	utils.PrintInfo("Starting ingestion pipeline...")
 
+	if ingestRestartEvery > 0 {
+		utils.PrintInfo(fmt.Sprintf("🔄 Restart enabled: Milvus will restart every %d files", ingestRestartEvery))
+	}
+
 	err = stackpkg.IngestToStack(stackpkg.IngestConfig{
 		CollectionName:  collectionName,
 		DataPath:        absPath,
@@ -116,6 +124,10 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		ParallelWorkers: ingestParallelWorker,
 		BatchSize:       ingestBatchSize,
 		MilvusLocalPort: portForwardCtx.LocalPort,
+		RestartEvery:    ingestRestartEvery,
+		RestartDelay:    ingestRestartDelay,
+		ClusterInfo:     clusterInfo,
+		PortForwardCtx:  &portForwardCtx,
 	})
 
 	if err != nil {
