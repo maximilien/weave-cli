@@ -7,6 +7,7 @@ Complete guide to backing up and restoring vector database collections with Weav
 - [Overview](#overview)
 - [Quick Start](#quick-start)
 - [Commands](#commands)
+- [Remote Storage](#remote-storage)
 - [Use Cases](#use-cases)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -255,6 +256,462 @@ FILENAME                            COLLECTION               DOCS       SIZE   C
 auctionsimages-test.weavebak.gz     AuctionsImages            301   27.50 KB          Yes 2026-03-05
 auctionsimages-301.weavebak         AuctionsImages            301  495.18 KB           No 2026-03-05
 weavedocs-compressed.weavebak.gz    WeaveDocs                  79  115.38 KB          Yes 2026-03-05
+```
+
+---
+
+## Remote Storage
+
+Weave CLI supports uploading backups to and downloading backups from remote storage backends, enabling cloud-based disaster recovery and automated backup workflows.
+
+### Supported Backends
+
+- **AWS S3**: Amazon's object storage service
+- **MinIO**: Self-hosted S3-compatible storage
+
+### Key Features
+
+✅ **Automatic Upload/Download**: Seamlessly integrated with backup create/restore
+✅ **Environment Variable Support**: Use `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+✅ **Path Prefixes**: Organize backups within buckets using prefixes (e.g., `backups/`)
+✅ **SSL/TLS Support**: Configurable for both S3 (always SSL) and MinIO (optional)
+✅ **Remote-Only Mode**: Upload without keeping local copy (`--remote-only`)
+✅ **Flexible Cleanup**: Control whether downloaded files are kept or deleted
+
+---
+
+### S3 Configuration
+
+#### Prerequisites
+
+1. AWS account with S3 access
+2. IAM user with S3 permissions:
+   - `s3:PutObject` (for uploads)
+   - `s3:GetObject` (for downloads)
+   - `s3:ListBucket` (optional, for listing)
+   - `s3:DeleteObject` (optional, for cleanup)
+3. Access key ID and secret access key
+
+#### Create Backup to S3
+
+```bash
+# Upload backup to S3 (keeps local copy)
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-east-1 \
+  --s3-access-key AKIAIOSFODNN7EXAMPLE \
+  --s3-secret-key wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+
+# Upload to S3 with path prefix
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-west-2 \
+  --s3-prefix backups/production
+
+# Upload only (delete local file after)
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --remote-only
+```
+
+#### Restore from S3
+
+```bash
+# Download and restore from S3
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-east-1
+
+# Download and restore with path prefix
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-east-1 \
+  --s3-prefix backups/production
+
+# Keep downloaded file for inspection
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --keep-local
+```
+
+#### Using Environment Variables
+
+Instead of passing credentials via flags, use environment variables:
+
+```bash
+# Set AWS credentials
+export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+# Create backup (credentials read from env)
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-east-1
+
+# Restore backup (credentials read from env)
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups
+```
+
+**Best Practice**: Use environment variables for credentials in production to avoid exposing secrets in command history or scripts.
+
+---
+
+### MinIO Configuration
+
+MinIO is a high-performance, S3-compatible object storage system that you can self-host.
+
+#### Prerequisites
+
+1. MinIO server running (local or remote)
+2. MinIO access key and secret key
+3. Endpoint URL (e.g., `localhost:9000`)
+
+#### Start MinIO (Docker)
+
+```bash
+# Run MinIO locally
+docker run -d \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  --name minio \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  -v /data/minio:/data \
+  minio/minio server /data --console-address ":9001"
+
+# Create bucket (via MinIO console at http://localhost:9001)
+# Or use mc client:
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc mb local/weave-backups
+```
+
+#### Create Backup to MinIO
+
+```bash
+# Upload backup to MinIO (local, no SSL)
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-access-key minioadmin \
+  --s3-secret-key minioadmin \
+  --s3-no-ssl
+
+# Upload to MinIO with path prefix
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint minio.company.com:9000 \
+  --s3-prefix backups/$(date +%Y%m%d) \
+  --s3-no-ssl
+
+# Upload only (delete local copy)
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-no-ssl \
+  --remote-only
+```
+
+#### Restore from MinIO
+
+```bash
+# Download and restore from MinIO
+weave backup restore backup.weavebak.gz \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-access-key minioadmin \
+  --s3-secret-key minioadmin \
+  --s3-no-ssl
+
+# Download with path prefix
+weave backup restore backup.weavebak.gz \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-prefix backups/20260310 \
+  --s3-no-ssl
+
+# Keep downloaded file
+weave backup restore backup.weavebak.gz \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-no-ssl \
+  --keep-local
+```
+
+#### MinIO with SSL/TLS
+
+If your MinIO server has SSL/TLS enabled:
+
+```bash
+# Upload with SSL (omit --s3-no-ssl flag)
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint minio.company.com:9000 \
+  --s3-access-key minioadmin \
+  --s3-secret-key minioadmin
+```
+
+---
+
+### Remote Storage Flags
+
+#### Backup Create Flags
+
+- `--remote-storage`: Storage type (`s3` or `minio`)
+- `--s3-bucket`: Bucket name (required for remote storage)
+- `--s3-region`: AWS region (default: `us-east-1`, S3 only)
+- `--s3-endpoint`: MinIO endpoint (e.g., `localhost:9000`, MinIO only)
+- `--s3-access-key`: Access key ID (or use `AWS_ACCESS_KEY_ID` env var)
+- `--s3-secret-key`: Secret access key (or use `AWS_SECRET_ACCESS_KEY` env var)
+- `--s3-prefix`: Path prefix within bucket (e.g., `backups/`)
+- `--s3-no-ssl`: Disable SSL/TLS (MinIO only, default: SSL enabled)
+- `--remote-only`: Upload to remote storage only (skip local file creation)
+- `--remote-keep-local`: Keep local file after upload (default: true)
+
+#### Backup Restore Flags
+
+- `--remote-storage`: Storage type (`s3` or `minio`)
+- `--s3-bucket`: Bucket name (required for remote storage)
+- `--s3-region`: AWS region (default: `us-east-1`, S3 only)
+- `--s3-endpoint`: MinIO endpoint (e.g., `localhost:9000`, MinIO only)
+- `--s3-access-key`: Access key ID (or use `AWS_ACCESS_KEY_ID` env var)
+- `--s3-secret-key`: Secret access key (or use `AWS_SECRET_ACCESS_KEY` env var)
+- `--s3-prefix`: Path prefix within bucket (e.g., `backups/`)
+- `--s3-no-ssl`: Disable SSL/TLS (MinIO only, default: SSL enabled)
+- `--keep-local`: Keep downloaded file after restore (default: false)
+
+---
+
+### Automated Backup Workflows
+
+#### Daily Backups to S3
+
+```bash
+#!/bin/bash
+# /usr/local/bin/weave-backup-s3.sh
+
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+
+DATE=$(date +%Y%m%d)
+COLLECTIONS=("ProductionDocs" "ProductionImages" "ProductionUsers")
+
+for collection in "${COLLECTIONS[@]}"; do
+  weave backup create "$collection" \
+    --output "${collection}-${DATE}.weavebak" \
+    --remote-storage s3 \
+    --s3-bucket company-backups \
+    --s3-region us-east-1 \
+    --s3-prefix "weave-backups/${DATE}" \
+    --remote-only \
+    --quiet
+
+  if [ $? -eq 0 ]; then
+    echo "✅ Backed up $collection to S3"
+  else
+    echo "❌ Failed to backup $collection"
+  fi
+done
+```
+
+#### Disaster Recovery from S3
+
+```bash
+#!/bin/bash
+# Restore all collections from specific date
+
+DATE="20260310"
+COLLECTIONS=("ProductionDocs" "ProductionImages" "ProductionUsers")
+
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+
+for collection in "${COLLECTIONS[@]}"; do
+  weave backup restore "${collection}-${DATE}.weavebak.gz" \
+    --remote-storage s3 \
+    --s3-bucket company-backups \
+    --s3-prefix "weave-backups/${DATE}" \
+    --overwrite
+
+  if [ $? -eq 0 ]; then
+    echo "✅ Restored $collection from S3"
+  else
+    echo "❌ Failed to restore $collection"
+  fi
+done
+```
+
+#### MinIO Local Backups
+
+```bash
+#!/bin/bash
+# Backup to local MinIO server
+
+DATE=$(date +%Y%m%d)
+
+weave backup create MyCollection \
+  --output "mycollection-${DATE}.weavebak" \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-access-key minioadmin \
+  --s3-secret-key minioadmin \
+  --s3-prefix "backups/${DATE}" \
+  --s3-no-ssl \
+  --remote-only \
+  --quiet
+
+echo "✅ Backup uploaded to MinIO: backups/${DATE}/mycollection-${DATE}.weavebak.gz"
+```
+
+---
+
+### Troubleshooting Remote Storage
+
+#### S3 Issues
+
+**Issue**: "Access Denied" when uploading
+
+```bash
+# Verify credentials
+aws s3 ls s3://my-backups --profile myprofile
+
+# Check IAM permissions (need s3:PutObject)
+aws iam get-user-policy --user-name myuser --policy-name S3Access
+```
+
+**Solution**: Ensure IAM user has `s3:PutObject` permission for the bucket.
+
+**Issue**: "Bucket not found"
+
+```bash
+# List available buckets
+aws s3 ls
+
+# Create bucket if needed
+aws s3 mb s3://my-backups --region us-east-1
+```
+
+**Issue**: "Invalid region"
+
+```bash
+# Specify correct region
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-west-2  # Match bucket's region
+```
+
+---
+
+#### MinIO Issues
+
+**Issue**: "Connection refused" to MinIO
+
+```bash
+# Check if MinIO is running
+docker ps | grep minio
+
+# Check endpoint is accessible
+curl http://localhost:9000/minio/health/live
+
+# Start MinIO if needed
+docker start minio
+```
+
+**Issue**: "SSL error" with MinIO
+
+```bash
+# For local MinIO without SSL, use --s3-no-ssl
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage minio \
+  --s3-endpoint localhost:9000 \
+  --s3-no-ssl  # Disable SSL for local development
+```
+
+**Issue**: "Access Denied" with MinIO
+
+```bash
+# Verify credentials with mc client
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc ls local/weave-backups
+
+# Check bucket policy
+mc policy get local/weave-backups
+```
+
+---
+
+#### General Issues
+
+**Issue**: Downloaded file not cleaned up after restore
+
+Check if `--keep-local` flag was used:
+
+```bash
+# Default behavior (cleanup)
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups
+
+# Explicit cleanup (redundant but clear)
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups
+# Downloaded file deleted automatically
+
+# Keep file for debugging
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --keep-local
+# Check: ls /tmp/backup.weavebak.gz
+```
+
+**Issue**: Large backups timing out
+
+For large collections, increase batch size and monitor progress:
+
+```bash
+# Larger batch size for faster backup
+weave backup create LargeCollection --output backup.weavebak \
+  --batch-size 500 \
+  --remote-storage s3 \
+  --s3-bucket my-backups
+
+# Upload may take time, but progress is shown
+```
+
+**Issue**: Environment variables not working
+
+```bash
+# Verify environment variables are set
+echo $AWS_ACCESS_KEY_ID
+echo $AWS_SECRET_ACCESS_KEY
+
+# Export if not set
+export AWS_ACCESS_KEY_ID="your-key"
+export AWS_SECRET_ACCESS_KEY="your-secret"
+
+# Re-run command
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups
 ```
 
 ---
@@ -695,5 +1152,5 @@ No hard limit. Tested up to 301 documents, designed for 2,636+. Batch processing
 
 ---
 
-**Last Updated**: March 5, 2026
-**Weave CLI Version**: v0.11.0 (unreleased)
+**Last Updated**: March 10, 2026
+**Weave CLI Version**: v0.11.3

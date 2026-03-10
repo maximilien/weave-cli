@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,10 +20,24 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/version"
 )
 
-var createOpts = &backuppkg.CreateOptions{
-	BatchSize: 100,
-	Compress:  true,
-}
+var (
+	createOpts = &backuppkg.CreateOptions{
+		BatchSize: 100,
+		Compress:  true,
+	}
+
+	// Remote storage flags
+	remoteStorage   string
+	s3Bucket        string
+	s3Region        string
+	s3Endpoint      string
+	s3AccessKey     string
+	s3SecretKey     string
+	s3Prefix        string
+	s3NoSSL         bool
+	remoteOnly      bool
+	remoteKeepLocal bool
+)
 
 // CreateCmd represents the backup create command
 var CreateCmd = &cobra.Command{
@@ -50,7 +65,26 @@ The backup file can be used to:
   weave backup create MyCollection --output backup.weavebak --batch-size 500
 
   # Backup specific VDB
-  weave backup create MyCollection --vdb milvus-local --output backup.weavebak`,
+  weave backup create MyCollection --vdb milvus-local --output backup.weavebak
+
+  # Backup to S3
+  weave backup create MyCollection --output backup.weavebak \
+    --remote-storage s3 \
+    --s3-bucket my-backups \
+    --s3-region us-east-1
+
+  # Backup to MinIO
+  weave backup create MyCollection --output backup.weavebak \
+    --remote-storage minio \
+    --s3-bucket backups \
+    --s3-endpoint localhost:9000 \
+    --s3-no-ssl
+
+  # Backup to S3 only (skip local file)
+  weave backup create MyCollection --output backup.weavebak \
+    --remote-storage s3 \
+    --s3-bucket my-backups \
+    --remote-only`,
 	Args: cobra.ExactArgs(1),
 	RunE: runBackupCreate,
 }
@@ -61,6 +95,18 @@ func init() {
 	CreateCmd.Flags().BoolVar(&createOpts.Compress, "no-compress", false, "Disable compression")
 	CreateCmd.Flags().IntVar(&createOpts.BatchSize, "batch-size", 100, "Documents per batch")
 	CreateCmd.Flags().BoolVarP(&createOpts.Quiet, "quiet", "q", false, "Suppress progress output")
+
+	// Remote storage flags
+	CreateCmd.Flags().StringVar(&remoteStorage, "remote-storage", "", "Remote storage type (s3 or minio)")
+	CreateCmd.Flags().StringVar(&s3Bucket, "s3-bucket", "", "S3/MinIO bucket name")
+	CreateCmd.Flags().StringVar(&s3Region, "s3-region", "us-east-1", "AWS region (S3 only)")
+	CreateCmd.Flags().StringVar(&s3Endpoint, "s3-endpoint", "", "MinIO endpoint (e.g., localhost:9000)")
+	CreateCmd.Flags().StringVar(&s3AccessKey, "s3-access-key", "", "S3/MinIO access key (or AWS_ACCESS_KEY_ID env)")
+	CreateCmd.Flags().StringVar(&s3SecretKey, "s3-secret-key", "", "S3/MinIO secret key (or AWS_SECRET_ACCESS_KEY env)")
+	CreateCmd.Flags().StringVar(&s3Prefix, "s3-prefix", "", "Path prefix in bucket (e.g., 'backups/')")
+	CreateCmd.Flags().BoolVar(&s3NoSSL, "s3-no-ssl", false, "Disable SSL/TLS (MinIO only)")
+	CreateCmd.Flags().BoolVar(&remoteOnly, "remote-only", false, "Upload to remote storage only (skip local file)")
+	CreateCmd.Flags().BoolVar(&remoteKeepLocal, "remote-keep-local", true, "Keep local file after upload")
 
 	CreateCmd.MarkFlagRequired("output")
 }
@@ -256,6 +302,91 @@ func runBackupCreate(cmd *cobra.Command, args []string) error {
 	utils.PrintInfo(fmt.Sprintf("   Weave version: %s", version.Get().Version))
 	fmt.Println()
 	utils.PrintInfo(fmt.Sprintf("📁 Backup saved to: %s", createOpts.OutputFile))
+
+	// Upload to remote storage if configured
+	if remoteStorage != "" {
+		if err := uploadToRemoteStorage(ctx, createOpts.OutputFile); err != nil {
+			return fmt.Errorf("failed to upload to remote storage: %w", err)
+		}
+
+		// Delete local file if --remote-only was specified
+		if remoteOnly && !remoteKeepLocal {
+			if err := os.Remove(createOpts.OutputFile); err != nil {
+				utils.PrintWarning(fmt.Sprintf("Failed to delete local file: %v", err))
+			} else {
+				utils.PrintInfo("🗑️  Deleted local backup file (remote-only mode)")
+			}
+		}
+	}
+
+	return nil
+}
+
+// uploadToRemoteStorage uploads a backup file to S3/MinIO
+func uploadToRemoteStorage(ctx context.Context, filePath string) error {
+	// Get credentials from env vars if not provided via flags
+	accessKey := s3AccessKey
+	secretKey := s3SecretKey
+
+	if accessKey == "" {
+		accessKey = os.Getenv("AWS_ACCESS_KEY_ID")
+	}
+	if secretKey == "" {
+		secretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	}
+
+	// Validate configuration
+	if s3Bucket == "" {
+		return fmt.Errorf("--s3-bucket is required for remote storage")
+	}
+	if accessKey == "" || secretKey == "" {
+		return fmt.Errorf("S3 credentials required (use --s3-access-key/--s3-secret-key or AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY env vars)")
+	}
+
+	// Create remote storage config
+	remoteCfg := &backuppkg.RemoteStorageConfig{
+		Type:            remoteStorage,
+		Bucket:          s3Bucket,
+		Region:          s3Region,
+		Endpoint:        s3Endpoint,
+		AccessKeyID:     accessKey,
+		SecretAccessKey: secretKey,
+		UseSSL:          !s3NoSSL,
+		PathPrefix:      s3Prefix,
+	}
+
+	utils.PrintInfo(fmt.Sprintf("☁️  Uploading to %s...", remoteStorage))
+	utils.PrintInfo(fmt.Sprintf("   Bucket: %s", s3Bucket))
+	if s3Prefix != "" {
+		utils.PrintInfo(fmt.Sprintf("   Prefix: %s", s3Prefix))
+	}
+
+	// Create remote storage client
+	remote, err := backuppkg.NewRemoteStorage(remoteCfg)
+	if err != nil {
+		return fmt.Errorf("failed to create remote storage client: %w", err)
+	}
+
+	// Read backup file
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to read backup file: %w", err)
+	}
+
+	// Upload to remote storage
+	// Use filename as the key (within prefix if specified)
+	key := filepath.Base(filePath)
+	if err := remote.Upload(ctx, key, data); err != nil {
+		return err
+	}
+
+	fmt.Println()
+	utils.PrintSuccess("✅ Upload complete!")
+	utils.PrintInfo(fmt.Sprintf("   Remote path: %s/%s", s3Bucket, key))
+	if s3Prefix != "" {
+		utils.PrintInfo(fmt.Sprintf("   Full path: %s/%s/%s", s3Bucket, s3Prefix, key))
+	}
+	fmt.Println()
 
 	return nil
 }
