@@ -280,8 +280,44 @@ func IngestToStack(cfg IngestConfig) error {
 		utils.PrintWarning(fmt.Sprintf("Failed files: %d", report.FilesFailed))
 	}
 
-	// Give Milvus time to flush and persist data before stopping port-forward
-	time.Sleep(3 * time.Second)
+	// Give Milvus extra time to flush and persist data before verifying
+	// Issue #57: Flush operations may timeout during batch inserts, returning success
+	// but relying on async flush. Need to wait longer for async flush to complete.
+	fmt.Println()
+	utils.PrintInfo("⏳ Waiting for Milvus to flush data to persistent storage...")
+	time.Sleep(10 * time.Second)
+
+	// Verify documents were actually persisted (Issue #57)
+	// Check actual document count to detect silent flush failures
+	actualCount, err := vdbClient.GetCollectionCount(ctx, cfg.CollectionName)
+	if err != nil {
+		utils.PrintWarning(fmt.Sprintf("⚠️  Could not verify document persistence: %v", err))
+		utils.PrintWarning("   Documents may have been created but verification failed")
+	} else {
+		if actualCount == 0 && report.DocumentsCreated > 0 {
+			fmt.Println()
+			utils.PrintError("❌ VERIFICATION FAILED: No documents found in collection!")
+			utils.PrintError(fmt.Sprintf("   Expected: %d documents", report.DocumentsCreated))
+			utils.PrintError("   Actual: 0 documents")
+			fmt.Println()
+			utils.PrintError("This is Issue #57: Documents created but not persisted to Milvus")
+			utils.PrintError("Possible causes:")
+			utils.PrintError("  • Milvus flush timeout (check Milvus logs)")
+			utils.PrintError("  • Connection dropped before flush completed")
+			utils.PrintError("  • Milvus memory/resource constraints")
+			fmt.Println()
+			utils.PrintError("Workaround: Use 'weave docs create' instead of 'weave stack ingest'")
+			fmt.Println()
+			return fmt.Errorf("document persistence verification failed: 0/%d documents persisted", report.DocumentsCreated)
+		} else if actualCount < int64(report.DocumentsCreated) {
+			fmt.Println()
+			utils.PrintWarning(fmt.Sprintf("⚠️  PARTIAL PERSISTENCE: Only %d/%d documents verified in collection", actualCount, report.DocumentsCreated))
+			utils.PrintWarning("   Some documents may not have been persisted (flush timeout or failure)")
+		} else {
+			fmt.Println()
+			utils.PrintSuccess(fmt.Sprintf("✅ Verified: %d documents persisted to collection", actualCount))
+		}
+	}
 
 	return nil
 }
