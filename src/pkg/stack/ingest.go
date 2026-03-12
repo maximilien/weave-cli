@@ -280,38 +280,70 @@ func IngestToStack(cfg IngestConfig) error {
 		utils.PrintWarning(fmt.Sprintf("Failed files: %d", report.FilesFailed))
 	}
 
-	// Give Milvus extra time to flush and persist data before verifying
-	// Issue #57: Flush operations may timeout during batch inserts, returning success
-	// but relying on async flush. Need to wait longer for async flush to complete.
+	// Poll for document persistence with retry backoff (Issue #57)
+	// Milvus flush operations timeout during batch inserts but return success,
+	// relying on async flush. We poll the collection count to verify persistence.
 	fmt.Println()
-	utils.PrintInfo("⏳ Waiting for Milvus to flush data to persistent storage...")
-	time.Sleep(10 * time.Second)
+	utils.PrintInfo("⏳ Waiting for documents to persist (polling with retry)...")
 
-	// Verify documents were actually persisted (Issue #57)
-	// Check actual document count to detect silent flush failures
-	actualCount, err := vdbClient.GetCollectionCount(ctx, cfg.CollectionName)
-	if err != nil {
-		utils.PrintWarning(fmt.Sprintf("⚠️  Could not verify document persistence: %v", err))
+	expectedCount := int64(report.DocumentsCreated)
+	maxRetries := 6 // Total wait: ~63 seconds (1+2+4+8+16+32)
+	var actualCount int64
+	var verifyErr error
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Exponential backoff: 1s, 2s, 4s, 8s, 16s, 32s
+		waitDuration := time.Duration(1<<uint(attempt)) * time.Second
+		if attempt > 0 {
+			utils.PrintInfo(fmt.Sprintf("   Retry %d/%d (waiting %ds)...", attempt, maxRetries-1, int(waitDuration.Seconds())))
+		}
+		time.Sleep(waitDuration)
+
+		actualCount, verifyErr = vdbClient.GetCollectionCount(ctx, cfg.CollectionName)
+		if verifyErr != nil {
+			// Can't verify - keep retrying
+			continue
+		}
+
+		// Check if documents have appeared
+		if actualCount >= expectedCount {
+			// Success!
+			break
+		}
+
+		// Partial success or still waiting
+		if actualCount > 0 {
+			utils.PrintInfo(fmt.Sprintf("   Found %d/%d documents so far...", actualCount, expectedCount))
+		}
+	}
+
+	// Final verification
+	if verifyErr != nil {
+		utils.PrintWarning(fmt.Sprintf("⚠️  Could not verify document persistence: %v", verifyErr))
 		utils.PrintWarning("   Documents may have been created but verification failed")
 	} else {
-		if actualCount == 0 && report.DocumentsCreated > 0 {
+		if actualCount == 0 && expectedCount > 0 {
 			fmt.Println()
 			utils.PrintError("❌ VERIFICATION FAILED: No documents found in collection!")
-			utils.PrintError(fmt.Sprintf("   Expected: %d documents", report.DocumentsCreated))
+			utils.PrintError(fmt.Sprintf("   Expected: %d documents", expectedCount))
 			utils.PrintError("   Actual: 0 documents")
+			utils.PrintError(fmt.Sprintf("   Waited: ~%d seconds with %d retries", (1<<uint(maxRetries))-1, maxRetries))
 			fmt.Println()
 			utils.PrintError("This is Issue #57: Documents created but not persisted to Milvus")
 			utils.PrintError("Possible causes:")
-			utils.PrintError("  • Milvus flush timeout (check Milvus logs)")
+			utils.PrintError("  • Milvus async flush failed (check Milvus logs)")
 			utils.PrintError("  • Connection dropped before flush completed")
-			utils.PrintError("  • Milvus memory/resource constraints")
+			utils.PrintError("  • Milvus memory/resource constraints (OOM)")
+			utils.PrintError("  • Milvus pod restart during operation")
 			fmt.Println()
 			utils.PrintError("Workaround: Use 'weave docs create' instead of 'weave stack ingest'")
 			fmt.Println()
-			return fmt.Errorf("document persistence verification failed: 0/%d documents persisted", report.DocumentsCreated)
-		} else if actualCount < int64(report.DocumentsCreated) {
+			return fmt.Errorf("document persistence verification failed: 0/%d documents persisted after %d retries", expectedCount, maxRetries)
+		} else if actualCount < expectedCount {
 			fmt.Println()
-			utils.PrintWarning(fmt.Sprintf("⚠️  PARTIAL PERSISTENCE: Only %d/%d documents verified in collection", actualCount, report.DocumentsCreated))
+			utils.PrintWarning(fmt.Sprintf("⚠️  PARTIAL PERSISTENCE: Only %d/%d documents verified in collection", actualCount, expectedCount))
+			utils.PrintWarning(fmt.Sprintf("   Missing: %d documents", expectedCount-actualCount))
+			utils.PrintWarning(fmt.Sprintf("   Waited: ~%d seconds with %d retries", (1<<uint(maxRetries))-1, maxRetries))
 			utils.PrintWarning("   Some documents may not have been persisted (flush timeout or failure)")
 		} else {
 			fmt.Println()
