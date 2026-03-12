@@ -239,6 +239,89 @@ weave docs create KnowledgeBase document.pdf \
 📖 **See [MinIO Setup Guide](docker/docker-compose.minio.yml)
 for detailed configuration**
 
+### Remote Storage for Backups (v0.11.4+)
+
+Store backups in AWS S3 or self-hosted MinIO for cloud-based disaster recovery
+and automated backup workflows.
+
+| Storage | Type | Cost | Use Case |
+|---------|------|------|----------|
+| **AWS S3** | Cloud object storage | Pay-as-you-go | Production, disaster recovery |
+| **MinIO** | Self-hosted S3-compatible | FREE | Self-hosted, cost control |
+
+**How It Works:**
+
+1. Create backup locally → Upload to S3/MinIO automatically
+2. Download backup from S3/MinIO → Restore to any VDB
+3. Environment variable support → No credentials in commands
+4. Path prefixes → Organize backups (e.g., `backups/2026-03-10/`)
+
+**Quick Start - S3:**
+
+```bash
+# Set credentials (one time)
+export AWS_ACCESS_KEY_ID="your-access-key"
+export AWS_SECRET_ACCESS_KEY="your-secret-key"
+
+# Create backup and upload to S3
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage s3 \
+  --s3-bucket my-backups \
+  --s3-region us-east-1
+
+# Restore from S3
+weave backup restore backup.weavebak.gz \
+  --remote-storage s3 \
+  --s3-bucket my-backups
+```
+
+**Quick Start - MinIO:**
+
+```bash
+# Start MinIO locally
+docker run -d -p 9000:9000 -p 9001:9001 \
+  --name minio \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  minio/minio server /data --console-address ":9001"
+
+# Create backup and upload to MinIO
+weave backup create MyCollection --output backup.weavebak \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-access-key minioadmin \
+  --s3-secret-key minioadmin \
+  --s3-no-ssl
+
+# Restore from MinIO
+weave backup restore backup.weavebak.gz \
+  --remote-storage minio \
+  --s3-bucket weave-backups \
+  --s3-endpoint localhost:9000 \
+  --s3-no-ssl
+```
+
+**Features:**
+
+- ✅ Automatic upload during backup create
+- ✅ Automatic download during backup restore
+- ✅ Environment variable support (credentials never in commands)
+- ✅ Path prefix organization (e.g., `backups/prod/`, `backups/dev/`)
+- ✅ Remote-only mode (skip local file with `--remote-only`)
+- ✅ Flexible cleanup (keep or delete downloaded files)
+- ✅ Works with all 15+ VDBs
+
+**Use Cases:**
+
+- 🌐 Disaster Recovery - Off-site backups for business continuity
+- ⏰ Automated Workflows - Cron jobs with S3 upload
+- 🔄 Cross-Region Sync - Backup in one region, restore in another
+- 💰 Cost Optimization - Use MinIO for self-hosted backups
+
+📖 **See [Backup & Restore Guide](docs/guides/BACKUP_RESTORE.md)
+for complete remote storage documentation, examples, and troubleshooting**
+
 ### Basic Usage
 
 ```bash
@@ -306,8 +389,9 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 - ⚡ **Fast & Easy** - Written in Go with simple CLI and interactive REPL
   (AI Agent mode) with real-time progress feedback
 - 💾 **Backup & Restore** - Portable `.weavebak` files with 65-95% compression.
-  Cross-VDB migration, disaster recovery, and automated snapshots. Works with all
-  15+ VDBs. See [Backup Guide](docs/guides/BACKUP_RESTORE.md) (v0.11.0+)
+  S3/MinIO remote storage for cloud-based disaster recovery. Cross-VDB migration,
+  automated snapshots, environment variable support. Works with all 15+ VDBs.
+  See [Backup Guide](docs/guides/BACKUP_RESTORE.md) (v0.11.0+, remote storage v0.11.4+)
 - 🌐 **Flexible** - Weaviate Cloud, local instances, or built-in mock database
 - 🔌 **Extensible** - Vector database abstraction layer supporting multiple
   backends (Weaviate, Milvus, Supabase PGVector, MongoDB Atlas, Chroma, Qdrant,
