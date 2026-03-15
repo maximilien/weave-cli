@@ -993,16 +993,25 @@ weave backup validate backup.weavebak.gz --json | jq '.vector_dimensions'
 
 ## Performance
 
-### Backup Performance
+### Backup Performance (v0.11.3+ Profiling - March 2026)
 
-| Collection Size | Documents | Backup Time | Throughput | Uncompressed | Compressed | Ratio |
-|-----------------|-----------|-------------|------------|--------------|------------|-------|
-| Small | 2 | <1s | N/A | 1.92 KB | 668 B | 65% |
-| Medium | 79 | 0.29s | 272 docs/sec | 796 KB | 115 KB | 86% |
-| **Large** | **301** | **1.54s** | **195 docs/sec** | **495 KB** | **27 KB** | **95%** |
-| Very Large* | 2,636 | ~120s | ~22 docs/sec | ~733 MB | ~50-60 MB | ~92% |
+**Latest profiling results** with default batch size (100):
 
-*Projected from Issue #43 requirements
+| Collection | Documents | Vector Dims | Backup Time | Throughput | File Size (Compressed) |
+|------------|-----------|-------------|-------------|------------|------------------------|
+| DemoDocs | 38 | 1024 | 0.34s | 112 docs/sec | 254 KB |
+| WeaveDocs | 79 | 1536 | 0.59s | 134 docs/sec | 552 KB |
+| AuctionsImages | 301 | 1536 | 1.64s | 184 docs/sec | 27 KB |
+
+**Batch Size Impact** (tested with 301 documents):
+
+| Batch Size | Backup Time | Throughput | vs Batch=100 |
+|------------|-------------|------------|--------------|
+| 50 | 2.69s | 112 docs/sec | -51% ❌ |
+| **100** (default) | **1.64s** | **184 docs/sec** | baseline |
+| **200** | **0.80s** | **376 docs/sec** | **+104%** ✅ |
+
+**Key Finding**: **Batch size 200 is 2x faster than batch size 100!**
 
 ### Restore Performance
 
@@ -1015,29 +1024,92 @@ weave backup validate backup.weavebak.gz --json | jq '.vector_dimensions'
 
 *Failed due to invalid embedding model in source collection, not backup/restore bug
 
-### Optimization Tips
+### Performance Tuning
 
-1. **Increase Batch Size** for large collections:
-   ```bash
-   weave backup create LargeCollection --output backup.weavebak --batch-size 500
-   ```
+#### 1. Batch Size Optimization ⚡ **HIGHEST IMPACT**
 
-2. **Use Compression** (enabled by default):
-   - Saves 65-95% disk space
-   - Slightly slower but worth it
+The `--batch-size` flag controls how many documents are fetched per VDB query. **This is the single biggest performance knob.**
 
-3. **Backup During Off-Peak Hours**:
-   - Reduces load on VDB
-   - Faster network I/O
+**Recommendations:**
+- **Small collections (<100 docs)**: Use default (100)
+- **Medium collections (100-1000 docs)**: Use 200 for 2x speedup
+- **Large collections (1000+ docs)**: Try 200-500 for best performance
+- **Memory constrained**: Use 50-100
 
-4. **Monitor Progress**:
-   ```bash
-   # Default shows progress
-   weave backup create MyCollection --output backup.weavebak
+**Examples:**
 
-   # Quiet mode for scripts
-   weave backup create MyCollection --output backup.weavebak --quiet
-   ```
+```bash
+# Fast backup for large collections (2x faster)
+weave backup create MyCollection --output backup.weavebak --batch-size 200
+
+# Extra fast for very large collections (test first)
+weave backup create MyCollection --output backup.weavebak --batch-size 500
+
+# Memory-efficient backup
+weave backup create MyCollection --output backup.weavebak --batch-size 50
+```
+
+**Performance Impact** (301 docs, real-world test):
+- Batch 50: 2.69s (112 docs/sec)
+- Batch 100: 1.64s (184 docs/sec)
+- **Batch 200: 0.80s (376 docs/sec)** ← **2x faster!**
+
+#### 2. Compression Settings
+
+**Compression is enabled by default and highly recommended:**
+
+```bash
+# Compressed (default, recommended)
+weave backup create MyCollection --output backup.weavebak --compress
+
+# Uncompressed (faster but larger files)
+weave backup create MyCollection --output backup.weavebak --no-compress
+```
+
+**Trade-offs:**
+- Compression saves 65-95% disk space
+- Compression overhead: ~10% slower (0.16s for 301 docs)
+- **Recommendation**: Always use compression unless disk space is unlimited
+
+#### 3. Timing and Scheduling
+
+**Backup During Off-Peak Hours:**
+- Reduces load on VDB
+- Faster network I/O
+- Better for production systems
+
+```bash
+# Use cron for scheduled backups
+0 2 * * * /usr/local/bin/weave backup create MyCollection --output /backups/daily.weavebak --batch-size 200 --quiet
+```
+
+#### 4. Progress Monitoring
+
+```bash
+# Default shows progress (recommended for interactive use)
+weave backup create MyCollection --output backup.weavebak
+
+# Quiet mode for scripts and cron jobs
+weave backup create MyCollection --output backup.weavebak --quiet
+```
+
+### Performance Bottlenecks (v0.11.3)
+
+**Primary Bottleneck**: VDB query latency
+- Each batch requires a separate VDB query
+- Larger batches = fewer queries = faster backups
+- **Solution**: Use larger batch sizes (200+)
+
+**Secondary Bottlenecks**:
+- Startup overhead (~3-3.5s): Config loading, VDB connection
+- Single-threaded processing: Batches fetched sequentially
+- JSON serialization: CPU-bound for large documents
+
+**Planned Optimizations (v0.12.0)**:
+- Parallel batch processing (goroutines) → 2-3x improvement
+- Connection pooling → 10-20% improvement
+- Streaming JSON/compression → 5-10% improvement
+- **Target**: 500+ docs/sec (current best: 376 docs/sec with batch=200)
 
 ---
 

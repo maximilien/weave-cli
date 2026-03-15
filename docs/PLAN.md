@@ -358,9 +358,9 @@ These are small improvements that can be done in 1-2 hours:
 
 ---
 
-## 📅 This Week (Mar 10-14)
+## 📅 This Week (Mar 10-16)
 
-**Focus**: ✅ Sprint 2 completed! Now: Client0 support, performance work, polish
+**Focus**: ✅ Sprint 2 completed! ✅ Performance profiling complete! Now: Quick Win implementation
 
 ### Monday (Mar 10) - ✅ COMPLETED
 **AM**:
@@ -376,32 +376,99 @@ These are small improvements that can be done in 1-2 hours:
 - ✅ v0.11.3 committed and ready
 - ✅ Updated PLAN.md with accomplishments
 
-### Monday PM (Mar 10) - PLAN FOR REST OF DAY ⏰
+### Monday PM (Mar 10) - ✅ COMPLETED
 
-**Waiting on Client0**: They're testing v0.11.3 remote storage feature
+**Quick Wins Completed**:
+- ✅ Add CHANGELOG.md entry for v0.11.4
+- ✅ Create GitHub release draft for v0.11.4
+- ✅ Update README.md with remote storage mention
+- ✅ Test remote storage with local MinIO container
 
-**Available Work** (pick based on energy/time):
+**Status**: v0.11.4 documentation complete, waiting for Client0 feedback
 
-1. **Quick Wins** (30-60 min each):
-   - [ ] Add CHANGELOG.md entry for v0.11.3
-   - [ ] Create GitHub release draft for v0.11.3
-   - [ ] Update README.md with remote storage mention
-   - [ ] Test remote storage with local MinIO container
-   - [ ] Write integration test scaffolding for S3/MinIO
+---
 
-2. **Documentation** (1-2 hours):
-   - [ ] Add video/demo script for remote storage feature
-   - [ ] Create migration guide: "Local backups → S3 backups"
-   - [ ] Add troubleshooting FAQ entries
-   - [ ] Update architecture docs with remote storage flow
+### Saturday (Mar 15) - ✅ PERFORMANCE PROFILING COMPLETE 🔬
 
-3. **Preparation for Sprint 3** (2-3 hours):
-   - [ ] Profile backup create with 10K+ documents
-   - [ ] Research parallel batch processing patterns in Go
-   - [ ] Design performance optimization strategy
-   - [ ] Set up benchmark framework
+**Sprint 3 Prep Work - Performance Baseline**:
+- ✅ Profile backup create with real collections (38, 79, 301 docs)
+- ✅ Test batch size variations (50, 100, 200)
+- ✅ Test compression impact
+- ✅ Identify bottlenecks and optimization opportunities
+- ✅ Document baseline metrics
+- ✅ Update BACKUP_RESTORE.md with profiling results
 
-**Recommendation**: Pick 2-3 Quick Wins + start Sprint 3 prep (profiling)
+**🚀 KEY FINDING**: **Batch size 200 is 2x faster than batch size 100!**
+
+**Results**:
+- Baseline: 184 docs/sec (batch=100)
+- **With batch=200: 376 docs/sec** (+104% improvement)
+- Primary bottleneck: VDB query latency (fewer batches = faster)
+- Quick Win identified: Change default batch size to 200
+
+**Files Created**:
+- `docs/archive/performance/PROFILING_MARCH_15_2026.md` - Comprehensive profiling report
+- `/tmp/perf-profile-backup.sh` - Profiling script (7 test scenarios)
+- `/tmp/performance-analysis.md` - Detailed analysis
+- `/tmp/optimization-opportunities.md` - Optimization roadmap
+
+**v0.12.0 Progress**: 75% to goal (376/500 docs/sec) with Quick Win alone!
+
+---
+
+### Sunday/Monday (Mar 16) - PLANNED TASKS ⏰
+
+**Priority 1: Quick Win Implementation** (1-2 hours) ⚡
+
+1. **Change default batch size to 200** (5 min)
+   - File: `src/cmd/backup/create.go:25`
+   - Change: `BatchSize: 100` → `BatchSize: 200`
+   - Impact: 2x faster backups
+
+2. **Update flag help text** (5 min)
+   - Add note about performance optimization
+
+3. **Run tests** (10 min)
+   - Ensure existing tests pass
+   - Verify no breaking changes
+
+4. **Re-run profiling** (20 min)
+   - Validate 2x improvement with new default
+   - Document before/after comparison
+
+5. **Commit changes** (20 min)
+   - Clear commit message
+   - Update CHANGELOG.md
+   - Tag as v0.11.5 or prepare for v0.12.0
+
+**Priority 2: Sprint 3 Planning** (1 hour)
+
+6. **Design parallel batch processing** (30 min)
+   - Sketch goroutine architecture
+   - Plan error handling and synchronization
+   - Determine concurrency limits
+
+7. **Research Go concurrency patterns** (30 min)
+   - Worker pool patterns
+   - Error collection from goroutines
+   - Context cancellation
+
+**Priority 3: Documentation** (30 min)
+
+8. **Update PLAN.md** (15 min)
+   - Mark profiling complete
+   - Update Sprint 3 goals with profiling insights
+
+9. **Create Sprint 3 task breakdown** (15 min)
+   - Detailed implementation tasks
+   - Estimated hours per task
+   - Dependencies and blockers
+
+**Deliverables**:
+- Default batch size changed to 200 (2x performance improvement)
+- Profiling validation complete
+- Sprint 3 ready to start with clear plan
+- Code committed and documented
 
 ### Tuesday (Mar 11)
 
