@@ -11,24 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **2x Faster Backups** (Quick Win #1 from Performance Profiling)
   - Changed default batch size from 100 to 200 for backup operations
-  - **Impact**: Backup throughput improved from 184 to ~376 docs/sec (2x faster)
+  - **Impact**: Backup throughput improved from 184 to ~376 docs/sec
+    (2x faster)
   - **Testing**: Profiled with real collections (38, 79, 301 documents)
   - **Primary Bottleneck Addressed**: VDB query latency
     - Batch 100: 4 queries for 301 docs
     - Batch 200: 2 queries for 301 docs (50% reduction in query overhead)
-  - **User Control**: Users can still override with `--batch-size` flag if needed
-  - **Profiling Report**: `docs/archive/performance/PROFILING_MARCH_15_2026.md`
+  - **User Control**: Users can override with `--batch-size` flag
+  - **Profiling Report**: See
+    `docs/archive/performance/PROFILING_MARCH_15_2026.md`
   - **Before**: 301 docs in 1.64s (batch=100)
   - **After**: 301 docs in 0.71s (batch=200)
   - **Improvement**: 2.3x faster (even better than projected!)
-  - Gets us 75% of the way to v0.12.0 performance goal (500+ docs/sec)
-  - Commit: (to be added)
+  - Gets us 75% to v0.12.0 performance goal (500+ docs/sec)
+  - Commit: a910c47
 
 ## [0.11.4] - 2026-03-10
 
 ### Added - Remote Storage & Document Persistence 🚀
 
-This release delivers remote storage integration for cloud-based disaster recovery and fixes critical document persistence issues in stack ingestion.
+This release delivers remote storage integration for cloud-based disaster
+recovery and fixes critical document persistence issues in stack ingestion.
 
 - **S3 & MinIO Remote Storage for Backups** (Sprint 2 - Completed Early!)
   - Upload backups to AWS S3 or self-hosted MinIO during `weave backup create`
@@ -62,9 +65,12 @@ This release delivers remote storage integration for cloud-based disaster recove
 
 - **Document Persistence Verification for Stack Ingest** (Issue #57)
   - Polling with exponential backoff retry to verify document persistence
-  - **Root Cause**: Milvus `Flush()` timeouts during batch inserts → returns success assuming async flush → connection drops before flush completes → data lost
+  - **Root Cause**: Milvus `Flush()` timeouts during batch inserts →
+    returns success assuming async flush → connection drops before flush
+    completes → data lost
   - **Solution**:
-    - Poll `GetCollectionCount()` with 6 retries: 1s, 2s, 4s, 8s, 16s, 32s (~63s total)
+    - Poll `GetCollectionCount()` with 6 retries: 1s, 2s, 4s, 8s, 16s,
+      32s (~63s total)
     - Breaks early if documents appear (doesn't wait full 63s)
     - Shows progress: "Found 50/143 documents so far..."
     - Clear error messages if verification fails
@@ -75,22 +81,28 @@ This release delivers remote storage integration for cloud-based disaster recove
     - Provides actionable error messages with retry count
   - **Expected Outcomes**:
     - Success: `✅ Verified: 143 documents persisted to collection`
-    - Failure: `❌ VERIFICATION FAILED: 0/143 documents (waited ~63s with 6 retries)`
+    - Failure: `❌ VERIFICATION FAILED: 0/143 documents (waited ~63s
+      with 6 retries)`
     - Partial: `⚠️ PARTIAL PERSISTENCE: Only 89/143 documents verified`
   - **Comparison with Working Workaround**:
-    - `weave docs create` (works): Individual inserts → multiple flush attempts → high success rate
-    - `weave stack ingest` (was failing): Batch inserts → single flush attempt → single point of failure
+    - `weave docs create` (works): Individual inserts → multiple flush
+      attempts → high success rate
+    - `weave stack ingest` (was failing): Batch inserts → single flush
+      attempt → single point of failure
     - Now: Detection + retry ensures persistence or clear error
-  - **Impact**: No more silent failures, clear feedback for users, helps diagnose Milvus resource issues
+  - **Impact**: No more silent failures, clear feedback for users, helps
+    diagnose Milvus resource issues
   - Commits: ba4edc0, f7b347b
 
 ### Fixed
 
 - **Stack Ingest Silent Failures** (Issue #57)
-  - Fixed critical bug where `weave stack ingest` reported success but 0 documents persisted
+  - Fixed critical bug where `weave stack ingest` reported success but
+    0 documents persisted
   - Added document count verification with polling retry
   - Users now get immediate feedback if persistence fails
-  - Clear workaround instructions: Use `weave docs create` if issues persist
+  - Clear workaround instructions: Use `weave docs create` if issues
+    persist
   - Helps diagnose Milvus memory/resource constraints
   - Commit: f7b347b
 
@@ -106,17 +118,20 @@ This release delivers remote storage integration for cloud-based disaster recove
 ### Sprint 2 Impact
 
 **Before v0.11.4:**
+
 - ❌ No cloud backup integration
 - ❌ Silent stack ingest failures (Issue #57)
 - ❌ Manual workarounds required
 
 **After v0.11.4:**
+
 - ✅ S3/MinIO remote storage (19 new flags)
 - ✅ Document persistence verification with retry
 - ✅ Clear error messages with actionable guidance
 - ✅ Automated disaster recovery workflows
 
-**Sprint Status**: Sprint 2 completed in **1 day** (planned: 1 week) - 7x faster than estimated!
+**Sprint Status**: Sprint 2 completed in **1 day** (planned: 1 week) -
+7x faster than estimated!
 
 ## [0.11.3] - 2026-03-09
 

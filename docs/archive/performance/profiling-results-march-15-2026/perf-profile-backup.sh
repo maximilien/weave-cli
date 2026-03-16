@@ -83,6 +83,12 @@ echo "📊 Results Summary"
 echo "=================="
 echo ""
 echo "File sizes:"
-ls -lh "$OUTPUT_DIR" | grep -E "\.weavebak" | awk '{print $9, "-", $5}'
+for file in "$OUTPUT_DIR"/*.weavebak*; do
+  if [ -f "$file" ]; then
+    size=$(du -h "$file" | cut -f1)
+    basename=$(basename "$file")
+    echo "$basename - $size"
+  fi
+done
 echo ""
 echo "✅ Profiling complete! Results saved to: $OUTPUT_DIR"
