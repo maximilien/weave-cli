@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+
+- **2x Faster Backups** (Quick Win #1 from Performance Profiling)
+  - Changed default batch size from 100 to 200 for backup operations
+  - **Impact**: Backup throughput improved from 184 to ~376 docs/sec (2x faster)
+  - **Testing**: Profiled with real collections (38, 79, 301 documents)
+  - **Primary Bottleneck Addressed**: VDB query latency
+    - Batch 100: 4 queries for 301 docs
+    - Batch 200: 2 queries for 301 docs (50% reduction in query overhead)
+  - **User Control**: Users can still override with `--batch-size` flag if needed
+  - **Profiling Report**: `docs/archive/performance/PROFILING_MARCH_15_2026.md`
+  - **Before**: 301 docs in 1.64s (batch=100)
+  - **After**: 301 docs in 0.71s (batch=200)
+  - **Improvement**: 2.3x faster (even better than projected!)
+  - Gets us 75% of the way to v0.12.0 performance goal (500+ docs/sec)
+  - Commit: (to be added)
+
 ## [0.11.4] - 2026-03-10
 
 ### Added - Remote Storage & Document Persistence 🚀
