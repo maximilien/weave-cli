@@ -4,6 +4,41 @@ Interactive demonstration scripts for Weave CLI features.
 
 ## Available Demos
 
+### 📋 Manual Demo Script (NEW)
+
+**File**: `DEMO_SCRIPT.md`
+
+**Duration**: ~20-25 minutes
+
+**Description**: Step-by-step manual demo script covering all major features.
+Run each command by hand during a live demo.
+
+**Topics**:
+
+- Core CLI (health, config, collections, documents)
+- Text, image, and PDF document processing
+- Backup & restore with cross-VDB migration
+- Weave Stack (Kubernetes RAG deployment)
+- Evaluations (basic, custom datasets/evaluators, benchmarking)
+- Agent management
+- AI REPL mode
+
+**Test Files Used**:
+
+- `docs/PRESENTATION.md`, `docs/ARCHITECTURE.md` (text)
+- `~/Desktop/weave-cli.pdf` (PDF - generate with marp, see below)
+
+**Generate PDF**:
+
+```bash
+npx @marp-team/marp-cli docs/PRESENTATION.md \
+  --pdf --output ~/Desktop/weave-cli.pdf
+```
+
+- `tests/images/dog.png` (image)
+
+---
+
 ### 🔧 Configuration Demo
 
 **File**: `config-demo.sh`
