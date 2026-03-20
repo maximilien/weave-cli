@@ -46,22 +46,22 @@ graph TB
     end
 
     subgraph LLM["LLM Integration"]
-        OPENAI[OpenAI GPT-4o]
-        CLAUDE[Claude]
-        OLLAMA[Ollama — Local]
+        OPENAI[OpenAI GPT-4o / GPT-4-turbo]
     end
 
     subgraph Embeddings["Embedding Providers"]
         EMB_OAI[OpenAI text-embedding-3]
         EMB_ST[sentence-transformers]
         EMB_OL[Ollama nomic-embed]
+        EMB_CO[Cohere embed-v3]
+        EMB_VA[Voyage AI voyage-2]
     end
 
     subgraph VDB_Layer["VectorDBClient Interface"]
         IF[Unified Interface<br/>Collections · Documents · Search · Schema]
     end
 
-    subgraph Adapters["VDB Adapters (12+ Providers)"]
+    subgraph Adapters["VDB Adapters (11 Providers)"]
         W[Weaviate]
         Q[Qdrant]
         MV[Milvus]
@@ -77,7 +77,7 @@ graph TB
     subgraph Pipeline["Ingestion Pipeline"]
         SCAN[FileScanner<br/>Glob · Exclude · SHA256 Dedup]
         PROC[Processor<br/>PDF · Text · JSON · YAML · Image]
-        BATCH[Batch Creator<br/>200 docs/batch]
+        BATCH[Batch Creator<br/>100 docs/batch]
     end
 
     subgraph Monitoring["Observability"]

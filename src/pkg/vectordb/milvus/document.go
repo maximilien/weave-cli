@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 	"github.com/milvus-io/milvus-sdk-go/v2/entity"
@@ -408,15 +409,31 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 		return fmt.Errorf("Milvus: failed to create documents: %w", err)
 	}
 
-	// Flush to make data available for search
-	err = a.client.Flush(ctx, collectionName, false)
-	if err != nil {
-		if isFlushTimeout(err) {
-			// Non-fatal: documents are stored, Milvus will flush async
-			batchLogger := logging.WithCollection("milvus", collectionName)
-			batchLogger.Warn("[non-fatal] Flush timeout on batch insert (documents are stored, flush will complete async): %v", err)
+	// Flush with a dedicated context so it doesn't share the Insert timeout budget.
+	// This fixes Issue #57: when Insert consumed most of the bulk timeout, the Flush
+	// would get DeadlineExceeded and be swallowed as "non-fatal", leaving documents
+	// in Milvus memory segments that never persisted (especially over port-forward).
+	batchLogger := logging.WithCollection("milvus", collectionName)
+	flushTimeout := 60 * time.Second
+	maxFlushRetries := 3
+	for attempt := 0; attempt < maxFlushRetries; attempt++ {
+		flushCtx, flushCancel := context.WithTimeout(context.Background(), flushTimeout)
+		err = a.client.Flush(flushCtx, collectionName, false)
+		flushCancel()
+
+		if err == nil {
 			return nil
 		}
+
+		if isFlushTimeout(err) {
+			if attempt < maxFlushRetries-1 {
+				batchLogger.Warn("[flush retry %d/%d] Flush timeout, retrying with fresh context: %v", attempt+1, maxFlushRetries, err)
+				continue
+			}
+			batchLogger.Warn("[non-fatal] Flush timeout after %d attempts (documents inserted, Milvus will flush async): %v", maxFlushRetries, err)
+			return nil
+		}
+
 		return fmt.Errorf("Milvus: failed to flush collection: %w", err)
 	}
 
