@@ -1,0 +1,81 @@
+{
+  "id": "run-20260317-103245",
+  "timestamp": "2026-03-17T10:32:45.529645-07:00",
+  "dataset_name": "custom-eval-demo",
+  "agent_name": "rag-agent",
+  "config": {
+    "agent_path": "rag-agent",
+    "parameters": {
+      "evaluator_provider": "local"
+    }
+  },
+  "results": [
+    {
+      "test_case_id": "demo-001",
+      "query": "What is a vector database?",
+      "actual_answer": "A vector database is a specialized type of database designed to handle and manage data in the form of vectors. Vectors are numerical representations that capture the features and semantic meanings of data, such as text, images, or other types of unstructured data, in a structured format. These databases are particularly useful for applications involving artificial intelligence (AI) and machine learning (ML), where data is often processed and analyzed in the form of high-dimensional vectors.\n\n### Key Features of Vector Databases\n\n1. **High-Dimensional Data Handling**: Vector databases are optimized to store and retrieve high-dimensional data efficiently. They use algorithms that can handle the complexity of searching through large datasets of vectors, which is crucial for many AI applications [1].\n\n2. **Similarity Search**: One of the primary functions of vector databases is to perform similarity searches, which involve finding vectors in the database that are similar to a given query vector. This functionality is essential for tasks like image recognition, natural language processing, and recommendation systems [2].\n\n3. **Indexing Mechanisms**: To facilitate fast and efficient searches, vector databases often employ advanced indexing mechanisms, such as approximate nearest neighbor (ANN) search algorithms. These indexing techniques allow for quick retrieval of similar vectors without the need to compare the query with every vector in the database [1].\n\n4. **Integration with AI Workflows**: Vector databases are designed to be integrated into AI and ML workflows. They provide APIs and tools that allow for seamless interaction with AI models, making it easier to deploy machine learning applications that rely on vector data [2].\n\n5. **Scalability and Performance**: These databases are built to scale with the volume of data and the complexity of queries. They are engineered to maintain performance even as the dataset grows, which is critical for real-time applications and large-scale AI systems [1].\n\n### Use Cases\n\n- **Recommendation Engines**: By storing user preferences and behaviors as vectors, recommendation engines can quickly suggest similar items or content [2].\n- **Image and Video Retrieval**: Vector databases can store feature vectors of images and videos, enabling efficient search and retrieval based on content similarity [1].\n- **Natural Language Processing**: In NLP, text data can be transformed into vectors (using techniques like word embeddings), which can then be managed and queried in a vector database to find semantically similar texts [2].\n\n### Limitations and Challenges\n\nWhile vector databases offer substantial advantages for managing and querying high-dimensional data, they also face challenges such as ensuring data consistency, managing storage costs, and optimizing query performance for extremely large datasets. Additionally, the choice of indexing and search algorithms can significantly impact the performance and accuracy of results, requiring careful consideration based on the specific use case [1].\n\nIn conclusion, vector databases are a critical component in the toolkit for modern AI and ML applications, providing the necessary infrastructure to manage and query complex data efficiently. They enable the effective handling of vectorized data, which is fundamental for the operation of intelligent systems [1][2].\n\n### References\n\n1. Source 1 (AI Collection)\n2. Source 2 (Database Collection)",
+      "actual_citations": [
+        "[1]",
+        "[2]"
+      ],
+      "response_time_ms": 12566,
+      "accuracy_score": 0.6,
+      "citation_score": 1,
+      "hallucination_score": 1,
+      "context_relevance_score": 1,
+      "faithfulness_score": 0.8,
+      "custom_scores": {
+        "technical_accuracy": 0.9
+      },
+      "passed": false,
+      "errors": [
+        "Failed to load custom evaluator citation_check: custom evaluator not found: citation_check",
+        "Accuracy score 0.60 below threshold 0.70"
+      ],
+      "details": {
+        "custom_technical_accuracy_score": 0.9,
+        "evaluator_provider": "local"
+      }
+    },
+    {
+      "test_case_id": "demo-002",
+      "query": "How does semantic search work?",
+      "actual_answer": "Semantic search is an advanced information retrieval technique that aims to improve search accuracy by understanding the intent and contextual meaning of search queries rather than relying solely on keyword matches. This approach leverages natural language processing (NLP) and machine learning to discern the semantic relationships between words and phrases, enabling it to deliver more relevant results.\n\n1. **Understanding Context and Intent**: Unlike traditional search engines that match query keywords with indexed data, semantic search tries to understand the context and intent behind a user's query. It does this by analyzing the meaning of words in the context of a sentence and recognizing synonyms, related concepts, and the broader context of the search [1_SemanticSearch].\n\n2. **Natural Language Processing (NLP)**: NLP is a critical component of semantic search, allowing the system to process and understand human language. NLP techniques help in disambiguating the meanings of words that can have multiple interpretations based on context. For example, the word \"bank\" could refer to a financial institution or the side of a river, and NLP helps determine the correct meaning based on context [2_NLPTech].\n\n3. **Use of Knowledge Graphs**: Semantic search often incorporates knowledge graphs, which are structured data representations that outline the relationships between different entities, such as people, places, and things. These graphs help the search engine understand complex queries by linking related concepts and providing a more comprehensive understanding of topics [3_KnowledgeGraphs].\n\n4. **Machine Learning Algorithms**: Machine learning algorithms are used to continuously improve the search engine's understanding of language and context. These algorithms learn from vast amounts of data to better predict user intent and improve the relevance of search results over time. For instance, algorithms can identify patterns and relationships in data that enhance the search experience [4_MLTech].\n\n5. **Handling Synonyms and Variations**: A key feature of semantic search is its ability to recognize and process synonyms and variations in language. This means that the search engine can return relevant results even if the query does not exactly match the terms in the indexed data. For instance, a search for \"automobile\" should return results related to \"car\" [1_SemanticSearch].\n\nOverall, semantic search represents a significant advancement over traditional keyword-based search by providing more accurate and contextually relevant results. It achieves this through a combination of NLP, machine learning, and structured data in the form of knowledge graphs. However, implementing semantic search requires sophisticated technology and continuous learning to keep pace with the evolving nature of language and user expectations.\n\nIf any details are missing or uncertain in this explanation, it might be due to the varying implementations and technological capabilities of different semantic search systems, which can affect how they process and rank search results.",
+      "response_time_ms": 11744,
+      "accuracy_score": 0.6,
+      "citation_score": 1,
+      "hallucination_score": 0.3333333333333333,
+      "context_relevance_score": 1,
+      "faithfulness_score": 0.6,
+      "custom_scores": {
+        "technical_accuracy": 0.9
+      },
+      "passed": false,
+      "errors": [
+        "Failed to load custom evaluator citation_check: custom evaluator not found: citation_check",
+        "Accuracy score 0.60 below threshold 0.75",
+        "High hallucination risk: score 0.33"
+      ],
+      "details": {
+        "custom_technical_accuracy_score": 0.9,
+        "evaluator_provider": "local"
+      }
+    }
+  ],
+  "summary": {
+    "total_tests": 2,
+    "passed_tests": 0,
+    "failed_tests": 2,
+    "pass_rate": 0,
+    "avg_accuracy": 0.6,
+    "avg_citation": 1,
+    "avg_hallucination": 0.6666666666666666,
+    "avg_context_relevance": 1,
+    "avg_faithfulness": 0.7,
+    "total_time_ms": 24310,
+    "avg_time_ms": 12155,
+    "start_time": "2026-03-17T10:32:45.529645-07:00",
+    "end_time": "2026-03-17T10:33:14.688115-07:00",
+    "duration": 29158314916
+  }
+}

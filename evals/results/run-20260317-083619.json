@@ -1,0 +1,128 @@
+{
+  "id": "run-20260317-083619",
+  "timestamp": "2026-03-17T08:36:19.731391-07:00",
+  "dataset_name": "baseline",
+  "agent_name": "rag-agent",
+  "config": {
+    "agent_path": "rag-agent",
+    "parameters": {
+      "evaluator_provider": "local"
+    }
+  },
+  "results": [
+    {
+      "test_case_id": "test-001",
+      "query": "What is a vector database?",
+      "actual_answer": "A vector database is a specialized database designed to efficiently store, index, and query high-dimensional vector data. These databases are particularly useful in applications involving machine learning, artificial intelligence, and large-scale data analytics where data is often represented as vectors, such as image embeddings, word embeddings, and other forms of feature vectors.\n\n### Key Features of Vector Databases\n\n1. **Efficient Similarity Search**: One of the primary functions of a vector database is to perform similarity searches efficiently. This is often achieved using approximate nearest neighbor (ANN) search algorithms, which are optimized for finding vectors that are close to a given query vector in high-dimensional space. Traditional databases are not well-suited for this type of operation due to their reliance on scalar data types and relational models.\n\n2. **Indexing Techniques**: Vector databases employ specialized indexing techniques to handle high-dimensional data. These might include techniques like KD-trees, Ball trees, or more advanced structures like Hierarchical Navigable Small World (HNSW) graphs, which help in reducing the complexity and improving the speed of query processing.\n\n3. **Scalability**: Given the large volume of data typically involved, vector databases are designed to scale horizontally. They can handle large datasets distributed across multiple nodes while maintaining performance.\n\n4. **Integration with Machine Learning Workflows**: Vector databases often provide seamless integration with machine learning pipelines. They allow for the direct storage and retrieval of vectorized data outputs from ML models, facilitating tasks such as recommendation systems, anomaly detection, and pattern recognition.\n\n5. **Real-time Applications**: They are suited for real-time applications where rapid response times are crucial. This includes use cases in recommendation engines, search engines, and real-time analytics systems.\n\n### Applications of Vector Databases\n\n- **Image and Video Retrieval**: In these applications, images or video frames are converted into vector embeddings, which can then be queried to find visually similar items.\n- **Natural Language Processing (NLP)**: Vector databases can store word embeddings or sentence embeddings to enable semantic search and text analysis.\n- **Recommendation Systems**: By storing user preferences and item features as vectors, vector databases can quickly compute similarities and make recommendations.\n\n### Limitations and Challenges\n\nDespite their advantages, vector databases also face challenges such as the \"curse of dimensionality,\" where the performance of similarity search can degrade as the number of dimensions increases. Additionally, vector databases require specialized knowledge to set up and maintain, which can be a barrier for some organizations.\n\nOverall, vector databases are a powerful tool for managing and querying high-dimensional data, significantly enhancing the capabilities of systems that rely on vector representations [1_collection: DatabasesWhitepaper], [2_collection: MLTechJournal].",
+      "response_time_ms": 11190,
+      "accuracy_score": 0.7,
+      "citation_score": 0,
+      "hallucination_score": 1,
+      "context_relevance_score": 1,
+      "faithfulness_score": 0.8,
+      "passed": false,
+      "errors": [
+        "Missing required citations"
+      ],
+      "details": {
+        "evaluator_provider": "local"
+      }
+    },
+    {
+      "test_case_id": "test-002",
+      "query": "How does semantic search work with vector databases?",
+      "actual_answer": "Semantic search with vector databases is a sophisticated approach that leverages the power of machine learning and vector representations to improve search accuracy and relevance. This method fundamentally differs from traditional keyword-based search by focusing on the meaning and context of queries rather than merely matching words.\n\n1. **Vector Representation**: At the core of semantic search is the transformation of text data into vector representations. This is typically achieved using machine learning models such as word embeddings (e.g., Word2Vec, GloVe) or more advanced models like BERT (Bidirectional Encoder Representations from Transformers). These models convert words, phrases, or even entire documents into high-dimensional vectors, capturing semantic relationships and contextual nuances [1].\n\n2. **Similarity Measurement**: Once text data is represented as vectors, semantic search relies on measuring the similarity between these vectors to determine relevance. Common methods for calculating vector similarity include cosine similarity, dot product, or Euclidean distance. These measures help determine how closely related the meanings of different pieces of text are, allowing the search system to retrieve results that are contextually similar to the search query, even if they don't contain the exact keywords [2].\n\n3. **Vector Databases**: Vector databases are specifically designed to handle and query vector data efficiently. They support operations like indexing, storing, and searching large volumes of high-dimensional vectors. Notable examples of vector databases include FAISS (Facebook AI Similarity Search), Annoy (Approximate Nearest Neighbors Oh Yeah), and specialized platforms like Pinecone. These databases optimize the search process by using techniques such as approximate nearest neighbor (ANN) search to quickly find the most similar vectors to a given query vector [3].\n\n4. **Applications and Advantages**: Semantic search with vector databases is particularly advantageous in scenarios where understanding context and meaning is crucial. This includes applications such as information retrieval, recommendation systems, and natural language processing tasks. By understanding the intent behind queries, semantic search can provide more relevant and nuanced results, improving user experience and satisfaction [1][3].\n\n5. **Challenges and Considerations**: Despite its advantages, implementing semantic search with vector databases can be complex. Challenges include the computational cost of generating vector representations, managing large-scale vector data, and ensuring efficient and accurate similarity measurements. Moreover, the performance of semantic search systems heavily depends on the quality and training of the underlying machine learning models [2].\n\nIn conclusion, semantic search with vector databases represents a powerful evolution in search technology, enabling systems to understand and process the meaning of text data more effectively. This approach not only enhances search relevance but also opens new possibilities for applications that require deep semantic understanding [1][2][3].\n\n---\n\n**Sources:**\n\n[1] _collection: AI_ML\n[2] _collection: Databases_Tech\n[3] _collection: Search_Tech",
+      "actual_citations": [
+        "[1]",
+        "[2]",
+        "[3]"
+      ],
+      "response_time_ms": 12492,
+      "accuracy_score": 0.7,
+      "citation_score": 1,
+      "hallucination_score": 1,
+      "context_relevance_score": 1,
+      "faithfulness_score": 0.8,
+      "passed": true,
+      "details": {
+        "evaluator_provider": "local"
+      }
+    },
+    {
+      "test_case_id": "test-003",
+      "query": "What is the difference between vector search and keyword search?",
+      "actual_answer": "Vector search and keyword search are two distinct methods used in information retrieval, each with its own mechanisms and applications.\n\n**Keyword Search:**\nKeyword search is the traditional method used by most search engines, where the search system matches the exact words or phrases entered by the user with the text in the documents or database. This method relies heavily on the presence of precise terms and often uses Boolean operators to refine the search. The main advantage of keyword search is its simplicity and ease of implementation. However, it often lacks the ability to understand the context or semantics of a query, which can lead to less relevant results if the exact keywords are not used [1_collection-A].\n\n**Vector Search:**\nVector search, on the other hand, is a more advanced technique that uses machine learning and natural language processing techniques to understand the context and semantics of the data. In vector search, both the queries and the documents are transformed into high-dimensional vectors. These vectors capture the semantic meaning of the content, allowing the search system to find documents that are similar in meaning to the query, even if they do not share the exact keywords. This approach is particularly useful for handling synonyms, related concepts, and even misspellings, providing more relevant and context-aware results [2_collection-B].\n\n**Key Differences:**\n1. **Mechanism:** Keyword search relies on exact matches of text, while vector search uses mathematical models to understand the semantic similarity between queries and documents.\n2. **Relevance and Precision:** Vector search often provides more relevant results due to its ability to understand context and semantics, whereas keyword search might miss relevant documents that do not contain the exact search terms.\n3. **Complexity:** Implementing vector search requires more complex algorithms and computational resources compared to the relatively straightforward keyword search mechanisms [1_collection-A], [2_collection-B].\n4. **Use Cases:** Keyword search is often sufficient for simple queries or databases with limited vocabulary, while vector search is better suited for complex queries, large datasets, and applications requiring deep semantic understanding [1_collection-A].\n\nIn summary, while keyword search is effective for straightforward and exact queries, vector search offers significant advantages in understanding and retrieving semantically relevant information, especially in complex and large datasets. However, the choice between the two depends on the specific needs of the application, including the required precision, available computational resources, and the nature of the data being queried.",
+      "response_time_ms": 10312,
+      "accuracy_score": 0.7,
+      "citation_score": 0,
+      "hallucination_score": 0.75,
+      "context_relevance_score": 1,
+      "faithfulness_score": 1,
+      "passed": false,
+      "errors": [
+        "Missing required citations"
+      ],
+      "details": {
+        "evaluator_provider": "local"
+      }
+    },
+    {
+      "test_case_id": "test-004",
+      "query": "What embedding dimensions does OpenAI use?",
+      "actual_answer": "OpenAI utilizes different embedding dimensions depending on the specific model and its intended application. Here are some insights into the dimensions used for various OpenAI models:\n\n1. **GPT-3**: The GPT-3 model, for example, uses 12,288 dimensions for its embeddings. This is part of its architecture which includes 175 billion parameters, making it one of the largest models OpenAI has developed. The large embedding size contributes to its capacity to understand and generate text with a high degree of fluency and accuracy [1].\n\n2. **CLIP**: For the CLIP model, which is designed to understand images and text, the embedding dimensions are different. CLIP uses a 512-dimensional embedding space for both images and text, aligning them in the same space to enable cross-modal understanding. This dimensionality is chosen to balance the computational efficiency and the ability to capture complex patterns in both modalities [2].\n\n3. **DALL-E**: In models like DALL-E, which are used for generating images from text descriptions, the embedding dimensions can vary based on the version. However, detailed specifications about embedding dimensions for DALL-E are not always publicly detailed in the same way as for GPT-3 or CLIP. The exact dimensions are typically designed to optimize the model’s performance in generating high-quality images from textual input.\n\n4. **Whisper**: OpenAI's Whisper model, which is used for automatic speech recognition, employs an embedding dimension of 768. This is part of its transformer architecture designed to process audio inputs efficiently [3].\n\nThe choice of embedding dimensions often reflects a trade-off between the model's capacity and computational efficiency. Larger dimensions generally allow the model to capture more complex relationships in the data, but they also require more computational resources.\n\nIt's important to note that OpenAI continually updates and optimizes its models, so specific architectural details like embedding dimensions could be adjusted in future versions to improve performance or efficiency.\n\nReferences:\n- [1] Information on GPT-3 embedding dimensions (source from _collection: OpenAI_Model_Descriptions)\n- [2] Details on CLIP embedding dimensions (source from _collection: OpenAI_Multimodal_Research)\n- [3] Whisper model embedding dimensions (source from _collection: OpenAI_Speech_Recognition)",
+      "actual_citations": [
+        "[1]",
+        "[2]",
+        "[3]"
+      ],
+      "response_time_ms": 12781,
+      "accuracy_score": 0.2,
+      "citation_score": 1,
+      "hallucination_score": 0.6666666666666666,
+      "context_relevance_score": 1,
+      "faithfulness_score": 0,
+      "passed": false,
+      "errors": [
+        "Accuracy score 0.20 below threshold 0.70"
+      ],
+      "details": {
+        "evaluator_provider": "local"
+      }
+    },
+    {
+      "test_case_id": "test-005",
+      "query": "Explain the RAG pipeline",
+      "actual_answer": "The RAG (Retrieval-Augmented Generation) pipeline is a method in natural language processing that combines the strengths of information retrieval and text generation to produce more accurate and contextually relevant responses. This approach is particularly useful in scenarios where generating responses solely based on a pre-trained language model might not suffice due to limited context or the need for up-to-date information.\n\n### Key Components of the RAG Pipeline\n\n1. **Retrieval Component**:\n   - The retrieval part of the RAG pipeline is responsible for fetching relevant documents or pieces of information from a large database or knowledge source. This is typically done using a retriever model, which can be a dense retriever like DPR (Dense Passage Retrieval) or a traditional sparse retriever like BM25.\n   - The retriever uses the input query to find the most relevant documents, which are then passed to the generation component.\n\n2. **Generation Component**:\n   - Once relevant documents are retrieved, the generation component, usually a pre-trained language model like BERT or GPT, takes over. It uses the retrieved information to generate a coherent and contextually appropriate response.\n   - This step involves conditioning the output on both the input query and the retrieved documents, allowing the model to incorporate external knowledge into its responses.\n\n### Advantages of the RAG Pipeline\n\n- **Enhanced Contextuality**: By incorporating external information, the RAG pipeline can provide more contextually accurate answers than models relying solely on a fixed corpus of pre-learned data.\n- **Up-to-date Information**: The retrieval component can access the latest documents, enabling the generation model to use current information, which is particularly important for topics that evolve rapidly.\n- **Improved Accuracy**: Combining retrieval with generation helps in reducing the hallucination problem, where the model might generate plausible but incorrect information.\n\n### Applications\n\nThe RAG pipeline is widely used in applications such as question answering systems, customer support bots, and any other application that requires both accurate information retrieval and natural language understanding.\n\nIn summary, the RAG pipeline leverages the strengths of both retrieval and generation to provide responses that are not only fluent but also grounded in relevant and up-to-date information, making it a powerful tool in the development of intelligent systems capable of sophisticated interaction with users.",
+      "response_time_ms": 17262,
+      "accuracy_score": 0.6,
+      "citation_score": 0,
+      "hallucination_score": 0.25,
+      "context_relevance_score": 1,
+      "faithfulness_score": 0.8,
+      "passed": false,
+      "errors": [
+        "Missing required citations",
+        "High hallucination risk: score 0.25"
+      ],
+      "details": {
+        "evaluator_provider": "local"
+      }
+    }
+  ],
+  "summary": {
+    "total_tests": 5,
+    "passed_tests": 1,
+    "failed_tests": 4,
+    "pass_rate": 20,
+    "avg_accuracy": 0.58,
+    "avg_citation": 0.4,
+    "avg_hallucination": 0.7333333333333333,
+    "avg_context_relevance": 1,
+    "avg_faithfulness": 0.68,
+    "total_time_ms": 64037,
+    "avg_time_ms": 12807.4,
+    "start_time": "2026-03-17T08:36:19.731397-07:00",
+    "end_time": "2026-03-17T08:37:33.897798-07:00",
+    "duration": 74167251208
+  }
+}

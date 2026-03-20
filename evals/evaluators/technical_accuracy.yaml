@@ -1,0 +1,37 @@
+name: technical_accuracy
+description: Describe what this evaluator checks
+version: 1.0.0
+
+prompt: |
+  You are evaluating a response for quality.
+
+  Query: {{.Query}}
+  Expected Answer: {{.ExpectedAnswer}}
+  Actual Answer: {{.Answer}}
+  Context: {{.Context}}
+
+  Evaluate the response considering:
+  1. [Add your criteria here]
+  2. [Add more criteria]
+  3. [And more...]
+
+  Rate from 0.0 (poor) to 1.0 (excellent).
+  Provide only a number between 0.0 and 1.0.
+
+scoring:
+  type: llm_judge
+  threshold: 0.7
+  weight: 1.0
+
+# Optional: Override default LLM model
+# model:
+#   provider: openai
+#   name: gpt-4o-mini
+#   temperature: 0.1
+
+tags:
+  - quality
+  - custom
+
+author: your-team
+required: false
