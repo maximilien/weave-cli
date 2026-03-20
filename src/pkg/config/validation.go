@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/spf13/viper"
 )
 
 // ValidationWarning represents a non-critical configuration issue
@@ -414,8 +415,14 @@ func listDatabaseNames(cfg *Config) string {
 
 // PrintValidationResult prints validation warnings and errors to stderr
 // Only prints if there are issues to report (quiet by default)
+// Respects quiet-config setting from CLI flag, config.yaml, or environment
 func PrintValidationResult(result *ValidationResult) {
 	if result == nil {
+		return
+	}
+
+	// Check if quiet-config is set (via --quiet-config flag or quiet_config in config.yaml)
+	if viper.GetBool("quiet-config") {
 		return
 	}
 

@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/spf13/viper"
 )
 
 func TestCheckRequiredEnvVars(t *testing.T) {
@@ -296,6 +298,75 @@ EMPTY_VAR=
 			t.Errorf("For key %s: got %q, want %q", key, val, expectedVal)
 		}
 	}
+}
+
+func TestPrintValidationResultQuietConfig(t *testing.T) {
+	// Save and restore viper state
+	originalValue := viper.GetBool("quiet-config")
+	defer viper.Set("quiet-config", originalValue)
+
+	result := &ValidationResult{
+		Warnings: []ValidationWarning{
+			{
+				Field:      "test.field",
+				Message:    "test warning",
+				Suggestion: "fix it",
+			},
+		},
+		Errors: []ValidationWarning{
+			{
+				Field:      "test.error",
+				Message:    "test error",
+				Suggestion: "fix the error",
+			},
+		},
+	}
+
+	// With quiet-config=true, PrintValidationResult should return early (no output)
+	viper.Set("quiet-config", true)
+
+	// Capture stderr
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+
+	PrintValidationResult(result)
+
+	w.Close()
+	buf := make([]byte, 1024)
+	n, _ := r.Read(buf)
+	os.Stderr = oldStderr
+
+	if n > 0 {
+		t.Errorf("Expected no output with quiet-config=true, but got: %s", string(buf[:n]))
+	}
+
+	// With quiet-config=false, PrintValidationResult should produce output
+	viper.Set("quiet-config", false)
+
+	r2, w2, _ := os.Pipe()
+	os.Stderr = w2
+
+	PrintValidationResult(result)
+
+	w2.Close()
+	buf2 := make([]byte, 4096)
+	n2, _ := r2.Read(buf2)
+	os.Stderr = oldStderr
+
+	if n2 == 0 {
+		t.Errorf("Expected output with quiet-config=false, but got none")
+	}
+
+	output := string(buf2[:n2])
+	if !strings.Contains(output, "Configuration") {
+		t.Errorf("Expected output to contain 'Configuration', got: %s", output)
+	}
+}
+
+func TestPrintValidationResultNil(t *testing.T) {
+	// Should not panic with nil result
+	PrintValidationResult(nil)
 }
 
 func TestCreateSimpleEnvFile(t *testing.T) {
