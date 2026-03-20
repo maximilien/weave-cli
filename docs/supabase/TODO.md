@@ -13,9 +13,9 @@ From `docs/VDB_SUPPORT.md`:
 
 ## TODO List (Easiest → Hardest)
 
-### 1. Fix Collection Name Normalization (EASIEST) ⭐
+### 1. ~~Fix Collection Name Normalization~~ (DONE) ⭐
 
-**Priority**: High
+**Priority**: High — **FIXED**
 **Effort**: 1-2 hours
 **Impact**: User experience (eliminates unexpected naming behavior)
 
