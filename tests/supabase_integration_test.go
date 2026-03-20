@@ -6,7 +6,6 @@ package tests
 import (
 	"context"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -276,20 +275,18 @@ func TestSupabaseIntegration(t *testing.T) {
 			t.Errorf("Failed to list collections: %v", err)
 		}
 
-		// Supabase normalizes collection names (underscores -> hyphens)
-		expectedName := strings.ReplaceAll(collectionName, "_", "-")
-		t.Logf("Found %d collections, looking for '%s'", len(collections), expectedName)
+		t.Logf("Found %d collections, looking for '%s'", len(collections), collectionName)
 
 		found := false
 		for _, collection := range collections {
 			t.Logf("Collection: %s", collection.Name)
-			if collection.Name == expectedName {
+			if collection.Name == collectionName {
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Errorf("Created collection '%s' (normalized: '%s') should appear in list of %d collections", collectionName, expectedName, len(collections))
+			t.Errorf("Created collection '%s' should appear in list of %d collections", collectionName, len(collections))
 		}
 	})
 

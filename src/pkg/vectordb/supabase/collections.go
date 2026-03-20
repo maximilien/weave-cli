@@ -169,9 +169,8 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 			continue
 		}
 
-		// Convert table name back to collection name
+		// Convert table name back to collection name (preserve original naming)
 		collectionName := strings.TrimPrefix(tableName, "collection_")
-		collectionName = strings.ReplaceAll(collectionName, "_", "-")
 
 		// Get vectorizer from schema
 		vectorizer := ""
