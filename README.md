@@ -21,16 +21,16 @@ Weave CLI supports **10 vector databases**. Choose the one that best fits your n
 
 | VDB | Status | Local | Cloud | Best For |
 |-----|--------|-------|-------|----------|
-| **[Weaviate](docs/weaviate/SETUP.md)** | ✅ Stable | ✅ | ✅ | Production, all features, easiest setup |
-| **[Qdrant](docs/qdrant/SETUP.md)** | ✅ Stable | ✅ | ✅ | Rust performance, HNSW index, filtering |
-| **[Milvus](docs/milvus/SETUP.md)** | ✅ Stable | ✅ | ✅ | High performance, horizontal scaling |
-| **[Chroma](docs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup, embeddings |
-| **[Supabase](docs/supabase/SETUP.md)** | ✅ Stable | ✅ | ✅ | PostgreSQL + pgvector, cost-effective |
-| **[Neo4j](docs/neo4j/README.md)** | ✅ Stable | ✅ | ⚠️ Untested | Graph + vector search, Cypher queries |
-| **[MongoDB](docs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Atlas Vector Search, existing MongoDB users |
-| **[Pinecone](docs/pinecone/SETUP.md)** | 🟢 Beta | ❌ | ✅ | Serverless, auto-scaling, managed only |
-| **[OpenSearch](docs/opensearch/README.md)** | ✅ Stable | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
-| **[Elasticsearch](docs/elasticsearch/)** | 🟢 Beta | ✅ | ✅ | Elastic Cloud, HNSW vector + BM25 hybrid |
+| **[Weaviate](docs/vdbs/weaviate/SETUP.md)** | ✅ Stable | ✅ | ✅ | Production, all features, easiest setup |
+| **[Qdrant](docs/vdbs/qdrant/SETUP.md)** | ✅ Stable | ✅ | ✅ | Rust performance, HNSW index, filtering |
+| **[Milvus](docs/vdbs/milvus/SETUP.md)** | ✅ Stable | ✅ | ✅ | High performance, horizontal scaling |
+| **[Chroma](docs/vdbs/chroma/SETUP.md)** | ✅ Stable | ✅ | ✅ | macOS only, simple setup, embeddings |
+| **[Supabase](docs/vdbs/supabase/SETUP.md)** | ✅ Stable | ✅ | ✅ | PostgreSQL + pgvector, cost-effective |
+| **[Neo4j](docs/vdbs/neo4j/README.md)** | ✅ Stable | ✅ | ⚠️ Untested | Graph + vector search, Cypher queries |
+| **[MongoDB](docs/vdbs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Atlas Vector Search, existing MongoDB users |
+| **[Pinecone](docs/vdbs/pinecone/SETUP.md)** | 🟢 Beta | ❌ | ✅ | Serverless, auto-scaling, managed only |
+| **[OpenSearch](docs/vdbs/opensearch/README.md)** | ✅ Stable | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
+| **[Elasticsearch](docs/vdbs/elasticsearch/)** | 🟢 Beta | ✅ | ✅ | Elastic Cloud, HNSW vector + BM25 hybrid |
 
 📖 **See [Vector Database Support Matrix](docs/VDB_SUPPORT_MATRIX.md)
 for detailed feature comparison**
@@ -450,16 +450,16 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 
 ### Database-Specific
 
-- **[Chroma Documentation](docs/chroma/)** - Chroma integration guide (Stable)
-- **[Milvus Documentation](docs/milvus/)** - Milvus integration guide (Beta)
-- **[MongoDB Atlas Documentation](docs/mongodb/)** - MongoDB Atlas setup guide (Stable)
-- **[Neo4j Documentation](docs/neo4j/)** - Neo4j integration guide (Experimental)
-- **[OpenSearch Documentation](docs/opensearch/)** - OpenSearch integration
+- **[Chroma Documentation](docs/vdbs/chroma/)** - Chroma integration guide (Stable)
+- **[Milvus Documentation](docs/vdbs/milvus/)** - Milvus integration guide (Beta)
+- **[MongoDB Atlas Documentation](docs/vdbs/mongodb/)** - MongoDB Atlas setup guide (Stable)
+- **[Neo4j Documentation](docs/vdbs/neo4j/)** - Neo4j integration guide (Experimental)
+- **[OpenSearch Documentation](docs/vdbs/opensearch/)** - OpenSearch integration
   guide (Experimental)
-- **[Pinecone Documentation](docs/pinecone/)** - Pinecone integration guide (Beta)
-- **[Qdrant Documentation](docs/qdrant/)** - Qdrant integration guide (Stable)
-- **[Supabase Documentation](docs/supabase/)** - Supabase integration guide (Alpha)
-- **[Weaviate Documentation](docs/weaviate/)** - Weaviate integration status (Stable)
+- **[Pinecone Documentation](docs/vdbs/pinecone/)** - Pinecone integration guide (Beta)
+- **[Qdrant Documentation](docs/vdbs/qdrant/)** - Qdrant integration guide (Stable)
+- **[Supabase Documentation](docs/vdbs/supabase/)** - Supabase integration guide (Alpha)
+- **[Weaviate Documentation](docs/vdbs/weaviate/)** - Weaviate integration status (Stable)
 
 ## Advanced Usage
 
@@ -1160,16 +1160,16 @@ allows seamless switching between different vector database backends.
 | -------- | ---- | ------ | -------- | ---- |
 | **Weaviate Cloud** | `weaviate-cloud` | ✅ Production Ready | **Stable** | [Guide](docs/) |
 | **Weaviate Local** | `weaviate-local` | ✅ Production Ready | **Stable** | [Guide](docs/) |
-| **Milvus Local** | `milvus-local` | ✅ Functional | **Beta** - Feature complete, local testing ready | [Guide](docs/milvus/) |
-| **Milvus Cloud** | `milvus-cloud` | ✅ Functional | **Beta** - Zilliz cloud integration ready | [Guide](docs/milvus/) |
-| **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/supabase/) |
-| **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/mongodb/) |
-| **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API ⚠️ **macOS only** | [Guide](docs/chroma/) |
-| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration ⚠️ **macOS only** | [Guide](docs/chroma/) |
-| **Qdrant Local** | `qdrant-local` | ✅ Production Ready | **Stable** - HNSW vector search, full CRUD | [Guide](docs/qdrant/) |
-| **Neo4j Local** | `neo4j-local` | ✅ Functional | **Experimental** - Graph + vector search | [Guide](docs/neo4j/) |
-| **OpenSearch Local** | `opensearch-local` | ✅ Functional | **Experimental** - k-NN with HNSW algorithm | [Guide](docs/opensearch/) |
-| **OpenSearch Cloud** | `opensearch-cloud` | ✅ Functional | **Experimental** - AWS OpenSearch Service | [Guide](docs/opensearch/) |
+| **Milvus Local** | `milvus-local` | ✅ Functional | **Beta** - Feature complete, local testing ready | [Guide](docs/vdbs/milvus/) |
+| **Milvus Cloud** | `milvus-cloud` | ✅ Functional | **Beta** - Zilliz cloud integration ready | [Guide](docs/vdbs/milvus/) |
+| **Supabase** | `supabase` | ✅ Functional | **Alpha** - Feature complete, needs testing | [Guide](docs/vdbs/supabase/) |
+| **MongoDB Atlas** | `mongodb` | ✅ Functional | **Experimental** - Vector search requires index setup | [Guide](docs/vdbs/mongodb/) |
+| **Chroma Local** | `chroma-local` | ✅ Production Ready | **Stable** - Full CRUD, tested with v2 API ⚠️ **macOS only** | [Guide](docs/vdbs/chroma/) |
+| **Chroma Cloud** | `chroma-cloud` | ✅ Functional | **Beta** - Cloud integration ⚠️ **macOS only** | [Guide](docs/vdbs/chroma/) |
+| **Qdrant Local** | `qdrant-local` | ✅ Production Ready | **Stable** - HNSW vector search, full CRUD | [Guide](docs/vdbs/qdrant/) |
+| **Neo4j Local** | `neo4j-local` | ✅ Functional | **Experimental** - Graph + vector search | [Guide](docs/vdbs/neo4j/) |
+| **OpenSearch Local** | `opensearch-local` | ✅ Functional | **Experimental** - k-NN with HNSW algorithm | [Guide](docs/vdbs/opensearch/) |
+| **OpenSearch Cloud** | `opensearch-cloud` | ✅ Functional | **Experimental** - AWS OpenSearch Service | [Guide](docs/vdbs/opensearch/) |
 | **Mock** | `mock` | ✅ Testing Only | **Stable** | - |
 
 ### Maturity Levels

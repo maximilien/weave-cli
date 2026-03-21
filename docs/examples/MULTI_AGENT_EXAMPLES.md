@@ -178,6 +178,5 @@ go test -v ./src/pkg/agents -run TestAgentChain
 
 ## See Also
 
-- [Multi-Agent Orchestration Planning](../planning/MULTI_AGENT_ORCHESTRATION.md)
-- [Agent Configuration](../agents/README.md)
-- [RAG Agent Documentation](../agents/RAG_AGENT.md)
+- [Agent Management](../AGENT_MANAGEMENT.md)
+- [Architecture](../ARCHITECTURE.md)

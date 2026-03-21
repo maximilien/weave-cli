@@ -2,15 +2,17 @@
 
 Complete documentation for the Weave CLI vector database management tool.
 
-## 📚 Quick Navigation
+## Quick Navigation
 
 ### Core Documentation
 
 - **[User Guide](USER_GUIDE.md)** - Complete feature documentation and usage guide
+- **[Architecture](ARCHITECTURE.md)** - System design, agent layer, orchestration
 - **[Roadmap](ROADMAP.md)** - Version history, upcoming features, and release plan
-- **[VDB Support Matrix](VDB_SUPPORT.md)** - Feature comparison across databases
+- **[VDB Support Matrix](VDB_SUPPORT_MATRIX.md)** - Quick reference feature comparison
+- **[VDB Support](VDB_SUPPORT.md)** - Detailed database comparison and analysis
 
-### 📖 Guides
+### Guides
 
 User guides for specific features and workflows:
 
@@ -19,143 +21,111 @@ User guides for specific features and workflows:
 - **[AI Agents](guides/WEAVE_CLI_AI.md)** - Natural language query system with GPT-4o
 - **[Batch Processing](guides/BATCH_DOCS_CREATION.md)** - Parallel document processing
 - **[Vector DB Abstraction](guides/VECTOR_DB_ABSTRACTION.md)** - Multi-database architecture
+- **[BM25 Support by VDB](guides/BM25_SUPPORT_BY_VDB.md)** - Full-text search across all databases
+- **[OSS Embedding Tips](guides/OSS_EMBEDDING_TESTING_TIPS.md)** - Free embedding providers
 - **[Demos](guides/DEMO.md)** - Video tutorials and demonstrations
 
-### 🗄️ Database-Specific Documentation
+### Database-Specific Documentation
 
-#### Supabase (PostgreSQL + pgvector)
+All VDB docs are under [`vdbs/`](vdbs/):
 
-Complete documentation for Supabase integration:
+| Database | Docs | Status |
+|----------|------|--------|
+| **Weaviate** | [Setup](vdbs/weaviate/SETUP.md), [Integration Status](vdbs/weaviate/INTEGRATION_STATUS.md) | Stable |
+| **Qdrant** | [Setup](vdbs/qdrant/SETUP.md) | Stable |
+| **Milvus** | [Overview](vdbs/milvus/README.md), [Setup](vdbs/milvus/SETUP.md), [Local](vdbs/milvus/LOCAL_SETUP.md), [Cloud](vdbs/milvus/CLOUD_SETUP.md) | Stable |
+| **Chroma** | [Setup](vdbs/chroma/SETUP.md) | Stable |
+| **Supabase** | [Overview](vdbs/supabase/README.md), [Setup](vdbs/supabase/SETUP.md), [Testing](vdbs/supabase/TESTING.md), [TODO](vdbs/supabase/TODO.md) | Stable |
+| **MongoDB** | [Overview](vdbs/mongodb/README.md), [Setup](vdbs/mongodb/SETUP.md), [Atlas](vdbs/mongodb/ATLAS_SETUP.md) | Stable |
+| **Neo4j** | [Overview](vdbs/neo4j/README.md), [Setup](vdbs/neo4j/SETUP.md), [Aura](vdbs/neo4j/AURA_SETUP.md) | Stable |
+| **Pinecone** | [Setup](vdbs/pinecone/SETUP.md) | Beta |
+| **Elasticsearch** | [Overview](vdbs/elasticsearch/README.md), [Setup](vdbs/elasticsearch/SETUP.md), [Local](vdbs/elasticsearch/LOCAL_SETUP.md), [Cloud](vdbs/elasticsearch/CLOUD_SETUP.md) | Beta |
+| **OpenSearch** | [Overview](vdbs/opensearch/README.md), [AWS](vdbs/opensearch/AWS_SETUP.md) | Stable |
 
-- **[Supabase Overview](supabase/README.md)** - Getting started and features
-- **[Testing Guide](supabase/TESTING.md)** - Integration test setup and usage
-- **[Collection Name Fix](supabase/NAME_FIX.md)** - Name preservation implementation
-- **[BM25 Improvement](supabase/BM25_IMPROVEMENT.md)** - Full-text search optimization
-- **[TODO](supabase/TODO.md)** - Roadmap and planned improvements
+### Other Documentation
 
-#### Weaviate
+- **[Agent Management](AGENT_MANAGEMENT.md)** - Built-in and custom agents
+- **[Weave Stack](WEAVE_STACK.md)** - Kubernetes stack deployment
+- **[MCP AI Tools](mcp/MCP_AI_TOOLS.md)** - MCP server integration
+- **[Observability](OBSERVABILITY.md)** - Opik tracing and monitoring
+- **[Shell Completion](SHELL_COMPLETION.md)** - Tab completion setup
+- **[Timeout Configuration](TIMEOUT_CONFIGURATION.md)** - Per-operation timeout tuning
+- **[VDB Naming Convention](VDB_NAMING_CONVENTION.md)** - Collection naming rules
+- **[Production Ready](PRODUCTION_READY.md)** - Production readiness checklist
+- **[Client0 Getting Started](CLIENT0_GETTING_STARTED.md)** - Client0 onboarding
 
-- **[Integration Status](weaviate/INTEGRATION_STATUS.md)** - Weaviate support details
+### Testing
 
-### 🧪 Testing Documentation
+- **[Test Guide](TEST_GUIDE.md)** - Running tests
+- **[Embedding Coverage](tests/EMBEDDING_COVERAGE.md)** - Multi-provider embedding test analysis
 
-Test coverage and testing guides:
+### Integrations
 
-- **[Embedding Test Coverage](tests/EMBEDDING_COVERAGE.md)** - Multi-provider embedding test analysis
+- **[GitHub Actions](integrations/GITHUB_ACTIONS.md)**
+- **[Airflow](integrations/AIRFLOW.md)**
+- **[Argo Workflows](integrations/ARGO_WORKFLOWS.md)**
 
-### 📝 Planning & Future Work
-
-Analysis and plans for upcoming features:
-
-- **[REPL Progress Improvement](planning/REPL_PROGRESS.md)** - Real-time output streaming for script execution
-- **[Demo Update Plan](planning/DEMO_UPDATE_PLAN.md)** - Strategy for updating and recording all demos
-
-### 📋 Release Notes
-
-Version-specific release information:
+### Release Notes
 
 - **[Release Checklist](releases/RELEASE_CHECKLIST.md)** - Release process
-- **[v0.3.10](releases/RELEASE_v0.3.10.md)** - Latest release
-- **[v0.3.9](releases/RELEASE_v0.3.9.md)**
-- **[v0.2.8](releases/RELEASE_v0.2.8.md)**
-- **[v0.2.7](releases/RELEASE_v0.2.7.md)**
+- **[v0.11.5](releases/v0.11.5-RELEASE-NOTES.md)** | [v0.11.2](releases/RELEASE_v0.11.2.md) | [v0.11.1](releases/RELEASE_v0.11.1.md) | [v0.11.0](releases/RELEASE_v0.11.0.md)
+- **[v0.9.15](releases/RELEASE_v0.9.15.md)** | [v0.9.13](releases/RELEASE_v0.9.13.md) | [v0.9.1](releases/RELEASE_v0.9.1.md)
+- **[v0.7.2](releases/RELEASE_v0.7.2.md)** | [v0.7.1](releases/RELEASE_v0.7.1.md) | [v0.7.0](releases/RELEASE_v0.7.0.md)
+- Older releases: [archive/releases/](archive/releases/)
 
-### 📦 Archive
+### Collaboration
 
-Historical and reference documentation:
-
+- **[Opik Video/Blog Checklist](blogs/OPIK_VIDEO_BLOG_CHECKLIST.md)** - Opik collaboration (deadline: Mar 24-31)
+- **[Presentation](PRESENTATION.md)** - Project presentation slides
 - **[Blog Draft](archive/BLOG_DRAFT.md)** - Technical blog post draft
-- **[Presentation](archive/PRESENTATION.md)** - Project presentation
-- **[Session Summary](archive/SESSION_SUMMARY.md)** - Development session notes
-- **[Weave vs RagMe](archive/WEAVE_VS_RAGME.md)** - Feature comparison
-- **[Error Messages](archive/ERROR_MESSAGES.md)** - Error handling reference
-- **[Image Metadata Enhancement](archive/IMAGE_METADATA_ENHANCEMENT_PLAN.md)** - Enhancement plan
 
-## 🚀 Getting Started
+### Planning
 
-1. **Installation**: See [User Guide - Installation](USER_GUIDE.md#installation)
-2. **Configuration**: See [User Guide - Configuration](USER_GUIDE.md#configuration)
-3. **Choose Your Database**: See [VDB Support Matrix](VDB_SUPPORT.md)
-4. **Start Using**: Follow [Demos](guides/DEMO.md) or [User Guide](USER_GUIDE.md)
+Active planning docs:
 
-## 🔍 Find What You Need
+- **[Planning Index](planning/README.md)**
+- **[Weave Stack Phase 2](planning/WEAVE_STACK_PHASE_2_PLAN.md)**
+- **[Multi-VDB Support Plan](planning/MULTI_VDB_SUPPORT_PLAN.md)**
 
-### By Topic
+### Archive
 
-- **Backup & Restore**: [Backup Guide](guides/BACKUP_RESTORE.md)
-- **Configuration**: [User Guide - Configuration](USER_GUIDE.md#configuration)
-- **AI/Natural Language**: [AI Agents Guide](guides/WEAVE_CLI_AI.md)
-- **Batch Processing**: [Batch Docs Guide](guides/BATCH_DOCS_CREATION.md)
-- **Testing**: [Supabase Testing](supabase/TESTING.md)
-- **Architecture**: [Vector DB Abstraction](guides/VECTOR_DB_ABSTRACTION.md)
+Historical documentation: **[archive/](archive/)**
 
-### By Database
-
-- **Supabase**: [supabase/](supabase/)
-- **Weaviate**: [weaviate/](weaviate/)
-- **Mock Database**: [VDB Support Matrix](VDB_SUPPORT.md#mock-database)
-
-### By Use Case
-
-- **Getting Started**: [User Guide](USER_GUIDE.md)
-- **Backup/Restore Collections**: [Backup Guide](guides/BACKUP_RESTORE.md)
-- **Adding Documents**: [User Guide - Documents](USER_GUIDE.md#documents)
-- **Searching**: [User Guide - Search](USER_GUIDE.md#search)
-- **Managing Collections**: [User Guide - Collections](USER_GUIDE.md#collections)
-- **Development**: [Vector DB Abstraction](guides/VECTOR_DB_ABSTRACTION.md)
-
-## 🤝 Contributing
-
-When contributing documentation:
-
-1. Keep the main [User Guide](USER_GUIDE.md) comprehensive but concise
-2. Database-specific details go in `supabase/` or `weaviate/` directories
-3. Feature guides go in `guides/` directory
-4. Update this index when adding new documentation
-5. Update internal links when moving files
-
-## 📝 Documentation Structure
+## Documentation Structure
 
 ```
 docs/
 ├── README.md                    # This file - documentation index
 ├── USER_GUIDE.md                # Main user guide
-├── CHANGELOG.md                 # Version history
-├── VDB_SUPPORT.md               # Database feature matrix
+├── ARCHITECTURE.md              # System architecture
+├── VDB_SUPPORT.md               # Detailed database comparison
+├── VDB_SUPPORT_MATRIX.md        # Quick reference matrix
+├── WEAVE_STACK.md               # Stack deployment
+│
+├── vdbs/                        # All VDB-specific docs
+│   ├── weaviate/
+│   ├── qdrant/
+│   ├── milvus/
+│   ├── chroma/
+│   ├── supabase/
+│   ├── mongodb/
+│   ├── neo4j/
+│   ├── pinecone/
+│   ├── elasticsearch/
+│   └── opensearch/
 │
 ├── guides/                      # Feature guides
-│   ├── WEAVE_CLI_AI.md
-│   ├── BATCH_DOCS_CREATION.md
-│   ├── VECTOR_DB_ABSTRACTION.md
-│   └── DEMO.md
-│
-├── supabase/                    # Supabase-specific docs
-│   ├── README.md
-│   ├── TESTING.md
-│   ├── NAME_FIX.md
-│   ├── BM25_IMPROVEMENT.md
-│   └── TODO.md
-│
-├── weaviate/                    # Weaviate-specific docs
-│   └── INTEGRATION_STATUS.md
-│
+├── blogs/                       # Blog/video collaboration
+├── examples/                    # Usage examples
+├── integrations/                # CI/CD integrations
 ├── tests/                       # Testing documentation
-│   └── EMBEDDING_COVERAGE.md
-│
-├── planning/                    # Future work & analysis
-│   └── REPL_PROGRESS.md
-│
+├── planning/                    # Active planning
 ├── releases/                    # Release notes
-│   ├── RELEASE_CHECKLIST.md
-│   └── RELEASE_v*.md
-│
-└── archive/                     # Historical/reference docs
-    ├── BLOG_DRAFT.md
-    ├── PRESENTATION.md
-    └── ...
+├── mcp/                         # MCP integration
+└── archive/                     # Historical docs
 ```
 
-## 📞 Support
+## Support
 
 - **Issues**: <https://github.com/maximilien/weave-cli/issues>
 - **Discussions**: <https://github.com/maximilien/weave-cli/discussions>

@@ -260,9 +260,9 @@ func (c *ElasticsearchClient) Close() error
 
 **Files to Create**:
 - `tests/elasticsearch_integration_test.go`
-- `docs/elasticsearch/SETUP.md`
-- `docs/elasticsearch/LOCAL_SETUP.md`
-- `docs/elasticsearch/CLOUD_SETUP.md`
+- `docs/vdbs/elasticsearch/SETUP.md`
+- `docs/vdbs/elasticsearch/LOCAL_SETUP.md`
+- `docs/vdbs/elasticsearch/CLOUD_SETUP.md`
 
 **Test Coverage**:
 - Health checks
@@ -277,7 +277,7 @@ func (c *ElasticsearchClient) Close() error
 ### Phase 6: Documentation (Day 5)
 
 **Files to Create/Update**:
-- `docs/elasticsearch/README.md` - Overview
+- `docs/vdbs/elasticsearch/README.md` - Overview
 - `docs/VDB_SUPPORT_MATRIX.md` - Add Elasticsearch row
 - `README.md` - Add Elasticsearch to main table
 - `CHANGELOG.md` - v0.8.0 entry
