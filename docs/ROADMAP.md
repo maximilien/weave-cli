@@ -1,7 +1,7 @@
 # Weave CLI Roadmap
 
-**Last Updated**: 2026-03-05
-**Current Version**: v0.10.3 (unreleased: v0.11.0)
+**Last Updated**: 2026-03-21
+**Current Version**: v0.11.4 (unreleased: v0.12.0)
 
 ## Overview
 
@@ -9,11 +9,38 @@ Weave CLI is a command-line tool for managing vector databases with a
 unified interface. This roadmap outlines completed milestones and upcoming
 features.
 
+## Upcoming
+
+### 🚀 v0.12.0 — April 2026 Launch
+
+**Status**: In Progress
+
+**Completed:**
+
+- ✅ `weave doctor` — unified diagnostic command (8 check sections,
+  --fix/--json/--section/--verbose flags, 21 tests)
+
+**Pending:**
+
+- [ ] Opik video/blog collaboration (deadline: Mar 24–31)
+  - Demo recordings: VDB+RAG, agent orchestration, Opik dashboard,
+    Opik evaluation
+  - See `docs/blogs/OPIK_VIDEO_BLOG_CHECKLIST.md`
+- [ ] Fix `TestProviderFactory/CreateOpikProviderWithoutAPIKey`
+  (fails when OPIK_API_KEY is set in env)
+- [ ] Performance: 500+ docs/sec backup target (currently 376)
+- [ ] Cloud deployments: EKS/GKE support (Phase 2)
+- [ ] TLS/SSL, secrets management, monitoring (Phase 2)
+
 ## Version History
 
-### 🚀 v0.11.0 (2026-03-07) - Backup & Restore (In Progress)
+### ✅ v0.11.4 (2026-03-10) - Remote Storage & Persistence
 
-**Status**: In Progress (Release: March 7, 2026)
+**Status**: Released — see CHANGELOG.md for details.
+
+### ✅ v0.11.0 (2026-03-07) - Backup & Restore
+
+**Status**: Released
 
 **Features:**
 
@@ -91,7 +118,8 @@ features.
 **Features:**
 
 - Model registry with 17+ embedding models
-- Auto-detect dimensions for sentence-transformers, OpenAI, Ollama, Cohere, Voyage AI
+- Auto-detect dimensions for sentence-transformers, OpenAI,
+  Ollama, Cohere, Voyage AI
 - OSS model flagging
 - Reduces configuration errors by ~80%
 
