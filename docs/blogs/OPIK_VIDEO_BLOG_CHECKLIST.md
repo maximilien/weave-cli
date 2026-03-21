@@ -343,8 +343,8 @@ flowchart LR
 - [ ] **Article on picking the right tech stack** (Go choice)
   - _Status: Max to provide link_
 - [ ] **weave-cli breakdown article**
-  - Existing draft: [`docs/archive/BLOG_DRAFT.md`](../archive/BLOG_DRAFT.md)
-  - _Status: Max to finalize and publish_
+  - Draft: [`docs/BLOG_DRAFT.md`](../BLOG_DRAFT.md)
+  - _Status: Updated with stack, evals, monitoring/Opik sections. Max to review and finalize._
 - [ ] **Any other relevant links**
   - README: [`README.md`](../../README.md)
   - VDB Support Matrix: [`docs/VDB_SUPPORT_MATRIX.md`](../VDB_SUPPORT_MATRIX.md)
