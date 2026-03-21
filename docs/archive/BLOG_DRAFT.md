@@ -1,3 +1,5 @@
+NOTE: this is actually not a bad start but needs update to account for recent features. In paticular thinking of `weave stack` commands to deploy entire stack including VBD and LLMs and day-2 devops. Also lacking `weave evals` which is very important. Let's add these and I'll do a second pass.
+
 # Weave CLI: Simplifying Vector Database Management for RAG Developers
 
 **TL;DR**: Weave CLI is a powerful command-line tool for managing Weaviate vector
