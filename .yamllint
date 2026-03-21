@@ -13,3 +13,4 @@ ignore: |
   examples/ci-cd/
   config.yaml
   templates/helm/weave-stack/templates/
+  evals/

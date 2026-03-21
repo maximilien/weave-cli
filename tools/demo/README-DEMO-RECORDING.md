@@ -18,9 +18,11 @@ apt-get install expect  # Linux
 
 The `record-all-demos.sh` script:
 
-1. **Checks prerequisites** - Verifies asciinema, weave binary, and configuration
+1. **Checks prerequisites** - Verifies asciinema, weave binary,
+   and configuration
 2. **Offers options** - Select which demos to record
-3. **Records automatically** - Uses `expect` to automate pressing Enter through demos
+3. **Records automatically** - Uses `expect` to automate pressing
+   Enter through demos
 4. **Uploads to asciinema.org** - Optionally uploads recordings
 5. **Tracks URLs** - Saves upload URLs to `videos/latest-demo-uploads.txt`
 

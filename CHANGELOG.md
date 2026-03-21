@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`weave doctor` — Unified Diagnostic Command**
+  - Single command to check the health of your entire weave setup
+  - **8 check sections** (run in order): system, config, env, vdb,
+    llm, embeddings, stack, opik
+  - System checks: CLI version, Go version, OS/arch, kubectl, helm,
+    tesseract
+  - Config checks: file exists, parseable, validates cleanly (reuses
+    existing `ValidateConfig`)
+  - Env checks: audits required env vars based on configured VDBs,
+    detects placeholder values
+  - VDB checks: `Health()` on each configured database with latency
+    and collection count
+  - LLM checks: OpenAI API key validation + test embedding call
+  - Embeddings checks: model registry lookup, dimension mismatch
+    detection
+  - Stack checks: cluster info, status, health (wraps existing stack
+    package)
+  - Opik checks: API key, workspace, HTTP connectivity probe
+  - **Flags**: `--fix` (auto-fix suggestions), `--section <name>`
+    (run single section), `--json` (machine-readable output),
+    `--verbose` (show passing checks)
+  - Color-coded terminal output with `[OK]`, `[WARN]`, `[FAIL]`,
+    `[SKIP]` tags and fix suggestions
+  - JSON output includes string status values and summary counts
+  - Exit code 1 when any check fails (useful for CI)
+  - **21 unit tests** covering all sections, status types, JSON
+    serialization, and orchestrator filtering
+
 ### Performance
 
 - **2x Faster Backups** (Quick Win #1 from Performance Profiling)
@@ -52,7 +82,8 @@ recovery and fixes critical document persistence issues in stack ingestion.
     - `--remote-only` (upload only, delete local file)
     - `--remote-keep-local` (keep local file after upload, default: true)
   - **New Flags** (backup restore):
-    - Same flags as create, plus `--keep-local` (keep downloaded file, default: false)
+    - Same flags as create, plus `--keep-local`
+      (keep downloaded file, default: false)
   - **Documentation**: Comprehensive guide with S3/MinIO setup, examples, troubleshooting
     - Added 461 lines to `docs/guides/BACKUP_RESTORE.md`
     - S3 configuration with IAM permissions
@@ -1010,7 +1041,8 @@ weave cols query AuctionListings AuctionImages AuctionResults "leica m3" \
 
 ### Impact
 
-- **Fixes blocking client deployment (AuctionsMax.ai)** - Multi-modal RAG fully unblocked
+- **Fixes blocking client deployment (AuctionsMax.ai)** -
+  Multi-modal RAG fully unblocked
 - Success rate: 0% → 100% (253/253 images expected)
 - No data loss: Full base64 stored in ImageData JSON field
 - Backward compatible: Weaviate and other VDBs continue to work

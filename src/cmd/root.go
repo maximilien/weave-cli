@@ -146,6 +146,8 @@ Supports Weaviate (cloud/local), Milvus (local/cloud), MongoDB Atlas, Supabase P
   weave config show                    # Show current configuration
   weave config list                    # List all configured databases
   weave health check                   # Check database health
+  weave doctor                         # Full diagnostic scan
+  weave doctor --fix                   # Diagnose + auto-fix suggestions
 
 📊 EMBEDDINGS:
   weave embeddings list                # List all available embedding models
@@ -232,6 +234,9 @@ func init() {
 
 	rootCmd.AddCommand(servecmd.ServeCmd)
 	servecmd.ServeCmd.GroupID = "config"
+
+	rootCmd.AddCommand(doctorCmd)
+	doctorCmd.GroupID = "config"
 
 	// Global flags
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")

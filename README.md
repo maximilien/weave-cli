@@ -46,7 +46,10 @@ weave config create --env
 # - WEAVIATE_API_KEY
 # - OPENAI_API_KEY
 
-# Verify setup
+# Verify setup — diagnose everything in one command
+weave doctor
+
+# Or check just database health
 weave health check
 
 # List configured databases
@@ -452,14 +455,20 @@ weave chunking suggest ./docs --collection MyDocs --output chunking.yaml
 
 - **[Chroma Documentation](docs/vdbs/chroma/)** - Chroma integration guide (Stable)
 - **[Milvus Documentation](docs/vdbs/milvus/)** - Milvus integration guide (Beta)
-- **[MongoDB Atlas Documentation](docs/vdbs/mongodb/)** - MongoDB Atlas setup guide (Stable)
-- **[Neo4j Documentation](docs/vdbs/neo4j/)** - Neo4j integration guide (Experimental)
-- **[OpenSearch Documentation](docs/vdbs/opensearch/)** - OpenSearch integration
-  guide (Experimental)
-- **[Pinecone Documentation](docs/vdbs/pinecone/)** - Pinecone integration guide (Beta)
-- **[Qdrant Documentation](docs/vdbs/qdrant/)** - Qdrant integration guide (Stable)
-- **[Supabase Documentation](docs/vdbs/supabase/)** - Supabase integration guide (Alpha)
-- **[Weaviate Documentation](docs/vdbs/weaviate/)** - Weaviate integration status (Stable)
+- **[MongoDB Atlas Documentation](docs/vdbs/mongodb/)** -
+  MongoDB Atlas setup guide (Stable)
+- **[Neo4j Documentation](docs/vdbs/neo4j/)** -
+  Neo4j integration guide (Experimental)
+- **[OpenSearch Documentation](docs/vdbs/opensearch/)** -
+  OpenSearch integration guide (Experimental)
+- **[Pinecone Documentation](docs/vdbs/pinecone/)** -
+  Pinecone integration guide (Beta)
+- **[Qdrant Documentation](docs/vdbs/qdrant/)** -
+  Qdrant integration guide (Stable)
+- **[Supabase Documentation](docs/vdbs/supabase/)** -
+  Supabase integration guide (Alpha)
+- **[Weaviate Documentation](docs/vdbs/weaviate/)** -
+  Weaviate integration status (Stable)
 
 ## Advanced Usage
 
@@ -712,6 +721,38 @@ weave cols ls --local -S         # Local collections summary
   or `--local` flags
 - **Consistent UX**: Same behavior across `cols ls`, `health check`,
   and `config list`
+
+### Diagnostics with `weave doctor`
+
+Run a comprehensive diagnostic scan of your entire weave setup in one
+command. Checks system dependencies, config, env vars, VDB connectivity,
+LLM access, embedding models, stack status, and Opik integration.
+
+```bash
+weave doctor                    # Full diagnostic scan
+weave doctor --verbose          # Show all checks (including passing)
+weave doctor --fix              # Scan + show auto-fix suggestions
+weave doctor --section config   # Only check config section
+weave doctor --json             # Machine-readable JSON output
+```
+
+**Sections checked** (in order): system, config, env, vdb, llm,
+embeddings, stack, opik.
+
+**Example output:**
+
+```text
+Config
+  [OK]   Config file: config.yaml
+  [OK]   Config parsing: valid YAML
+
+VDB Connectivity
+  [OK]   milvus-local (milvus-local): connected in 12ms, 6 collections
+  [FAIL] weaviate-cloud (weaviate-cloud): connection refused
+         Fix: Check connectivity to https://... or run: weave stack up
+
+Summary: 3 passed, 0 warnings, 1 failed
+```
 
 ### RAG Agents (All Vector Databases)
 
