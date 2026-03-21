@@ -10,16 +10,16 @@ and features.
 
 | VDB | Status | Local | Cloud | Platforms | Setup Guide |
 |-----|--------|-------|-------|-----------|-------------|
-| **Weaviate** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](weaviate/SETUP.md) |
-| **Qdrant** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](qdrant/SETUP.md) |
-| **Milvus** | ✅ Stable | ✅ | ✅ | All | [LOCAL_SETUP.md](milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](milvus/CLOUD_SETUP.md) |
-| **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](chroma/SETUP.md) |
-| **Supabase** | ✅ Stable | ✅ | ✅ | All | [README.md](supabase/README.md) |
-| **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](neo4j/README.md), [AURA_SETUP.md](neo4j/AURA_SETUP.md) |
-| **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](mongodb/ATLAS_SETUP.md) |
-| **Pinecone** | 🟢 Beta | ❌ | ✅ | All | [SETUP.md](pinecone/SETUP.md) |
-| **OpenSearch** | ✅ Stable | ✅ | ✅ | All (2GB+ RAM) | [README.md](opensearch/README.md) |
-| **Elasticsearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](elasticsearch/README.md), [SETUP.md](elasticsearch/SETUP.md) |
+| **Weaviate** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](vdbs/weaviate/SETUP.md) |
+| **Qdrant** | ✅ Stable | ✅ | ✅ | All | [SETUP.md](vdbs/qdrant/SETUP.md) |
+| **Milvus** | ✅ Stable | ✅ | ✅ | All | [LOCAL_SETUP.md](vdbs/milvus/LOCAL_SETUP.md), [CLOUD_SETUP.md](vdbs/milvus/CLOUD_SETUP.md) |
+| **Chroma** | ✅ Stable | ✅ | ✅ | macOS only | [SETUP.md](vdbs/chroma/SETUP.md) |
+| **Supabase** | ✅ Stable | ✅ | ✅ | All | [README.md](vdbs/supabase/README.md) |
+| **Neo4j** | ✅ Stable | ✅ | ⚠️ Untested | All | [README.md](vdbs/neo4j/README.md), [AURA_SETUP.md](vdbs/neo4j/AURA_SETUP.md) |
+| **MongoDB Atlas** | ✅ Stable | ❌ | ✅ | All | [ATLAS_SETUP.md](vdbs/mongodb/ATLAS_SETUP.md) |
+| **Pinecone** | 🟢 Beta | ❌ | ✅ | All | [SETUP.md](vdbs/pinecone/SETUP.md) |
+| **OpenSearch** | ✅ Stable | ✅ | ✅ | All (2GB+ RAM) | [README.md](vdbs/opensearch/README.md) |
+| **Elasticsearch** | 🟢 Beta | ✅ | ✅ | All (2GB+ RAM) | [README.md](vdbs/elasticsearch/README.md), [SETUP.md](vdbs/elasticsearch/SETUP.md) |
 
 ## Status Legend
 

@@ -28,7 +28,7 @@ src/pkg/vectordb/elasticsearch/
 tests/
 └── elasticsearch_integration_test.go  # Integration tests
 
-docs/elasticsearch/
+docs/vdbs/elasticsearch/
 ├── RESEARCH.md      # Research findings (completed)
 ├── ARCHITECTURE.md  # This file
 ├── README.md        # Overview and feature list
@@ -673,10 +673,10 @@ import (
 **Deliverable**: Full test coverage, all tests passing
 
 ### Phase 7: Documentation (Day 5)
-- [ ] Write `docs/elasticsearch/README.md` - Overview
-- [ ] Write `docs/elasticsearch/SETUP.md` - General setup
-- [ ] Write `docs/elasticsearch/LOCAL_SETUP.md` - Docker setup
-- [ ] Write `docs/elasticsearch/CLOUD_SETUP.md` - Elastic Cloud setup
+- [ ] Write `docs/vdbs/elasticsearch/README.md` - Overview
+- [ ] Write `docs/vdbs/elasticsearch/SETUP.md` - General setup
+- [ ] Write `docs/vdbs/elasticsearch/LOCAL_SETUP.md` - Docker setup
+- [ ] Write `docs/vdbs/elasticsearch/CLOUD_SETUP.md` - Elastic Cloud setup
 - [ ] Update `docs/VDB_SUPPORT_MATRIX.md` - Add Elasticsearch row
 - [ ] Update `README.md` - Add to main table
 - [ ] Update `CHANGELOG.md` - v0.8.0 entry

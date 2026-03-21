@@ -313,5 +313,5 @@ go test -v ./tests -run="TestSupabaseIntegration/RejectUnsupported"
 ## Related Documentation
 
 - [VDB Support Matrix](VDB_SUPPORT.md) - Feature compatibility
-- [Supabase TODO](supabase/TODO.md) - Task #2: Add More Embedding Providers
+- [Supabase TODO](vdbs/supabase/TODO.md) - Task #2: Add More Embedding Providers
 - [User Guide](USER_GUIDE.md#embeddings) - Embedding usage documentation

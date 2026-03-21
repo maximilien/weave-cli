@@ -334,7 +334,7 @@ For critical issues blocking production:
 
 ## 📜 Full Changelog
 
-See [CHANGELOG.md](docs/CHANGELOG.md) for complete details.
+See [CHANGELOG.md](../../CHANGELOG.md) for complete details.
 
 ---
 

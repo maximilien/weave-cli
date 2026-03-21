@@ -303,10 +303,10 @@ detailed setup and benchmarks.
 - [Weaviate Documentation](https://weaviate.io/developers/weaviate)
 - [Weaviate Cloud Console](https://console.weaviate.cloud)
 - [Weaviate Slack Community](https://weaviate.io/slack)
-- [OSS Embeddings Guide](../guides/OSS_EMBEDDING_TESTING_TIPS.md) - Free embedding providers
+- [OSS Embeddings Guide](../../guides/OSS_EMBEDDING_TESTING_TIPS.md) - Free embedding providers
 
 ## Next Steps
 
-- See [Usage Examples](../guides/USAGE.md) for more commands
-- Check [Best Practices](../guides/BEST_PRACTICES.md)
-- Review [API Reference](../API.md)
+- See [User Guide](../../USER_GUIDE.md) for more commands
+- Check [VDB Support Matrix](../../VDB_SUPPORT_MATRIX.md) for feature comparison
+- Review [Architecture](../../ARCHITECTURE.md) for system design

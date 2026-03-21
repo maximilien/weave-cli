@@ -448,5 +448,5 @@ To add a new demo:
 
 - **Full Demo Guide**: [docs/guides/DEMO.md](../docs/guides/DEMO.md)
 - **User Guide**: [docs/USER_GUIDE.md](../docs/USER_GUIDE.md)
-- **Supabase Docs**: [docs/supabase/README.md](../docs/supabase/README.md)
+- **Supabase Docs**: [docs/vdbs/supabase/README.md](../docs/vdbs/supabase/README.md)
 - **Main README**: [README.md](../README.md)

@@ -152,7 +152,7 @@ databases:
 
 **Known Limitations:**
 - **Vectorizers**: Currently only supports OpenAI embeddings and manual embeddings
-- **Performance**: BM25 search works well but could be faster with pre-computed tsvector columns and GIN indexes (see [Supabase BM25 Improvement](supabase/BM25_IMPROVEMENT.md) for optimization options)
+- **Performance**: BM25 search works well but could be faster with pre-computed tsvector columns and GIN indexes (see [Supabase BM25 Improvement](vdbs/supabase/BM25_IMPROVEMENT.md) for optimization options)
 - **Maturity**: Alpha status - may have edge cases not yet covered
 
 **BM25 Implementation:**
@@ -206,8 +206,8 @@ databases:
 - 🚧 Integration tests with Atlas
 
 **Documentation:**
-- [MongoDB Integration Guide](mongodb/README.md)
-- [Atlas Setup Instructions](mongodb/ATLAS_SETUP.md)
+- [MongoDB Integration Guide](vdbs/mongodb/README.md)
+- [Atlas Setup Instructions](vdbs/mongodb/ATLAS_SETUP.md)
 
 ### Chroma (Local & Cloud)
 
@@ -370,9 +370,9 @@ databases:
 - SELinux-compatible volume mounts
 
 **Documentation:**
-- [Milvus Integration Guide](milvus/README.md)
-- [Local Setup Instructions](milvus/LOCAL_SETUP.md)
-- [Cloud Setup Guide (Zilliz)](milvus/CLOUD_SETUP.md)
+- [Milvus Integration Guide](vdbs/milvus/README.md)
+- [Local Setup Instructions](vdbs/milvus/LOCAL_SETUP.md)
+- [Cloud Setup Guide (Zilliz)](vdbs/milvus/CLOUD_SETUP.md)
 
 ### Qdrant (🧪 Experimental)
 
@@ -459,7 +459,7 @@ podman run -p 6333:6333 -p 6334:6334 \
 - Support for multiple distance metrics (Cosine, Dot, Euclidean)
 
 **Documentation:**
-- [Qdrant Setup Guide](qdrant/SETUP.md)
+- [Qdrant Setup Guide](vdbs/qdrant/SETUP.md)
 
 ### Neo4j (✅ Production - Local Only)
 
@@ -549,7 +549,7 @@ databases:
 - Complex relationship analysis + RAG
 
 **Documentation:**
-- [Neo4j Integration Guide](neo4j/README.md)
+- [Neo4j Integration Guide](vdbs/neo4j/README.md)
 - [Neo4j Vector Search Docs](https://neo4j.com/docs/cypher-manual/current/indexes-for-vector-search/)
 
 ### OpenSearch (✅ Stable - Local & Cloud)
@@ -661,7 +661,7 @@ OpenSearch adapter auto-detects AWS domains (`.amazonaws.com`, `.aoss.`) and use
 - Knowledge base search
 
 **Documentation:**
-- [OpenSearch Integration Guide](opensearch/README.md)
+- [OpenSearch Integration Guide](vdbs/opensearch/README.md)
 
 ### Mock Database
 
@@ -745,9 +745,9 @@ databases:
 - ✅ Multiple similarity metrics (L2, IP, COSINE)
 
 **Documentation**:
-- [Milvus Integration Guide](milvus/README.md)
-- [Local Setup Instructions](milvus/LOCAL_SETUP.md)
-- [Cloud Setup Guide](milvus/CLOUD_SETUP.md)
+- [Milvus Integration Guide](vdbs/milvus/README.md)
+- [Local Setup Instructions](vdbs/milvus/LOCAL_SETUP.md)
+- [Cloud Setup Guide](vdbs/milvus/CLOUD_SETUP.md)
 
 ### v0.6.0 - Chroma Integration (✅ Completed)
 
@@ -818,7 +818,7 @@ databases:
 - ✅ Float32 vector support with auto-conversion
 
 **Documentation**:
-- [Qdrant Setup Guide](qdrant/SETUP.md)
+- [Qdrant Setup Guide](vdbs/qdrant/SETUP.md)
 
 ### v0.7.1 - Neo4j Integration (✅ Completed - Local)
 
@@ -838,7 +838,7 @@ databases:
 - ✅ CLI flags (--neo4j-local, --neo4j-cloud)
 - ✅ Integration test suite (4 test suites passing)
 - ✅ test.sh support with --neo4j flag
-- ✅ Comprehensive documentation (docs/neo4j/README.md)
+- ✅ Comprehensive documentation (docs/vdbs/neo4j/README.md)
 - ✅ Local management script (tools/vdb/local/neo4j.sh)
 
 **Key Features**:
@@ -862,7 +862,7 @@ databases:
 - [ ] Production validation at scale
 
 **Documentation**:
-- [Neo4j Integration Guide](neo4j/README.md)
+- [Neo4j Integration Guide](vdbs/neo4j/README.md)
 
 ### v0.9.0 - OpenSearch Integration (Planned)
 
@@ -948,7 +948,7 @@ details.
 - ⚠️ Atlas only (vector search not in community MongoDB)
 - ⚠️ Manual index creation via Atlas UI required (not automated via API)
 
-See [MongoDB Documentation](mongodb/) for complete setup and usage details.
+See [MongoDB Documentation](vdbs/mongodb/) for complete setup and usage details.
 
 ### v1.0.0 - Pinecone Integration (Planned)
 
@@ -1004,6 +1004,6 @@ When adding support for a new vector database or feature:
 
 - [User Guide](USER_GUIDE.md) - Complete usage documentation
 - [Vector DB Abstraction](guides/VECTOR_DB_ABSTRACTION.md) - Architecture details
-- [Supabase Documentation](supabase/) - Supabase integration guide
-- [Weaviate Documentation](weaviate/) - Weaviate integration status
+- [Supabase Documentation](vdbs/supabase/) - Supabase integration guide
+- [Weaviate Documentation](vdbs/weaviate/) - Weaviate integration status
 - [Changelog](CHANGELOG.md) - Version history
