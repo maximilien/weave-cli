@@ -328,4 +328,4 @@ weave
 
 ---
 
-**Built by [dr.max](https://github.com/maximilien) | MIT License | v0.11.5**
+**Built with ❤️ by [Maximilien AI LLC](https://github.com/maximilien-ai) | MIT License | v0.11.5**

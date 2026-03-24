@@ -219,7 +219,7 @@ flowchart LR
 
 ### 2b. DEMO: Ingestion & Retrieval in 2 Databases
 
-- [ ] **Pick 2 databases** (suggested: Weaviate + Milvus, or Qdrant + Chroma)
+- [x] **Pick 2 databases** (suggested: Weaviate + Milvus, or Qdrant + Chroma)
 - [ ] **Prepare multi-modal data** (PDF with images, text docs — good for visual demo)
 - [ ] **Script the demo:**
   1. Show empty state of both databases
@@ -375,6 +375,8 @@ flowchart LR
 >
 > _Max: add personal anecdotes — specific debugging sessions Opik helped with, or a decision the eval data drove._
 
+> Opik was easy to integrate and was key to help get Client0 dashboard working since I could just run experiments and use evaluations and tracing to decide best options for Client0.
+
 ---
 
 ## Summary: What's Done vs What Needs Max
@@ -386,7 +388,7 @@ flowchart LR
 - [x] Evaluation datasets exist
 - [x] Draft answers to Q1 and Q2
 
-### Needs Max
+### Needs to be reviewed / completed
 - [ ] Review Mermaid diagrams — adjust for video/blog
 - [ ] Review & personalize Q1 and Q2 answers
 - [ ] VDB + RAG demo (2 databases, multi-modal)
