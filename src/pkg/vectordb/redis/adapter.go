@@ -6,6 +6,7 @@ package redis
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
@@ -21,19 +22,30 @@ type Adapter struct {
 }
 
 // NewAdapter creates a new Redis adapter from vectordb.Config.
+// Derives auth, TLS, and address from the URL when explicit fields are empty.
 func NewAdapter(config *vectordb.Config) (*Adapter, error) {
-	addr := parseRedisAddress(config)
+	addr, urlUser, urlPass, urlTLS := parseRedisURL(config)
 
 	password := config.Password
 	if password == "" {
-		password = config.APIKey // Redis Cloud uses API key as password
+		password = config.APIKey
 	}
+	if password == "" {
+		password = urlPass
+	}
+
+	username := config.Username
+	if username == "" {
+		username = urlUser
+	}
+
+	useTLS := config.Type == vectordb.VectorDBTypeRedisCloud || urlTLS
 
 	redisCfg := &Config{
 		Addr:             addr,
 		Password:         password,
-		Username:         config.Username,
-		UseTLS:           config.Type == vectordb.VectorDBTypeRedisCloud,
+		Username:         username,
+		UseTLS:           useTLS,
 		DB:               0,
 		VectorDimensions: config.VectorDimensions,
 		SimilarityMetric: config.SimilarityMetric,
@@ -62,7 +74,8 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 // CreateCollection creates a new collection.
 func (a *Adapter) CreateCollection(ctx context.Context, name string, schema *vectordb.CollectionSchema) error {
-	return a.Client.CreateCollection(ctx, name, a.config.VectorDimensions, a.config.SimilarityMetric)
+	return a.Client.CreateCollection(ctx, name,
+		a.config.VectorDimensions, a.config.SimilarityMetric)
 }
 
 // DeleteCollection deletes a collection.
@@ -139,8 +152,13 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, do
 }
 
 // DeleteDocumentsByMetadata deletes documents matching metadata criteria.
+// Returns an error if metadata is nil or empty to prevent accidental full-collection deletes.
 func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName string, metadata map[string]interface{}) error {
-	results, err := a.Client.SearchByMetadata(ctx, collectionName, metadata, 1000)
+	if len(metadata) == 0 {
+		return fmt.Errorf("Redis: metadata filter is required for DeleteDocumentsByMetadata (empty filter would delete all documents)")
+	}
+
+	results, err := a.Client.SearchByMetadata(ctx, collectionName, metadata, 10000)
 	if err != nil {
 		return fmt.Errorf("failed to search for documents: %w", err)
 	}
@@ -196,11 +214,10 @@ func (a *Adapter) SearchBM25(ctx context.Context, collectionName, query string, 
 	return toQueryResults(results), nil
 }
 
-// SearchHybrid performs hybrid search (vector + text filter).
+// SearchHybrid is not yet implemented for Redis.
+// TODO: implement fusion of KNN + full-text in a single FT.SEARCH query.
 func (a *Adapter) SearchHybrid(ctx context.Context, collectionName, query string, options *vectordb.QueryOptions) ([]*vectordb.QueryResult, error) {
-	// Delegate to semantic search (Redis KNN + filter can be combined,
-	// but for now semantic is the primary path)
-	return a.SearchSemantic(ctx, collectionName, query, options)
+	return nil, fmt.Errorf("Redis does not yet support hybrid search; use SearchSemantic or SearchBM25")
 }
 
 // SearchByMetadata searches documents by metadata fields.
@@ -250,18 +267,35 @@ func (a *Adapter) ValidateSchema(schema *vectordb.CollectionSchema) error {
 // --- internal helpers ---
 
 // ensureEmbedding generates an embedding if the document doesn't have one.
+// Uses the same model selection logic as generateQueryEmbedding.
 func (a *Adapter) ensureEmbedding(ctx context.Context, doc *vectordb.Document) error {
 	if doc.Embedding != nil || doc.Text == "" {
 		return nil
 	}
-	if a.llmClient == nil {
-		return nil // No embedding client — skip silently
-	}
 
-	embedding, err := a.llmClient.GenerateEmbedding(ctx, doc.Text, "text-embedding-3-small")
+	model := inferEmbeddingModelFromDimensions(a.config.VectorDimensions)
+	isOpenAI := strings.HasPrefix(model, "text-embedding-")
+
+	var embedding []float64
+	var err error
+
+	if isOpenAI {
+		if a.llmClient == nil {
+			return nil // No embedding client — skip silently
+		}
+		embedding, err = a.llmClient.GenerateEmbedding(ctx, doc.Text, model)
+	} else {
+		var provider providers.EmbeddingProvider
+		provider, err = providers.CreateProvider(ctx, model)
+		if err != nil {
+			return fmt.Errorf("failed to create embedding provider for %q: %w", model, err)
+		}
+		embedding, err = provider.GenerateEmbedding(ctx, doc.Text)
+	}
 	if err != nil {
 		return fmt.Errorf("failed to generate embedding: %w", err)
 	}
+
 	doc.Embedding = embedding
 	return nil
 }
@@ -291,7 +325,6 @@ func (a *Adapter) generateQueryEmbedding(ctx context.Context, query string) ([]f
 		return nil, fmt.Errorf("Redis: failed to generate query embedding: %w", err)
 	}
 
-	// Convert float64 → float32
 	vec := make([]float32, len(embedding64))
 	for i, v := range embedding64 {
 		vec[i] = float32(v)
@@ -311,31 +344,30 @@ func toQueryResults(results []SearchResult) []*vectordb.QueryResult {
 	return qr
 }
 
-// parseRedisAddress extracts host:port from config.
-func parseRedisAddress(config *vectordb.Config) string {
+// parseRedisURL extracts address, username, password, and TLS flag from config.
+// Explicit config fields take precedence over URL-derived values.
+func parseRedisURL(config *vectordb.Config) (addr, username, password string, useTLS bool) {
 	if config.Address != "" {
-		return config.Address
+		return config.Address, "", "", false
 	}
-	if config.URL != "" {
-		// Strip redis:// prefix if present
-		addr := config.URL
-		for _, prefix := range []string{"redis://", "rediss://", "redis-stack://"} {
-			if strings.HasPrefix(addr, prefix) {
-				addr = addr[len(prefix):]
-				break
-			}
-		}
-		// Strip path/query
-		if idx := strings.Index(addr, "/"); idx >= 0 {
-			addr = addr[:idx]
-		}
-		// Strip userinfo
-		if idx := strings.Index(addr, "@"); idx >= 0 {
-			addr = addr[idx+1:]
-		}
-		return addr
+	if config.URL == "" {
+		return "localhost:6379", "", "", false
 	}
-	return "localhost:6379"
+
+	// Try standard URL parsing
+	u, err := url.Parse(config.URL)
+	if err == nil && u.Host != "" {
+		addr = u.Host
+		if u.User != nil {
+			username = u.User.Username()
+			password, _ = u.User.Password()
+		}
+		useTLS = u.Scheme == "rediss"
+		return
+	}
+
+	// Fallback: treat as bare host:port
+	return config.URL, "", "", false
 }
 
 // inferEmbeddingModelFromDimensions maps dimension count to a likely model.

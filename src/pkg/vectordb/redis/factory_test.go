@@ -164,44 +164,59 @@ func TestFactory_ValidateConfig(t *testing.T) {
 	}
 }
 
-func TestParseRedisAddress(t *testing.T) {
+func TestParseRedisURL(t *testing.T) {
 	tests := []struct {
-		name string
-		cfg  *vectordb.Config
-		want string
+		name     string
+		cfg      *vectordb.Config
+		wantAddr string
+		wantUser string
+		wantPass string
+		wantTLS  bool
 	}{
 		{
-			name: "Address field",
-			cfg:  &vectordb.Config{Address: "myhost:6380"},
-			want: "myhost:6380",
+			name:     "Address field",
+			cfg:      &vectordb.Config{Address: "myhost:6380"},
+			wantAddr: "myhost:6380",
 		},
 		{
-			name: "URL with redis:// prefix",
-			cfg:  &vectordb.Config{URL: "redis://myhost:6379"},
-			want: "myhost:6379",
+			name:     "URL with redis:// prefix",
+			cfg:      &vectordb.Config{URL: "redis://myhost:6379"},
+			wantAddr: "myhost:6379",
 		},
 		{
-			name: "URL with rediss:// prefix",
-			cfg:  &vectordb.Config{URL: "rediss://cloud.redis.io:6380"},
-			want: "cloud.redis.io:6380",
+			name:     "URL with rediss:// prefix sets TLS",
+			cfg:      &vectordb.Config{URL: "rediss://cloud.redis.io:6380"},
+			wantAddr: "cloud.redis.io:6380",
+			wantTLS:  true,
 		},
 		{
-			name: "URL with userinfo",
-			cfg:  &vectordb.Config{URL: "redis://user:pass@myhost:6379/0"},
-			want: "myhost:6379",
+			name:     "URL with userinfo extracts auth",
+			cfg:      &vectordb.Config{URL: "redis://user:pass@myhost:6379/0"},
+			wantAddr: "myhost:6379",
+			wantUser: "user",
+			wantPass: "pass",
 		},
 		{
-			name: "No URL or address",
-			cfg:  &vectordb.Config{},
-			want: "localhost:6379",
+			name:     "No URL or address",
+			cfg:      &vectordb.Config{},
+			wantAddr: "localhost:6379",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := parseRedisAddress(tt.cfg)
-			if got != tt.want {
-				t.Errorf("parseRedisAddress() = %q, want %q", got, tt.want)
+			addr, user, pass, tls := parseRedisURL(tt.cfg)
+			if addr != tt.wantAddr {
+				t.Errorf("addr = %q, want %q", addr, tt.wantAddr)
+			}
+			if user != tt.wantUser {
+				t.Errorf("user = %q, want %q", user, tt.wantUser)
+			}
+			if pass != tt.wantPass {
+				t.Errorf("pass = %q, want %q", pass, tt.wantPass)
+			}
+			if tls != tt.wantTLS {
+				t.Errorf("tls = %v, want %v", tls, tt.wantTLS)
 			}
 		})
 	}
