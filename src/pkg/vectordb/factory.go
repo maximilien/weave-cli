@@ -34,6 +34,8 @@ const (
 	VectorDBTypePinecone           VectorDBType = "pinecone"
 	VectorDBTypeElasticsearchLocal VectorDBType = "elasticsearch-local"
 	VectorDBTypeElasticsearchCloud VectorDBType = "elasticsearch-cloud"
+	VectorDBTypeRedisLocal         VectorDBType = "redis-local"
+	VectorDBTypeRedisCloud         VectorDBType = "redis-cloud"
 )
 
 // Config represents the configuration for a vector database client
