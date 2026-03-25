@@ -124,6 +124,8 @@ func validateDatabase(db *VectorDBConfig, index int, result *ValidationResult) {
 		validateNeo4j(db, prefix, result)
 	case VectorDBTypeOpenSearchLocal, VectorDBTypeOpenSearchCloud:
 		validateOpenSearch(db, prefix, result)
+	case VectorDBTypeRedisLocal, VectorDBTypeRedisCloud:
+		validateRedis(db, prefix, result)
 	case VectorDBTypeMock:
 		// Mock database has minimal requirements
 		if db.EmbeddingDimension <= 0 {
@@ -354,6 +356,25 @@ func validateOpenSearch(db *VectorDBConfig, prefix string, result *ValidationRes
 			Field:      prefix + ".url",
 			Message:    "OpenSearch URL is required",
 			Suggestion: "Set 'url' field (e.g., 'https://localhost:9200' for local)",
+		})
+	}
+}
+
+// validateRedis validates Redis-specific configuration
+func validateRedis(db *VectorDBConfig, prefix string, result *ValidationResult) {
+	if db.URL == "" && db.Address == "" {
+		result.Errors = append(result.Errors, ValidationWarning{
+			Field:      prefix + ".url",
+			Message:    "Redis URL or address is required",
+			Suggestion: "Set 'url' field (e.g., 'redis://localhost:6379' for local)",
+		})
+	}
+
+	if db.Type == VectorDBTypeRedisCloud && db.APIKey == "" && db.Password == "" {
+		result.Errors = append(result.Errors, ValidationWarning{
+			Field:      prefix + ".api_key",
+			Message:    "Redis Cloud requires a password or API key",
+			Suggestion: "Set 'api_key' or 'password' field for authentication",
 		})
 	}
 }

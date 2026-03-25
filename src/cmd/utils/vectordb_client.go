@@ -19,6 +19,7 @@ import (
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/opensearch"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/pinecone"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/qdrant"
+	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/redis"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/supabase"
 	_ "github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
