@@ -24,6 +24,7 @@ require (
 	github.com/pinecone-io/go-pinecone v1.1.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/qdrant/go-client v1.16.2
+	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rwcarlsen/goexif v0.0.0-20190401172101-9e8deecbddbd
 	github.com/schollz/progressbar/v3 v3.18.0
 	github.com/spf13/cobra v1.8.0
@@ -112,7 +113,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
-	github.com/redis/go-redis/v9 v9.18.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/xid v1.5.0 // indirect
