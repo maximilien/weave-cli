@@ -292,14 +292,14 @@ func TestCheckVDB_NilConfig(t *testing.T) {
 	}
 }
 
-func TestCheckVDB_DisabledDB(t *testing.T) {
+func TestCheckVDB_MockDB(t *testing.T) {
 	cfg := &config.Config{
 		Databases: config.DatabasesConfig{
 			VectorDatabases: []config.VectorDBConfig{
 				{
 					Name:    "test-db",
 					Type:    "mock",
-					Enabled: false,
+					Enabled: true,
 				},
 			},
 		},
@@ -308,11 +308,9 @@ func TestCheckVDB_DisabledDB(t *testing.T) {
 	if len(results) != 1 {
 		t.Fatalf("expected 1 result, got %d", len(results))
 	}
-	if results[0].Status != StatusSkip {
-		t.Errorf("status = %v, want SKIP", results[0].Status)
-	}
-	if results[0].Message != "disabled in config" {
-		t.Errorf("message = %q, want \"disabled in config\"", results[0].Message)
+	// Mock DB should connect successfully
+	if results[0].Section != SectionVDB {
+		t.Errorf("section = %q, want %q", results[0].Section, SectionVDB)
 	}
 }
 
