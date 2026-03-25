@@ -37,8 +37,8 @@ const (
 	VectorDBTypeNeo4jCloud      VectorDBType = "neo4j-cloud"
 	VectorDBTypeOpenSearchLocal VectorDBType = "opensearch-local"
 	VectorDBTypeOpenSearchCloud VectorDBType = "opensearch-cloud"
-	VectorDBTypeRedisLocal     VectorDBType = "redis-local"
-	VectorDBTypeRedisCloud     VectorDBType = "redis-cloud"
+	VectorDBTypeRedisLocal      VectorDBType = "redis-local"
+	VectorDBTypeRedisCloud      VectorDBType = "redis-cloud"
 )
 
 // Default configuration values
