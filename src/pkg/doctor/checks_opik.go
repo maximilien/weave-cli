@@ -49,22 +49,25 @@ func CheckOpik(ctx context.Context) []CheckResult {
 		})
 	}
 
-	// Test API connectivity
-	baseURL := os.Getenv("OPIK_BASE_URL")
-	if baseURL == "" {
-		baseURL = "https://www.comet.com/opik/api"
+	// Test API connectivity using the OTEL endpoint (same as the real tracing path)
+	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if endpoint == "" {
+		endpoint = "https://www.comet.com/opik/api/v1/private/otel/v1/traces"
 	}
 
-	results = append(results, probeOpikAPI(ctx, baseURL, apiKey))
+	results = append(results, probeOpikAPI(ctx, endpoint, apiKey, workspace))
 
 	return results
 }
 
-func probeOpikAPI(ctx context.Context, baseURL, apiKey string) CheckResult {
+func probeOpikAPI(ctx context.Context, endpoint, apiKey, workspace string) CheckResult {
 	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(checkCtx, http.MethodGet, baseURL+"/v1/private/is-alive", nil)
+	// POST to the OTEL traces endpoint with an empty body.
+	// A 200 or 415 (unsupported media type) means the server is reachable
+	// and authenticated. Only network errors or 401/403 indicate a problem.
+	req, err := http.NewRequestWithContext(checkCtx, http.MethodPost, endpoint, nil)
 	if err != nil {
 		return CheckResult{
 			Section: SectionOpik,
@@ -74,6 +77,9 @@ func probeOpikAPI(ctx context.Context, baseURL, apiKey string) CheckResult {
 		}
 	}
 	req.Header.Set("Authorization", apiKey)
+	if workspace != "" {
+		req.Header.Set("Comet-Workspace", workspace)
+	}
 
 	start := time.Now()
 	resp, err := http.DefaultClient.Do(req)
@@ -90,12 +96,13 @@ func probeOpikAPI(ctx context.Context, baseURL, apiKey string) CheckResult {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
+	// 401/403 = bad auth, other 4xx/5xx we treat as reachable
+	if resp.StatusCode == 401 || resp.StatusCode == 403 {
 		return CheckResult{
 			Section: SectionOpik,
 			Name:    "Opik API connectivity",
 			Status:  StatusFail,
-			Message: fmt.Sprintf("HTTP %d from %s", resp.StatusCode, baseURL),
+			Message: fmt.Sprintf("HTTP %d — authentication failed", resp.StatusCode),
 			Fix:     "Verify OPIK_API_KEY is valid",
 		}
 	}

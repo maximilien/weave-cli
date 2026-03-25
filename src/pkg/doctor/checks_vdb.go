@@ -25,16 +25,6 @@ func CheckVDB(ctx context.Context, cfg *config.Config) []CheckResult {
 
 	var results []CheckResult
 	for _, db := range cfg.Databases.VectorDatabases {
-		if !db.Enabled {
-			results = append(results, CheckResult{
-				Section: SectionVDB,
-				Name:    fmt.Sprintf("%s (%s)", db.Name, db.Type),
-				Status:  StatusSkip,
-				Message: "disabled in config",
-			})
-			continue
-		}
-
 		results = append(results, checkSingleVDB(ctx, db))
 	}
 	return results
