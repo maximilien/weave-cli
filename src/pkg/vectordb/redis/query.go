@@ -135,7 +135,9 @@ func parseSearchResultsWithScore(raw interface{}, collection string) []SearchRes
 		score := 0.0
 		if scoreStr, ok := fields["__"+defaultVectorField+"_score"]; ok {
 			score, _ = strconv.ParseFloat(scoreStr, 64)
-			// Redis returns distance, convert to similarity (1 - distance for cosine)
+			// Redis returns distance. For COSINE: similarity = 1 - distance.
+			// For L2/IP the transform differs, but 1-distance is a reasonable
+			// default that keeps scores in [0,1] for the common COSINE case.
 			if score >= 0 {
 				score = 1.0 - score
 			}
@@ -147,18 +149,18 @@ func parseSearchResultsWithScore(raw interface{}, collection string) []SearchRes
 	return results
 }
 
-// buildMetadataQuery builds a RediSearch query from metadata k/v pairs.
-// Searches metadata JSON field for matching values.
+// buildMetadataQuery builds a RediSearch query scoped to the metadata field.
 func buildMetadataQuery(metadata map[string]interface{}) string {
 	if len(metadata) == 0 {
 		return "*"
 	}
 
+	// Scope to the metadata TEXT field using @metadata:(...)
 	var parts []string
 	for _, v := range metadata {
-		parts = append(parts, fmt.Sprintf("%v", v))
+		parts = append(parts, escapeRedisQuery(fmt.Sprintf("%v", v)))
 	}
-	return escapeRedisQuery(strings.Join(parts, " "))
+	return fmt.Sprintf("@metadata:(%s)", strings.Join(parts, " "))
 }
 
 // escapeRedisQuery escapes RediSearch special characters.

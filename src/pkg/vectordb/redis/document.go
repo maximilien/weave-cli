@@ -23,6 +23,7 @@ func (c *Client) CreateDocument(ctx context.Context, collection string, doc *vec
 	id := doc.ID
 	if id == "" {
 		id = uuid.New().String()
+		doc.ID = id // Write back so caller sees the generated ID
 	}
 
 	fields := buildHashFields(doc)
@@ -45,6 +46,7 @@ func (c *Client) CreateDocuments(ctx context.Context, collection string, docs []
 		id := doc.ID
 		if id == "" {
 			id = uuid.New().String()
+			doc.ID = id // Write back generated ID
 		}
 		fields := buildHashFields(doc)
 		pipe.HSet(ctx, docKey(collection, id), fields)

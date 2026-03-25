@@ -371,9 +371,9 @@ func validateRedis(db *VectorDBConfig, prefix string, result *ValidationResult) 
 	}
 
 	if db.Type == VectorDBTypeRedisCloud && db.APIKey == "" && db.Password == "" {
-		result.Warnings = append(result.Warnings, ValidationWarning{
+		result.Errors = append(result.Errors, ValidationWarning{
 			Field:      prefix + ".api_key",
-			Message:    "Redis Cloud requires authentication",
+			Message:    "Redis Cloud requires a password or API key",
 			Suggestion: "Set 'api_key' or 'password' field for authentication",
 		})
 	}

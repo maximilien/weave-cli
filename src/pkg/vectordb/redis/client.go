@@ -45,35 +45,40 @@ type Config struct {
 }
 
 // NewClient creates a new Redis client.
+// Applies defaults to a copy of cfg so the caller's struct is not mutated.
 func NewClient(cfg *Config) (*Client, error) {
 	if cfg.Addr == "" {
 		return nil, fmt.Errorf("Redis address is required")
 	}
-	if cfg.VectorDimensions == 0 {
-		cfg.VectorDimensions = 1536
+
+	// Work with a copy to avoid mutating caller's config
+	localCfg := *cfg
+	if localCfg.VectorDimensions == 0 {
+		localCfg.VectorDimensions = 1536
 	}
-	if cfg.SimilarityMetric == "" {
-		cfg.SimilarityMetric = "COSINE"
+	if localCfg.SimilarityMetric == "" {
+		localCfg.SimilarityMetric = "COSINE"
 	}
-	if cfg.Timeout == 0 {
-		cfg.Timeout = 10
+	if localCfg.Timeout == 0 {
+		localCfg.Timeout = 10
 	}
 
 	opts := &redis.Options{
-		Addr:        cfg.Addr,
-		Password:    cfg.Password,
-		Username:    cfg.Username,
-		DB:          cfg.DB,
-		DialTimeout: time.Duration(cfg.Timeout) * time.Second,
+		Addr:        localCfg.Addr,
+		Password:    localCfg.Password,
+		Username:    localCfg.Username,
+		DB:          localCfg.DB,
+		DialTimeout: time.Duration(localCfg.Timeout) * time.Second,
 	}
-	if cfg.UseTLS {
+	if localCfg.UseTLS {
 		opts.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12}
 	}
 
 	rdb := redis.NewClient(opts)
-	logging.Debug("Redis client created: addr=%s tls=%v db=%d", cfg.Addr, cfg.UseTLS, cfg.DB)
+	logging.Debug("Redis client created: addr=%s tls=%v db=%d",
+		localCfg.Addr, localCfg.UseTLS, localCfg.DB)
 
-	return &Client{rdb: rdb, config: cfg}, nil
+	return &Client{rdb: rdb, config: &localCfg}, nil
 }
 
 // Close closes the Redis connection.
