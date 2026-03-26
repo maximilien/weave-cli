@@ -1,647 +1,360 @@
-# Weave CLI Demo Script
+# Weave CLI Demo — AI Alliance (v0.12.0)
 
-**GitHub**: <https://github.com/maximilien/weave-cli>
-
----
-
-## Quick Overview
-
-Weave CLI is a fast, AI-powered command-line tool for managing vector databases
-(VDBs). Built in Go for performance and ease of use (single binary).
-
-**Key Features**:
-
-- 🤖 **AI-Powered** - Natural language REPL interface with GPT-4o multi-agent
-  system
-- ⚡ **Fast & Easy** - Written in Go with simple CLI and real-time progress
-  feedback
-- 🌐 **Flexible** - Support for 8 vector databases (Weaviate, Milvus, Supabase,
-  MongoDB, Chroma, Qdrant, Neo4j, OpenSearch)
-- 📦 **Batch Processing** - Parallel processing of entire directories
-- 📄 **PDF Support** - Intelligent text extraction and image processing
-- 🔍 **Semantic Search** - Vector-based similarity search with natural language
+> **Duration**: ~45 minutes (leave 15 min for Q&A)
+>
+> **Automated script**: `demos/ai-alliance-demo.sh`
+>
+> Run each command manually for a live demo, or use the script
+> with Enter-to-advance paging.
 
 ---
 
-## Demo Flow
-
-### 1. Help & Getting Started
+## Prerequisites
 
 ```bash
-# Main help
-weave -h
+# Option 1: Homebrew (recommended for demos)
+brew install Maximilien-ai/weave-cli/weave-cli
 
-# Collections help
-weave cols -h
+# Option 2: Build from source
+./build.sh
 
-# Documents help
-weave docs -h
-
-# Configuration help
-weave config -h
+# Verify
+weave --version
 ```
 
+Ensure your `config.yaml` and `.env` are set up with at least
+`weaviate-cloud` and `OPENAI_API_KEY`.
+
 ---
 
-### 2. Configuration Management
+## Part 1: Installation and Setup (~3 min)
+
+**Goal**: Show how easy it is to get started.
 
 ```bash
-# Show current configuration
-weave config show
+# Homebrew install (one line!)
+brew install Maximilien-ai/weave-cli/weave-cli
 
+# Verify version
+weave --version
+```
+
+**Talking points**:
+
+- Single Go binary, no runtime dependencies
+- 11 vector databases supported
+- Open source, MIT licensed
+
+---
+
+## Part 2: weave doctor — Unified Diagnostics (~3 min)
+
+**Goal**: Show the new diagnostic command (v0.12.0).
+
+```bash
+# Full scan
+weave doctor
+
+# Or by section
+weave doctor --section system --verbose
+weave doctor --section config
+weave doctor --section vdb
+```
+
+**Talking points**:
+
+- Checks system deps, config, env vars, VDB connectivity, LLM,
+  embeddings, stack, and Opik
+- Color-coded `[OK]`, `[WARN]`, `[FAIL]`, `[SKIP]` output
+- `--json` for CI, `--fix` for remediation suggestions
+- Replaces manual checks across `health check`, `config show`,
+  env var inspection
+
+---
+
+## Part 3: Configuration and Health (~3 min)
+
+**Goal**: Show multi-VDB configuration and health.
+
+```bash
 # List all configured databases
 weave config list
 
-# List with detailed information
-weave config list --details
+# Health check (cloud databases)
+weave health check --cloud
 
-# Filter by deployment type (NEW in v0.7.2)
-weave config list --cloud          # Show only cloud databases
-weave config list --local          # Show only local databases
-
-# Sort databases (NEW in v0.7.2)
-weave config list --sort-by name       # Alphabetical (default)
-weave config list --sort-by type       # By database type
-weave config list --sort-by deployment # By deployment type
-
-# List collection schemas
-weave config list-schemas
-
-# Show specific schema
-weave config show-schema WeaveDocs
-weave config show-schema WeaveDocs --yaml
+# VDB info
+weave vdb list
 ```
+
+**Talking points**:
+
+- Single config.yaml for all 11 VDBs
+- Environment variable interpolation (`${WEAVIATE_URL}`)
+- Switch databases with `--weaviate-cloud`, `--milvus-local`, etc.
 
 ---
 
-### 3. Health Checks
+## Part 4: Collections and Documents (~10 min)
+
+**Goal**: Create collections, ingest text/PDF/images, list docs.
+
+### List existing collections
 
 ```bash
-# Check health of all configured databases
-weave health check
-
-# Summary view with progressive output (NEW in v0.7.2)
-weave health check -S              # Shorthand
-weave health check --summary       # Long form
-
-# Filter health checks (NEW in v0.7.2)
-weave health check --cloud         # Check only cloud databases
-weave health check --local         # Check only local databases
-
-# Sort health check results (NEW in v0.7.2)
-weave health check --sort-by name  # Alphabetical (default)
-weave health check --sort-by type  # By database type
-
-# Check specific database
-weave health check weaviate
-```
-
----
-
-### 4. Collections Management
-
-#### List Collections
-
-```bash
-# List collections from default database
 weave cols ls
-
-# List from specific databases
-weave cols ls --weaviate           # Weaviate only
-weave cols ls --weaviate-cloud     # Weaviate cloud only
-weave cols ls --weaviate-local     # Weaviate local only
-weave cols ls --supabase           # Supabase only
-weave cols ls --mongodb            # MongoDB Atlas only
-weave cols ls --milvus-local       # Milvus local only
-weave cols ls --milvus-cloud       # Milvus cloud (Zilliz) only
-weave cols ls --chroma-local       # Chroma local only
-weave cols ls --chroma-cloud       # Chroma cloud only
-weave cols ls --qdrant-local       # Qdrant local only
-weave cols ls --neo4j-local        # Neo4j local only
-weave cols ls --opensearch-local   # OpenSearch local only (NEW in v0.7.3)
-weave cols ls --opensearch-cloud   # OpenSearch cloud (AWS) only (NEW in v0.7.3)
-weave cols ls --all                # All configured databases
-
-# Summary view (NEW in v0.7.2)
-weave cols ls -S                   # Summary table (default for multiple VDBs)
-weave cols ls --summary            # Explicit summary flag
-
-# Filter by deployment (NEW in v0.7.2)
-weave cols ls --cloud              # Collections from cloud databases only
-weave cols ls --local              # Collections from local databases only
 ```
 
-#### Create Collections
+### Create collections
 
 ```bash
-# Create with default embedding (OpenAI)
-weave cols create DemoDocs --text --json-metadata --weaviate-cloud
+# Text collection
+weave cols create AllianceDemo \
+    --embedding text-embedding-3-small --weaviate-cloud
 
-# Create with specific OpenAI embedding
-weave cols create DemoDocs --embedding text-embedding-3-small
-weave cols create DemoDocs -e text-embedding-ada-002
-
-# Create with OSS embedding (NEW in v0.9.19)
-weave cols create DemoDocs_OSS --embedding sentence-transformers/all-mpnet-base-v2
-weave cols create DemoDocs_Fast --embedding sentence-transformers/all-MiniLM-L6-v2
-weave cols create DemoDocs_Ollama --embedding ollama/nomic-embed-text
-
-# Create image collection
-weave cols create DemoImages --image --json-metadata --weaviate-cloud
+# Image collection
+weave cols create AllianceDemoImages \
+    --image --weaviate-cloud
 ```
 
-#### Show Collection Details
+### Ingest text documents
 
 ```bash
-# Show collection schema
-weave cols show DemoDocs --schema --expand-metadata --weaviate-cloud
+# Architecture doc from the repo itself
+weave docs create AllianceDemo \
+    docs/ARCHITECTURE.md --weaviate-cloud
 
-# Show with JSON output
-weave cols show DemoImages --schema --expand-metadata --json --weaviate-cloud
+# README
+weave docs create AllianceDemo \
+    README.md --weaviate-cloud
 
-# Count collections
-weave cols count
+# List what we ingested
+weave docs ls AllianceDemo --weaviate-cloud
+```
+
+### Ingest a PDF (text + image extraction)
+
+```bash
+weave docs create AllianceDemo \
+    tests/fixtures/ragme-io.pdf \
+    --image-col AllianceDemoImages --weaviate-cloud
+```
+
+### Ingest images
+
+```bash
+weave docs create AllianceDemoImages \
+    tests/images/dog.png --weaviate-cloud
+
+weave docs ls AllianceDemoImages --weaviate-cloud
+```
+
+**Talking points**:
+
+- Automatic chunking for text
+- PDF text + image extraction (tesseract OCR)
+- Auto-generated OpenAI embeddings
+- Images stored with base64 or external storage (S3/MinIO)
+
+---
+
+## Part 5: Semantic Search (~5 min)
+
+**Goal**: Live queries showing RAG retrieval quality.
+
+```bash
+weave cols query AllianceDemo \
+    "how does the vector database abstraction work?" \
+    --top-k 3 --weaviate-cloud
+
+weave cols query AllianceDemo \
+    "what embedding models are supported?" \
+    --top-k 3 --weaviate-cloud
+
+weave cols query AllianceDemo \
+    "kubernetes deployment" \
+    --top-k 2 --weaviate-cloud
+```
+
+**Talking points**:
+
+- Vector similarity search using OpenAI embeddings
+- Top-K results with relevance scores
+- Same query syntax works across all 11 VDBs
+
+---
+
+## Part 6: Statistics and Schema (~3 min)
+
+**Goal**: Inspect what's inside a collection.
+
+```bash
+weave stats AllianceDemo --weaviate-cloud
+
+weave cols show AllianceDemo \
+    --schema --weaviate-cloud
 ```
 
 ---
 
-### 5. Documents Management
+## Part 7: Backup and Restore (~5 min)
 
-#### Text Documents
-
-```bash
-# List documents
-weave docs ls DemoDocs
-
-# List with summary (NEW)
-weave docs ls DemoDocs -w -S
-
-# Create documents (uses collection's default embedding)
-weave docs create DemoDocs ./README.md
-weave docs create DemoDocs ./docs/PRESENTATION.md
-
-# Create with specific OpenAI embedding
-weave docs create DemoDocs document.txt --embedding text-embedding-3-small
-weave docs create DemoDocs report.pdf --embedding text-embedding-ada-002
-
-# Create with OSS embedding (NEW in v0.9.19)
-weave docs create DemoDocs_OSS document.txt --embedding sentence-transformers/all-mpnet-base-v2
-weave docs create DemoDocs_OSS report.pdf --embedding sentence-transformers/all-MiniLM-L6-v2
-
-# Show document details
-weave docs show DemoDocs <ID> --schema --expand-metadata
-
-# Delete documents
-weave docs del DemoDocs --name "README.md"
-```
-
-#### Image Documents
+**Goal**: Portable backups, cross-VDB migration.
 
 ```bash
-# List image documents
-weave docs ls DemoImages
-weave docs ls DemoImages -w -S
+# Create a backup
+weave backup create AllianceDemo \
+    --output /tmp/alliance-demo.weavebak --weaviate-cloud
 
-# Create image documents
-weave docs create DemoImages ./tests/images/dog.png
+# List backups
+weave backup list /tmp/
 
-# Extract images from PDF
-weave docs create DemoDocs ./tests/fixtures/ragme-io.pdf --image-col DemoImages
-
-# Show image document
-weave docs show DemoImages <ID> --schema --expand-metadata
-
-# Delete image document
-weave docs del DemoImages --name "./tests/images/dog.png"
+# Validate integrity
+weave backup validate /tmp/alliance-demo.weavebak
 ```
 
-#### Batch Processing
+**Talking points**:
 
-```bash
-# Batch process documents with parallel workers
-weave docs batch --directory ./docs --collection MyCollection --parallel 3
-
-# Convert CMYK PDFs to RGB
-weave docs pdf-convert document.pdf --rgb
-
-# Text-only PDF extraction (faster, no images)
-weave docs create MyCollection document.pdf --skip-all-images
-
-# Count documents
-weave docs count DemoDocs
-
-# Delete all documents
-weave docs delete-all DemoDocs
-```
+- `.weavebak` format: gzip compressed, 65-95% size reduction
+- Preserves embeddings, metadata, images
+- Restore to any VDB (cross-VDB migration)
+- S3/MinIO remote storage support
 
 ---
 
-### 6. Query Collections
+## Part 8: Batch Ingestion (~5 min)
+
+**Goal**: Ingest a whole directory at once.
 
 ```bash
-# Semantic search
-weave cols query DemoDocs "golang"
-weave cols q DemoDocs "vector database"
+# Pipeline ingest
+weave pipeline ingest docs/vdbs/redis/ \
+    --collection AllianceDemo --weaviate-cloud
 
-# With top_k limit
-weave cols query DemoDocs "RAGme.io" --top_k 3
-
-# Natural language queries with AI agents
-weave q "find all empty collections"
-weave query "create TestDocs and add README.md" --dry-run
+# Check updated count
+weave cols count --weaviate-cloud
 ```
+
+**Talking points**:
+
+- Progress tracking, checkpointing, resume on failure
+- Parallel workers, configurable batch size
+- File type detection (PDF, text, markdown, images)
 
 ---
 
-### 7. Embeddings
+## Part 9: Multi-VDB Support (~3 min)
+
+**Goal**: Show breadth of database support.
+
+No commands — just talk through the table:
+
+| VDB | Status | Modes |
+| --- | --- | --- |
+| Weaviate | Stable | cloud, local |
+| Qdrant | Stable | cloud, local |
+| Milvus | Stable | cloud, local |
+| Chroma | Stable | cloud, local |
+| Supabase | Stable | cloud, local |
+| Neo4j | Stable | cloud, local |
+| MongoDB | Stable | cloud |
+| Pinecone | Beta | cloud |
+| OpenSearch | Stable | cloud, local |
+| Elasticsearch | Beta | cloud, local |
+| Redis | Experimental | cloud, local |
+
+**Talking points**:
+
+- Unified `VectorDBClient` interface — same commands everywhere
+- Adapter pattern: each VDB has its own adapter + factory
+- Switch with a flag or set default in config
+
+---
+
+## Part 10: Embeddings (~3 min)
 
 ```bash
-# List available embeddings
 weave embeddings list
-weave emb ls
-
-# List with verbose output (shows dimensions, providers)
-weave emb ls --verbose
-
-# OSS Embedding Workflows (NEW in v0.9.19)
-
-# 1. Setup OSS embeddings (one-time)
-pip install sentence-transformers
-
-# 2. Create collection with OSS embedding
-weave docs create TechDocs documentation.pdf \
-  --embedding sentence-transformers/all-mpnet-base-v2
-
-# 3. Re-embed existing collection (20x faster than re-ingestion!)
-weave collection reembed MyDocs \
-  --new-embedding sentence-transformers/all-mpnet-base-v2 \
-  --output MyDocs_OSS
-
-# 4. Query OSS collection (auto-detects embedding model)
-weave cols query MyDocs_OSS "machine learning" --top-k 5
-
-# 5. Compare OpenAI vs OSS embeddings
-weave collection compare MyDocs MyDocs_OSS \
-  --query "test query" \
-  --report comparison.md
-
-# Available OSS Models:
-# - sentence-transformers/all-mpnet-base-v2 (768 dims) - Recommended
-# - sentence-transformers/all-MiniLM-L6-v2 (384 dims) - Fast
-# - ollama/nomic-embed-text (768 dims) - Local Ollama
-# - ollama/mxbai-embed-large (1024 dims) - Local Ollama
-
-# Benefits:
-# - 100% FREE (no API costs)
-# - Privacy (all local processing)
-# - $240/year savings on 10M tokens
-# - 90%+ quality retention vs OpenAI
 ```
+
+**Talking points**:
+
+- OpenAI, sentence-transformers, Ollama, Cohere, Voyage AI
+- OSS models: free, local, private — scored 11% higher than
+  OpenAI on production dataset
+- Auto-dimension detection from model registry
 
 ---
 
-### 8. Advanced Features
+## Part 11: Evaluations and Agents (overview) (~3 min)
 
-#### Multi-Database Operations
-
-```bash
-# Query multiple databases at once
-weave cols query MyCollection "search" --weaviate --supabase
-
-# Read operations work with specific or all databases
-weave cols ls --weaviate                     # All Weaviate databases
-weave cols ls --supabase                     # Supabase only
-weave cols ls --all                          # All configured databases (default)
-```
-
-#### Timeout Configuration
+**Goal**: Quick overview, don't dive deep.
 
 ```bash
-# Configure timeout for slow connections
-weave cols ls --timeout 30s
-weave health check --timeout 60s
+# Eval harness
+weave eval run --agent rag-agent --dataset baseline
+weave eval benchmark --agents rag,qa --dataset baseline
+
+# Agents
+weave agents list
 ```
 
-#### Delete Operations
+**Talking points**:
 
-```bash
-# Delete collection schema
-weave cols delete-schema DemoDocs
-
-# Delete entire collection
-weave cols delete MyCollection --force
-```
+- LLM-as-judge evaluators (accuracy, faithfulness,
+  hallucination, context relevance)
+- 10 built-in agents + custom YAML agents
+- Opik integration for production observability
+- Traces, cost tracking, experiment comparison
 
 ---
 
-### 9. AI Agent Mode (REPL)
+## Part 12: Interactive REPL (~2 min)
 
 ```bash
-# Start AI-powered REPL mode
+# Start REPL (just run weave with no args)
 weave
-
-# Example interactions:
-> show me all my collections
-> create TestDocs collection
-> add README.md to TestDocs
-> list my empty collections
-> find documents about "vector search" in WeaveDocs
 ```
 
-#### Single Query Mode
+Example queries in the REPL:
 
-```bash
-# Execute one AI query at a time
-weave query "show me all my collections"
-weave q "create TestDocs and add README.md"
-```
-
----
-
-## Demo Commands Summary
-
-### Quick Start Commands
-
-```bash
-# 1. Help
-weave -h
-
-# 2. Configuration
-weave config show
-weave config list --details
-
-# 3. Health Check
-weave health check -S
-
-# 4. Collections
-weave cols ls --all
-weave cols create DemoDocs --text
-weave cols show DemoDocs
-
-# 5. Documents
-weave docs create DemoDocs README.md
-weave docs ls DemoDocs
-weave docs count DemoDocs
-
-# 6. Query
-weave cols q DemoDocs "vector database"
-
-# 7. Embeddings
-weave emb ls
-
-# 8. AI Mode
-weave
+```text
 > list my collections
+> how many documents in AllianceDemo?
+> search AllianceDemo for vector database architecture
 ```
 
 ---
 
-## New Features in v0.7.3
-
-### OpenSearch Support (NEW)
+## Cleanup
 
 ```bash
-# List OpenSearch collections
-weave cols ls --opensearch-local      # Local OpenSearch
-weave cols ls --opensearch-cloud      # AWS OpenSearch Service
-
-# Create collection in OpenSearch
-weave cols create MyDocs --opensearch-local
-
-# Health check OpenSearch
-weave health check --opensearch-local
-```
-
-### Sorting Features (v0.7.2)
-
-```bash
-# Sort configuration list
-weave config list --sort-by name         # Alphabetical (default)
-weave config list --sort-by type         # By database type
-weave config list --sort-by deployment   # By deployment type
-
-# Sort health check results
-weave health check --sort-by name        # Alphabetical (default)
-weave health check --sort-by type        # By database type
-```
-
-### Filtering Features (v0.7.2)
-
-```bash
-# Filter by deployment type
-weave config list --cloud                # Show only cloud databases
-weave config list --local                # Show only local databases
-weave health check --cloud               # Check only cloud databases
-weave health check --local               # Check only local databases
-weave cols ls --cloud                    # Collections from cloud databases
-weave cols ls --local                    # Collections from local databases
-```
-
-### Summary Tables with Progressive Output (v0.7.2)
-
-```bash
-# Collections summary
-weave cols ls -S                         # Summary table (default for multiple VDBs)
-
-# Health check summary
-weave health check -S                    # Progressive output (results appear immediately)
-
-# Features:
-# • Progressive Output: Results appear as they're retrieved/checked
-# • Status Indicators: ✓ OK (green) or ✗ FAIL (red)
-# • Footer Statistics: Total count, healthy count, failures
-# • Auto-Selection: Summary for multiple VDBs, detailed for single VDB
+weave docs da AllianceDemo --no-confirm --weaviate-cloud
+weave docs da AllianceDemoImages --no-confirm --weaviate-cloud
+weave cols ds AllianceDemo --no-confirm --weaviate-cloud
+weave cols ds AllianceDemoImages --no-confirm --weaviate-cloud
 ```
 
 ---
 
-## Database Support
+## Quick Reference
 
-| Database | Type | Status | CLI Flags |
-|----------|------|--------|-----------|
-| **Weaviate** | Cloud/Local | ✅ Stable | `--weaviate`, `--weaviate-cloud`, `--weaviate-local` |
-| **Milvus** | Cloud/Local | 🟢 Beta | `--milvus`, `--milvus-cloud`, `--milvus-local` |
-| **Supabase** | Cloud/Local | 🟡 Alpha | `--supabase`, `--supabase-cloud`, `--supabase-local` |
-| **MongoDB Atlas** | Cloud | 🧪 Experimental | `--mongodb`, `--mongodb-cloud` |
-| **Chroma** | Cloud/Local | ✅ Stable | `--chroma`, `--chroma-cloud`, `--chroma-local` |
-| **Qdrant** | Cloud/Local | 🧪 Experimental | `--qdrant`, `--qdrant-cloud`, `--qdrant-local` |
-| **Neo4j** | Cloud/Local | 🧪 Experimental | `--neo4j`, `--neo4j-cloud`, `--neo4j-local` |
-| **OpenSearch** | Cloud/Local | 🧪 Experimental | `--opensearch`, `--opensearch-cloud`, `--opensearch-local` |
-
----
-
-## Video Demos
-
-- **[Full Demo (5 min)](https://asciinema.org/a/LrKzmThBfDbTPISZzr8biP4dt)** -
-  Complete feature walkthrough
-- **[Quick Demo (2 min)](https://asciinema.org/a/HiAU7h1iJvZ2QdJe70ae3Cc0b)** -
-  Quick overview
-- **[REPL Demo](https://asciinema.org/a/U504HN4FSeMsOA0qS0os0NWUE)** -
-  AI-powered natural language interface
+| Feature | Command |
+| --- | --- |
+| Install | `brew install Maximilien-ai/weave-cli/weave-cli` |
+| Diagnose | `weave doctor` |
+| Health | `weave health check` |
+| Collections | `weave cols ls / create / show / query` |
+| Documents | `weave docs create / ls / show / del` |
+| Batch ingest | `weave pipeline ingest DIR --collection COL` |
+| Backup | `weave backup create / restore / validate` |
+| Embeddings | `weave embeddings list` |
+| Evals | `weave eval run --agent X --dataset Y` |
+| Agents | `weave agents list / show / create` |
+| REPL | `weave` (no args) |
+| Statistics | `weave stats COL` |
 
 ---
 
-## Interactive Demo Scripts
-
-Run these scripts locally for hands-on demonstrations:
-
-```bash
-# Full demo (5 minutes)
-./demos/full-demo.sh
-
-# Quick demo (2 minutes)
-./demos/quick-demo.sh
-
-# Configuration demo
-./demos/config-demo.sh
-
-# REPL/AI interface demo
-./demos/repl-demo.sh
-
-# Supabase-specific demo
-./demos/supabase-demo.sh
-```
-
----
-
-## Resources
-
-- **[GitHub Repository](https://github.com/maximilien/weave-cli)**
-- **[User Guide](USER_GUIDE.md)** - Complete feature documentation
-- **[Changelog](CHANGELOG.md)** - Version history and updates
-- **[VDB Support Matrix](VDB_SUPPORT.md)** - Database feature comparison
-- **[Vector DB Abstraction](VECTOR_DB_ABSTRACTION.md)** - Architecture details
-
----
-
-## Tips for Thursday Demo
-
-### Recommended Flow (15-20 minutes)
-
-1. **Introduction (2 min)**
-   - Show `weave -h`
-   - Quick overview of features
-
-2. **Configuration & Health (3 min)**
-   - `weave config list --details --sort-by type`
-   - `weave health check -S --cloud`
-   - Highlight 8 database support
-
-3. **Collections Demo (5 min)**
-   - `weave cols ls --all -S`
-   - `weave cols create DemoDocs --embedding text-embedding-3-small`
-   - `weave cols show DemoDocs --schema`
-
-4. **Documents Demo (5 min)**
-   - `weave docs create DemoDocs README.md`
-   - `weave docs ls DemoDocs -w -S`
-   - `weave cols q DemoDocs "vector database" --top_k 3`
-
-5. **Advanced Features (3 min)**
-   - Show multi-database: `weave cols ls --weaviate --supabase`
-   - Show batch processing: `weave docs batch --help`
-   - Show AI mode: `weave` (enter REPL)
-
-6. **Q&A (2 min)**
-
-### Key Talking Points
-
-- **Performance**: Single Go binary, fast startup, real-time feedback
-- **Flexibility**: 8 vector databases supported, easy to switch
-- **AI-Powered**: Natural language REPL with GPT-4o
-- **Production-Ready**: Comprehensive testing (7/8 suites passing)
-- **Developer-Friendly**: Simple CLI, extensive documentation
-
-### Commands to Highlight
-
-```bash
-# Show off new sorting/filtering
-weave config list --cloud --sort-by name
-weave health check -S --local
-
-# Show off multi-database support
-weave cols ls --all -S
-
-# Show off semantic search
-weave cols q DemoDocs "How do I use embeddings?"
-
-# Show off AI mode
-weave
-> list my empty collections
-```
-
----
-
-## External Storage for Large Images (v0.10.0+)
-
-### Problem: VDB Size Limits
-
-Some vector databases have limits for storing images:
-- **Milvus**: 65KB VARCHAR limit → max ~47KB image (after base64 encoding)
-- **Large images** (100KB-500KB) exceed this limit
-
-### Solution: Automatic External Storage
-
-Weave CLI automatically handles large images using S3/MinIO:
-
-```bash
-# Start MinIO (local testing)
-./scripts/start-minio.sh
-
-# Ingest images - automatic external storage for images >47KB
-weave docs create AuctionImages data/auction-catalog/ \
-  --image-storage minio \
-  --minio-bucket weave-images \
-  --milvus-local
-
-# Query works normally - thumbnails in VDB, full images in MinIO
-weave cols query AuctionImages "vintage watches" --top-k 5
-```
-
-### What Happens Automatically
-
-| Image Size | Storage Location | VDB Fields |
-|-----------|------------------|------------|
-| ≤47KB | Direct in VDB | `image_data` (full base64) |
-| >47KB | MinIO/S3 | `image_thumbnail` (preview) + `image_url` (full-res link) |
-
-### Production with AWS S3
-
-```bash
-# Set credentials
-export AWS_ACCESS_KEY_ID=your-key
-export AWS_SECRET_ACCESS_KEY=your-secret
-
-# Ingest with S3
-weave docs create ProductCatalog images/ \
-  --image-storage s3 \
-  --s3-bucket my-product-images \
-  --s3-region us-west-2 \
-  --milvus-cloud
-```
-
-### Benefits
-
-- ✅ No size limits - store unlimited image sizes
-- ✅ Cost optimization - cheaper S3 for large files
-- ✅ Fast previews - thumbnails in VDB
-- ✅ Full resolution - access via URL when needed
-- ✅ Works with all VDBs - optional for most, required for Milvus
-
-### Storage Options
-
-| Storage | Setup | Cost | Use Case |
-|---------|-------|------|----------|
-| MinIO | `./scripts/start-minio.sh` | FREE | Local dev |
-| AWS S3 | AWS account | $0.023/GB/month | Production |
-| Local | `--image-storage local` | FREE | Testing |
-
----
-
-## Notes
-
-- All demo commands are safe to run multiple times
-- Demo collections can be cleaned up with `weave cols delete <name> --force`
-- For Thursday demo, focus on stability (Weaviate, Chroma, Milvus)
-- Highlight new v0.7.2/v0.7.3 features (sorting, filtering, OpenSearch)
-- Prepare backup slides showing test results (7/8 passing)
+**GitHub**: <https://github.com/maximilien/weave-cli>
+**Install**: `brew install Maximilien-ai/weave-cli/weave-cli`
