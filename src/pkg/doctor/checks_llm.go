@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 )
@@ -41,6 +43,28 @@ func CheckLLM(ctx context.Context) []CheckResult {
 		return results
 	}
 
+	if !strings.HasPrefix(apiKey, "sk-") {
+		results = append(results, CheckResult{
+			Section: SectionLLM,
+			Name:    "OpenAI API key format",
+			Status:  StatusWarn,
+			Message: fmt.Sprintf("key starts with %q — expected \"sk-\" prefix", apiKey[:5]),
+			Fix:     "Check that OPENAI_API_KEY is correct; shell env overrides .env file",
+		})
+	}
+
+	// Check if shell env might be shadowing .env file
+	envFileKey := getEnvFileValue("OPENAI_API_KEY")
+	if envFileKey != "" && envFileKey != apiKey {
+		results = append(results, CheckResult{
+			Section: SectionLLM,
+			Name:    "OpenAI API key conflict",
+			Status:  StatusWarn,
+			Message: "shell env and .env file have different values — shell wins",
+			Fix:     "Run: unset OPENAI_API_KEY   to use .env value, or update shell env",
+		})
+	}
+
 	results = append(results, CheckResult{
 		Section: SectionLLM,
 		Name:    "OpenAI API key",
@@ -70,12 +94,17 @@ func testEmbedding(ctx context.Context, apiKey string) CheckResult {
 	latency := time.Since(start)
 
 	if err != nil {
+		fix := "Verify OPENAI_API_KEY is valid and has embedding permissions"
+		errMsg := err.Error()
+		if strings.Contains(errMsg, "401") || strings.Contains(errMsg, "Unauthorized") || strings.Contains(errMsg, "Incorrect API key") {
+			fix = "OPENAI_API_KEY is invalid. Shell env overrides .env — run: unset OPENAI_API_KEY   then retry"
+		}
 		return CheckResult{
 			Section: SectionLLM,
 			Name:    "Embedding API call",
 			Status:  StatusFail,
 			Message: fmt.Sprintf("failed: %v", err),
-			Fix:     "Verify OPENAI_API_KEY is valid and has embedding permissions",
+			Fix:     fix,
 		}
 	}
 
@@ -86,4 +115,17 @@ func testEmbedding(ctx context.Context, apiKey string) CheckResult {
 		Message: fmt.Sprintf("text-embedding-3-small responded in %s", latency.Round(time.Millisecond)),
 		Latency: latency.Round(time.Millisecond).String(),
 	}
+}
+
+// getEnvFileValue reads a key from .env without affecting os env.
+func getEnvFileValue(key string) string {
+	for _, path := range []string{".env", "env"} {
+		m, err := godotenv.Read(path)
+		if err == nil {
+			if v, ok := m[key]; ok {
+				return v
+			}
+		}
+	}
+	return ""
 }
