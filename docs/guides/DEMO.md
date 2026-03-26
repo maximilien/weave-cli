@@ -23,7 +23,14 @@ weave --version
 ```
 
 Ensure your `config.yaml` and `.env` are set up with at least
-`weaviate-cloud` and `OPENAI_API_KEY`.
+`weaviate-cloud`, `milvus-local`, and `OPENAI_API_KEY`.
+
+Start Milvus locally before the demo:
+
+```bash
+weave vdb local start milvus
+# or: docker compose up -d milvus
+```
 
 ---
 
@@ -92,6 +99,7 @@ weave vdb list
 - Single config.yaml for all 11 VDBs
 - Environment variable interpolation (`${WEAVIATE_URL}`)
 - Switch databases with `--weaviate-cloud`, `--milvus-local`, etc.
+- Show milvus-local in config alongside weaviate-cloud
 
 ---
 
@@ -108,31 +116,34 @@ weave cols ls
 ### Create collections
 
 ```bash
-# Text collection
+# Text collection on milvus-local (show multi-VDB!)
 weave cols create AllianceDemo \
-    --embedding text-embedding-3-small --weaviate-cloud
+    --embedding text-embedding-3-small --milvus-local
 
-# Image collection
+# Image collection on weaviate-cloud
 weave cols create AllianceDemoImages \
     --image --weaviate-cloud
 ```
 
-### Ingest text documents
+### Ingest text documents (Milvus)
+
+Use milvus-local for text/markdown to show ingesting into a
+different VDB than weaviate-cloud.
 
 ```bash
 # Architecture doc from the repo itself
 weave docs create AllianceDemo \
-    docs/ARCHITECTURE.md --weaviate-cloud
+    docs/ARCHITECTURE.md --milvus-local
 
 # README
 weave docs create AllianceDemo \
-    README.md --weaviate-cloud
+    README.md --milvus-local
 
 # List what we ingested
-weave docs ls AllianceDemo --weaviate-cloud
+weave docs ls AllianceDemo --milvus-local
 ```
 
-### Ingest a PDF (text + image extraction)
+### Ingest a PDF (Weaviate — text + image extraction)
 
 ```bash
 weave docs create AllianceDemo \
@@ -140,7 +151,7 @@ weave docs create AllianceDemo \
     --image-col AllianceDemoImages --weaviate-cloud
 ```
 
-### Ingest images
+### Ingest images (Weaviate)
 
 ```bash
 weave docs create AllianceDemoImages \
@@ -163,24 +174,31 @@ weave docs ls AllianceDemoImages --weaviate-cloud
 **Goal**: Live queries showing RAG retrieval quality.
 
 ```bash
+# Query text on milvus-local
 weave cols query AllianceDemo \
     "how does the vector database abstraction work?" \
-    --top-k 3 --weaviate-cloud
+    --top-k 3 --milvus-local
 
 weave cols query AllianceDemo \
     "what embedding models are supported?" \
-    --top-k 3 --weaviate-cloud
+    --top-k 3 --milvus-local
 
+# Same query on weaviate-cloud (cross-VDB — same syntax!)
 weave cols query AllianceDemo \
     "kubernetes deployment" \
     --top-k 2 --weaviate-cloud
+
+# Image search on weaviate-cloud
+weave cols query AllianceDemoImages \
+    "dog" --top-k 2 --weaviate-cloud
 ```
 
 **Talking points**:
 
 - Vector similarity search using OpenAI embeddings
 - Top-K results with relevance scores
-- Same query syntax works across all 11 VDBs
+- Same query syntax works across all 11 VDBs — just swap the flag
+- Search text on Milvus and images on Weaviate in the same demo
 
 ---
 
@@ -189,8 +207,10 @@ weave cols query AllianceDemo \
 **Goal**: Inspect what's inside a collection.
 
 ```bash
-weave stats AllianceDemo --weaviate-cloud
+# Stats on milvus-local
+weave stats AllianceDemo --milvus-local
 
+# Schema on weaviate-cloud
 weave cols show AllianceDemo \
     --schema --weaviate-cloud
 ```
@@ -286,30 +306,61 @@ weave embeddings list
 
 ---
 
-## Part 11: Evaluations and Agents (overview) (~3 min)
+## Part 11: Agents (~5 min)
 
-**Goal**: Quick overview, don't dive deep.
+**Goal**: Show built-in agents creating a RAG solution.
 
 ```bash
-# Eval harness
-weave eval run --agent rag-agent --dataset baseline
-weave eval benchmark --agents rag,qa --dataset baseline
-
-# Agents
+# List available agents
 weave agents list
+
+# RAG agent — retrieval-augmented generation
+weave agents run rag-agent \
+    --collection AllianceDemo --milvus-local \
+    "explain the vector database abstraction layer"
+
+# Summarizer agent
+weave agents run summarizer \
+    --collection AllianceDemo --milvus-local \
+    "summarize the architecture document"
+
+# QA agent
+weave agents run qa-agent \
+    --collection AllianceDemo --milvus-local \
+    "what embedding models are supported?"
+```
+
+**Talking points**:
+
+- 10 built-in agents + custom YAML agents
+- Each agent composes retrieval, prompting, and response
+- Same `--milvus-local` / `--weaviate-cloud` flag works here too
+
+---
+
+## Part 12: Evaluations (~3 min)
+
+**Goal**: Show evaluation harness — focus on eval quality.
+
+```bash
+# Run evaluation against a dataset
+weave eval run --agent rag-agent --dataset baseline
+
+# Benchmark multiple agents side-by-side
+weave eval benchmark --agents rag,qa --dataset baseline
 ```
 
 **Talking points**:
 
 - LLM-as-judge evaluators (accuracy, faithfulness,
   hallucination, context relevance)
-- 10 built-in agents + custom YAML agents
+- Compare agents head-to-head on the same dataset
 - Opik integration for production observability
 - Traces, cost tracking, experiment comparison
 
 ---
 
-## Part 12: Interactive REPL (~2 min)
+## Part 13: Interactive REPL (~2 min)
 
 ```bash
 # Start REPL (just run weave with no args)
@@ -329,6 +380,11 @@ Example queries in the REPL:
 ## Cleanup
 
 ```bash
+# Milvus
+weave docs da AllianceDemo --no-confirm --milvus-local
+weave cols ds AllianceDemo --no-confirm --milvus-local
+
+# Weaviate
 weave docs da AllianceDemo --no-confirm --weaviate-cloud
 weave docs da AllianceDemoImages --no-confirm --weaviate-cloud
 weave cols ds AllianceDemo --no-confirm --weaviate-cloud
