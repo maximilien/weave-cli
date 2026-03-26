@@ -17,7 +17,8 @@ cd weave-cli
 
 ### Choose Your Vector Database
 
-Weave CLI supports **10 vector databases**. Choose the one that best fits your needs:
+Weave CLI supports **11 vector databases**. Choose the one that
+best fits your needs:
 
 | VDB | Status | Local | Cloud | Best For |
 |-----|--------|-------|-------|----------|
@@ -28,6 +29,7 @@ Weave CLI supports **10 vector databases**. Choose the one that best fits your n
 | **[Supabase](docs/vdbs/supabase/SETUP.md)** | ✅ Stable | ✅ | ✅ | PostgreSQL + pgvector, cost-effective |
 | **[Neo4j](docs/vdbs/neo4j/README.md)** | ✅ Stable | ✅ | ⚠️ Untested | Graph + vector search, Cypher queries |
 | **[MongoDB](docs/vdbs/mongodb/SETUP.md)** | ✅ Stable | ❌ | ✅ | Atlas Vector Search, existing MongoDB users |
+| **[Redis](docs/vdbs/redis/SETUP.md)** | 🧪 Experimental | ✅ | ✅ | Redis Stack, sub-ms latency, hybrid search |
 | **[Pinecone](docs/vdbs/pinecone/SETUP.md)** | 🟢 Beta | ❌ | ✅ | Serverless, auto-scaling, managed only |
 | **[OpenSearch](docs/vdbs/opensearch/README.md)** | ✅ Stable | ✅ | ✅ | AWS OpenSearch, k-NN + BM25 hybrid |
 | **[Elasticsearch](docs/vdbs/elasticsearch/)** | 🟢 Beta | ✅ | ✅ | Elastic Cloud, HNSW vector + BM25 hybrid |
