@@ -317,17 +317,20 @@ weave agents list
 # Show agent details
 weave agents show rag-agent
 
-# RAG query — retrieval-augmented generation
-weave query "explain the vector database abstraction layer" \
-    --milvus-local
+# RAG agent query
+weave cols query AllianceDemo \
+    "explain the vector database abstraction layer" \
+    --agent rag-agent --milvus-local
 
-# Summarizer query
-weave query "summarize the architecture document" \
-    --milvus-local
+# Summarizer agent query
+weave cols query AllianceDemo \
+    "summarize the architecture document" \
+    --agent summarize-agent --milvus-local
 
-# QA query
-weave query "what embedding models are supported?" \
-    --milvus-local
+# QA agent query
+weave cols query AllianceDemo \
+    "what embedding models are supported?" \
+    --agent qa-agent --milvus-local
 ```
 
 **Talking points**:
