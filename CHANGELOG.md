@@ -37,6 +37,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **21 unit tests** covering all sections, status types, JSON
     serialization, and orchestrator filtering
 
+- **Redis Vector Database Support** (Experimental)
+  - Redis Stack (RediSearch) as the 12th VDB provider
+  - Supports `redis-local` and `redis-cloud` types
+  - HNSW vector indexing via FT.CREATE, KNN search via FT.SEARCH
+  - Full-text search (BM25-equivalent) on same index
+  - Documents stored as Redis HASHes with binary float32 vectors
+  - 21 unit tests (factory, URL parsing, vector encoding, helpers)
+  - Setup: `docker run -d -p 6379:6379 redis/redis-stack:latest`
+  - Documentation: `docs/vdbs/redis/SETUP.md`
+
+- **Homebrew Installation**
+  - `brew install Maximilien-ai/weave-cli/weave-cli`
+  - Builds from source, auto-installs tesseract/leptonica deps
+  - Tap: [Maximilien-ai/homebrew-weave-cli](https://github.com/Maximilien-ai/homebrew-weave-cli)
+
+### Fixed
+
+- **`weave doctor` VDB checks** — no longer skips databases when
+  `enabled` field is unset (matches `health check` behavior)
+- **`weave doctor` Opik check** — uses correct OTEL traces endpoint
+  instead of non-existent is-alive path
+
 ### Performance
 
 - **2x Faster Backups** (Quick Win #1 from Performance Profiling)
