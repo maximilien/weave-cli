@@ -439,4 +439,3 @@ func displayHealthCheckSummaryProgressive(ctx context.Context, dbConfigs []confi
 	}
 	fmt.Println()
 }
-
