@@ -55,8 +55,9 @@ func NewDatasetsListCommand() *cobra.Command {
 	var outputFormat string
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all evaluation datasets",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List all evaluation datasets",
 		Long: `List all available evaluation datasets.
 
 Examples:

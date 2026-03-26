@@ -20,8 +20,9 @@ func NewListCommand() *cobra.Command {
 	var outputFormat string
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all evaluation runs",
+		Use:     "list",
+		Aliases: []string{"ls"},
+		Short:   "List all evaluation runs",
 		Long: `List all available evaluation runs with summary information.
 
 Examples:
