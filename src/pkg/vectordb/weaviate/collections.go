@@ -76,8 +76,7 @@ func (a *Adapter) ListCollections(ctx context.Context) ([]vectordb.CollectionInf
 
 	result := make([]vectordb.CollectionInfo, len(collections))
 	for i, collectionName := range collections {
-		// Get collection count - we'll implement a simple count method
-		count := int64(0) // Default to 0 since GetCollectionCount doesn't exist
+		count, _ := a.GetCollectionCount(ctx, collectionName)
 
 		// Get vectorizer from schema
 		vectorizer := ""

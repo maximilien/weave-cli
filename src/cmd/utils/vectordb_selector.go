@@ -350,6 +350,11 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 }
 
 // getAllConfiguredDatabases returns all configured vector databases
+// GetAllConfiguredDatabases returns all configured vector databases.
+func GetAllConfiguredDatabases(cfg *config.Config) (*VectorDBSelection, error) {
+	return getAllConfiguredDatabases(cfg)
+}
+
 func getAllConfiguredDatabases(cfg *config.Config) (*VectorDBSelection, error) {
 	var configs []config.VectorDBConfig
 	var types []string

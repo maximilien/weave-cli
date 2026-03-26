@@ -123,8 +123,14 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// Get selected databases based on flags
-	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
+	// When --cloud or --local is used, query all configured databases
+	// so we can filter by deployment type, not just the default
+	var selection *utils.VectorDBSelection
+	if cloudOnly || localOnly {
+		selection, err = utils.GetAllConfiguredDatabases(cfg)
+	} else {
+		selection, err = utils.GetSelectedVectorDBs(cmd, cfg)
+	}
 	if err != nil {
 		printError(fmt.Sprintf("Failed to get database selection: %v", err))
 		os.Exit(1)

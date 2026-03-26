@@ -647,20 +647,30 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 	hasContent := false
 	hasText := false
 	hasMetadata := false
+	hasURL := false
+	hasImage := false
 	for _, prop := range schema.Properties {
-		if prop.Name == "content" {
+		switch prop.Name {
+		case "content":
 			hasContent = true
-		}
-		if prop.Name == "text" {
+		case "text":
 			hasText = true
-		}
-		if prop.Name == "metadata" {
+		case "metadata":
 			hasMetadata = true
+		case "url":
+			hasURL = true
+		case "image", "image_data":
+			hasImage = true
 		}
 	}
 
+	isImageColl := hasImage || isImageCollection(collectionName)
+
 	// Build query fields for hybrid search
 	var queryFields []string
+	if isImageColl && hasURL {
+		queryFields = append(queryFields, "url")
+	}
 	if hasContent {
 		queryFields = append(queryFields, "content")
 	}
@@ -680,15 +690,8 @@ func (c *Client) queryWithFallback(ctx context.Context, collectionName, queryTex
 
 	// Determine target vector for collections with multiple vectors
 	targetVector := "default"
-	hasImage := false
-	for _, prop := range schema.Properties {
-		if prop.Name == "image" || prop.Name == "image_data" {
-			hasImage = true
-			break
-		}
-	}
 	// For image collections with dual vectors, use text_vector
-	if hasImage && !hasContent && !hasText {
+	if isImageColl {
 		targetVector = "text_vector"
 	}
 
@@ -757,15 +760,17 @@ func (c *Client) queryWithSimpleFallback(ctx context.Context, collectionName, qu
 	hasContent := false
 	hasText := false
 	hasMetadata := false
+	hasURL := false
 	for _, prop := range schema.Properties {
-		if prop.Name == "content" {
+		switch prop.Name {
+		case "content":
 			hasContent = true
-		}
-		if prop.Name == "text" {
+		case "text":
 			hasText = true
-		}
-		if prop.Name == "metadata" {
+		case "metadata":
 			hasMetadata = true
+		case "url":
+			hasURL = true
 		}
 	}
 
@@ -773,29 +778,28 @@ func (c *Client) queryWithSimpleFallback(ctx context.Context, collectionName, qu
 	var operands []string
 	queryTextEscaped := strings.ReplaceAll(queryText, `"`, `\"`)
 
-	// Always search content/text fields
-	if hasContent && hasText {
+	// Search content/text fields
+	if hasContent {
 		operands = append(operands, fmt.Sprintf(`{
 							path: ["content"]
 							operator: Equal
 							valueText: "%s"
 						}`, queryTextEscaped))
+	}
+	if hasText {
 		operands = append(operands, fmt.Sprintf(`{
 							path: ["text"]
 							operator: Equal
 							valueText: "%s"
 						}`, queryTextEscaped))
-	} else if hasContent {
+	}
+
+	// For image collections, search url field
+	if hasURL {
 		operands = append(operands, fmt.Sprintf(`{
-							path: ["content"]
-							operator: Equal
-							valueText: "%s"
-						}`, queryTextEscaped))
-	} else if hasText {
-		operands = append(operands, fmt.Sprintf(`{
-							path: ["text"]
-							operator: Equal
-							valueText: "%s"
+							path: ["url"]
+							operator: Like
+							valueText: "*%s*"
 						}`, queryTextEscaped))
 	}
 
