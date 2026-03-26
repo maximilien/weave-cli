@@ -37,7 +37,7 @@ page() {
 
 run() {
     echo -e "${GREEN}\$ $*${NC}"
-    eval "$@"
+    "$@"
     echo ""
 }
 
