@@ -40,6 +40,8 @@ func init() {
 	ListCmd.Flags().BoolP("summary", "S", false, "Show summary table (default for multiple VDBs)")
 	ListCmd.Flags().Bool("details", false, "Show detailed list (overrides default summary for multiple VDBs)")
 	ListCmd.Flags().StringP("output", "o", "text", "Output format: text, json, yaml")
+	ListCmd.Flags().Bool("cloud", false, "Show only cloud database collections")
+	ListCmd.Flags().Bool("local", false, "Show only local database collections")
 }
 
 func runCollectionList(cmd *cobra.Command, args []string) {
@@ -77,11 +79,30 @@ func runCollectionList(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	// Use new vector database selector based on flags
-	selection, err := utils.GetSelectedVectorDBs(cmd, cfg)
+	cloudOnly, _ := cmd.Flags().GetBool("cloud")
+	localOnly, _ := cmd.Flags().GetBool("local")
+
+	// When --cloud or --local is used, query all configured databases then filter
+	var selection *utils.VectorDBSelection
+	if cloudOnly || localOnly {
+		selection, err = utils.GetAllConfiguredDatabases(cfg)
+	} else {
+		selection, err = utils.GetSelectedVectorDBs(cmd, cfg)
+	}
 	if err != nil {
 		utils.PrintError(fmt.Sprintf("Failed to determine vector databases: %v", err))
 		os.Exit(1)
+	}
+
+	// Filter by cloud/local deployment type
+	selection.Configs = utils.FilterByDeployment(selection.Configs, cloudOnly, localOnly)
+	if len(selection.Configs) == 0 {
+		if cloudOnly {
+			utils.PrintWarning("No cloud databases found in configuration")
+		} else if localOnly {
+			utils.PrintWarning("No local databases found in configuration")
+		}
+		return
 	}
 
 	// Decide whether to show summary:

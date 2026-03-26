@@ -48,6 +48,15 @@ func ConfirmAction(message string) bool {
 	return response == "y" || response == "yes"
 }
 
+// ConfirmActionStrict requires the user to type "yes" (not just "y")
+func ConfirmActionStrict(message string) bool {
+	fmt.Printf("%s (yes/N): ", message)
+	reader := bufio.NewReader(os.Stdin)
+	response, _ := reader.ReadString('\n')
+	response = strings.TrimSpace(strings.ToLower(response))
+	return response == "yes"
+}
+
 // PrintStyledKey prints a styled key
 func PrintStyledKey(key string) {
 	color.New(color.FgCyan).Print(key)

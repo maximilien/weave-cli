@@ -349,6 +349,36 @@ func GetSelectedVectorDBs(cmd *cobra.Command, cfg *config.Config) (*VectorDBSele
 	}, nil
 }
 
+// IsCloudDatabase checks if a database type is a cloud deployment.
+func IsCloudDatabase(dbType config.VectorDBType) bool {
+	cloudTypes := []string{"cloud", "aura", "zilliz"}
+	typeStr := string(dbType)
+	for _, ct := range cloudTypes {
+		if len(typeStr) > len(ct) && typeStr[len(typeStr)-len(ct):] == ct {
+			return true
+		}
+	}
+	if dbType == "mongodb" || dbType == "supabase" {
+		return true
+	}
+	return false
+}
+
+// FilterByDeployment filters configs by cloud/local deployment type.
+func FilterByDeployment(configs []config.VectorDBConfig, cloudOnly, localOnly bool) []config.VectorDBConfig {
+	if !cloudOnly && !localOnly {
+		return configs
+	}
+	var filtered []config.VectorDBConfig
+	for _, c := range configs {
+		isCloud := IsCloudDatabase(c.Type)
+		if (cloudOnly && isCloud) || (localOnly && !isCloud) {
+			filtered = append(filtered, c)
+		}
+	}
+	return filtered
+}
+
 // getAllConfiguredDatabases returns all configured vector databases
 // GetAllConfiguredDatabases returns all configured vector databases.
 func GetAllConfiguredDatabases(cfg *config.Config) (*VectorDBSelection, error) {

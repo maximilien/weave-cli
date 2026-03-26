@@ -74,8 +74,7 @@ func runDocumentDeleteAll(cmd *cobra.Command, args []string) {
 		}
 
 		// Second confirmation with prominent red warning
-		utils.PrintError("🚨 This will permanently delete ALL documents. Type 'yes' to confirm:")
-		if !utils.ConfirmAction("") {
+		if !utils.ConfirmActionStrict("🚨 This will permanently delete ALL documents. Type 'yes' to confirm:") {
 			fmt.Fprintln(os.Stderr, "Operation cancelled")
 			return
 		}

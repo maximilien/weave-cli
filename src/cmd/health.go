@@ -137,16 +137,7 @@ func runHealthCheck(cmd *cobra.Command, args []string) {
 	}
 
 	// Filter databases based on cloud/local flags
-	var filteredConfigs []config.VectorDBConfig
-	for _, dbConfig := range selection.Configs {
-		if cloudOnly || localOnly {
-			isCloud := isCloudDatabase(dbConfig.Type)
-			if (cloudOnly && !isCloud) || (localOnly && isCloud) {
-				continue // Skip this database
-			}
-		}
-		filteredConfigs = append(filteredConfigs, dbConfig)
-	}
+	filteredConfigs := utils.FilterByDeployment(selection.Configs, cloudOnly, localOnly)
 
 	// Check if filtering resulted in no databases
 	if len(filteredConfigs) == 0 {
@@ -449,21 +440,3 @@ func displayHealthCheckSummaryProgressive(ctx context.Context, dbConfigs []confi
 	fmt.Println()
 }
 
-// isCloudDatabase checks if a database type is a cloud deployment
-func isCloudDatabase(dbType config.VectorDBType) bool {
-	// Cloud suffix patterns
-	cloudTypes := []string{"cloud", "aura", "zilliz"}
-	typeStr := string(dbType)
-	for _, ct := range cloudTypes {
-		if len(typeStr) > len(ct) && typeStr[len(typeStr)-len(ct):] == ct {
-			return true
-		}
-	}
-
-	// Legacy support: MongoDB and Supabase without -cloud suffix are still cloud services
-	if dbType == "mongodb" || dbType == "supabase" {
-		return true
-	}
-
-	return false
-}
