@@ -28,8 +28,8 @@ Ensure your `config.yaml` and `.env` are set up with at least
 Start Milvus locally before the demo:
 
 ```bash
-weave vdb local start milvus
-# or: docker compose up -d milvus
+# Start Milvus via docker compose
+docker compose -f local/milvus/docker-compose.yml up -d
 ```
 
 ---
@@ -147,7 +147,7 @@ weave docs ls AllianceDemo --milvus-local
 
 ```bash
 weave docs create AllianceDemo \
-    tests/fixtures/ragme-io.pdf \
+    docs/ragme-io.pdf \
     --image-col AllianceDemoImages --weaviate-cloud
 ```
 
@@ -155,7 +155,7 @@ weave docs create AllianceDemo \
 
 ```bash
 weave docs create AllianceDemoImages \
-    tests/images/dog.png --weaviate-cloud
+    docs/dog.png --weaviate-cloud
 
 weave docs ls AllianceDemoImages --weaviate-cloud
 ```
@@ -314,20 +314,20 @@ weave embeddings list
 # List available agents
 weave agents list
 
-# RAG agent — retrieval-augmented generation
-weave agents run rag-agent \
-    --collection AllianceDemo --milvus-local \
-    "explain the vector database abstraction layer"
+# Show agent details
+weave agents show rag-agent
 
-# Summarizer agent
-weave agents run summarizer \
-    --collection AllianceDemo --milvus-local \
-    "summarize the architecture document"
+# RAG query — retrieval-augmented generation
+weave query "explain the vector database abstraction layer" \
+    --milvus-local
 
-# QA agent
-weave agents run qa-agent \
-    --collection AllianceDemo --milvus-local \
-    "what embedding models are supported?"
+# Summarizer query
+weave query "summarize the architecture document" \
+    --milvus-local
+
+# QA query
+weave query "what embedding models are supported?" \
+    --milvus-local
 ```
 
 **Talking points**:
@@ -347,7 +347,7 @@ weave agents run qa-agent \
 weave eval run --agent rag-agent --dataset baseline
 
 # Benchmark multiple agents side-by-side
-weave eval benchmark --agents rag,qa --dataset baseline
+weave eval benchmark --agents rag-agent,qa-agent --dataset baseline
 ```
 
 **Talking points**:
@@ -380,9 +380,8 @@ Example queries in the REPL:
 ## Cleanup
 
 ```bash
-# Milvus
-weave docs da AllianceDemo --no-confirm --milvus-local
-weave cols ds AllianceDemo --no-confirm --milvus-local
+# Milvus (use cols del --force; milvus has no separate schema)
+weave cols del AllianceDemo --force --milvus-local
 
 # Weaviate
 weave docs da AllianceDemo --no-confirm --weaviate-cloud
