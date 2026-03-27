@@ -1,2 +1,5 @@
 # Marp slide decks use multiple H1s, bare URLs, etc.
 docs/PRESENTATION.md
+
+# Demo directories contain copied/generated docs
+demos/
