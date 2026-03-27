@@ -98,7 +98,7 @@ pause
 run "$WEAVE" doctor --section config
 pause
 
-run "$WEAVE" doctor --section vdb
+run "$WEAVE" doctor --section vdb || true
 pause
 
 # =================================================================
@@ -109,7 +109,7 @@ page "Part 3: Configuration & VDB Health"
 run "$WEAVE" config list
 pause
 
-run "$WEAVE" health check --cloud
+run "$WEAVE" health check --cloud || true
 pause
 
 run "$WEAVE" vdb list
@@ -139,16 +139,16 @@ page "Ingest Text Documents (Milvus Local)"
 
 echo "Ingest the architecture doc:"
 run "$WEAVE" docs create $DEMO_COL \
-    "$DOCS/ARCHITECTURE.md" --milvus-local
+    "$DOCS/ARCHITECTURE.md" --milvus-local || true
 pause
 
 echo "Ingest the README:"
 run "$WEAVE" docs create $DEMO_COL \
-    "$DOCS/README.md" --milvus-local
+    "$DOCS/README.md" --milvus-local || true
 pause
 
 echo "List documents on Milvus:"
-run "$WEAVE" docs ls $DEMO_COL --milvus-local
+run "$WEAVE" docs ls $DEMO_COL --milvus-local || true
 pause
 
 # --- Ingest PDF (Weaviate) ---
@@ -168,7 +168,7 @@ run "$WEAVE" docs create $DEMO_IMG_COL \
     "$DOCS/dog.png" --weaviate-cloud || true
 pause
 
-run "$WEAVE" docs ls $DEMO_IMG_COL --weaviate-cloud
+run "$WEAVE" docs ls $DEMO_IMG_COL --weaviate-cloud || true
 pause
 
 # =================================================================
@@ -181,23 +181,23 @@ echo ""
 
 run "$WEAVE" cols query $DEMO_COL \
     "how does the vector database abstraction work?" \
-    --top-k 3 --milvus-local
+    --top-k 3 --milvus-local || true
 pause
 
 run "$WEAVE" cols query $DEMO_COL \
     "what embedding models are supported?" \
-    --top-k 3 --milvus-local
+    --top-k 3 --milvus-local || true
 pause
 
 echo "Same query on Weaviate cloud (cross-VDB — same syntax!):"
 run "$WEAVE" cols query $DEMO_COL \
     "kubernetes deployment" \
-    --top-k 2 --weaviate-cloud
+    --top-k 2 --weaviate-cloud || true
 pause
 
 echo "Image search on Weaviate cloud:"
 run "$WEAVE" cols query $DEMO_IMG_COL \
-    "dog" --top-k 2 --weaviate-cloud
+    "dog" --top-k 2 --weaviate-cloud || true
 pause
 
 # =================================================================
@@ -205,11 +205,11 @@ pause
 # =================================================================
 page "Part 6: Statistics & Schema"
 
-run "$WEAVE" stats $DEMO_COL --milvus-local
+run "$WEAVE" stats $DEMO_COL --milvus-local || true
 pause
 
 run "$WEAVE" cols show $DEMO_COL \
-    --schema --weaviate-cloud
+    --schema --weaviate-cloud || true
 pause
 
 # =================================================================
@@ -219,14 +219,14 @@ page "Part 7: Backup & Restore"
 
 echo "Create a portable backup (cross-VDB compatible):"
 run "$WEAVE" backup create $DEMO_COL \
-    --output /tmp/opik-demo.weavebak --weaviate-cloud
+    --output /tmp/opik-demo.weavebak --weaviate-cloud || true
 pause
 
 echo "Inspect the backup:"
-run "$WEAVE" backup list /tmp/
+run "$WEAVE" backup list /tmp/ || true
 pause
 
-run "$WEAVE" backup validate /tmp/opik-demo.weavebak
+run "$WEAVE" backup validate /tmp/opik-demo.weavebak || true
 pause
 
 # =================================================================
@@ -240,7 +240,7 @@ run "$WEAVE" pipeline ingest "$DOCS/vdbs/redis/" \
 pause
 
 echo "Updated document count:"
-run "$WEAVE" cols count --weaviate-cloud
+run "$WEAVE" cols count --weaviate-cloud || true
 pause
 
 # =================================================================
@@ -293,19 +293,19 @@ pause
 echo "RAG agent query:"
 run "$WEAVE" cols query $DEMO_COL \
     "explain the vector database abstraction layer" \
-    --agent rag-agent --milvus-local
+    --agent rag-agent --milvus-local || true
 pause
 
 echo "Summarizer agent query:"
 run "$WEAVE" cols query $DEMO_COL \
     "summarize the architecture document" \
-    --agent summarize-agent --milvus-local
+    --agent summarize-agent --milvus-local || true
 pause
 
 echo "QA agent query:"
 run "$WEAVE" cols query $DEMO_COL \
     "what embedding models are supported?" \
-    --agent qa-agent --milvus-local
+    --agent qa-agent --milvus-local || true
 pause
 
 # =================================================================
@@ -317,11 +317,11 @@ echo "Built-in evaluation harness with LLM-as-judge:"
 echo ""
 
 echo "Run evaluation against a dataset:"
-run "$WEAVE" eval run --agent rag-agent --dataset baseline
+run "$WEAVE" eval run --agent rag-agent --dataset baseline || true
 pause
 
 echo "Benchmark multiple agents side-by-side:"
-run "$WEAVE" eval benchmark --agents rag-agent,qa-agent --dataset baseline
+run "$WEAVE" eval benchmark --agents rag-agent,qa-agent --dataset baseline || true
 pause
 
 echo "Opik integration for production observability:"
