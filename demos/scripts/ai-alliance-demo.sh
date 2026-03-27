@@ -36,7 +36,15 @@ page() {
 }
 
 run() {
-    echo -e "${GREEN}\$ $*${NC}"
+    local display=""
+    for arg in "$@"; do
+        if [[ "$arg" == *" "* ]]; then
+            display="$display \"$arg\""
+        else
+            display="$display $arg"
+        fi
+    done
+    echo -e "${GREEN}\$${display}${NC}"
     "$@"
     echo ""
 }
