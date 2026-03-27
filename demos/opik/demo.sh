@@ -3,7 +3,7 @@
 # Copyright (c) 2026 dr.max
 
 # =================================================================
-# Opik Demo — Weave CLI v0.12.3
+# Opik Demo — Weave CLI v0.12.2
 # Duration: ~45 minutes (leave 15 min for Q&A)
 #
 # Uses config.yaml + .env in this directory.
@@ -60,7 +60,7 @@ DEMO_IMG_COL="OpikDemoImages"
 DOCS="$SHARED_DIR/docs"
 
 # =================================================================
-page "Opik Demo — Weave CLI v0.12.3"
+page "Opik Demo — Weave CLI v0.12.2"
 echo "AI-powered CLI for managing 11+ vector databases."
 echo "Built in Go. Single binary. Open source."
 echo ""
