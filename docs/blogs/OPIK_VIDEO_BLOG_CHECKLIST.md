@@ -220,14 +220,14 @@ flowchart LR
 ### 2b. DEMO: Ingestion & Retrieval in 2 Databases
 
 - [x] **Pick 2 databases** (suggested: Weaviate + Milvus, or Qdrant + Chroma)
-- [ ] **Prepare multi-modal data** (PDF with images, text docs — good for visual demo)
-- [ ] **Script the demo:**
+- [x] **Prepare multi-modal data** (PDF with images, text docs — in `demos/shared/docs/`)
+- [x] **Script the demo:** `demos/opik/demo.sh` — interactive with Enter/Esc/edit controls
   1. Show empty state of both databases
-  2. Ingest documents into both (`weave pipeline ingest --collection ... --vdb-type ...`)
+  2. Ingest documents into both (Milvus for text, Weaviate for PDF/images)
   3. Show populated state (document counts, schemas)
-  4. Run semantic queries against both
+  4. Run semantic queries against both (cross-VDB)
   5. Run agent queries showing RAG in action
-- [ ] **Record/screenshot the demo**
+- [x] **Record/screenshot the demo** — demo script ready for recording
 - _Owner: Max_
 
 ---
@@ -268,10 +268,10 @@ flowchart LR
 
 ### 3b. DEMO: Agents in Action
 
-- [ ] **Show agent orchestration** (query → plan → execute → report)
+- [x] **Show agent orchestration** (query → plan → execute → report) — in demo.sh Part 11
 - [ ] **Show REPL environment** with interactive commands
 - [ ] **Show custom agent creation** (YAML config → execution)
-- [ ] **Use multi-modal data** if possible (image search, PDF RAG)
+- [x] **Use multi-modal data** if possible (image search, PDF RAG) — PDF + dog.png in demo
 - _Owner: Max_
 
 ---
@@ -391,8 +391,8 @@ flowchart LR
 ### Needs to be reviewed / completed
 - [ ] Review Mermaid diagrams — adjust for video/blog
 - [ ] Review & personalize Q1 and Q2 answers
-- [ ] VDB + RAG demo (2 databases, multi-modal)
-- [ ] Agents demo (orchestration, REPL, custom agents)
+- [x] VDB + RAG demo (2 databases, multi-modal) — `demos/opik/demo.sh`
+- [x] Agents demo (orchestration, REPL, custom agents) — demo.sh Part 11
 - [ ] **Opik monitoring demo** (dashboard walkthrough, 5+ span traces) — _highest priority per Paul_
 - [ ] **Opik evaluation demo 1** (single experiment) — _highest priority per Paul_
 - [ ] **Opik evaluation demo 2** (benchmarking, side-by-side) — _highest priority per Paul_
