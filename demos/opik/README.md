@@ -1,58 +1,56 @@
-# Weave CLI Demo — AI Alliance (v0.12.0)
+# Weave CLI Demo — Opik (v0.12.2)
 
-Self-contained demo directory for the AI Alliance presentation.
+Self-contained demo directory for the Opik collaboration presentation.
 
 ## Contents
 
 ```
 .
-├── README.md                  # This file
-├── DEMO.md                    # Full demo script with talking points
-├── config.yaml                # Weave CLI config (weaviate-cloud + milvus-local)
-├── .env                       # API keys (weaviate, openai, opik)
-├── milvus.sh                  # Start/stop Milvus locally
-├── configs/
-│   ├── weave-agents.yaml      # Agent framework settings
-│   └── agents/                # Individual agent configs
-│       ├── rag-agent.yaml
-│       ├── qa-agent.yaml
-│       └── summarize-agent.yaml
-├── evals/
-│   ├── datasets/              # Evaluation datasets (baseline, simple-qa, etc.)
-│   └── evaluators/            # Custom evaluators (technical_accuracy)
-└── local/
-    └── milvus/                # Docker/Podman compose files for Milvus
-        ├── docker-compose.yml
-        └── podman-compose.yml
+├── README.md        # This file
+├── DEMO.md          # Full demo script with talking points
+├── config.yaml      # VDB config (weaviate-cloud + milvus-local)
+├── demo.sh          # Automated demo script (Enter-to-advance)
+├── cleanup.sh       # Delete demo collections for a fresh start
+└── milvus.sh        # Start/stop Milvus locally (-> ../shared/)
 ```
+
+Shared resources (configs, docs, evals, milvus compose) live in `../shared/`.
 
 ## Quick Start
 
-1. **Start Milvus** (needs Docker or Podman):
+1. **Add your `.env`** with `WEAVIATE_URL`, `WEAVIATE_API_KEY`, `OPENAI_API_KEY`,
+   and optionally `OPIK_API_KEY` / `OPIK_WORKSPACE`.
+
+2. **Start Milvus** (needs Docker or Podman):
 
    ```bash
    ./milvus.sh start
+   ./milvus.sh status   # wait until "running"
    ```
 
-2. **Verify setup**:
+3. **Clean up any leftover collections** (optional, recommended before recording):
 
    ```bash
-   weave doctor
-   weave health check --cloud
+   ./cleanup.sh
    ```
 
-3. **Run the demo** — follow `DEMO.md` step by step.
-
-4. **After the demo**:
+4. **Run the demo**:
 
    ```bash
-   # Cleanup collections (see DEMO.md Cleanup section)
-   ./milvus.sh stop
+   ./demo.sh            # interactive, press Enter between sections
+   ```
+
+   Or follow `DEMO.md` manually command by command.
+
+5. **After the demo**:
+
+   ```bash
+   ./cleanup.sh         # remove demo collections
+   ./milvus.sh stop     # stop Milvus containers
    ```
 
 ## Prerequisites
 
 - `weave-cli` installed (`brew install Maximilien-ai/weave-cli/weave-cli`)
-- Docker or Podman (for Milvus local — no separate Milvus install needed,
-  `./milvus.sh start` pulls and runs the containers automatically)
-- `.env` file with valid `WEAVIATE_URL`, `WEAVIATE_API_KEY`, and `OPENAI_API_KEY`
+- Docker or Podman (for Milvus local)
+- `.env` file with valid API keys (gitignored)
