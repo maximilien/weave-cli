@@ -32,18 +32,27 @@ cd "$SCRIPT_DIR"
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+DIM='\033[2m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# Step tracking
+CURRENT_STEP=0
+TOTAL_STEPS=19
+SKIP_SECTION=false
+
 page() {
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+    SKIP_SECTION=false
     echo ""
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${BOLD}  $1${NC}"
+    echo -e "${BOLD}  [$CURRENT_STEP/$TOTAL_STEPS] $1${NC}"
     echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 }
 
-run() {
+# Format a command for display (quote args with spaces)
+_fmt_cmd() {
     local display=""
     for arg in "$@"; do
         if [[ "$arg" == *" "* ]]; then
@@ -52,15 +61,76 @@ run() {
             display="$display $arg"
         fi
     done
+    echo "$display"
+}
+
+run() {
+    if $SKIP_SECTION; then return 0; fi
+    local display
+    display=$(_fmt_cmd "$@")
     echo -e "${GREEN}\$${display}${NC}"
     "$@"
     echo ""
 }
 
+# Interactive pause with controls:
+#   Enter  — continue to next step
+#   Esc    — skip remaining commands in this section
+#   e      — edit and re-run the last command
 pause() {
-    echo -e "${YELLOW}[Press Enter]${NC}"
-    read -r
-    clear
+    if $SKIP_SECTION; then return 0; fi
+    echo -e "${DIM}  [$CURRENT_STEP/$TOTAL_STEPS] Enter=continue | Esc=skip section | e=edit | q=quit${NC}"
+    while true; do
+        IFS= read -r -s -n1 key
+        case "$key" in
+            "") # Enter
+                clear
+                return 0
+                ;;
+            $'\x1b') # Esc
+                SKIP_SECTION=true
+                clear
+                return 0
+                ;;
+            e|E)
+                _edit_last
+                ;;
+            q|Q)
+                echo ""
+                echo "Demo ended early."
+                exit 0
+                ;;
+        esac
+    done
+}
+
+# Let the user edit and re-run the last displayed command
+_LAST_CMD=()
+_edit_last() {
+    if [ ${#_LAST_CMD[@]} -eq 0 ]; then
+        echo "  (no command to edit)"
+        return
+    fi
+    local orig
+    orig=$(_fmt_cmd "${_LAST_CMD[@]}")
+    echo -ne "${YELLOW}  Edit command: ${NC}"
+    read -r -e -i "$orig" edited
+    if [ -n "$edited" ]; then
+        echo -e "${GREEN}\$${edited}${NC}"
+        eval "$edited" || true
+        echo ""
+    fi
+}
+
+# Override run to track last command for edit
+run() {
+    if $SKIP_SECTION; then return 0; fi
+    _LAST_CMD=("$@")
+    local display
+    display=$(_fmt_cmd "$@")
+    echo -e "${GREEN}\$${display}${NC}"
+    "$@"
+    echo ""
 }
 
 DEMO_COL="OpikDemo"
