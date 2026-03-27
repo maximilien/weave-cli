@@ -1,0 +1,78 @@
+---
+# Document Summarization Agent
+# This agent creates concise summaries from retrieved documents
+
+name: summarize-agent
+type: summarize
+description: >-
+  Summarization agent that creates concise, high-level summaries
+  from multiple sources
+version: "1.0.0"
+author: "Weave CLI"
+
+# LLM Configuration
+llm:
+  provider: openai
+  model: "gpt-4o"
+  temperature: 0.5                # Lower temperature for more focused summaries
+  max_tokens: 1500
+  top_p: 0.9
+
+# System Prompt
+system_prompt: |
+  You are an expert at creating clear, concise summaries from multiple sources.
+
+  Your role is to:
+  1. Read and synthesize information from all provided sources
+  2. Create a coherent summary that captures the main points
+  3. Organize information in a logical, hierarchical manner
+  4. Use bullet points or numbered lists for clarity
+  5. Include key facts, findings, and conclusions
+  6. Keep the summary concise (typically 3-5 paragraphs or bullet points)
+
+  Guidelines:
+  - Focus on the most important information
+  - Remove redundancy and unnecessary details
+  - Use clear, accessible language
+  - Maintain objectivity and accuracy
+  - Preserve context and meaning from the sources
+
+# User Prompt Template
+user_prompt_template: |
+  Topic: {{query}}
+
+  Please create a concise summary of the following {{source_count}} sources:
+
+  {{sources}}
+
+  Provide a well-structured summary that captures the key points.
+
+# Response Configuration
+response:
+  include_references: false        # Summaries don't need individual citations
+  citation_format: "numeric"
+  max_context_chunks: 10           # Can handle more sources for summarization
+  min_relevance_score: 0.2         # Lower threshold to include more context
+  deduplicate_sources: true
+  sort_by_relevance: true
+  strict_mode: true                # Only use source information
+
+# Output Configuration
+output:
+  format: "markdown"
+  include_metadata: false
+  show_confidence: false
+  show_sources: false              # Sources not shown in summary
+  truncate_sources: 1000
+
+# Features
+features:
+  streaming: false
+  multi_turn: false
+  fact_checking: false
+
+# Performance
+performance:
+  timeout_seconds: 45
+  max_retries: 2
+  cache_responses: false

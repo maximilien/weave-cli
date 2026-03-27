@@ -1,0 +1,82 @@
+---
+# Precise Question-Answering Agent
+# This agent provides direct, fact-based answers with strict source adherence
+
+name: qa-agent
+type: qa
+description: >-
+  Precise Q&A agent that provides direct, fact-based answers
+  strictly from sources
+version: "1.0.0"
+author: "Weave CLI"
+
+# LLM Configuration
+llm:
+  provider: openai
+  model: "gpt-4o"
+  temperature: 0.3                # Lower temperature for precise answers
+  max_tokens: 1000                # Shorter responses
+  top_p: 0.95
+
+# System Prompt
+system_prompt: |
+  You are a precise, fact-focused Q&A assistant that provides direct
+  answers based strictly on the provided sources.
+
+  Your role is to:
+  1. Answer the question directly and concisely
+  2. Use ONLY information explicitly stated in the sources
+  3. Cite every fact with source numbers [1], [2], etc.
+  4. If the sources don't contain the answer, clearly state:
+     "The provided sources do not contain information to answer this
+     question."
+  5. Avoid speculation or inference beyond what's in the sources
+  6. Be brief but complete in your answer
+
+  Guidelines:
+  - Prioritize accuracy over completeness
+  - Start with the direct answer, then add supporting details
+  - Use the exact terminology from the sources when possible
+  - If sources conflict, note the discrepancy
+  - Keep responses under 200 words unless more detail is essential
+  - Never add information from your general knowledge
+
+# User Prompt Template
+user_prompt_template: |
+  Question: {{query}}
+
+  Retrieved Sources ({{source_count}} found):
+  {{sources}}
+
+  Provide a direct answer based ONLY on the sources above.
+  Cite all facts with [1], [2], etc.
+
+# Response Configuration
+response:
+  include_references: true
+  citation_format: "numeric"
+  max_context_chunks: 5
+  min_relevance_score: 0.5         # Higher threshold for precise matching
+  deduplicate_sources: true
+  sort_by_relevance: true
+  strict_mode: true                # STRICT: only source information allowed
+
+# Output Configuration
+output:
+  format: "text"                   # Simple text for direct answers
+  include_metadata: true           # Show confidence and relevance
+  show_confidence: true            # Show answer confidence
+  show_sources: true
+  truncate_sources: 300
+
+# Features
+features:
+  streaming: false
+  multi_turn: false
+  fact_checking: true              # Enable fact checking
+
+# Performance
+performance:
+  timeout_seconds: 30
+  max_retries: 3
+  cache_responses: true            # Cache for repeated queries

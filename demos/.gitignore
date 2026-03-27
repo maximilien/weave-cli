@@ -1,0 +1,16 @@
+# Secrets
+.env
+.env.*
+
+# Local binaries
+bin/
+
+# Milvus/container data
+**/volumes/
+**/logs/
+
+# Eval run results (generated)
+**/evals/results/
+
+# IDE / editor
+.claude/

@@ -1,0 +1,130 @@
+---
+# Weave AI Agents Configuration
+# This file configures the AI agents used by Weave CLI for schema suggestions,
+# chunking recommendations, and other AI-powered features.
+
+# LLM Configuration
+llm:
+  # Provider: openai (default), anthropic (future)
+  provider: openai
+
+  # API Configuration
+  api_key_env: "OPENAI_API_KEY"  # Environment variable name for API key
+
+  # Default model for all agents (can be overridden per agent)
+  default_model: "gpt-4o"
+  default_temperature: 0.3
+  default_max_tokens: 2000
+
+# Schema Agent Configuration
+schema_agent:
+  enabled: true
+
+  # LLM Settings (overrides defaults)
+  model: "gpt-4o"
+  temperature: 0.3
+  max_tokens: 2000
+
+  # Analysis Settings
+  max_samples: 50              # Maximum files to analyze
+  default_vector_dimensions: 1536  # For OpenAI embeddings
+
+  # Confidence thresholds
+  min_confidence: 0.5          # Minimum confidence to show recommendations
+  warn_below_confidence: 0.7   # Show warnings below this threshold
+
+# Chunking Agent Configuration
+chunking_agent:
+  enabled: true
+
+  # LLM Settings (overrides defaults)
+  model: "gpt-4o"
+  temperature: 0.3
+  max_tokens: 1000
+
+  # Chunking Defaults
+  default_chunk_size: 1000     # characters
+  min_chunk_size: 200
+  max_chunk_size: 4000
+
+  # Overlap recommendations
+  default_overlap_percent: 15  # 10-20% typically recommended
+  min_overlap_percent: 5
+  max_overlap_percent: 30
+
+  # Document type defaults
+  technical_chunk_size: 800    # For code/technical docs
+  narrative_chunk_size: 1500   # For books/articles
+  mixed_chunk_size: 1000       # For mixed content
+
+# Query Agent Configuration (for REPL mode)
+query_agent:
+  enabled: true
+  model: "gpt-4o"
+  temperature: 0.1
+  max_tokens: 4096
+
+# Planning Agent Configuration (for REPL mode)
+planning_agent:
+  enabled: true
+  model: "gpt-4o"
+  temperature: 0.1
+  max_tokens: 4096
+
+# Report Agent Configuration
+report_agent:
+  enabled: true
+  temperature: 0.3
+  max_tokens: 500
+
+# Eval Agent Configuration
+eval_agent:
+  enabled: true
+  temperature: 0.0
+  max_tokens: 10
+
+# Output Settings
+output:
+  # Format: text, json, yaml
+  default_format: "text"
+
+  # Verbosity levels: quiet, normal, verbose
+  verbosity: "normal"
+
+  # Show confidence scores
+  show_confidence: true
+
+  # Show reasoning
+  show_reasoning: true
+
+  # Show warnings
+  show_warnings: true
+
+# Cache Settings
+cache:
+  enabled: false               # Future: cache LLM responses
+  ttl_seconds: 3600           # 1 hour
+  max_size_mb: 100
+
+# Performance Settings
+performance:
+  # Timeout for LLM calls (seconds)
+  llm_timeout: 30
+
+  # Concurrent file processing
+  max_concurrent_files: 10
+
+  # Retry settings
+  max_retries: 2
+  retry_delay_ms: 1000
+
+# Feature Flags
+features:
+  # Enable experimental features
+  experimental: false
+
+  # Enable debug logging
+  debug: false
+
+  # Enable telemetry (if configured)
+  telemetry: false

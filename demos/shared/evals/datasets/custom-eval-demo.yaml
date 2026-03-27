@@ -1,0 +1,45 @@
+---
+name: custom-eval-demo
+description: Demonstrates using custom evaluators with a dataset
+version: 1.0.0
+author: weave-cli-team
+
+# Reference custom evaluators to run on this dataset
+custom_evaluators:
+  - citation_check       # Regex evaluator
+  - technical_accuracy   # LLM judge evaluator
+
+config:
+  default_agent: rag-agent
+  default_collection: docs
+  min_accuracy_score: 0.7
+
+test_cases:
+  - id: demo-001
+    description: Basic RAG question with citation requirement
+    query: "What is a vector database?"
+    expected_answer: >
+      A vector database stores and retrieves data based on
+      vector embeddings
+    required_concepts:
+      - vector
+      - embeddings
+      - database
+    min_relevance_score: 0.7
+    must_cite: true
+    tags:
+      - basic
+      - rag
+
+  - id: demo-002
+    description: Technical accuracy test
+    query: "How does semantic search work?"
+    expected_answer: "Semantic search uses embeddings to find similar documents"
+    required_concepts:
+      - semantic
+      - embeddings
+      - similarity
+    min_relevance_score: 0.75
+    tags:
+      - technical
+      - advanced

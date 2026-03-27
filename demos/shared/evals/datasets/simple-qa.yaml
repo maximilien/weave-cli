@@ -1,0 +1,71 @@
+---
+name: simple-qa
+description: Simple question-answering evaluation dataset for getting started
+version: 1.0.0
+author: Weave Team
+tags:
+  - beginner
+  - qa
+  - simple
+
+config:
+  default_agent: rag-agent
+  min_accuracy_score: 0.7
+  min_citation_score: 0.7
+  allow_hallucination: false
+
+test_cases:
+  - id: qa-001
+    description: Simple factual question
+    query: "What is the capital of France?"
+    expected_answer: "The capital of France is Paris."
+    required_concepts:
+      - "Paris"
+      - "capital"
+    must_cite: false
+    min_relevance_score: 0.7
+
+  - id: qa-002
+    description: Definition question
+    query: "What is machine learning?"
+    expected_answer: |
+      Machine learning is a subset of artificial intelligence that
+      enables systems to learn and improve from experience without
+      being explicitly programmed. It uses algorithms to identify
+      patterns in data and make predictions.
+    required_concepts:
+      - "machine learning"
+      - "data"
+      - "patterns"
+    must_cite: false
+    min_relevance_score: 0.7
+
+  - id: qa-003
+    description: How-to question
+    query: "How do you make coffee?"
+    expected_answer: |
+      To make coffee, grind coffee beans, add hot water (around
+      195-205°F), let it steep or brew, then filter or strain the
+      grounds. The exact method varies by brewing technique (drip,
+      French press, espresso, etc.).
+    required_concepts:
+      - "coffee"
+      - "water"
+      - "brew"
+    must_cite: false
+    min_relevance_score: 0.65
+
+  - id: qa-004
+    description: Comparison question
+    query: "What's the difference between a vector and an array?"
+    expected_answer: |
+      In programming, an array is a fixed-size data structure, while
+      a vector is typically a dynamic array that can resize. Vectors
+      provide more flexibility but may have slightly more overhead.
+      In mathematics, vectors represent magnitude and direction.
+    required_concepts:
+      - "array"
+      - "vector"
+      - "size"
+    must_cite: false
+    min_relevance_score: 0.7

@@ -1,0 +1,73 @@
+---
+name: multi-collection
+description: |
+  Multi-collection evaluation dataset testing cross-collection
+  queries
+version: 1.0.0
+author: Weave Team
+tags:
+  - multi-collection
+  - advanced
+  - cross-reference
+
+config:
+  default_agent: rag-agent
+  min_accuracy_score: 0.75
+  min_citation_score: 0.85
+  allow_hallucination: false
+
+test_cases:
+  - id: multi-001
+    description: Query requiring docs from multiple collections
+    collection: TechDocs,APIDocs
+    query: "How do I integrate the embedding API with my vector database?"
+    expected_answer: |
+      To integrate the embedding API with your vector database,
+      first configure your API credentials, then create embeddings
+      for your documents using the /embeddings endpoint, and finally
+      store the resulting vectors in your database collections using
+      the batch insert API.
+    required_concepts:
+      - "embedding"
+      - "API"
+      - "vector database"
+      - "integration"
+    must_cite: true
+    min_relevance_score: 0.75
+
+  - id: multi-002
+    description: Cross-domain knowledge query
+    collection: MedicalDocs,ResearchPapers
+    query: "What clinical trials support the use of AI in medical diagnosis?"
+    expected_answer: |
+      Multiple clinical trials have demonstrated AI effectiveness in
+      medical diagnosis, particularly in radiology, dermatology, and
+      pathology. Studies show AI systems achieving accuracy
+      comparable to or exceeding human specialists in specific
+      diagnostic tasks.
+    required_concepts:
+      - "clinical trials"
+      - "AI"
+      - "diagnosis"
+      - "accuracy"
+    must_cite: true
+    min_relevance_score: 0.75
+
+  - id: multi-003
+    description: Comprehensive answer from diverse sources
+    collection: WeaveDocs,BestPractices,Examples
+    query: "What are best practices for chunking documents in a RAG system?"
+    expected_answer: |
+      Best practices for chunking include: maintaining semantic
+      coherence within chunks, using 200-500 token chunks for most
+      use cases, implementing overlapping chunks (10-20%) for context
+      preservation, and adapting chunk size based on document type
+      and query patterns.
+    required_concepts:
+      - "chunking"
+      - "documents"
+      - "RAG"
+      - "semantic"
+      - "tokens"
+    must_cite: true
+    min_relevance_score: 0.8

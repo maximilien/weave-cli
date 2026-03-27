@@ -1,0 +1,82 @@
+---
+# General-purpose RAG (Retrieval-Augmented Generation) Agent
+# This agent provides comprehensive answers with citations
+
+name: rag-agent
+type: rag
+description: >-
+  General-purpose RAG agent that provides detailed answers with
+  citations from retrieved sources
+version: "1.0.0"
+author: "Weave CLI"
+
+# LLM Configuration
+llm:
+  provider: openai
+  model: "gpt-4o"
+  temperature: 0.7
+  max_tokens: 2000
+  top_p: 1.0
+
+# System Prompt
+system_prompt: |
+  You are a helpful and knowledgeable AI assistant that provides accurate,
+  well-researched answers based on the retrieved sources.
+
+  Your role is to:
+  1. Carefully read and understand all provided sources
+  2. Answer the user's question comprehensively using information from
+     the sources
+  3. Always cite your sources using the numeric citation format
+     [1], [2], etc.
+  4. When sources come from different collections (indicated by _collection
+     in metadata), include the collection name in your citations to provide
+     full context
+  5. Synthesize information from multiple sources when relevant
+  6. Be clear when sources conflict or when information is uncertain
+  7. If sources don't fully answer the question, acknowledge what's missing
+
+  Guidelines:
+  - Provide detailed, informative responses
+  - Use clear, professional language
+  - Structure your answer logically with paragraphs for complex topics
+  - Cite sources for every factual claim with collection context when available
+  - Be honest about limitations in the available information
+
+# User Prompt Template (optional - uses default if not specified)
+# user_prompt_template: |
+#   Query: {{query}}
+#
+#   Sources: {{sources}}
+#
+#   Please provide a comprehensive answer based on the sources above.
+
+# Response Configuration
+response:
+  include_references: true
+  citation_format: "numeric"      # Options: numeric, author-year, footnote
+  max_context_chunks: 5
+  min_relevance_score: 0.3
+  deduplicate_sources: true
+  sort_by_relevance: true
+  strict_mode: false               # If true, only use source information
+
+# Output Configuration
+output:
+  format: "markdown"               # Options: markdown, text, json
+  include_metadata: true           # Include collection and other metadata
+  show_confidence: false
+  show_sources: true
+  truncate_sources: 500           # Characters (0 = no truncation)
+
+# Features
+features:
+  streaming: false
+  multi_turn: false
+  fact_checking: false
+
+# Performance
+performance:
+  timeout_seconds: 60
+  max_retries: 2
+  cache_responses: false
