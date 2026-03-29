@@ -285,28 +285,28 @@ func TestPDFVersionCompatibility(t *testing.T) {
 			pdfFile:     "fixtures/pdf_versions/pdf_1.3.pdf",
 			minVersion:  "1.3",
 			description: "Basic PDF features",
-			skipReason:  "Test PDF not yet available",
+			skipReason:  "",
 		},
 		{
 			name:        "PDF 1.4 (2001)",
 			pdfFile:     "fixtures/pdf_versions/pdf_1.4.pdf",
 			minVersion:  "1.4",
 			description: "CMYK color support, transparency",
-			skipReason:  "Test PDF not yet available",
+			skipReason:  "",
 		},
 		{
 			name:        "PDF 1.7 (2006)",
 			pdfFile:     "fixtures/pdf_versions/pdf_1.7.pdf",
 			minVersion:  "1.7",
 			description: "Modern features, attachments",
-			skipReason:  "Test PDF not yet available",
+			skipReason:  "",
 		},
 		{
 			name:        "PDF 2.0 (2017)",
 			pdfFile:     "fixtures/pdf_versions/pdf_2.0.pdf",
 			minVersion:  "2.0",
 			description: "Latest spec, improved security",
-			skipReason:  "Test PDF not yet available",
+			skipReason:  "",
 		},
 		{
 			name:        "Current Test PDF (ragme-io.pdf)",
@@ -374,7 +374,7 @@ func TestPDFTypeExtraction(t *testing.T) {
 			expectedImages: false,
 			minTextChunks:  1,
 			minImages:      0,
-			skipReason:     "Test PDF not yet available",
+			skipReason:     "",
 		},
 		{
 			name:           "Image-only PDF (Scanned)",
@@ -383,7 +383,7 @@ func TestPDFTypeExtraction(t *testing.T) {
 			expectedImages: true,
 			minTextChunks:  0,
 			minImages:      1,
-			skipReason:     "Test PDF not yet available - requires OCR test",
+			skipReason:     "",
 		},
 		{
 			name:           "Mixed PDF (Text + Images)",
@@ -392,7 +392,7 @@ func TestPDFTypeExtraction(t *testing.T) {
 			expectedImages: true,
 			minTextChunks:  1,
 			minImages:      1,
-			skipReason:     "Test PDF not yet available",
+			skipReason:     "",
 		},
 		{
 			name:           "Photo-heavy PDF",
@@ -401,7 +401,7 @@ func TestPDFTypeExtraction(t *testing.T) {
 			expectedImages: true,
 			minTextChunks:  1,
 			minImages:      5, // Many images
-			skipReason:     "Test PDF not yet available",
+			skipReason:     "",
 		},
 		{
 			name:           "Auction Catalogue (Real-world Mixed)",
@@ -460,13 +460,19 @@ func TestPDFWithCMYKImages(t *testing.T) {
 		t.Skip("Skipping CMYK image test in short mode")
 	}
 
-	t.Skip("CMYK test PDF not yet available")
+	// TODO: Add dedicated CMYK test PDF when available.
+	// For now, verify the photo_heavy fixture extracts without CMYK-related errors.
+	fixturePath := filepath.Join("fixtures", "pdf_types", "photo_heavy.pdf")
+	textData, imageData, err := pdf.ExtractPDFContent(fixturePath, 1000, true, 10240, 2000, false)
+	if err != nil {
+		t.Fatalf("ExtractPDFContent() error = %v", err)
+	}
 
-	// TODO: Add test with CMYK PDF when available
-	// Should verify:
-	// - CMYK images are extracted
-	// - Color space is preserved or converted correctly
-	// - No corruption in image data
+	t.Logf("Photo-heavy PDF: %d text chunks, %d images (CMYK placeholder test)", len(textData), len(imageData))
+
+	if len(textData) == 0 {
+		t.Error("Expected at least some text content from photo-heavy PDF")
+	}
 }
 
 func init() {
