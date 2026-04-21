@@ -8,10 +8,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
 	"github.com/openai/openai-go/packages/param"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Client is the interface for LLM clients
@@ -139,6 +141,31 @@ func (c *OpenAIClient) Complete(ctx context.Context, prompt string, opts ...Opti
 		opt(options)
 	}
 
+	metadata := map[string]interface{}{
+		"model":       options.Model,
+		"temperature": options.Temperature,
+		"max_tokens":  options.MaxTokens,
+	}
+	if options.SystemMsg != "" {
+		metadata["system_message"] = options.SystemMsg
+	}
+
+	ctx, span := StartSpan(
+		ctx,
+		"weave-cli-llm",
+		"openai.chat.completions.create",
+		"llm",
+		map[string]interface{}{"prompt": prompt},
+		metadata,
+		attribute.String("provider", "openai"),
+		attribute.String("model", options.Model),
+		attribute.String("gen_ai.system", "openai"),
+		attribute.String("gen_ai.operation.name", "chat.completions.create"),
+		attribute.String("gen_ai.request.model", options.Model),
+		attribute.Float64("gen_ai.request.temperature", options.Temperature),
+		attribute.Int("gen_ai.request.max_tokens", options.MaxTokens),
+	)
+
 	messages := []openai.ChatCompletionMessageParamUnion{}
 
 	if options.SystemMsg != "" {
@@ -154,8 +181,10 @@ func (c *OpenAIClient) Complete(ctx context.Context, prompt string, opts ...Opti
 		MaxTokens:   openai.Int(int64(options.MaxTokens)),
 	}
 
+	start := time.Now()
 	completion, err := c.client.Chat.Completions.New(ctx, params)
 	if err != nil {
+		FinishSpan(span, nil, err)
 		return "", fmt.Errorf("failed to create completion: %w", err)
 	}
 
@@ -164,13 +193,29 @@ func (c *OpenAIClient) Complete(ctx context.Context, prompt string, opts ...Opti
 	c.metrics.TotalTokens += int(completion.Usage.TotalTokens)
 	c.metrics.PromptTokens += int(completion.Usage.PromptTokens)
 	c.metrics.CompletionTokens += int(completion.Usage.CompletionTokens)
-	c.metrics.TotalCost += calculateCost(options.Model, int(completion.Usage.PromptTokens), int(completion.Usage.CompletionTokens))
+	callCost := calculateCost(options.Model, int(completion.Usage.PromptTokens), int(completion.Usage.CompletionTokens))
+	c.metrics.TotalCost += callCost
 
 	if len(completion.Choices) == 0 {
-		return "", fmt.Errorf("no completion choices returned")
+		err := fmt.Errorf("no completion choices returned")
+		FinishSpan(span, nil, err)
+		return "", err
 	}
 
-	return completion.Choices[0].Message.Content, nil
+	output := completion.Choices[0].Message.Content
+	FinishSpan(span, map[string]interface{}{"response": output}, nil,
+		attribute.String("gen_ai.response.model", completion.Model),
+		attribute.Int("usage.prompt_tokens", int(completion.Usage.PromptTokens)),
+		attribute.Int("usage.completion_tokens", int(completion.Usage.CompletionTokens)),
+		attribute.Int("usage.total_tokens", int(completion.Usage.TotalTokens)),
+		attribute.Int("gen_ai.usage.input_tokens", int(completion.Usage.PromptTokens)),
+		attribute.Int("gen_ai.usage.output_tokens", int(completion.Usage.CompletionTokens)),
+		attribute.Float64("total_cost", callCost),
+		attribute.Float64("llm.cost_usd", callCost),
+		attribute.Float64("llm.latency_ms", float64(time.Since(start).Milliseconds())),
+	)
+
+	return output, nil
 }
 
 // CompleteStructured generates structured output based on schema

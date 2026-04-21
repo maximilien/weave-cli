@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 )
 
 // progressWriter streams output line-by-line with formatting
@@ -128,8 +129,13 @@ func (a *BashAgent) Execute(ctx context.Context, input interface{}) (interface{}
 		return nil, fmt.Errorf("invalid input type for BashAgent")
 	}
 
+	ctx, span := llm.StartSpan(ctx, "weave-cli-agent", "bash-agent.execute", "tool", cmd, map[string]interface{}{
+		"agent": a.Name(),
+	})
+
 	// Validate command safety
 	if err := a.validateCommand(cmd.Command); err != nil {
+		llm.FinishSpan(span, nil, err)
 		return nil, err
 	}
 
@@ -289,6 +295,7 @@ func (a *BashAgent) Execute(ctx context.Context, input interface{}) (interface{}
 		Duration: duration,
 	}
 
+	llm.FinishSpan(span, result, err)
 	return result, nil
 }
 

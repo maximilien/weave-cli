@@ -192,6 +192,14 @@ func runEvaluation(agentName, datasetPath, collection, outputFormat string, save
 		}
 	}
 
+	var opikSync *evaluation.OpikSyncResult
+	if provider.Name() == "opik" {
+		opikSync, err = evaluation.SyncEvaluationRunToOpik(ctx, dataset, run)
+		if err != nil {
+			color.Yellow("Warning: Failed to sync dataset/experiment to Opik: %v\n", err)
+		}
+	}
+
 	// Show Opik dashboard link if using Opik
 	if provider.Name() == "opik" {
 		fmt.Println()
@@ -205,8 +213,14 @@ func runEvaluation(agentName, datasetPath, collection, outputFormat string, save
 			project = "weave-cli-queries"
 		}
 		fmt.Printf("   https://www.comet.com/%s/%s\n\n", workspace, project)
+		if opikSync != nil {
+			fmt.Printf("   Dataset: %s (version %s, %d items)\n", opikSync.Dataset.Name, opikSync.Dataset.VersionName, opikSync.Dataset.ItemCount)
+			fmt.Printf("   Experiment: %s\n\n", opikSync.Experiment.Name)
+		}
 		fmt.Println("   Dashboard includes:")
 		fmt.Println("   - Detailed trace of each evaluation")
+		fmt.Println("   - Dataset samples and version metadata")
+		fmt.Println("   - Side-by-side experiment comparisons")
 		fmt.Println("   - Cost breakdown")
 		fmt.Println("   - Historical trends")
 		fmt.Println("   - Export to CSV/JSON")

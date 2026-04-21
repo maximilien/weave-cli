@@ -15,6 +15,7 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Executor orchestrates agent execution for queries
@@ -154,6 +155,11 @@ func NewExecutor(config *Config) (*Executor, error) {
 // Execute executes a query
 func (e *Executor) Execute(ctx context.Context, query string) (*agents.OperationReport, error) {
 	startTime := time.Now()
+	ctx, rootSpan := llm.StartSpan(ctx, "weave-cli-executor", "executor.execute", "general", map[string]interface{}{
+		"query": query,
+	}, map[string]interface{}{
+		"component": "executor",
+	})
 
 	// Step 1: Validate and fix query
 	if !e.config.Quiet {
@@ -162,12 +168,18 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 		os.Stdout.Sync()
 	}
 	queryInput := &agents.QueryAgentInput{Query: query}
-	queryOutput, err := e.queryAgent.Execute(ctx, queryInput)
+	queryCtx, querySpan := llm.StartSpan(ctx, "weave-cli-executor", "query-agent.execute", "general", queryInput, map[string]interface{}{
+		"agent": e.queryAgent.Name(),
+	})
+	queryOutput, err := e.queryAgent.Execute(queryCtx, queryInput)
+	llm.FinishSpan(querySpan, queryOutput, err)
 	if err != nil {
 		if !e.config.Quiet {
 			fmt.Println(" ✗")
 		}
-		return nil, fmt.Errorf("failed to analyze query: %w", err)
+		finalErr := fmt.Errorf("failed to analyze query: %w", err)
+		llm.FinishSpan(rootSpan, nil, finalErr)
+		return nil, finalErr
 	}
 	if !e.config.Quiet {
 		fmt.Println(" ✓")
@@ -178,7 +190,9 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	// Check if query is weave-related
 	if !queryResult.IsWeaveQuery {
 		e.outputAgent.PrintRejectionMessage(queryResult.Reason)
-		return nil, fmt.Errorf("query is not weave-related")
+		finalErr := fmt.Errorf("query is not weave-related")
+		llm.FinishSpan(rootSpan, map[string]interface{}{"reason": queryResult.Reason}, finalErr)
+		return nil, finalErr
 	}
 
 	// Step 2: Create execution plan
@@ -191,12 +205,18 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 		Intent:     queryResult.Intent,
 	}
 
-	planOutput, err := e.planningAgent.Execute(ctx, planInput)
+	planCtx, planSpan := llm.StartSpan(ctx, "weave-cli-executor", "planning-agent.execute", "general", planInput, map[string]interface{}{
+		"agent": e.planningAgent.Name(),
+	})
+	planOutput, err := e.planningAgent.Execute(planCtx, planInput)
+	llm.FinishSpan(planSpan, planOutput, err)
 	if err != nil {
 		if !e.config.Quiet {
 			fmt.Println(" ✗")
 		}
-		return nil, fmt.Errorf("failed to create execution plan: %w", err)
+		finalErr := fmt.Errorf("failed to create execution plan: %w", err)
+		llm.FinishSpan(rootSpan, nil, finalErr)
+		return nil, finalErr
 	}
 	if !e.config.Quiet {
 		fmt.Println(" ✓")
@@ -211,6 +231,7 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	// Dry run mode: just show the plan
 	if e.config.DryRun {
 		e.outputAgent.PrintInfo("Dry run mode: skipping execution")
+		llm.FinishSpan(rootSpan, map[string]interface{}{"plan": plan, "dry_run": true}, nil)
 		return nil, nil
 	}
 
@@ -219,7 +240,9 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 		confirmed, err := e.outputAgent.AskConfirmation("Proceed with execution?")
 		if err != nil || !confirmed {
 			e.outputAgent.PrintInfo("Operation cancelled")
-			return nil, fmt.Errorf("operation cancelled by user")
+			finalErr := fmt.Errorf("operation cancelled by user")
+			llm.FinishSpan(rootSpan, nil, finalErr)
+			return nil, finalErr
 		}
 	}
 
@@ -231,26 +254,44 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	}
 	commandReports, err := e.executePlan(ctx, plan)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute plan: %w", err)
+		finalErr := fmt.Errorf("failed to execute plan: %w", err)
+		llm.FinishSpan(rootSpan, nil, finalErr)
+		return nil, finalErr
 	}
 
 	// Step 4: Create report
 	report := agents.CreateReport(queryResult.Intent, startTime, commandReports)
 
 	// Step 5: Enhance report
-	if _, err := e.reportAgent.Execute(ctx, report); err != nil {
+	reportCtx, reportSpan := llm.StartSpan(ctx, "weave-cli-executor", "report-agent.execute", "general", report, map[string]interface{}{
+		"agent": e.reportAgent.Name(),
+	})
+	if _, err := e.reportAgent.Execute(reportCtx, report); err != nil {
 		// Non-fatal error, continue
 		e.outputAgent.PrintWarning(fmt.Sprintf("Failed to enhance report: %v", err))
+		llm.FinishSpan(reportSpan, report, err)
+	} else {
+		llm.FinishSpan(reportSpan, report, nil)
 	}
 
 	// Step 6: Display report
 	e.reportAgent.PrintReport(report)
 
 	// Step 7: Evaluate and track metrics
-	metrics, err := e.evalAgent.Execute(ctx, report)
+	evalCtx, evalSpan := llm.StartSpan(ctx, "weave-cli-executor", "eval-agent.execute", "general", report, map[string]interface{}{
+		"agent": e.evalAgent.Name(),
+	})
+	metrics, err := e.evalAgent.Execute(evalCtx, report)
+	llm.FinishSpan(evalSpan, metrics, err)
 	if err == nil {
 		e.outputAgent.PrintMetrics(metrics.(*agents.EvaluationMetrics))
 	}
+
+	llm.FinishSpan(rootSpan, report, nil,
+		attribute.Int("executor.successful_steps", report.SuccessfulSteps),
+		attribute.Int("executor.failed_steps", report.FailedSteps),
+		attribute.Float64("executor.duration_ms", float64(time.Since(startTime).Milliseconds())),
+	)
 
 	return report, nil
 }
@@ -395,15 +436,18 @@ func (e *Executor) executePlan(ctx context.Context, plan *agents.ExecutionPlan) 
 // executeStep executes a single step
 func (e *Executor) executeStep(ctx context.Context, step *agents.ExecutionStep, stepOutputs map[int]interface{}) agents.CommandReport {
 	startTime := time.Now()
+	stepCtx, stepSpan := llm.StartSpan(ctx, "weave-cli-executor", "executor.step", "tool", step, map[string]interface{}{
+		"step_type": step.Type,
+	})
 
 	var result interface{}
 	var err error
 
 	switch step.Type {
 	case "weave":
-		result, err = e.executeWeaveStep(ctx, step)
+		result, err = e.executeWeaveStep(stepCtx, step)
 	case "bash":
-		result, err = e.executeBashStep(ctx, step)
+		result, err = e.executeBashStep(stepCtx, step)
 	case "confirm":
 		confirmed, confirmErr := e.outputAgent.AskConfirmation(step.Description)
 		if confirmErr != nil || !confirmed {
@@ -453,6 +497,8 @@ func (e *Executor) executeStep(ctx context.Context, step *agents.ExecutionStep, 
 			}
 		}
 	}
+
+	llm.FinishSpan(stepSpan, report, err)
 
 	return report
 }

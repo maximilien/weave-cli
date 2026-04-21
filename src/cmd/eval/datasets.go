@@ -5,6 +5,7 @@ package eval
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -46,6 +47,27 @@ Examples:
 	cmd.AddCommand(NewDatasetsShowCommand())
 	cmd.AddCommand(NewDatasetsValidateCommand())
 	cmd.AddCommand(NewDatasetsCreateCommand())
+	cmd.AddCommand(NewDatasetsUploadOpikCommand())
+
+	return cmd
+}
+
+// NewDatasetsUploadOpikCommand uploads a local dataset definition to Opik.
+func NewDatasetsUploadOpikCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "upload-opik NAME",
+		Short: "Upload a dataset to Opik",
+		Long: `Upload a local evaluation dataset to Opik so it can be used in experiments
+and inspected in the Opik dashboard.
+
+Examples:
+  weave eval datasets upload-opik baseline
+  weave eval datasets upload-opik evals/datasets/baseline.yaml`,
+		Args: cobra.ExactArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			uploadDatasetToOpik(args[0])
+		},
+	}
 
 	return cmd
 }
@@ -235,6 +257,28 @@ func validateDataset(filepath string) {
 	fmt.Printf("Dataset: %s\n", dataset.Name)
 	fmt.Printf("Version: %s\n", dataset.Version)
 	fmt.Printf("Test cases: %d\n", len(dataset.TestCases))
+}
+
+func uploadDatasetToOpik(name string) {
+	dataset, err := loadDataset(name)
+	if err != nil {
+		color.Red("Error loading dataset: %v\n", err)
+		os.Exit(1)
+	}
+
+	summary, err := evaluation.UploadDatasetToOpik(context.Background(), dataset)
+	if err != nil {
+		color.Red("Error uploading dataset to Opik: %v\n", err)
+		os.Exit(1)
+	}
+
+	color.Green("✅ Dataset uploaded to Opik\n\n")
+	fmt.Printf("Name:         %s\n", summary.Name)
+	fmt.Printf("Dataset ID:   %s\n", summary.ID)
+	fmt.Printf("Version:      %s\n", summary.VersionName)
+	fmt.Printf("Version ID:   %s\n", summary.VersionID)
+	fmt.Printf("Items:        %d\n", summary.ItemCount)
+	fmt.Printf("Dashboard:    %s\n", summary.URL)
 }
 
 // NewDatasetsCreateCommand creates the datasets create command

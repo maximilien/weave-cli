@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
 )
 
@@ -42,6 +43,10 @@ func (a *WeaveAgent) Execute(ctx context.Context, input interface{}) (interface{
 	if !ok {
 		return nil, fmt.Errorf("invalid input type for WeaveAgent")
 	}
+
+	ctx, span := llm.StartSpan(ctx, "weave-cli-agent", "weave-agent.execute", "tool", cmd, map[string]interface{}{
+		"agent": a.Name(),
+	})
 
 	startTime := time.Now()
 	retries := 0
@@ -103,6 +108,8 @@ func (a *WeaveAgent) Execute(ctx context.Context, input interface{}) (interface{
 	if err != nil {
 		weaveResult.Error = err.Error()
 	}
+
+	llm.FinishSpan(span, weaveResult, err)
 
 	return weaveResult, nil
 }

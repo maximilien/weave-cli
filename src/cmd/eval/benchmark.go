@@ -4,13 +4,17 @@
 package eval
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/evaluation"
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +25,7 @@ func NewBenchmarkCommand() *cobra.Command {
 	var collection string
 	var outputFormat string
 	var outputFile string
+	var useOpik bool
 
 	cmd := &cobra.Command{
 		Use:   "benchmark",
@@ -49,7 +54,7 @@ Examples:
     --dataset baseline \
     --output benchmark-results.json`,
 		Run: func(cmd *cobra.Command, args []string) {
-			runBenchmark(agentsStr, datasetPath, collection, outputFormat, outputFile)
+			runBenchmark(agentsStr, datasetPath, collection, outputFormat, outputFile, useOpik)
 		},
 	}
 
@@ -58,6 +63,7 @@ Examples:
 	cmd.Flags().StringVar(&collection, "collection", "", "Override collection name")
 	cmd.Flags().StringVarP(&outputFormat, "output-format", "f", "table", "Output format: table, json, yaml, csv")
 	cmd.Flags().StringVarP(&outputFile, "output", "o", "", "Save results to file")
+	cmd.Flags().BoolVar(&useOpik, "use-opik", false, "Sync datasets and experiments to Opik")
 
 	cmd.MarkFlagRequired("agents")
 	cmd.MarkFlagRequired("dataset")
@@ -70,6 +76,7 @@ type BenchmarkResult struct {
 	AgentName string
 	RunID     string
 	Summary   evaluation.EvaluationSummary
+	Opik      *evaluation.OpikExperimentSummary `json:"opik,omitempty"`
 }
 
 // BenchmarkComparison stores comparison across multiple agents
@@ -79,7 +86,9 @@ type BenchmarkComparison struct {
 	Results     []BenchmarkResult
 }
 
-func runBenchmark(agentsStr, datasetPath, collection, outputFormat, outputFile string) {
+func runBenchmark(agentsStr, datasetPath, collection, outputFormat, outputFile string, useOpik bool) {
+	ctx := context.Background()
+
 	// Parse agent names
 	agentNames := strings.Split(agentsStr, ",")
 	for i := range agentNames {
@@ -102,6 +111,18 @@ func runBenchmark(agentsStr, datasetPath, collection, outputFormat, outputFile s
 	// Load dataset
 	dataset := loadDatasetForBenchmark(datasetPath)
 
+	apiKey := os.Getenv("OPENAI_API_KEY")
+	if apiKey == "" {
+		color.Red("Error: OPENAI_API_KEY environment variable is required\n")
+		os.Exit(1)
+	}
+
+	llmClient, err := llm.NewOpenAIClient(apiKey)
+	if err != nil {
+		color.Red("Error creating LLM client: %v\n", err)
+		os.Exit(1)
+	}
+
 	// Run evaluation for each agent
 	comparison := &BenchmarkComparison{
 		DatasetName: dataset.Name,
@@ -112,19 +133,44 @@ func runBenchmark(agentsStr, datasetPath, collection, outputFormat, outputFile s
 	for _, agentName := range agentNames {
 		color.Yellow("Evaluating agent: %s\n", agentName)
 
-		// Use existing runEvaluation logic
-		// Note: In a real implementation, we'd refactor runEvaluation
-		// to return the run result so we can collect it here
+		var provider evaluation.EvaluatorProvider
+		if useOpik {
+			provider, err = evaluation.CreateProvider(ctx, evaluation.ProviderTypeOpik, llmClient)
+			if err != nil {
+				color.Yellow("  Warning: failed to create Opik provider: %v\n", err)
+				color.Yellow("  Falling back to local evaluators\n")
+				provider = evaluation.NewLocalProvider(llmClient)
+			}
+		} else {
+			provider = evaluation.NewLocalProvider(llmClient)
+		}
 
-		// For now, print a message that this will run the evaluation
-		fmt.Printf("  Running evaluation...\n")
+		runner := evaluation.NewRunner(llmClient)
+		run, runErr := runner.RunEvaluationWithProvider(ctx, dataset, agentName, collection, provider)
+		if opikProvider, ok := provider.(*evaluation.OpikProvider); ok {
+			defer opikProvider.Shutdown(ctx)
+		}
+		if runErr != nil {
+			color.Red("  Error: %v\n", runErr)
+			continue
+		}
 
-		// TODO: Actually run evaluation and collect results
-		// This is a placeholder for the structure
+		if _, err := evaluation.SaveResults(run, "json"); err != nil {
+			color.Yellow("  Warning: failed to save results: %v\n", err)
+		}
 
 		result := BenchmarkResult{
 			AgentName: agentName,
-			RunID:     "placeholder",
+			RunID:     run.ID,
+			Summary:   run.Summary,
+		}
+		if useOpik && provider.Name() == "opik" {
+			sync, syncErr := evaluation.SyncEvaluationRunToOpik(ctx, dataset, run)
+			if syncErr != nil {
+				color.Yellow("  Warning: failed to sync benchmark run to Opik: %v\n", syncErr)
+			} else {
+				result.Opik = &sync.Experiment
+			}
 		}
 
 		comparison.Results = append(comparison.Results, result)
@@ -226,7 +272,32 @@ func displayBenchmarkCSV(comparison *BenchmarkComparison) {
 }
 
 func saveBenchmarkResults(comparison *BenchmarkComparison, filepath, format string) {
-	// TODO: Implement file saving
+	var (
+		data []byte
+		err  error
+	)
+
+	switch format {
+	case "json":
+		data, err = json.MarshalIndent(comparison, "", "  ")
+	default:
+		data, err = json.MarshalIndent(comparison, "", "  ")
+	}
+
+	if err != nil {
+		color.Red("Failed to encode benchmark results: %v\n", err)
+		return
+	}
+
+	if err := os.MkdirAll(filepathDir(filepath), 0755); err != nil {
+		color.Red("Failed to create output directory: %v\n", err)
+		return
+	}
+	if err := os.WriteFile(filepath, data, 0644); err != nil {
+		color.Red("Failed to save benchmark results: %v\n", err)
+		return
+	}
+
 	color.Green("Results saved to %s\n", filepath)
 }
 
@@ -255,4 +326,12 @@ func calculateOverallScore(summary evaluation.EvaluationSummary) float64 {
 		(summary.AvgAccuracy * 100 * 0.25) +
 		(summary.AvgFaithfulness * 100 * 0.20) +
 		(summary.AvgContextRelevance * 100 * 0.15)
+}
+
+func filepathDir(path string) string {
+	dir := filepath.Dir(path)
+	if dir == "." {
+		return "."
+	}
+	return dir
 }

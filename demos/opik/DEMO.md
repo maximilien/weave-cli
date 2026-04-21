@@ -339,16 +339,39 @@ weave cols query OpikDemo \
 
 ---
 
-## Part 12: Evaluations (~3 min)
+## Part 12: Opik Monitoring (~3 min)
+
+**Goal**: Generate one rich trace and then inspect it in Opik.
+
+```bash
+# Generate a trace with multiple spans
+weave query "show me all collections and count the documents in each one"
+```
+
+**Talking points**:
+
+- The same app flow now shows up in Opik with agent, tool, and LLM spans
+- Walk one trace end to end: query analysis, planning, command execution,
+  reporting, and evaluation
+- Show span input/output, metadata, and the token / cost / latency breakdown
+- Explain that weave-cli monitors the full natural-language execution path,
+  not just raw OpenAI calls
+
+---
+
+## Part 13: Opik Evaluations (~4 min)
 
 **Goal**: Show evaluation harness — focus on eval quality.
 
 ```bash
+# Upload dataset to Opik
+weave eval datasets upload-opik baseline
+
 # Run evaluation against a dataset
-weave eval run --agent rag-agent --dataset baseline
+weave eval run --agent rag-agent --dataset baseline --use-opik
 
 # Benchmark multiple agents side-by-side
-weave eval benchmark --agents rag-agent,qa-agent --dataset baseline
+weave eval benchmark --agents rag-agent,qa-agent --dataset baseline --use-opik
 ```
 
 **Talking points**:
@@ -356,12 +379,13 @@ weave eval benchmark --agents rag-agent,qa-agent --dataset baseline
 - LLM-as-judge evaluators (accuracy, faithfulness,
   hallucination, context relevance)
 - Compare agents head-to-head on the same dataset
-- Opik integration for production observability
-- Traces, cost tracking, experiment comparison
+- Show dataset version, metadata, and samples in Opik
+- Show the experiment metadata and compare runs side-by-side in Opik
+- Explain why these four evaluators were chosen over weaker string-match metrics
 
 ---
 
-## Part 13: Interactive REPL (~2 min)
+## Part 14: Interactive REPL (~2 min)
 
 ```bash
 # Start REPL (just run weave with no args)

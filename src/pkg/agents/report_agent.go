@@ -39,7 +39,7 @@ func (a *ReportAgent) Execute(ctx context.Context, input interface{}) (interface
 	}
 
 	// Enhance the report with analysis
-	a.enhanceReport(report)
+	a.enhanceReport(ctx, report)
 
 	return report, nil
 }
@@ -112,14 +112,14 @@ func (a *ReportAgent) PrintReport(report *OperationReport) {
 }
 
 // enhanceReport adds analysis and recommendations to the report
-func (a *ReportAgent) enhanceReport(report *OperationReport) {
+func (a *ReportAgent) enhanceReport(ctx context.Context, report *OperationReport) {
 	// Generate summary if not present
 	if report.Summary == "" {
 		report.Summary = a.generateSummary(report)
 	}
 
 	// Add recommendations based on results
-	report.Recommendations = a.generateRecommendations(report)
+	report.Recommendations = a.generateRecommendations(ctx, report)
 
 	// Add next steps
 	report.NextSteps = a.generateNextSteps(report)
@@ -143,9 +143,8 @@ func (a *ReportAgent) generateSummary(report *OperationReport) string {
 }
 
 // generateRecommendations generates recommendations based on the report using LLM
-func (a *ReportAgent) generateRecommendations(report *OperationReport) []string {
+func (a *ReportAgent) generateRecommendations(ctx context.Context, report *OperationReport) []string {
 	// Build context for LLM
-	ctx := context.Background()
 	prompt := a.buildRecommendationsPrompt(report)
 
 	// Use LLM to generate recommendations

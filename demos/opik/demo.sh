@@ -38,7 +38,7 @@ NC='\033[0m'
 
 # Step tracking
 CURRENT_STEP=0
-TOTAL_STEPS=19
+TOTAL_STEPS=21
 SKIP_SECTION=false
 
 page() {
@@ -387,19 +387,35 @@ run "$WEAVE" cols query $DEMO_COL \
 pause
 
 # =================================================================
-# PART 12: Evaluations (~3 min)
+# PART 12: Opik Monitoring + Evaluations (~6 min)
 # =================================================================
-page "Part 12: Evaluations"
+page "Part 12: Opik Monitoring"
+
+echo "Run the natural-language executor to generate an Opik trace:"
+run "$WEAVE" query "show me all collections and count the documents in each one" || true
+pause
+
+echo "In Opik, open the latest trace and walk through:"
+echo "  - query/planning/report/eval agent spans"
+echo "  - tool spans from bash/MCP execution"
+echo "  - LLM input/output, metadata, tokens, cost, and latency"
+pause
+
+page "Part 13: Opik Evaluations"
 
 echo "Built-in evaluation harness with LLM-as-judge:"
 echo ""
 
+echo "Upload the dataset to Opik first:"
+run "$WEAVE" eval datasets upload-opik baseline || true
+pause
+
 echo "Run evaluation against a dataset:"
-run "$WEAVE" eval run --agent rag-agent --dataset baseline || true
+run "$WEAVE" eval run --agent rag-agent --dataset baseline --use-opik || true
 pause
 
 echo "Benchmark multiple agents side-by-side:"
-run "$WEAVE" eval benchmark --agents rag-agent,qa-agent --dataset baseline || true
+run "$WEAVE" eval benchmark --agents rag-agent,qa-agent --dataset baseline --use-opik || true
 pause
 
 echo "Opik integration for production observability:"
@@ -407,9 +423,9 @@ echo "  traces, cost tracking, experiment comparison."
 pause
 
 # =================================================================
-# PART 13: REPL (~2 min)
+# PART 14: REPL (~2 min)
 # =================================================================
-page "Part 13: Interactive AI REPL"
+page "Part 14: Interactive AI REPL"
 
 echo "Start the REPL with just 'weave' (no args)."
 echo "Natural language interface to all operations:"
