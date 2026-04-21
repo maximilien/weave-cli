@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/agents"
+	"github.com/maximilien/weave-cli/src/pkg/evaluation"
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
 	"go.opentelemetry.io/otel/attribute"
@@ -163,6 +164,16 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	}, map[string]interface{}{
 		"component": "executor",
 	})
+	traceID := rootSpan.SpanContext().TraceID().String()
+	traceMetadata := map[string]interface{}{
+		"component": "executor",
+		"source":    "weave-cli-query",
+	}
+	if _, err := evaluation.CreateTraceInOpik(ctx, traceID, "weave query", startTime, map[string]interface{}{
+		"query": query,
+	}, traceMetadata); err != nil && e.config.Verbose {
+		fmt.Fprintf(os.Stderr, "Warning: failed to create Opik trace record: %v\n", err)
+	}
 
 	// Step 1: Validate and fix query
 	if !e.config.Quiet {
@@ -181,6 +192,7 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 			fmt.Println(" ✗")
 		}
 		finalErr := fmt.Errorf("failed to analyze query: %w", err)
+		_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), nil, traceMetadata, finalErr)
 		llm.FinishSpan(rootSpan, nil, finalErr)
 		return nil, finalErr
 	}
@@ -194,6 +206,9 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	if !queryResult.IsWeaveQuery {
 		e.outputAgent.PrintRejectionMessage(queryResult.Reason)
 		finalErr := fmt.Errorf("query is not weave-related")
+		_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), map[string]interface{}{
+			"reason": queryResult.Reason,
+		}, traceMetadata, finalErr)
 		llm.FinishSpan(rootSpan, map[string]interface{}{"reason": queryResult.Reason}, finalErr)
 		return nil, finalErr
 	}
@@ -218,6 +233,7 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 			fmt.Println(" ✗")
 		}
 		finalErr := fmt.Errorf("failed to create execution plan: %w", err)
+		_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), nil, traceMetadata, finalErr)
 		llm.FinishSpan(rootSpan, nil, finalErr)
 		return nil, finalErr
 	}
@@ -234,6 +250,10 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	// Dry run mode: just show the plan
 	if e.config.DryRun {
 		e.outputAgent.PrintInfo("Dry run mode: skipping execution")
+		_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), map[string]interface{}{
+			"dry_run": true,
+			"plan":    plan,
+		}, traceMetadata, nil)
 		llm.FinishSpan(rootSpan, map[string]interface{}{"plan": plan, "dry_run": true}, nil)
 		return nil, nil
 	}
@@ -244,6 +264,7 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 		if err != nil || !confirmed {
 			e.outputAgent.PrintInfo("Operation cancelled")
 			finalErr := fmt.Errorf("operation cancelled by user")
+			_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), nil, traceMetadata, finalErr)
 			llm.FinishSpan(rootSpan, nil, finalErr)
 			return nil, finalErr
 		}
@@ -258,6 +279,7 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	commandReports, err := e.executePlan(ctx, plan)
 	if err != nil {
 		finalErr := fmt.Errorf("failed to execute plan: %w", err)
+		_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), nil, traceMetadata, finalErr)
 		llm.FinishSpan(rootSpan, nil, finalErr)
 		return nil, finalErr
 	}
@@ -289,6 +311,12 @@ func (e *Executor) Execute(ctx context.Context, query string) (*agents.Operation
 	if err == nil {
 		e.outputAgent.PrintMetrics(metrics.(*agents.EvaluationMetrics))
 	}
+	traceMetadata["successful_steps"] = report.SuccessfulSteps
+	traceMetadata["failed_steps"] = report.FailedSteps
+	_ = evaluation.UpdateTraceInOpik(ctx, traceID, time.Now(), map[string]interface{}{
+		"report":  report,
+		"metrics": metrics,
+	}, traceMetadata, nil)
 
 	llm.FinishSpan(rootSpan, report, nil,
 		attribute.Int("executor.successful_steps", report.SuccessfulSteps),

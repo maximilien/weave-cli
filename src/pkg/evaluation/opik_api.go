@@ -49,6 +49,12 @@ type OpikSyncResult struct {
 	Experiment OpikExperimentSummary
 }
 
+type OpikTraceRecord struct {
+	ID       string
+	Name     string
+	ThreadID string
+}
+
 type opikDatasetResource struct {
 	ID                string `json:"id"`
 	Name              string `json:"name"`
@@ -103,6 +109,22 @@ func SyncEvaluationRunToOpik(ctx context.Context, dataset *Dataset, run *Evaluat
 	return client.SyncEvaluationRun(ctx, dataset, run)
 }
 
+func CreateTraceInOpik(ctx context.Context, traceID, name string, startTime time.Time, input, metadata map[string]interface{}) (*OpikTraceRecord, error) {
+	client, err := NewOpikAPIClient(llm.LoadOpikConfig())
+	if err != nil {
+		return nil, err
+	}
+	return client.CreateTrace(ctx, traceID, name, startTime, input, metadata)
+}
+
+func UpdateTraceInOpik(ctx context.Context, traceID string, endTime time.Time, output, metadata map[string]interface{}, err error) error {
+	client, clientErr := NewOpikAPIClient(llm.LoadOpikConfig())
+	if clientErr != nil {
+		return clientErr
+	}
+	return client.UpdateTrace(ctx, traceID, endTime, output, metadata, err)
+}
+
 func (c *OpikAPIClient) UploadDataset(ctx context.Context, dataset *Dataset) (*OpikDatasetSummary, error) {
 	resource, err := c.ensureDataset(ctx, dataset)
 	if err != nil {
@@ -119,6 +141,53 @@ func (c *OpikAPIClient) UploadDataset(ctx context.Context, dataset *Dataset) (*O
 	}
 
 	return c.makeDatasetSummary(resource), nil
+}
+
+func (c *OpikAPIClient) CreateTrace(ctx context.Context, traceID, name string, startTime time.Time, input, metadata map[string]interface{}) (*OpikTraceRecord, error) {
+	traceUUID, err := formatTraceIDAsUUID(traceID)
+	if err != nil {
+		return nil, err
+	}
+
+	payload := map[string]interface{}{
+		"id":         traceUUID,
+		"name":       name,
+		"start_time": startTime.UTC().Format(time.RFC3339Nano),
+		"input":      input,
+		"metadata":   metadata,
+		"source":     "sdk",
+	}
+
+	if err := c.doJSON(ctx, http.MethodPost, "/v1/private/traces", payload, nil); err != nil {
+		return nil, err
+	}
+
+	return &OpikTraceRecord{
+		ID:   traceUUID,
+		Name: name,
+	}, nil
+}
+
+func (c *OpikAPIClient) UpdateTrace(ctx context.Context, traceID string, endTime time.Time, output, metadata map[string]interface{}, traceErr error) error {
+	traceUUID, err := formatTraceIDAsUUID(traceID)
+	if err != nil {
+		return err
+	}
+
+	payload := map[string]interface{}{
+		"end_time": endTime.UTC().Format(time.RFC3339Nano),
+		"output":   output,
+		"metadata": metadata,
+	}
+
+	if traceErr != nil {
+		payload["error_info"] = map[string]interface{}{
+			"exception_type":    "error",
+			"exception_message": traceErr.Error(),
+		}
+	}
+
+	return c.doJSON(ctx, http.MethodPatch, fmt.Sprintf("/v1/private/traces/%s", traceUUID), payload, nil)
 }
 
 func (c *OpikAPIClient) SyncEvaluationRun(ctx context.Context, dataset *Dataset, run *EvaluationRun) (*OpikSyncResult, error) {
@@ -421,4 +490,19 @@ func deriveOpikAPIBaseURL(endpoint string) string {
 	}
 
 	return defaultOpikAPIBaseURL
+}
+
+func formatTraceIDAsUUID(traceID string) (string, error) {
+	cleaned := strings.ReplaceAll(traceID, "-", "")
+	if len(cleaned) != 32 {
+		return "", fmt.Errorf("invalid trace id length: %s", traceID)
+	}
+
+	return fmt.Sprintf("%s-%s-%s-%s-%s",
+		cleaned[0:8],
+		cleaned[8:12],
+		cleaned[12:16],
+		cleaned[16:20],
+		cleaned[20:32],
+	), nil
 }
