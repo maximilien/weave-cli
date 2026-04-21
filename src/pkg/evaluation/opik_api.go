@@ -486,7 +486,11 @@ func deriveOpikAPIBaseURL(endpoint string) string {
 
 	base := fmt.Sprintf("%s://%s", parsed.Scheme, parsed.Host)
 	if idx := strings.Index(parsed.Path, "/api/v1/private/otel"); idx >= 0 {
-		return strings.TrimRight(base+parsed.Path[:idx], "/")
+		apiPrefix := parsed.Path[:idx]
+		if !strings.HasSuffix(apiPrefix, "/api") {
+			apiPrefix = strings.TrimRight(apiPrefix, "/") + "/api"
+		}
+		return strings.TrimRight(base+apiPrefix, "/")
 	}
 
 	return defaultOpikAPIBaseURL
