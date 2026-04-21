@@ -16,20 +16,22 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
 	"go.opentelemetry.io/otel/attribute"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 // Executor orchestrates agent execution for queries
 type Executor struct {
-	queryAgent    *agents.QueryAgent
-	planningAgent *agents.PlanningAgent
-	weaveAgent    *agents.WeaveAgent
-	bashAgent     *agents.BashAgent
-	outputAgent   *agents.OutputAgent
-	reportAgent   *agents.ReportAgent
-	evalAgent     *agents.EvalAgent
-	mcpClient     *mcp.Client
-	llmClient     llm.Client
-	config        *Config
+	queryAgent     *agents.QueryAgent
+	planningAgent  *agents.PlanningAgent
+	weaveAgent     *agents.WeaveAgent
+	bashAgent      *agents.BashAgent
+	outputAgent    *agents.OutputAgent
+	reportAgent    *agents.ReportAgent
+	evalAgent      *agents.EvalAgent
+	mcpClient      *mcp.Client
+	llmClient      llm.Client
+	tracerProvider *sdktrace.TracerProvider
+	config         *Config
 }
 
 // Config holds executor configuration
@@ -50,7 +52,7 @@ func NewExecutor(config *Config) (*Executor, error) {
 	// Initialize Opik tracing if enabled
 	opikConfig := llm.LoadOpikConfig()
 	ctx := context.Background()
-	var tracerProvider interface{}
+	var tracerProvider *sdktrace.TracerProvider
 	if opikConfig.Enabled {
 		tp, err := llm.InitOpikTracing(ctx, opikConfig)
 		if err != nil {
@@ -139,16 +141,17 @@ func NewExecutor(config *Config) (*Executor, error) {
 	weaveAgent.SetVerbose(config.Verbose)
 
 	return &Executor{
-		queryAgent:    queryAgent,
-		planningAgent: planningAgent,
-		weaveAgent:    weaveAgent,
-		bashAgent:     bashAgent,
-		outputAgent:   outputAgent,
-		reportAgent:   reportAgent,
-		evalAgent:     evalAgent,
-		mcpClient:     mcpClient,
-		llmClient:     llmClient,
-		config:        config,
+		queryAgent:     queryAgent,
+		planningAgent:  planningAgent,
+		weaveAgent:     weaveAgent,
+		bashAgent:      bashAgent,
+		outputAgent:    outputAgent,
+		reportAgent:    reportAgent,
+		evalAgent:      evalAgent,
+		mcpClient:      mcpClient,
+		llmClient:      llmClient,
+		tracerProvider: tracerProvider,
+		config:         config,
 	}, nil
 }
 
@@ -331,6 +334,13 @@ func (e *Executor) DryRun(ctx context.Context, query string) (*agents.ExecutionP
 
 // Close closes the executor and releases resources
 func (e *Executor) Close() error {
+	if e.tracerProvider != nil {
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := llm.ShutdownOpikTracing(shutdownCtx, e.tracerProvider); err != nil {
+			return err
+		}
+	}
 	if e.mcpClient != nil {
 		return e.mcpClient.Close()
 	}
