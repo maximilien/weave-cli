@@ -66,6 +66,7 @@ docs/archive/planning/NEXT_STEPS*.md
 
 # Test artifacts
 test-results/
+evals/results/run-*.json
 playwright-report/
 
 # Demo recordings (keep README and template, ignore actual recordings and URLs)
