@@ -4,7 +4,7 @@
 
 The unit-test baseline measured by `./test.sh --coverage` on 2026-09-04 is:
 
-- Statements/lines: **16.15%** (`4,446 / 27,532`)
+- Statements/lines: **16.13%** (`4,438 / 27,521`)
 - Functions exercised: **31.28%** (`661 / 2,113`)
 - Branches: not reported by the Go coverage tool
 

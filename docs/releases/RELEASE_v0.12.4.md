@@ -112,7 +112,7 @@ Environment examples now include:
 ### Test and Coverage Reliability
 
 - Add `./test.sh --coverage` with terminal, HTML, text, and Codecov reports
-- Establish a 16.15% statement-coverage baseline and staged 80% plan
+- Establish a 16.13% statement-coverage baseline and staged 80% plan
 - Require 80% patch coverage while ratcheting whole-project coverage
 - Isolate tests from ambient Opik credentials and developer home directories
 - Remove a probabilistic frequency assertion that caused intermittent CI
@@ -170,7 +170,7 @@ Before tagging `v0.12.4`, confirm:
 
 - [ ] `./lint.sh` passes
 - [ ] `./build.sh` passes
-- [ ] `./test.sh --coverage` passes and does not regress from 16.15%
+- [ ] `./test.sh --coverage` passes and does not regress from 16.13%
 - [ ] `govulncheck ./...` reports no reachable vulnerabilities
 - [ ] GitHub branch CI is green on Go 1.26.6
 - [ ] Release artifacts build for Linux, macOS, and Windows
