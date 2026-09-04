@@ -166,7 +166,7 @@ fi
 
 # Install tesseract and leptonica (for OCR)
 print_header "Installing tesseract and leptonica (for OCR support)..."
-if ! command_exists tesseract; then
+if ! command_exists tesseract || ! pkg-config --exists tesseract lept 2>/dev/null; then
     print_status "Installing tesseract..."
     case $OS in
         "macos")
@@ -180,7 +180,7 @@ if ! command_exists tesseract; then
             ;;
         "linux")
             if command_exists apt-get; then
-                sudo apt-get update && sudo apt-get install -y tesseract-ocr libleptonica-dev
+                sudo apt-get update && sudo apt-get install -y tesseract-ocr libtesseract-dev libleptonica-dev
                 print_success "tesseract and leptonica installed successfully via apt-get!"
             elif command_exists yum; then
                 sudo yum install -y tesseract leptonica-devel

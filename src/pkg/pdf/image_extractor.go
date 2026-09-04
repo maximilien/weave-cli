@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/otiai10/gosseract/v2"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
@@ -249,36 +248,6 @@ func processExtractedImage(imagePath, sourcePDF string, imageIndex int) (*PDFIma
 		ImageIndex: imageIndex,
 		SourcePDF:  sourcePDF,
 	}, nil
-}
-
-// extractOCRText extracts text from an image using Tesseract OCR
-func extractOCRText(imagePath string) string {
-	// Initialize Tesseract client
-	client := gosseract.NewClient()
-	defer client.Close()
-
-	// Set image path
-	if err := client.SetImage(imagePath); err != nil {
-		// Return empty string on error (non-fatal)
-		return ""
-	}
-
-	// Extract text
-	text, err := client.Text()
-	if err != nil {
-		// Return empty string on error (non-fatal)
-		return ""
-	}
-
-	// Clean up text (remove extra whitespace)
-	text = strings.TrimSpace(text)
-
-	// Return empty string if no meaningful text found
-	if len(text) < 3 {
-		return ""
-	}
-
-	return text
 }
 
 // extractEXIFData extracts EXIF data from image bytes
