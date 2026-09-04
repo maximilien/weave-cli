@@ -46,7 +46,7 @@ print_success() {
 print_help() {
     echo -e "${BLUE}Weave CLI Test Suite${NC}"
     echo ""
-    echo "Usage: ./test.sh [COMMAND] [FLAGS]"
+    echo "Usage: ./test.sh [--coverage] [COMMAND] [FLAGS]"
     echo ""
     echo "Commands:"
     echo "  unit        Run only unit tests"
@@ -54,7 +54,7 @@ print_help() {
     echo "  stack       Run weave stack integration tests"
     echo "  fast        Run fast tests (unit + mock integration)"
     echo "  all         Run all tests (unit + integration)"
-    echo "  coverage    Run tests with coverage report"
+    echo "  coverage    Run unit tests with coverage report"
     echo "  help        Show this help message"
     echo ""
     echo "Flags for 'integration' command:"
@@ -87,7 +87,8 @@ print_help() {
     echo "  ./test.sh integration --skip mcp,weaviate,neo4j,pinecone  # Skip MCP, Weaviate, Neo4j, and Pinecone tests"
     echo "  ./test.sh fast                    # Run fast tests (unit + mock integration)"
     echo "  ./test.sh all                     # Run all tests"
-    echo "  ./test.sh coverage                # Run tests with coverage report"
+    echo "  ./test.sh --coverage              # Run unit tests with coverage report"
+    echo "  ./test.sh coverage                # Alias for --coverage"
     echo "  ./test.sh                         # Run unit tests (default)"
     echo ""
     echo "Test Categories:"
@@ -114,6 +115,29 @@ print_help() {
 RUN_UNIT_TESTS=false
 RUN_INTEGRATION_TESTS=false
 RUN_COVERAGE=false
+
+# Match clawmax-cli: accept --coverage as a flag while keeping the historical
+# `coverage` command as an alias. With no explicit command, coverage runs the
+# unit-test lane.
+coverage_requested=false
+parsed_args=()
+for arg in "$@"; do
+    if [ "$arg" = "--coverage" ]; then
+        coverage_requested=true
+    else
+        parsed_args+=("$arg")
+    fi
+done
+set -- "${parsed_args[@]}"
+if [ "$coverage_requested" = true ]; then
+    if [ "$#" -eq 0 ] || [ "${1:-}" = "unit" ]; then
+        set -- coverage
+    else
+        print_error "--coverage currently supports the unit-test lane only"
+        print_help
+        exit 1
+    fi
+fi
 
 # Global variables for integration test summary (must be global for trap handler)
 declare -a vdb_names=()
@@ -961,32 +985,88 @@ run_fast_tests() {
 # Function to run coverage tests
 run_coverage_tests() {
     print_header "Running Coverage Analysis..."
-    
+
     # Check if Go is installed
     if ! command -v go >/dev/null 2>&1; then
         print_error "Go is not installed. Please install Go 1.21 or later."
         exit 1
     fi
     
-    # Create coverage directory
-    mkdir -p coverage
-    
-    # Run tests with coverage (only unit tests and mock integration tests)
+    local coverage_profile="coverage.out"
+    local coverage_html="coverage.html"
+    local coverage_text="coverage.txt"
+
+    # Cover each production package while running its unit tests. Running all
+    # packages in one command produces a single, non-duplicated Go profile.
     print_status "Running tests with coverage..."
-    if go test -coverprofile=coverage/coverage.out -covermode=atomic ./tests/... -run="TestConfig|TestMock|TestCLI|TestFastMock|TestFastConfig"; then
+    if go test -count=1 -covermode=atomic \
+        -coverprofile="$coverage_profile" ./src/...; then
         print_status "Generating coverage report..."
-        
+
         # Generate HTML coverage report
-        go tool cover -html=coverage/coverage.out -o coverage/coverage.html
-        
+        go tool cover -html="$coverage_profile" -o "$coverage_html"
+
         # Generate text coverage report
-        go tool cover -func=coverage/coverage.out > coverage/coverage.txt
-        
+        go tool cover -func="$coverage_profile" > "$coverage_text"
+
+        echo ""
+        echo "Coverage summary"
+        echo "----------------"
+        awk '
+            /^mode:/ { next }
+            {
+                total += $2
+                if ($3 > 0) covered += $2
+            }
+            END {
+                pct = total ? (covered / total) * 100 : 0
+                printf "  %-12s %8.2f%% %10d / %d\n", "Statements", pct, covered, total
+                printf "  %-12s %8.2f%% %10d / %d\n", "Lines", pct, covered, total
+            }
+        ' "$coverage_profile"
+        awk '
+            /^total:/ { next }
+            NF >= 3 {
+                total++
+                pct = $NF
+                sub(/%$/, "", pct)
+                if ((pct + 0) > 0) covered++
+            }
+            END {
+                pct = total ? (covered / total) * 100 : 0
+                printf "  %-12s %8.2f%% %10d / %d\n", "Functions", pct, covered, total
+            }
+        ' "$coverage_text"
+        echo "  Branches: n/a (not reported by Go coverage)"
+
+        echo ""
+        echo "Package statement coverage (highest to lowest)"
+        printf "  %-42s %9s %18s\n" "Package" "Coverage" "Covered / Total"
+        awk '
+            /^mode:/ { next }
+            {
+                file = $1
+                sub(/:[0-9].*$/, "", file)
+                pkg = file
+                sub(/\/[^\/]+$/, "", pkg)
+                sub(/^github.com\/maximilien\/weave-cli\//, "", pkg)
+                total[pkg] += $2
+                if ($3 > 0) covered[pkg] += $2
+            }
+            END {
+                for (pkg in total) {
+                    pct = total[pkg] ? (covered[pkg] / total[pkg]) * 100 : 0
+                    printf "%.2f\t%d\t%d\t%s\n", pct, covered[pkg], total[pkg], pkg
+                }
+            }
+        ' "$coverage_profile" | sort -nr -k1,1 | awk -F '\t' \
+            '{printf "  %-42s %8.2f%% %8d / %-8d\n", $4, $1, $2, $3}'
+
         print_success "Coverage analysis completed!"
         print_status "Coverage files available in:"
-        echo "  - coverage/coverage.html (HTML report)"
-        echo "  - coverage/coverage.txt (Text report)"
-        echo "  - coverage/coverage.out (Raw coverage data)"
+        echo "  - $coverage_html (HTML report)"
+        echo "  - $coverage_text (Text report)"
+        echo "  - $coverage_profile (Raw coverage data)"
     else
         print_error "Coverage analysis failed!"
         exit 1

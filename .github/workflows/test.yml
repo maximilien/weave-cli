@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.24.11']
+        go-version: ['1.26.6']
 
     steps:
       - name: Checkout code
@@ -71,7 +71,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.11'
+          go-version: '1.26.6'
 
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -100,7 +100,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.11'
+          go-version: '1.26.6'
 
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -139,7 +139,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.11'
+          go-version: '1.26.6'
 
       - name: Cache Go modules
         uses: actions/cache@v3
@@ -158,7 +158,7 @@ jobs:
           unset WEAVIATE_URL
           unset WEAVIATE_API_KEY
           unset WEAVIATE_COLLECTION_TEST
-          ./test.sh coverage
+          ./test.sh --coverage
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4
@@ -193,7 +193,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.24.11'
+          go-version: '1.26.6'
 
       - name: Cache Go modules
         uses: actions/cache@v3

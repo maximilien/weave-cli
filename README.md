@@ -1571,8 +1571,8 @@ go test ./...
 # Integration tests (requires Docker)
 go test -tags=integration ./src/pkg/vectordb/...
 
-# Full test suite with coverage
-./test.sh integration
+# Unit-test coverage report (coverage.out, coverage.html, coverage.txt)
+./test.sh --coverage
 
 # Specific VDB tests
 go test -tags=integration -run TestIntegration_Milvus ./src/pkg/vectordb/milvus/
