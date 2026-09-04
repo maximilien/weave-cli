@@ -565,7 +565,7 @@ func processFilesWithAutoRestart(ctx context.Context, processor *pipeline.Proces
 
 			// Check if we should restart and retry
 			if attempt < cfg.MaxRetries {
-				utils.PrintWarning(fmt.Sprintf("   🔄 Restarting Milvus and retrying..."))
+				utils.PrintWarning("   🔄 Restarting Milvus and retrying...")
 
 				// Stop current port-forward
 				if cfg.PortForwardCtx != nil && *cfg.PortForwardCtx != nil {

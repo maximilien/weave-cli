@@ -608,7 +608,7 @@ func processTextFileGeneric(ctx context.Context, client vectordb.VectorDBClient,
 	failures := int(failureCount.Load())
 
 	if success == 0 {
-		reporter.Complete(fmt.Sprintf("Failed to create any chunks"))
+		reporter.Complete("Failed to create any chunks")
 		return fmt.Errorf("failed to create any document chunks")
 	}
 

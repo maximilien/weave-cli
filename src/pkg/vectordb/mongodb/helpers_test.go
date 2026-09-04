@@ -108,7 +108,6 @@ func TestAdapter_CloseMethod(t *testing.T) {
 	ctx := context.Background()
 
 	// Close should work (may fail if not connected, but shouldn't panic)
-	err = adapter.Close(ctx)
 	// We don't assert NoError because connection might not be established
 	// Just verify it doesn't panic
 	assert.NotPanics(t, func() {

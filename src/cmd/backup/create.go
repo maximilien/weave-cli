@@ -293,7 +293,7 @@ func runBackupCreate(cmd *cobra.Command, args []string) error {
 	// Show summary
 	duration := time.Since(startTime)
 	fmt.Println()
-	utils.PrintSuccess(fmt.Sprintf("✅ Backup created successfully!"))
+	utils.PrintSuccess("✅ Backup created successfully!")
 	fmt.Println()
 	utils.PrintInfo(fmt.Sprintf("   Collection: %s", collection))
 	utils.PrintInfo(fmt.Sprintf("   Documents: %d", len(backup.Documents)))

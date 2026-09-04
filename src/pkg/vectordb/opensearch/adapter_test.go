@@ -4,6 +4,7 @@
 package opensearch
 
 import (
+	"context"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -98,7 +99,7 @@ func TestAdapter_UpdateSchema(t *testing.T) {
 		},
 	}
 
-	err := adapter.UpdateSchema(nil, "test-index", schema)
+	err := adapter.UpdateSchema(context.Background(), "test-index", schema)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "does not support schema updates")
 }

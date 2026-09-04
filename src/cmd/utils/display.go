@@ -403,7 +403,7 @@ func DisplayVirtualDocuments(documents []weaviate.Document, collectionName strin
 	// Show header with pagination info
 	if totalCount >= 0 && int64(len(documents)) < totalCount {
 		PrintSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d of %d total documents):", len(virtualDocs), collectionName, len(documents), totalCount))
-		PrintWarning(fmt.Sprintf("  ⚠️  Showing paginated view. Chunk counts may be incomplete."))
+		PrintWarning("  ⚠️  Showing paginated view. Chunk counts may be incomplete.")
 		PrintInfo(fmt.Sprintf("  💡 Use --limit %d to see all documents and accurate chunk counts", totalCount))
 	} else {
 		PrintSuccess(fmt.Sprintf("Found %d virtual documents in collection '%s' (aggregated from %d total documents):", len(virtualDocs), collectionName, len(documents)))

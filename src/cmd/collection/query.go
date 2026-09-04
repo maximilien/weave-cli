@@ -267,13 +267,10 @@ func runCollectionQuery(cmd *cobra.Command, args []string) {
 		// Map common vector names
 		switch vectorName {
 		case "text", "text_vector":
-			vectorName = "text_vector"
 			useImageVector = false
 		case "image", "image_vector", "visual":
-			vectorName = "image_vector"
 			useImageVector = true
 		case "default":
-			vectorName = "default"
 			useImageVector = false
 		}
 		// Note: vectorName is informational for now, actual routing uses useImageVector

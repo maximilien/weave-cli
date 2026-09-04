@@ -311,7 +311,7 @@ func TestIssue_IncludeImagesFlagValidation(t *testing.T) {
 	// Test that flag can be looked up
 	flag := cmd.Flags().Lookup("include-images")
 	if flag == nil {
-		t.Error("Flag 'include-images' not found")
+		t.Fatal("Flag 'include-images' not found")
 	}
 
 	if flag.Usage != "Include base64 image data" {

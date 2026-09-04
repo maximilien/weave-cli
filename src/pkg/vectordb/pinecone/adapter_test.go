@@ -4,6 +4,7 @@
 package pinecone
 
 import (
+	"context"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -109,7 +110,7 @@ func TestAdapter_UpdateSchema(t *testing.T) {
 		},
 	}
 
-	err := adapter.UpdateSchema(nil, "test-collection", schema)
+	err := adapter.UpdateSchema(context.Background(), "test-collection", schema)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "schema updates not supported")
 }

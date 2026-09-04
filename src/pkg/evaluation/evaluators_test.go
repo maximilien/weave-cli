@@ -26,7 +26,7 @@ func TestCitationEvaluator(t *testing.T) {
 	})
 
 	t.Run("NoCitations", func(t *testing.T) {
-		score, err := evaluator.Evaluate(nil, testCase,
+		score, err := evaluator.Evaluate(context.Background(), testCase,
 			"RAG stands for Retrieval Augmented Generation.", nil)
 
 		if err != nil {
@@ -39,7 +39,7 @@ func TestCitationEvaluator(t *testing.T) {
 	})
 
 	t.Run("OneCitation", func(t *testing.T) {
-		score, err := evaluator.Evaluate(nil, testCase,
+		score, err := evaluator.Evaluate(context.Background(), testCase,
 			"RAG stands for Retrieval Augmented Generation [1].", nil)
 
 		if err != nil {
@@ -52,7 +52,7 @@ func TestCitationEvaluator(t *testing.T) {
 	})
 
 	t.Run("TwoCitations", func(t *testing.T) {
-		score, err := evaluator.Evaluate(nil, testCase,
+		score, err := evaluator.Evaluate(context.Background(), testCase,
 			"RAG combines retrieval [1] with generation [2].", nil)
 
 		if err != nil {
@@ -66,7 +66,7 @@ func TestCitationEvaluator(t *testing.T) {
 	})
 
 	t.Run("ThreeCitations", func(t *testing.T) {
-		score, err := evaluator.Evaluate(nil, testCase,
+		score, err := evaluator.Evaluate(context.Background(), testCase,
 			"RAG uses retrieval [1], augmentation [2], and generation [3].", nil)
 
 		if err != nil {
@@ -80,7 +80,7 @@ func TestCitationEvaluator(t *testing.T) {
 	})
 
 	t.Run("FivePlusCitations", func(t *testing.T) {
-		score, err := evaluator.Evaluate(nil, testCase,
+		score, err := evaluator.Evaluate(context.Background(), testCase,
 			"RAG [1] combines [2] retrieval [3], augmentation [4], and generation [5] techniques [6].", nil)
 
 		if err != nil {
@@ -313,7 +313,7 @@ func TestContextRelevanceEvaluator(t *testing.T) {
 				t.Fatalf("Unexpected error: %v", err)
 			}
 
-			if tt.retrievedContext == nil || len(tt.retrievedContext) == 0 {
+			if len(tt.retrievedContext) == 0 {
 				if score != tt.expectedScore {
 					t.Errorf("Expected score %.2f for no context, got %.2f", tt.expectedScore, score)
 				}

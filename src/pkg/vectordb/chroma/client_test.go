@@ -6,6 +6,7 @@
 package chroma
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -117,6 +118,6 @@ func TestNoopEmbeddingFunction_EmbedRecords(t *testing.T) {
 	}
 
 	// EmbedRecords should always return nil (no-op)
-	err := noop.EmbedRecords(nil, nil, false)
+	err := noop.EmbedRecords(context.Background(), nil, false)
 	assert.NoError(t, err)
 }

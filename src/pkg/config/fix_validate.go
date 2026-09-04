@@ -124,22 +124,6 @@ func validateAPIKey(value string) error {
 		return fmt.Errorf("API key seems too long (expected at most 256 characters)")
 	}
 
-	// Check for common prefixes
-	commonPrefixes := []string{"sk-", "pk-", "api_", "key_"}
-	hasKnownPrefix := false
-	for _, prefix := range commonPrefixes {
-		if strings.HasPrefix(value, prefix) {
-			hasKnownPrefix = true
-			break
-		}
-	}
-
-	// Warn if no known prefix (but don't fail)
-	if !hasKnownPrefix {
-		// Just a warning, not an error
-		// Different services use different formats
-	}
-
 	// Check it's not a placeholder
 	placeholders := []string{
 		"your-api-key",
@@ -197,11 +181,6 @@ func validatePort(value string) error {
 
 	if port < 1 || port > 65535 {
 		return fmt.Errorf("port must be between 1 and 65535, got: %d", port)
-	}
-
-	// Check for privileged ports warning
-	if port < 1024 {
-		// This is just informational, not an error
 	}
 
 	return nil

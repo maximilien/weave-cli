@@ -203,10 +203,10 @@ func generateDefaultKindConfig(kindConfig *KindConfig) (string, error) {
 	configPath := filepath.Join(DefaultStateDir, "kind-config.yaml")
 
 	// Generate Kind config YAML
-	config := fmt.Sprintf(`kind: Cluster
+	config := `kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
-`)
+`
 
 	// Add control plane node
 	config += `  - role: control-plane

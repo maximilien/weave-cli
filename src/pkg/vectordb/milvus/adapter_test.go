@@ -158,7 +158,6 @@ func TestAdapter_Close(t *testing.T) {
 	}
 
 	// Close should work (may fail if not connected, but shouldn't panic)
-	err = adapter.Close()
 	assert.NotPanics(t, func() {
 		_ = adapter.Close()
 	})

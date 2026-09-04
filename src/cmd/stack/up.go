@@ -146,7 +146,7 @@ func runUp(cmd *cobra.Command, args []string) error {
 	utils.PrintSuccess("🎉 Stack deployment initiated!")
 	fmt.Println()
 	fmt.Println("Next steps:")
-	fmt.Println(fmt.Sprintf("  1. Check cluster: kubectl --context %s get pods", clusterInfo.Context))
+	fmt.Printf("  1. Check cluster: kubectl --context %s get pods\n", clusterInfo.Context)
 	fmt.Println("  2. Monitor status: weave stack status")
 	fmt.Println("  3. View logs: kubectl --context", clusterInfo.Context, "logs <pod-name>")
 
