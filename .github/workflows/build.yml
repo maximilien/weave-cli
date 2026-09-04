@@ -42,6 +42,17 @@ jobs:
         if: runner.os != 'Windows'
         run: go mod download
 
+      - name: Install OCR dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            tesseract-ocr libtesseract-dev libleptonica-dev
+
+      - name: Install OCR dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install tesseract leptonica
+
       - name: Build (Unix)
         if: runner.os != 'Windows'
         run: ./build.sh
@@ -49,6 +60,8 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         shell: bash
+        env:
+          CGO_ENABLED: 0
         run: |
           # Build for Windows using the build script approach
           VERSION=$(git describe --tags --always --dirty 2>/dev/null \

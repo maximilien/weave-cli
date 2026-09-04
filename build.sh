@@ -8,9 +8,17 @@ if [ -f .env ]; then
 fi
 set +a
 
-# Set CGO environment variables for packages that need C dependencies (like gosseract)
-export CGO_CPPFLAGS="-I/opt/homebrew/include -I/opt/homebrew/Cellar/leptonica/1.86.0/include -I/opt/homebrew/Cellar/tesseract/5.5.1/include"
-export CGO_LDFLAGS="-L/opt/homebrew/lib"
+# Discover CGO flags for optional OCR support without depending on Homebrew versions.
+if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists tesseract lept; then
+    ocr_cflags=$(pkg-config --cflags tesseract lept)
+    ocr_libs=$(pkg-config --libs tesseract lept)
+    lept_include_dir=$(pkg-config --variable=includedir lept)
+    lept_parent_dir=$(dirname "${lept_include_dir}")
+    CGO_CPPFLAGS="${CGO_CPPFLAGS:-} ${ocr_cflags} -I${lept_parent_dir}"
+    CGO_LDFLAGS="${CGO_LDFLAGS:-} ${ocr_libs}"
+    export CGO_CPPFLAGS
+    export CGO_LDFLAGS
+fi
 
 # Weave CLI Build Script
 # Usage: ./build.sh [clean|all|help]

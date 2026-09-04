@@ -28,6 +28,12 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
 
+      - name: Install OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            tesseract-ocr libtesseract-dev libleptonica-dev
+
       - name: Cache Go modules
         uses: actions/cache@v6
         with:
@@ -73,6 +79,12 @@ jobs:
         with:
           go-version: '1.26.6'
 
+      - name: Install OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            tesseract-ocr libtesseract-dev libleptonica-dev
+
       - name: Cache Go modules
         uses: actions/cache@v6
         with:
@@ -101,6 +113,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: '1.26.6'
+
+      - name: Install OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            tesseract-ocr libtesseract-dev libleptonica-dev
 
       - name: Cache Go modules
         uses: actions/cache@v6
@@ -140,6 +158,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: '1.26.6'
+
+      - name: Install OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            tesseract-ocr libtesseract-dev libleptonica-dev
 
       - name: Cache Go modules
         uses: actions/cache@v6
@@ -194,6 +218,12 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: '1.26.6'
+
+      - name: Install OCR dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            tesseract-ocr libtesseract-dev libleptonica-dev
 
       - name: Cache Go modules
         uses: actions/cache@v6
