@@ -5,19 +5,19 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "50...80"
+  range: "16...80"
 
   status:
     project:
       default:
-        target: 60%        # Target coverage for whole project
-        threshold: 5%      # Allow 5% decrease
+        target: auto       # Ratchet from the current project baseline
+        threshold: 1%      # Prevent meaningful regressions while coverage grows
         if_ci_failed: error
 
     patch:
       default:
-        target: 70%        # New code should be well-tested
-        threshold: 10%
+        target: 80%        # New and changed code should meet the long-term goal
+        threshold: 5%
 
 comment:
   layout: "reach,diff,flags,tree"
