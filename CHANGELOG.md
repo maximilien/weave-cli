@@ -9,6 +9,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Go coverage reporting and quality workflow**
+  - `./test.sh --coverage` now runs the unit lane and prints statement,
+    function, line, and per-package coverage
+  - HTML, text, and raw profiles are generated for local inspection and CI
+  - Added an 80% coverage improvement plan with baseline ratcheting
+
+- **Opik query monitoring trace flow**
+  - Executor-level spans for query analysis, planning, step execution,
+    reporting, and evaluation
+  - Tool spans for bash and weave/MCP execution paths
+  - LLM spans with input/output, metadata, token usage, cost, and latency
+  - New `weave eval datasets upload-opik <dataset>` command
+  - Opik dataset and experiment sync for `eval run --use-opik`
+    and `eval benchmark --use-opik`
+  - Stable dataset item reuse to avoid duplicate Opik dataset samples
+    across reruns
+  - Demo updates in `demos/opik/demo.sh` and `demos/opik/DEMO.md`
+
+### Fixed
+
+- **Dependency and toolchain security**
+  - Updated CI and local builds to Go 1.26.6
+  - Updated direct dependencies and migrated Weaviate to client v5
+  - Migrated OpenSearch signing to AWS SDK v2
+  - Cleared all reachable `govulncheck` findings
+
+- **Test reliability**
+  - Isolated Opik and home-directory tests from developer environment state
+  - Removed flaky random-distribution thresholds from tie-breaking tests
+
+- **Opik trace export reliability**
+  - Flush tracing on executor shutdown so query-run spans are exported
+    before process exit
+  - Preserve tracing context through report generation
+  - Create top-level Opik trace records for query runs so the `Traces`
+    view is populated, not only `Spans`
+
+- **Opik API sync path**
+  - Correct Opik API base URL derivation for dataset and experiment sync
+
+- **Generated eval results**
+  - Ignore `evals/results/run-*.json` in git status
+
 - **`weave doctor` — Unified Diagnostic Command**
   - Single command to check the health of your entire weave setup
   - **8 check sections** (run in order): system, config, env, vdb,
@@ -52,7 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Builds from source, auto-installs tesseract/leptonica deps
   - Tap: [Maximilien-ai/homebrew-weave-cli](https://github.com/Maximilien-ai/homebrew-weave-cli)
 
-### Fixed
+### Additional fixes
 
 - **`weave doctor` VDB checks** — no longer skips databases when
   `enabled` field is unset (matches `health check` behavior)
