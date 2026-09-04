@@ -2,7 +2,7 @@
 
 **Target Release Date**: 2026-09-04
 **Git Tag**: `v0.12.4`
-**Status**: Release candidate pending CI and final Opik smoke test
+**Status**: Release candidate pending final Opik smoke test
 
 ---
 
@@ -168,12 +168,12 @@ Environment examples now include:
 
 Before tagging `v0.12.4`, confirm:
 
-- [ ] `./lint.sh` passes
-- [ ] `./build.sh` passes
-- [ ] `./test.sh --coverage` passes and does not regress from 16.13%
-- [ ] `govulncheck ./...` reports no reachable vulnerabilities
-- [ ] GitHub branch CI is green on Go 1.26.6
-- [ ] Release artifacts build for Linux, macOS, and Windows
+- [x] `./lint.sh` passes
+- [x] `./build.sh` passes
+- [x] `./test.sh --coverage` passes and does not regress from 16.13%
+- [x] `govulncheck ./...` reports no reachable vulnerabilities
+- [x] GitHub branch CI is green on Go 1.26.6
+- [x] Release artifacts build for Linux, macOS, and Windows
 
 - [ ] Query runs appear in Opik `Logs -> Traces`, not only `Spans`
 - [ ] Dataset upload succeeds in Opik

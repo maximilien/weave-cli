@@ -34,8 +34,8 @@ Run the standard local gate before handing off changes:
 - Unit tests must isolate filesystem and environment state with `t.TempDir`,
   `t.Setenv`, or equivalent helpers. Do not depend on credentials from `.env`
   or write into the developer's home directory.
-- OCR builds require Tesseract and Leptonica. The repository scripts configure
-  Homebrew include and library paths for macOS.
+- Native OCR builds require Tesseract and Leptonica. Repository scripts derive
+  compiler flags with `pkg-config`; cross-compiles use the OCR-free fallback.
 
 ## Go Dependencies And Security
 
