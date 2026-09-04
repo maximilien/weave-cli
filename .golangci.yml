@@ -1,0 +1,14 @@
+---
+linters:
+  disable:
+    # Existing ignored-return debt will be addressed incrementally.
+    - errcheck
+    # Several compatibility helpers are intentionally retained but unused.
+    - unused
+
+issues:
+  exclude-rules:
+    # Dependency/API migrations are tracked separately from correctness lint.
+    - linters:
+        - staticcheck
+      text: "SA1019:"
