@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -47,12 +47,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: "0"
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v7
         with:
           go-version: '1.26.6'
 
@@ -71,7 +71,8 @@ jobs:
       - name: Build Linux/Windows
         run: |
           mkdir -p dist
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=${{ needs.prepare.outputs.version }}
+          VERSION=${VERSION#v}
           GIT_COMMIT=$(git rev-parse HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           VERSION_PKG="github.com/maximilien/weave-cli/src/pkg/version"
@@ -85,7 +86,7 @@ jobs:
           chmod +x dist/*
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: linux-windows
           path: dist/
@@ -97,12 +98,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: "0"
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v7
         with:
           go-version: '1.26.6'
 
@@ -118,7 +119,8 @@ jobs:
       - name: Build macOS
         run: |
           mkdir -p dist
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=${{ needs.prepare.outputs.version }}
+          VERSION=${VERSION#v}
           GIT_COMMIT=$(git rev-parse HEAD)
           BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           VERSION_PKG="github.com/maximilien/weave-cli/src/pkg/version"
@@ -131,7 +133,7 @@ jobs:
           chmod +x dist/*
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: macos
           path: dist/
@@ -143,18 +145,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: "0"
 
       - name: Download Linux/Windows artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: linux-windows
           path: dist/
 
       - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: macos
           path: dist/
