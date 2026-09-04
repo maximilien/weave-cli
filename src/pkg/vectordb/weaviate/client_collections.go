@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/weaviate/weaviate-go-client/v4/weaviate/graphql"
+	"github.com/weaviate/weaviate-go-client/v5/weaviate/graphql"
 )
 
 // ListCollections returns a list of all collections

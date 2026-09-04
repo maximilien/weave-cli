@@ -105,9 +105,9 @@ func (a *Adapter) getIndexDimensions(ctx context.Context, name string) (int, err
 	}
 
 	// Parse response to extract dimensions from mappings
-	if resp.Indices != nil {
-		if indexInfo, ok := resp.Indices[name]; ok {
-			if indexInfo.Mappings != nil {
+	if resp.IndicesGetRespData != nil {
+		if indexInfo, ok := (*resp.IndicesGetRespData)[name]; ok {
+			if len(indexInfo.Mappings) > 0 {
 				// Unmarshal the mappings RawMessage
 				var mappings struct {
 					Properties map[string]interface{} `json:"properties"`

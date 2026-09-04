@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/session"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	opensearch "github.com/opensearch-project/opensearch-go/v4"
 	opensearchapi "github.com/opensearch-project/opensearch-go/v4/opensearchapi"
 	requestsigner "github.com/opensearch-project/opensearch-go/v4/signer/aws"
@@ -93,9 +93,11 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 		if isAWS && awsRegion != "" {
 			// AWS OpenSearch Service with Signature V4
 			// Create AWS signer with default credentials and region
-			signer, err := requestsigner.NewSignerWithService(session.Options{
-				SharedConfigState: session.SharedConfigEnable,
-			}, requestsigner.OpenSearchService)
+			awsConfig, err := awsconfig.LoadDefaultConfig(context.Background(), awsconfig.WithRegion(awsRegion))
+			if err != nil {
+				return nil, fmt.Errorf("OpenSearch: failed to load AWS configuration: %w", err)
+			}
+			signer, err := requestsigner.NewSignerWithService(awsConfig, requestsigner.OpenSearchService)
 			if err != nil {
 				return nil, fmt.Errorf("OpenSearch: failed to create AWS signer: %w", err)
 			}
