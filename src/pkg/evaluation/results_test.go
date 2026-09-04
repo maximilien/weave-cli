@@ -138,6 +138,8 @@ func TestCalculateSummary(t *testing.T) {
 }
 
 func TestSaveAndLoadResults(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
 	// Create run for testing
 	run := &EvaluationRun{
 		ID:          "run-test-001",

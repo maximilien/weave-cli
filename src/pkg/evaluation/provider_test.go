@@ -106,6 +106,7 @@ func TestProviderFactory(t *testing.T) {
 	})
 
 	t.Run("CreateOpikProviderWithoutAPIKey", func(t *testing.T) {
+		t.Setenv("OPIK_API_KEY", "")
 		ctx := context.Background()
 		_, err := CreateProvider(ctx, ProviderTypeOpik, mockClient)
 

@@ -274,6 +274,8 @@ func TestLoadResultsWithDifferentFormats(t *testing.T) {
 
 // TestSaveResultsUsesDefaultDirectory tests SaveResults function
 func TestSaveResultsUsesDefaultDirectory(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
 	// This test verifies SaveResults creates files in default location
 	run := &EvaluationRun{
 		ID:          "default-dir-test-" + GenerateRunID(),

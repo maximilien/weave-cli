@@ -125,10 +125,7 @@ func TestInitializeUserAgents(t *testing.T) {
 
 		// Set up a temporary home directory for this test
 		tmpHome := filepath.Join(tmpDir, "home")
-		if err := os.Setenv("HOME", tmpHome); err != nil {
-			t.Fatalf("Failed to set HOME: %v", err)
-		}
-		defer os.Unsetenv("HOME")
+		t.Setenv("HOME", tmpHome)
 
 		err := InitializeUserAgents()
 		if err != nil {
@@ -157,10 +154,7 @@ func TestInitializeUserAgents(t *testing.T) {
 
 		// Set up a temporary home directory
 		tmpHome := filepath.Join(tmpDir, "home")
-		if err := os.Setenv("HOME", tmpHome); err != nil {
-			t.Fatalf("Failed to set HOME: %v", err)
-		}
-		defer os.Unsetenv("HOME")
+		t.Setenv("HOME", tmpHome)
 
 		// Call multiple times
 		for i := 0; i < 3; i++ {

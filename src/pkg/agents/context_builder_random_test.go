@@ -84,18 +84,11 @@ func TestSortByRelevance_RandomTieBreaking(t *testing.T) {
 		t.Logf("  %s: %d times (%.1f%%)", vdb, count, percentage)
 	}
 
-	// All three VDBs should appear first at least once (very high probability)
-	// If sorting was deterministic, only one VDB would ever be first
-	assert.GreaterOrEqual(t, len(firstPositions), 2,
-		"At least 2 different VDBs should appear first (proves randomization)")
-
-	// Each VDB should appear first roughly 1/3 of the time (with tolerance)
-	// We use a loose tolerance since it's random
-	for vdb, count := range firstPositions {
-		percentage := float64(count) / float64(iterations) * 100
-		assert.GreaterOrEqual(t, percentage, 10.0,
-			"VDB %s should appear first at least 10%% of the time (got %.1f%%)", vdb, percentage)
-	}
+	// Every VDB should appear first. Avoid asserting a percentage distribution:
+	// even a correct random shuffle can legitimately fall outside an arbitrary
+	// frequency band and make CI flaky.
+	assert.Len(t, firstPositions, len(results),
+		"Every tied VDB should appear first across repeated shuffles")
 }
 
 // TestSortByRelevance_RandomTieBreakerWithDifferentScores verifies that
