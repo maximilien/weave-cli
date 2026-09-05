@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/maximilien/weave-cli/src/pkg/logging"
-	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 // HealthStatus represents the overall health status
@@ -24,9 +23,14 @@ type HealthStatus struct {
 
 // HealthChecker manages health checks for configured VDBs
 type HealthChecker struct {
-	databases map[string]vectordb.VectorDBClient
+	databases map[string]DatabaseHealthClient
 	version   string
 	timeout   time.Duration
+}
+
+// DatabaseHealthClient is the minimal database capability required by health checks.
+type DatabaseHealthClient interface {
+	Health(context.Context) error
 }
 
 // NewHealthChecker creates a new health checker
@@ -36,14 +40,14 @@ func NewHealthChecker(version string, timeout time.Duration) *HealthChecker {
 	}
 
 	return &HealthChecker{
-		databases: make(map[string]vectordb.VectorDBClient),
+		databases: make(map[string]DatabaseHealthClient),
 		version:   version,
 		timeout:   timeout,
 	}
 }
 
 // RegisterDatabase registers a VDB client for health checking
-func (hc *HealthChecker) RegisterDatabase(name string, client vectordb.VectorDBClient) {
+func (hc *HealthChecker) RegisterDatabase(name string, client DatabaseHealthClient) {
 	hc.databases[name] = client
 }
 
@@ -72,7 +76,7 @@ func (hc *HealthChecker) CheckHealth(ctx context.Context) *HealthStatus {
 
 	for name, client := range hc.databases {
 		wg.Add(1)
-		go func(dbName string, dbClient vectordb.VectorDBClient) {
+		go func(dbName string, dbClient DatabaseHealthClient) {
 			defer wg.Done()
 
 			err := dbClient.Health(ctx)
