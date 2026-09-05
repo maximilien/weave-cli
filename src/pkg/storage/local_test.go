@@ -158,6 +158,27 @@ func TestLocalStorageErrors(t *testing.T) {
 			t.Fatalf("Download(directory) error = %T, want ErrDownloadFailed", err)
 		}
 	}
+
+	nonEmptyDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(nonEmptyDir, "child"), []byte("x"), 0600); err != nil {
+		t.Fatalf("write non-empty directory fixture: %v", err)
+	}
+	if err := store.Delete(context.Background(), "file://"+nonEmptyDir); err == nil {
+		t.Fatal("Delete(non-empty directory) succeeded")
+	} else {
+		var deleteErr *ErrDeleteFailed
+		if !errors.As(err, &deleteErr) {
+			t.Fatalf("Delete(non-empty directory) error = %T, want ErrDeleteFailed", err)
+		}
+	}
+
+	invalidPath := "file://\x00"
+	if exists, err := store.Exists(context.Background(), invalidPath); err == nil || exists {
+		t.Fatalf("Exists(invalid path) = %v, %v; want false and an error", exists, err)
+	}
+	if _, err := store.GetInfo(context.Background(), invalidPath); err == nil || !strings.Contains(err.Error(), "failed to get file info") {
+		t.Fatalf("GetInfo(invalid path) error = %v", err)
+	}
 }
 
 func TestStorageErrors(t *testing.T) {
