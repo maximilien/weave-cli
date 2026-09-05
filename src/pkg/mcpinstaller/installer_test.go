@@ -120,6 +120,13 @@ func TestDownloadFile(t *testing.T) {
 	if err := DownloadFile("://invalid", filepath.Join(t.TempDir(), "bad"), 0); err == nil {
 		t.Fatal("DownloadFile() succeeded with an invalid URL")
 	}
+	errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "unavailable", http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(errorServer.Close)
+	if err := DownloadFile(errorServer.URL, filepath.Join(t.TempDir(), "failed"), 0); err == nil {
+		t.Fatal("DownloadFile() accepted an unsuccessful HTTP status")
+	}
 }
 
 func TestVerifyChecksum(t *testing.T) {
@@ -157,6 +164,13 @@ func TestGetExpectedChecksum(t *testing.T) {
 	}
 	if _, err := GetExpectedChecksum(asset, "missing"); err == nil {
 		t.Fatal("GetExpectedChecksum() succeeded for a missing binary")
+	}
+	errorServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "unavailable", http.StatusBadGateway)
+	}))
+	t.Cleanup(errorServer.Close)
+	if _, err := GetExpectedChecksum(&Asset{BrowserDownloadURL: errorServer.URL}, "binary"); err == nil {
+		t.Fatal("GetExpectedChecksum() accepted an unsuccessful HTTP status")
 	}
 
 	server.Close()

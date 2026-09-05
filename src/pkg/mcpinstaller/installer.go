@@ -155,6 +155,9 @@ func DownloadFile(url string, filepath string, size int64) error {
 		return fmt.Errorf("failed to download: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("download failed with HTTP status %d", resp.StatusCode)
+	}
 
 	// Create progress bar
 	bar := progressbar.DefaultBytes(
@@ -197,6 +200,9 @@ func GetExpectedChecksum(checksumsAsset *Asset, binaryName string) (string, erro
 		return "", fmt.Errorf("failed to download checksums: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return "", fmt.Errorf("checksum download failed with HTTP status %d", resp.StatusCode)
+	}
 
 	// Read and parse checksums
 	body, err := io.ReadAll(resp.Body)
