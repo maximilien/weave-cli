@@ -32,13 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-The current source count makes these approximate requirements:
+At the end of Day 1, the current source count makes these approximate
+requirements:
 
-| Target | Covered statements needed | Increase from baseline |
+| Target | Covered statements needed | Remaining after Day 1 |
 | --- | ---: | ---: |
-| 20% | 5,505 | 1,067 |
-| 25% | 6,881 | 2,443 |
-| 30% | 8,257 | 3,819 |
+| 20% | 5,505 | 549 |
+| 25% | 6,882 | 1,926 |
+| 30% | 8,258 | 3,302 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -51,6 +52,20 @@ code.
 - Begin `pkg/storage` tests around paths, metadata, thumbnails, and failures.
 - Avoid live services, credentials, fixed home-directory paths, and sleeps.
 - Exit target: at least 18% overall, with no package above 80% regressing.
+
+#### Day 1 Results
+
+- Statements/lines: **18.01%** (`4,956 / 27,525`), an increase of 1.88
+  percentage points and 518 covered statements from the baseline.
+- Functions exercised: **35.97%** (`760 / 2,113`), an increase of 4.69
+  percentage points and 99 exercised functions from the baseline.
+- Package results include `pkg/vectordb` at 100%, `pkg/metrics` at 100%,
+  `pkg/health` at 96.2%, `pkg/mcpinstaller` at 78.7%, `pkg/storage` at 67.3%,
+  `pkg/server` at 64.7%, `cmd/query` at 63.6%, and `pkg/executor` at 36.6%.
+- Added failure-path coverage that exposed and fixed acceptance of failed HTTP
+  responses by MCP installer downloads.
+- The 18% exit target was achieved without regressing packages already above
+  80%.
 
 ### Day 2 — Execution Boundaries (2026-09-06)
 
