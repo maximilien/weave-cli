@@ -6,12 +6,14 @@ package repl
 import (
 	"context"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/chzyer/readline"
 	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/spf13/viper"
 )
@@ -91,6 +93,31 @@ func TestRunBatchMode(t *testing.T) {
 	}
 	if !reflect.DeepEqual(executor.queries, repl.queries) {
 		t.Fatalf("executed queries = %#v, want %#v", executor.queries, repl.queries)
+	}
+	if !executor.closed {
+		t.Fatal("Run() did not close executor")
+	}
+}
+
+func TestRunInteractiveModeUntilEOF(t *testing.T) {
+	rl, err := readline.NewEx(&readline.Config{
+		Prompt:       "> ",
+		HistoryLimit: -1,
+		Stdin:        io.NopCloser(strings.NewReader("\n/help\nnatural language query\n")),
+		Stdout:       io.Discard,
+		Stderr:       io.Discard,
+	})
+	if err != nil {
+		t.Fatalf("create readline: %v", err)
+	}
+	executor := &fakeQueryExecutor{}
+	repl := &REPL{executor: executor, rl: rl}
+
+	if err := repl.Run(); err != nil {
+		t.Fatalf("Run() error: %v", err)
+	}
+	if !reflect.DeepEqual(executor.queries, []string{"natural language query"}) {
+		t.Fatalf("executed queries = %#v", executor.queries)
 	}
 	if !executor.closed {
 		t.Fatal("Run() did not close executor")
