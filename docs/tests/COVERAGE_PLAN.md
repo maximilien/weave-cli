@@ -32,14 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-At the end of Day 1, the current source count makes these approximate
+At the end of Day 2, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 1 |
+| Target | Covered statements needed | Remaining after Day 2 |
 | --- | ---: | ---: |
-| 20% | 5,505 | 549 |
-| 25% | 6,882 | 1,926 |
-| 30% | 8,258 | 3,302 |
+| 20% | 5,506 | Achieved (+50) |
+| 25% | 6,883 | 1,327 |
+| 30% | 8,259 | 2,703 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -74,6 +74,20 @@ code.
 - Introduce narrow interfaces or injected functions only where they improve
   production boundaries; do not add test-only production hooks.
 - Exit target: reach and stabilize 20% overall.
+
+#### Day 2 Results
+
+- Statements/lines: **20.18%** (`5,556 / 27,529`), an increase of 2.17
+  percentage points and 600 covered statements from Day 1.
+- Functions exercised: **38.29%** (`809 / 2,113`), an increase of 2.32
+  percentage points and 49 exercised functions from Day 1.
+- Raised `pkg/executor` from 36.6% to 77.0% and `pkg/repl` from 0% to 88.4%.
+- Added `cmd/chunking` helper and validation coverage, bringing the package to
+  73.2% and providing margin above the project milestone.
+- Made executor retry backoff context-aware so cancellation stops immediately
+  instead of waiting for the next retry interval.
+- The 20% exit target was achieved, so the Codecov project target advances to
+  20%.
 
 ### Day 3 — Commands and Evaluation (2026-09-07)
 
