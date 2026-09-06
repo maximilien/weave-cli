@@ -450,7 +450,18 @@ func (e *Executor) executePlan(ctx context.Context, plan *agents.ExecutionPlan) 
 				fmt.Printf("\n⚠️  Step failed. Retrying in %v (attempt %d/%d)...\n",
 					backoffDuration, retryCount, e.config.MaxRetries)
 
-				time.Sleep(backoffDuration)
+				retryTimer := time.NewTimer(backoffDuration)
+				select {
+				case <-retryTimer.C:
+				case <-ctx.Done():
+					if !retryTimer.Stop() {
+						select {
+						case <-retryTimer.C:
+						default:
+						}
+					}
+					return reports, fmt.Errorf("retry cancelled: %w", ctx.Err())
+				}
 
 				// Retry the step
 				retryReport := e.executeStep(ctx, &step, stepOutputs)

@@ -404,6 +404,85 @@ func TestExecuteWeaveStep(t *testing.T) {
 	}
 }
 
+func TestExecuteContinuesAfterReportAndEvaluationFailures(t *testing.T) {
+	t.Setenv("OPIK_ENABLED", "false")
+	executor := newAgentTestExecutor(
+		&fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{IsWeaveQuery: true, Intent: "list"})},
+		&fakeAgent{name: "planner", execute: returning(&agents.ExecutionPlan{})},
+	)
+	executor.reportAgent = &fakeReportAgent{fakeAgent: fakeAgent{name: "report", execute: failing("enhancement failed")}}
+	executor.evalAgent = &fakeAgent{name: "eval", execute: failing("evaluation failed")}
+
+	report, err := executor.Execute(context.Background(), "list")
+	if err != nil {
+		t.Fatalf("Execute() error: %v", err)
+	}
+	if report.QueryIntent != "list" || report.ExecutedSteps != 0 {
+		t.Fatalf("Execute() report = %#v", report)
+	}
+}
+
+func TestExecuteStepFormatsResultTypes(t *testing.T) {
+	executor := newTestExecutor()
+	tests := []struct {
+		name       string
+		output     interface{}
+		wantOutput string
+		wantError  string
+	}{
+		{name: "map", output: map[string]interface{}{"count": float64(2)}, wantOutput: `"count": 2`},
+		{name: "scalar", output: 42, wantOutput: "42"},
+		{name: "unmarshalable", output: make(chan int), wantOutput: "0x"},
+		{name: "failure text", output: "failed to execute", wantOutput: "failed to execute", wantError: "failed to execute"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor.weaveAgent = &fakeAgent{execute: returning(&agents.WeaveAgentResult{Success: true, Output: tt.output})}
+			report := executor.executeStep(context.Background(), &agents.ExecutionStep{Type: "weave"}, nil)
+			if !strings.Contains(report.Output, tt.wantOutput) {
+				t.Fatalf("executeStep() output = %q, want %q", report.Output, tt.wantOutput)
+			}
+			if tt.wantError == "" && !report.Success {
+				t.Fatalf("executeStep() report = %#v", report)
+			}
+			if tt.wantError != "" && (report.Success || !strings.Contains(report.Error, tt.wantError)) {
+				t.Fatalf("executeStep() report = %#v", report)
+			}
+		})
+	}
+}
+
+func TestExecutePlanStopsRetryWhenContextIsCancelled(t *testing.T) {
+	executor := newTestExecutor()
+	executor.config.MaxRetries = 1
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	reports, err := executor.executePlan(ctx, &agents.ExecutionPlan{Steps: []agents.ExecutionStep{{
+		Type: "bash", Command: "grep", Args: []string{"missing", "/dev/null"},
+	}}})
+	if err == nil || !strings.Contains(err.Error(), "retry cancelled") {
+		t.Fatalf("executePlan() error = %v", err)
+	}
+	if len(reports) != 1 || reports[0].Success {
+		t.Fatalf("executePlan() reports = %#v", reports)
+	}
+}
+
+func TestExecuteBashStepReturnsSuccessfulStderr(t *testing.T) {
+	executor := newTestExecutor()
+	result, err := executor.executeBashStep(context.Background(), &agents.ExecutionStep{
+		Command: "sh", Args: []string{"-c", "printf warning >&2"},
+	})
+	if err != nil {
+		t.Fatalf("executeBashStep() error: %v", err)
+	}
+	if got := result.(string); !strings.Contains(got, "[stderr]: warning") {
+		t.Fatalf("executeBashStep() = %q", got)
+	}
+}
+
 func TestCloseWithoutResources(t *testing.T) {
 	if err := (&Executor{}).Close(); err != nil {
 		t.Fatalf("Close() error: %v", err)
