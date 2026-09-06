@@ -15,6 +15,7 @@ import (
 	"github.com/chzyer/readline"
 	"github.com/fatih/color"
 	"github.com/joho/godotenv"
+	"github.com/maximilien/weave-cli/src/pkg/agents"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/executor"
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
@@ -31,9 +32,14 @@ type Options struct {
 	MCPTimeout       int    // MCP timeout in seconds
 }
 
+type queryExecutor interface {
+	Execute(context.Context, string) (*agents.OperationReport, error)
+	Close() error
+}
+
 // REPL represents the interactive Read-Eval-Print Loop
 type REPL struct {
-	executor          *executor.Executor
+	executor          queryExecutor
 	rl                *readline.Instance
 	interrupted       bool
 	queryStringsFile  string
