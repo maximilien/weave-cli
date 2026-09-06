@@ -5,6 +5,7 @@ package executor
 
 import (
 	"context"
+	"errors"
 	"os"
 	"reflect"
 	"strings"
@@ -14,6 +15,31 @@ import (
 	"github.com/maximilien/weave-cli/src/pkg/mcp"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
+
+type fakeAgent struct {
+	name    string
+	execute func(context.Context, interface{}) (interface{}, error)
+}
+
+func (a *fakeAgent) Name() string {
+	if a.name == "" {
+		return "fake-agent"
+	}
+	return a.name
+}
+
+func (a *fakeAgent) Execute(ctx context.Context, input interface{}) (interface{}, error) {
+	return a.execute(ctx, input)
+}
+
+type fakeReportAgent struct {
+	fakeAgent
+	printed []*agents.OperationReport
+}
+
+func (a *fakeReportAgent) PrintReport(report *agents.OperationReport) {
+	a.printed = append(a.printed, report)
+}
 
 func TestNewExecutorValidatesRequiredEnvironment(t *testing.T) {
 	t.Setenv("OPIK_ENABLED", "false")
@@ -184,6 +210,200 @@ func TestExecutePlanDependencies(t *testing.T) {
 	}
 }
 
+func TestDryRun(t *testing.T) {
+	plan := &agents.ExecutionPlan{Summary: "inspect collections"}
+	executor := newAgentTestExecutor(
+		&fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{
+			IsWeaveQuery: true,
+			FixedQuery:   "list collections",
+			Intent:       "list",
+		})},
+		&fakeAgent{name: "planner", execute: returning(plan)},
+	)
+
+	got, err := executor.DryRun(context.Background(), "show collections")
+	if err != nil {
+		t.Fatalf("DryRun() error: %v", err)
+	}
+	if got != plan {
+		t.Fatalf("DryRun() = %#v, want %#v", got, plan)
+	}
+}
+
+func TestDryRunErrors(t *testing.T) {
+	tests := []struct {
+		name      string
+		query     agents.Agent
+		planner   agents.Agent
+		wantError string
+	}{
+		{
+			name:      "query failure",
+			query:     &fakeAgent{execute: failing("query unavailable")},
+			planner:   &fakeAgent{execute: returning(nil)},
+			wantError: "failed to analyze query",
+		},
+		{
+			name: "unrelated query",
+			query: &fakeAgent{execute: returning(&agents.QueryAgentOutput{
+				Reason: "unrelated",
+			})},
+			planner:   &fakeAgent{execute: returning(nil)},
+			wantError: "not weave-related",
+		},
+		{
+			name: "planning failure",
+			query: &fakeAgent{execute: returning(&agents.QueryAgentOutput{
+				IsWeaveQuery: true,
+				FixedQuery:   "list",
+			})},
+			planner:   &fakeAgent{execute: failing("planner unavailable")},
+			wantError: "failed to create execution plan",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := newAgentTestExecutor(tt.query, tt.planner)
+			if _, err := executor.DryRun(context.Background(), "query"); err == nil || !strings.Contains(err.Error(), tt.wantError) {
+				t.Fatalf("DryRun() error = %v, want %q", err, tt.wantError)
+			}
+		})
+	}
+}
+
+func TestExecuteSuccess(t *testing.T) {
+	t.Setenv("OPIK_ENABLED", "false")
+	reporter := &fakeReportAgent{fakeAgent: fakeAgent{name: "report", execute: returning(nil)}}
+	executor := newAgentTestExecutor(
+		&fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{
+			IsWeaveQuery: true,
+			FixedQuery:   "echo complete",
+			Intent:       "query",
+		})},
+		&fakeAgent{name: "planner", execute: returning(&agents.ExecutionPlan{
+			Steps: []agents.ExecutionStep{{Type: "bash", Command: "echo", Args: []string{"complete"}}},
+		})},
+	)
+	executor.reportAgent = reporter
+	executor.evalAgent = &fakeAgent{name: "eval", execute: returning(&agents.EvaluationMetrics{Success: true})}
+
+	report, err := executor.Execute(context.Background(), "do the thing")
+	if err != nil {
+		t.Fatalf("Execute() error: %v", err)
+	}
+	if report.ExecutedSteps != 1 || report.SuccessfulSteps != 1 || report.QueryIntent != "query" {
+		t.Fatalf("Execute() report = %#v", report)
+	}
+	if len(reporter.printed) != 1 || reporter.printed[0] != report {
+		t.Fatalf("printed reports = %#v", reporter.printed)
+	}
+}
+
+func TestExecuteBoundaryErrors(t *testing.T) {
+	t.Setenv("OPIK_ENABLED", "false")
+	tests := []struct {
+		name      string
+		query     agents.Agent
+		planner   agents.Agent
+		wantError string
+	}{
+		{
+			name:      "query failure",
+			query:     &fakeAgent{name: "query", execute: failing("query unavailable")},
+			planner:   &fakeAgent{name: "planner", execute: returning(nil)},
+			wantError: "failed to analyze query",
+		},
+		{
+			name: "unrelated query",
+			query: &fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{
+				Reason: "not a database request",
+			})},
+			planner:   &fakeAgent{name: "planner", execute: returning(nil)},
+			wantError: "not weave-related",
+		},
+		{
+			name: "planning failure",
+			query: &fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{
+				IsWeaveQuery: true,
+			})},
+			planner:   &fakeAgent{name: "planner", execute: failing("planner unavailable")},
+			wantError: "failed to create execution plan",
+		},
+		{
+			name: "invalid plan dependency",
+			query: &fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{
+				IsWeaveQuery: true,
+			})},
+			planner: &fakeAgent{name: "planner", execute: returning(&agents.ExecutionPlan{
+				Steps: []agents.ExecutionStep{{Type: "bash", Command: "echo", DependsOn: []int{0}}},
+			})},
+			wantError: "failed to execute plan",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			executor := newAgentTestExecutor(tt.query, tt.planner)
+			if _, err := executor.Execute(context.Background(), "query"); err == nil || !strings.Contains(err.Error(), tt.wantError) {
+				t.Fatalf("Execute() error = %v, want %q", err, tt.wantError)
+			}
+		})
+	}
+}
+
+func TestExecuteDryRunAndCancellation(t *testing.T) {
+	t.Setenv("OPIK_ENABLED", "false")
+	newExecutor := func() *Executor {
+		executor := newAgentTestExecutor(
+			&fakeAgent{name: "query", execute: returning(&agents.QueryAgentOutput{IsWeaveQuery: true})},
+			&fakeAgent{name: "planner", execute: returning(&agents.ExecutionPlan{
+				Steps: []agents.ExecutionStep{{Type: "bash", Command: "echo", Destructive: true}},
+			})},
+		)
+		executor.config.NoConfirm = false
+		return executor
+	}
+
+	dryRun := newExecutor()
+	dryRun.config.DryRun = true
+	if report, err := dryRun.Execute(context.Background(), "query"); err != nil || report != nil {
+		t.Fatalf("dry-run Execute() = %#v, %v", report, err)
+	}
+
+	cancelled := newExecutor()
+	withStdin(t, "n\n", func() {
+		if _, err := cancelled.Execute(context.Background(), "query"); err == nil || !strings.Contains(err.Error(), "cancelled") {
+			t.Fatalf("cancelled Execute() error = %v", err)
+		}
+	})
+}
+
+func TestExecuteWeaveStep(t *testing.T) {
+	executor := newTestExecutor()
+	executor.weaveAgent = &fakeAgent{execute: returning(&agents.WeaveAgentResult{
+		Success: true,
+		Output:  []interface{}{map[string]interface{}{"text": `{"count": 3}`}},
+	})}
+	result, err := executor.executeWeaveStep(context.Background(), &agents.ExecutionStep{Command: "list"})
+	if err != nil {
+		t.Fatalf("executeWeaveStep() error: %v", err)
+	}
+	if !reflect.DeepEqual(result, map[string]interface{}{"count": float64(3)}) {
+		t.Fatalf("executeWeaveStep() = %#v", result)
+	}
+
+	executor.weaveAgent = &fakeAgent{execute: returning(&agents.WeaveAgentResult{Success: false, Error: "tool failed"})}
+	if _, err := executor.executeWeaveStep(context.Background(), &agents.ExecutionStep{}); err == nil || !strings.Contains(err.Error(), "tool failed") {
+		t.Fatalf("executeWeaveStep() error = %v", err)
+	}
+
+	executor.weaveAgent = &fakeAgent{execute: failing("transport failed")}
+	if _, err := executor.executeWeaveStep(context.Background(), &agents.ExecutionStep{}); err == nil || !strings.Contains(err.Error(), "transport failed") {
+		t.Fatalf("executeWeaveStep() error = %v", err)
+	}
+}
+
 func TestCloseWithoutResources(t *testing.T) {
 	if err := (&Executor{}).Close(); err != nil {
 		t.Fatalf("Close() error: %v", err)
@@ -206,4 +426,47 @@ func newTestExecutor() *Executor {
 		outputAgent: output,
 		config:      &Config{Quiet: true},
 	}
+}
+
+func newAgentTestExecutor(queryAgent, planningAgent agents.Agent) *Executor {
+	executor := newTestExecutor()
+	executor.queryAgent = queryAgent
+	executor.planningAgent = planningAgent
+	executor.reportAgent = &fakeReportAgent{fakeAgent: fakeAgent{name: "report", execute: returning(nil)}}
+	executor.evalAgent = &fakeAgent{name: "eval", execute: returning(&agents.EvaluationMetrics{})}
+	executor.config.NoConfirm = true
+	return executor
+}
+
+func returning(value interface{}) func(context.Context, interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return value, nil
+	}
+}
+
+func failing(message string) func(context.Context, interface{}) (interface{}, error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return nil, errors.New(message)
+	}
+}
+
+func withStdin(t *testing.T, input string, run func()) {
+	t.Helper()
+	readEnd, writeEnd, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stdin pipe: %v", err)
+	}
+	oldStdin := os.Stdin
+	os.Stdin = readEnd
+	t.Cleanup(func() {
+		os.Stdin = oldStdin
+		_ = readEnd.Close()
+	})
+	if _, err := writeEnd.WriteString(input); err != nil {
+		t.Fatalf("write stdin: %v", err)
+	}
+	if err := writeEnd.Close(); err != nil {
+		t.Fatalf("close stdin writer: %v", err)
+	}
+	run()
 }

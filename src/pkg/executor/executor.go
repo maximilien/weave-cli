@@ -22,17 +22,22 @@ import (
 
 // Executor orchestrates agent execution for queries
 type Executor struct {
-	queryAgent     *agents.QueryAgent
-	planningAgent  *agents.PlanningAgent
-	weaveAgent     *agents.WeaveAgent
+	queryAgent     agents.Agent
+	planningAgent  agents.Agent
+	weaveAgent     agents.Agent
 	bashAgent      *agents.BashAgent
 	outputAgent    *agents.OutputAgent
-	reportAgent    *agents.ReportAgent
-	evalAgent      *agents.EvalAgent
+	reportAgent    reportAgent
+	evalAgent      agents.Agent
 	mcpClient      *mcp.Client
 	llmClient      llm.Client
 	tracerProvider *sdktrace.TracerProvider
 	config         *Config
+}
+
+type reportAgent interface {
+	agents.Agent
+	PrintReport(*agents.OperationReport)
 }
 
 // Config holds executor configuration
