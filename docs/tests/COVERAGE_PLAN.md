@@ -32,14 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-At the end of Day 2, the current source count makes these approximate
+At the end of Day 3, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 2 |
+| Target | Covered statements needed | Remaining after Day 3 |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+50) |
-| 25% | 6,883 | 1,327 |
-| 30% | 8,259 | 2,703 |
+| 20% | 5,506 | Achieved (+901) |
+| 25% | 6,883 | 476 |
+| 30% | 8,259 | 1,852 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -95,6 +95,21 @@ code.
 - Use temporary configuration directories and fake providers.
 - Prioritize invalid input, missing configuration, and provider failure paths.
 - Exit target: at least 22.5% overall.
+
+#### Day 3 Results
+
+- Statements/lines: **23.27%** (`6,407 / 27,529`), an increase of 3.09
+  percentage points and 851 covered statements from Day 2.
+- Functions exercised: **42.64%** (`901 / 2,113`), an increase of 4.35
+  percentage points and 92 exercised functions from Day 2.
+- Raised `cmd/eval` from 0% to 63.0%, covering command contracts, datasets,
+  evaluators, reports, benchmark helpers, and validation failures.
+- Raised `cmd/config` from 2.9% to 15.9% with isolated environment-file,
+  input, masking, database-display, and schema-formatting tests.
+- Raised the root `cmd` package from 0% to 37.8% with flag, completion,
+  configuration-failure, and usage-template coverage.
+- The 22.5% exit target was exceeded with enough margin to absorb modest
+  source growth before Day 4. Codecov remains at 20% until the 25% milestone.
 
 ### Day 4 — MCP, Stack, and Adapters (2026-09-08)
 
