@@ -128,8 +128,8 @@ jobs:
           LDFLAGS="$LDFLAGS -X $VERSION_PKG.GitCommit=$GIT_COMMIT"
           LDFLAGS="$LDFLAGS -X $VERSION_PKG.BuildTime=$BUILD_TIME"
 
-          GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-amd64 ./src/main.go
-          GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-arm64 ./src/main.go
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-amd64 ./src/main.go
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags "$LDFLAGS" -o dist/weave-darwin-arm64 ./src/main.go
           chmod +x dist/*
 
       - name: Upload artifacts
