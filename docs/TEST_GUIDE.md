@@ -269,23 +269,28 @@ go test -v -tags=integration ./tests -run TestImageIngestion
 
 ### CI/CD Tests
 ```bash
-# Same as CI runs
-./test.sh
+# Standard local gate before pushing
+./lint.sh
+./build.sh
+./test.sh --coverage
 ```
 
 ## Test Coverage
 
 ### View Coverage Report
 ```bash
-# Generate coverage
-go test -coverprofile=coverage.out ./src/...
+# Generate coverage.out, coverage.html, and coverage.txt
+./test.sh --coverage
 
-# View in browser
-go tool cover -html=coverage.out
+# Regenerate the HTML view manually if needed
+go tool cover -html=coverage.out -o coverage.html
 ```
 
 ### Current Coverage
-See `tools/test-coverage.sh` for detailed coverage analysis.
+
+The v0.13.0 baseline is 25.28% statement coverage and 44.96% function
+coverage. See [`tests/COVERAGE_PLAN.md`](tests/COVERAGE_PLAN.md) for package
+details, milestone history, and the path to 30%.
 
 ## Adding New Tests
 

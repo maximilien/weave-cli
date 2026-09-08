@@ -35,7 +35,7 @@ cd weave-cli
 
 ### Prerequisites
 
-- Go 1.21 or later
+- Go 1.26.6 or later for source builds
 - Access to a Weaviate instance (cloud or local)
 - Tesseract OCR (optional, for OCR text extraction from images): `brew install tesseract`
 - Poppler (optional, for PDF text extraction): `brew install poppler`

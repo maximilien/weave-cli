@@ -104,6 +104,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`weave doctor` Opik check** — uses correct OTEL traces endpoint
   instead of non-existent is-alive path
 
+### Documentation
+
+- Added v0.13.0 release notes and refreshed the canonical roadmap,
+  development plan, documentation index, user guide, and test guide
+- Consolidated obsolete active planning and replaced the unshipped v0.12.4
+  release candidate with the v0.13.0 security and quality milestone
+
 ### Performance
 
 - **2x Faster Backups** (Quick Win #1 from Performance Profiling)

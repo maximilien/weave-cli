@@ -57,6 +57,7 @@ All VDB docs are under [`vdbs/`](vdbs/):
 ### Testing
 
 - **[Test Guide](TEST_GUIDE.md)** - Running tests
+- **[Coverage Plan](tests/COVERAGE_PLAN.md)** - Current baseline and ratchets
 - **[Embedding Coverage](tests/EMBEDDING_COVERAGE.md)** - Multi-provider embedding test analysis
 
 ### Integrations
@@ -68,6 +69,7 @@ All VDB docs are under [`vdbs/`](vdbs/):
 ### Release Notes
 
 - **[Release Checklist](releases/RELEASE_CHECKLIST.md)** - Release process
+- **[v0.13.0](releases/RELEASE_v0.13.0.md)** - Security, dependencies, and 25% coverage milestone
 - **[v0.11.5](releases/v0.11.5-RELEASE-NOTES.md)** | [v0.11.2](releases/RELEASE_v0.11.2.md) | [v0.11.1](releases/RELEASE_v0.11.1.md) | [v0.11.0](releases/RELEASE_v0.11.0.md)
 - **[v0.9.15](releases/RELEASE_v0.9.15.md)** | [v0.9.13](releases/RELEASE_v0.9.13.md) | [v0.9.1](releases/RELEASE_v0.9.1.md)
 - **[v0.7.2](releases/RELEASE_v0.7.2.md)** | [v0.7.1](releases/RELEASE_v0.7.1.md) | [v0.7.0](releases/RELEASE_v0.7.0.md)
@@ -75,7 +77,7 @@ All VDB docs are under [`vdbs/`](vdbs/):
 
 ### Collaboration
 
-- **[Opik Video/Blog Checklist](blogs/OPIK_VIDEO_BLOG_CHECKLIST.md)** - Opik collaboration (deadline: Mar 24-31)
+- **[Opik Video/Blog Checklist](blogs/OPIK_VIDEO_BLOG_CHECKLIST.md)** - Historical Opik collaboration checklist
 - **[Presentation](PRESENTATION.md)** - Project presentation slides
 - **[Blog Draft](archive/BLOG_DRAFT.md)** - Technical blog post draft
 

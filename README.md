@@ -9,8 +9,13 @@ Built in Go for performance and ease of use (single binary).
 ### Installation
 
 ```bash
+# Homebrew (recommended on macOS/Linux)
+brew install Maximilien-ai/weave-cli/weave-cli
+
+# Or build from source with Go 1.26.6
 git clone https://github.com/maximilien/weave-cli.git
 cd weave-cli
+./setup.sh
 ./build.sh
 # Binary available at bin/weave
 ```
@@ -1534,10 +1539,10 @@ Files:
 # Setup development environment (installs linters, PDF tools, etc.)
 ./setup.sh
 
-# Build, test, and lint
-./build.sh
-./test.sh
+# Run the standard local gate
 ./lint.sh
+./build.sh
+./test.sh --coverage
 ```
 
 See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
@@ -1546,40 +1551,33 @@ See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 
 ### Test Coverage
 
-Comprehensive integration tests ensure reliability across all supported vector databases:
+The v0.13.0 unit-test baseline is **25.28% statement coverage**
+(`6,960 / 27,529`) and **44.96% function coverage** (`950 / 2,113`).
+Codecov ratchets project coverage at 25% and requires 80% patch coverage.
 
-| VectorDB | Coverage | Integration Tests | Status |
-|----------|----------|-------------------|--------|
-| **Milvus** | 51.5% | 15/15 ✅ | Production Ready |
-| **Qdrant** | 45.8% | 14/14 ✅ | Production Ready |
-| **MongoDB** | 59.1% | 13/13 ✅ | Production Ready |
-| **Weaviate** | 23.6% | 13/13 ✅ | Production Ready |
-| **Neo4j** | 37.9% | 13/13 ✅ | Production Ready |
-| **Chroma** | 49.1% | 12/12 ✅ | Production Ready |
-| **Supabase** | 30%+ | 11/11 ✅ | Production Ready |
-
-**Total**: 91 integration tests covering CRUD operations, collections,
-search functionality (semantic, BM25, hybrid, metadata), and end-to-end
-workflows.
+Integration lanes separately exercise CRUD, collection, semantic, BM25,
+hybrid, metadata, and end-to-end workflows against supported databases.
+See the [coverage plan](docs/tests/COVERAGE_PLAN.md) for package measurements
+and the path to 30%.
 
 ### Running Tests
 
 ```bash
-# Unit tests only (fast)
-go test ./...
+# Unit tests only (default)
+./test.sh
 
 # Integration tests (requires Docker)
 go test -tags=integration ./src/pkg/vectordb/...
 
-# Unit-test coverage report (coverage.out, coverage.html, coverage.txt)
+# Coverage report (coverage.out, coverage.html, coverage.txt)
 ./test.sh --coverage
 
 # Specific VDB tests
 go test -tags=integration -run TestIntegration_Milvus ./src/pkg/vectordb/milvus/
 ```
 
-See [Integration Test Plan](docs/planning/INTEGRATION_TEST_PLAN.md) for
-detailed testing strategy.
+See the [Test Guide](docs/TEST_GUIDE.md) for integration lanes and the
+[Coverage Plan](docs/tests/COVERAGE_PLAN.md) for the current quality campaign.
 
 ## Contributing
 

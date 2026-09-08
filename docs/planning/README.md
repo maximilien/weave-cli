@@ -1,40 +1,25 @@
 # Weave CLI Planning Documents
 
-**Current Status**: v0.11.4 — preparing v0.12.0 (April 2026 launch)
-**Last Updated**: March 21, 2026
+**Current status**: preparing v0.13.0; next milestone is v0.14.0 at 30% coverage
+
+**Last updated**: September 8, 2026
 
 ---
 
 ## Current Priorities
 
-### 1. Opik Video/Blog Collaboration (Mar 24–31)
+### 1. v0.13.0 release
 
-**Checklist**: `docs/blogs/OPIK_VIDEO_BLOG_CHECKLIST.md`
+- Publish the security, dependency, and 25% coverage milestone.
+- Verify cross-platform binaries and checksums from the release workflow.
 
-Remaining work:
+### 2. v0.14.0 coverage campaign
 
-- [ ] Demo recordings: VDB+RAG (2 databases, multi-modal)
-- [ ] Demo recordings: agent orchestration, REPL, custom agents
-- [ ] Opik dashboard walkthrough (5+ span traces)
-- [ ] Opik evaluation demo (single + benchmarking experiments)
-- [ ] Architecture diagram review for video/blog
+- Raise statement coverage from 25.28% to 30%.
+- Focus on command boundaries, Weaviate protocols, and low-coverage adapters.
+- See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 
-### 2. v0.12.0 — April 2026 Launch
-
-**Completed:**
-
-- ✅ `weave doctor` — unified diagnostic command
-- ✅ Remote storage (S3/MinIO) for backups
-- ✅ Document persistence verification
-- ✅ 2x faster backups (batch size optimization)
-
-**Remaining:**
-
-- [ ] Fix `TestProviderFactory/CreateOpikProviderWithoutAPIKey`
-- [ ] Performance: 500+ docs/sec backup target
-- [ ] Any launch blockers identified during testing
-
-### 3. Phase 2 — Cloud Deployments (Post-Launch)
+### 3. Phase 2 — Cloud deployments
 
 Deferred to after April launch. Plans in this directory:
 
@@ -80,4 +65,4 @@ Phase 1 plans and historical docs: `../archive/planning/`
 
 ---
 
-**Last Updated**: March 21, 2026
+**Last updated**: September 8, 2026
