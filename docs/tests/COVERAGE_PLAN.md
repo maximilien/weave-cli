@@ -32,14 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-At the end of Day 3, the current source count makes these approximate
+At the end of Day 4, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 3 |
+| Target | Covered statements needed | Remaining after Day 4 |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+901) |
-| 25% | 6,883 | 476 |
-| 30% | 8,259 | 1,852 |
+| 20% | 5,506 | Achieved (+1,454) |
+| 25% | 6,883 | Achieved (+77) |
+| 30% | 8,259 | 1,299 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -117,6 +117,22 @@ code.
 - Exercise `pkg/stack` rendering and orchestration without starting services.
 - Add fake HTTP/gRPC coverage to the lowest vector database adapters.
 - Exit target: reach and stabilize 25% overall.
+
+#### Day 4 Results
+
+- Statements/lines: **25.28%** (`6,960 / 27,529`), an increase of 2.01
+  percentage points and 553 covered statements from Day 3.
+- Functions exercised: **44.96%** (`950 / 2,113`), an increase of 2.32
+  percentage points and 49 exercised functions from Day 3.
+- Raised `pkg/mcp` from 0% to 76.1% with HTTP and stdio JSON-RPC lifecycle,
+  authentication, malformed-response, cancellation, and validation coverage.
+- Raised `pkg/stack` from 18.5% to 33.2% through isolated checkpoint,
+  dependency, error-rendering, and ingestion-helper tests without starting
+  services.
+- Raised the Weaviate adapter from 5.6% to 16.7% with fake HTTP coverage for
+  health and schema protocols plus nested schema and query-result conversion.
+- The 25% exit target was achieved with 77 covered statements of margin, so
+  the Codecov project target advances to 25%.
 
 ### Day 5 — Consolidate and Start 30% (2026-09-09)
 
