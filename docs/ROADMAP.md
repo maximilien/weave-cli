@@ -1,6 +1,6 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 
 **Current release**: v0.13.0
 
@@ -12,7 +12,7 @@ tracked in [`tests/COVERAGE_PLAN.md`](tests/COVERAGE_PLAN.md).
 
 ## v0.13.0 — Security and Quality
 
-**Status**: Ready for release
+**Status**: Released 2026-09-08
 
 - Upgrade the supported toolchain and CI matrix to Go 1.26.6.
 - Refresh direct dependencies and migrate Weaviate to client v5 and
@@ -31,8 +31,11 @@ details.
 
 **Target**: 30% statement coverage
 
-- Cover command boundaries in `cmd/stack`, `cmd/mcp`, `cmd/agents`, and
-  `cmd/vdb`.
+**Current progress**: 26.18% after Day 5; approximately 1,053 covered
+statements remain at the current source count.
+
+- Continue command-boundary coverage after raising `cmd/stack` from 0% to
+  33.8%; target `cmd/mcp`, `cmd/agents`, and `cmd/vdb` next.
 - Continue fake HTTP/gRPC coverage for low-coverage vector database adapters.
 - Close high-value error and orchestration gaps identified by the coverage
   report.
@@ -61,7 +64,9 @@ meaningful production code. A v1.0 release also requires:
 
 ## Release History
 
-- **v0.12.3** — Latest published patch before the quality campaign.
+- **v0.13.0** — Go 1.26.6, dependency security updates, coverage reporting,
+  and the 25% quality milestone.
+- **v0.12.3** — Published patch before the quality campaign.
 - **v0.12.x** — Remote storage, diagnostics, performance, and reliability.
 - **v0.11.x** — Backup and restore, including cross-database portability.
 - **v0.9.x** — Agents, evaluation, observability, and OSS embeddings.

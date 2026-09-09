@@ -1,10 +1,10 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-08
+**Last updated**: 2026-09-09
 
-**Current milestone**: v0.13.0 release
+**Current milestone**: v0.14.0 at 30% statement coverage
 
-## Immediate — Ship v0.13.0
+## Completed — v0.13.0
 
 - [x] Align local builds and GitHub Actions on Go 1.26.6.
 - [x] Update direct dependencies and audit reachable vulnerabilities.
@@ -12,18 +12,19 @@
 - [x] Reach 25% statement coverage and raise the Codecov project ratchet.
 - [x] Keep Build, Test, Lint, and Security green on `main`.
 - [x] Prepare the changelog and release documentation.
-- [ ] Tag `v0.13.0` and verify all release artifacts and checksums.
+- [x] Tag `v0.13.0` and verify all release artifacts and checksums.
 
 ## Next — v0.14.0 at 30%
 
-The next minor release is tied to the 30% statement-coverage milestone.
-Approximately 1,299 additional covered statements were needed after Day 4;
-the exact count must be recalculated whenever production code changes.
+The next minor release is tied to the 30% statement-coverage milestone. Day 5
+raised coverage to 26.18%; approximately 1,053 additional covered statements
+remain at the current source count. Recalculate the exact count whenever
+production code changes.
 
 Primary targets:
 
-1. Command validation and dependency boundaries in `cmd/stack`, `cmd/mcp`,
-   `cmd/agents`, and `cmd/vdb`.
+1. Continue command validation and dependency boundaries after raising
+   `cmd/stack` from 0% to 33.8%; target `cmd/mcp`, `cmd/agents`, and `cmd/vdb`.
 2. Weaviate query and document HTTP protocols.
 3. Low-coverage OpenSearch, Elasticsearch, Pinecone, and Chroma adapters.
 4. High-impact paths in `pkg/agents`, `pkg/config`, and `pkg/pipeline`.

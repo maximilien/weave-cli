@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added isolated `cmd/stack` tests for initialization templates, generated
+  files, configuration validation, command contracts, and failure boundaries.
+
+### Changed
+
+- Raised statement coverage from the v0.13.0 baseline of 25.28% to 26.18% and
+  documented the remaining path to the 30% v0.14.0 milestone.
+
 ## [0.13.0] - 2026-09-08
 
 ### Added

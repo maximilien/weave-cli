@@ -32,14 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-At the end of Day 4, the current source count makes these approximate
+At the end of Day 5, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 4 |
+| Target | Covered statements needed | Remaining after Day 5 |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+1,454) |
-| 25% | 6,883 | Achieved (+77) |
-| 30% | 8,259 | 1,299 |
+| 20% | 5,506 | Achieved (+1,700) |
+| 25% | 6,883 | Achieved (+323) |
+| 30% | 8,259 | 1,053 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -141,6 +141,36 @@ code.
 - Select the next high-yield slices in `cmd/stack`, `cmd/eval`, `pkg/repl`, and
   the Weaviate adapter for the 30% campaign.
 - Exit target: keep 25% green and publish the measured path to 30%.
+
+#### Day 5 Results
+
+- Statements/lines: **26.18%** (`7,206 / 27,529`), an increase of 0.90
+  percentage points and 246 covered statements from Day 4.
+- Functions exercised: **46.57%** (`984 / 2,113`), an increase of 1.61
+  percentage points and 34 exercised functions from Day 4.
+- Raised `cmd/stack` from 0% to 33.8% with isolated tests for all stack
+  templates and runtime defaults, generated files, configuration validation,
+  Cobra contracts, dashboard modes, and missing-stack or missing-config
+  failures.
+- No test starts Kubernetes, PM2, Milvus, or another external service. File
+  generation and state checks run only in temporary working directories.
+- The 25% ratchet remains green with 323 covered statements of margin. Reaching
+  30% requires approximately 1,053 additional covered statements at the
+  current source count.
+
+### Path from 26.18% to 30%
+
+1. Add fake HTTP coverage for Weaviate document and query protocols, including
+   pagination, malformed responses, and server failures.
+2. Cover validation and dependency boundaries in the zero-coverage
+   `cmd/mcp`, `cmd/agents`, `cmd/vdb`, and `cmd/embeddings` packages.
+3. Add deterministic protocol coverage to the OpenSearch and Elasticsearch
+   adapters, then use `pkg/agents`, `pkg/config`, or `pkg/pipeline` to close
+   any remaining gap.
+
+Recalculate the remaining statement count after every slice. Prefer behavior
+and failure modes that protect users over tests written only to move the
+aggregate percentage.
 
 ## Milestone Policy
 
