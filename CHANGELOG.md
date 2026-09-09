@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Raised statement coverage from the v0.13.0 baseline of 25.28% to 26.18% and
+- Raised statement coverage from the v0.13.0 baseline of 25.28% to 27.06% and
   documented the remaining path to the 30% v0.14.0 milestone.
 
 ## [0.13.0] - 2026-09-08

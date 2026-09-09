@@ -10,7 +10,7 @@
 
 ### 1. v0.14.0 coverage campaign
 
-- Raise statement coverage from 26.18% to 30%.
+- Raise statement coverage from 27.06% to 30%.
 - Continue command boundaries, Weaviate protocols, and low-coverage adapters.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 

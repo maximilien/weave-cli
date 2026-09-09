@@ -17,7 +17,7 @@
 ## Next — v0.14.0 at 30%
 
 The next minor release is tied to the 30% statement-coverage milestone. Day 5
-raised coverage to 26.18%; approximately 1,053 additional covered statements
+raised coverage to 27.06%; approximately 809 additional covered statements
 remain at the current source count. Recalculate the exact count whenever
 production code changes.
 
@@ -25,7 +25,8 @@ Primary targets:
 
 1. Continue command validation and dependency boundaries after raising
    `cmd/stack` from 0% to 33.8%; target `cmd/mcp`, `cmd/agents`, and `cmd/vdb`.
-2. Weaviate query and document HTTP protocols.
+2. Continue Weaviate query fallback, filtering, and response-conversion
+   protocols after document protocol coverage raised the adapter to 30.8%.
 3. Low-coverage OpenSearch, Elasticsearch, Pinecone, and Chroma adapters.
 4. High-impact paths in `pkg/agents`, `pkg/config`, and `pkg/pipeline`.
 

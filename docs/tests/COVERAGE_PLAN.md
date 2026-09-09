@@ -37,9 +37,9 @@ requirements:
 
 | Target | Covered statements needed | Remaining after Day 5 |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+1,700) |
-| 25% | 6,883 | Achieved (+323) |
-| 30% | 8,259 | 1,053 |
+| 20% | 5,506 | Achieved (+1,944) |
+| 25% | 6,883 | Achieved (+567) |
+| 30% | 8,259 | 809 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -144,24 +144,28 @@ code.
 
 #### Day 5 Results
 
-- Statements/lines: **26.18%** (`7,206 / 27,529`), an increase of 0.90
-  percentage points and 246 covered statements from Day 4.
-- Functions exercised: **46.57%** (`984 / 2,113`), an increase of 1.61
-  percentage points and 34 exercised functions from Day 4.
+- Statements/lines: **27.06%** (`7,450 / 27,529`), an increase of 1.78
+  percentage points and 490 covered statements from Day 4.
+- Functions exercised: **46.85%** (`990 / 2,113`), an increase of 1.89
+  percentage points and 40 exercised functions from Day 4.
 - Raised `cmd/stack` from 0% to 33.8% with isolated tests for all stack
   templates and runtime defaults, generated files, configuration validation,
   Cobra contracts, dashboard modes, and missing-stack or missing-config
   failures.
+- Raised the Weaviate adapter from 16.7% to 30.8% with fake HTTP coverage for
+  document creation, retrieval, deletion, bulk deletion, aggregation counts,
+  metadata schema discovery, authentication, malformed responses, and server
+  errors.
 - No test starts Kubernetes, PM2, Milvus, or another external service. File
   generation and state checks run only in temporary working directories.
-- The 25% ratchet remains green with 323 covered statements of margin. Reaching
-  30% requires approximately 1,053 additional covered statements at the
+- The 25% ratchet remains green with 567 covered statements of margin. Reaching
+  30% requires approximately 809 additional covered statements at the
   current source count.
 
-### Path from 26.18% to 30%
+### Path from 27.06% to 30%
 
-1. Add fake HTTP coverage for Weaviate document and query protocols, including
-   pagination, malformed responses, and server failures.
+1. Continue fake HTTP coverage for Weaviate query fallback, filtering, and
+   result-conversion paths.
 2. Cover validation and dependency boundaries in the zero-coverage
    `cmd/mcp`, `cmd/agents`, `cmd/vdb`, and `cmd/embeddings` packages.
 3. Add deterministic protocol coverage to the OpenSearch and Elasticsearch

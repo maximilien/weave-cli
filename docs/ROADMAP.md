@@ -31,7 +31,7 @@ details.
 
 **Target**: 30% statement coverage
 
-**Current progress**: 26.18% after Day 5; approximately 1,053 covered
+**Current progress**: 27.06% after Day 5; approximately 809 covered
 statements remain at the current source count.
 
 - Continue command-boundary coverage after raising `cmd/stack` from 0% to
