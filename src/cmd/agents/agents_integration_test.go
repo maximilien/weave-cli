@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: MIT
 // Copyright (c) 2026 dr.max
 
-//go:build integration
-// +build integration
-
 package agents
 
 import (
