@@ -2,9 +2,9 @@
 
 **Last updated**: 2026-09-10
 
-**Current release**: v0.13.0
+**Current release**: v0.14.0
 
-**Next release**: v0.14.0
+**Next release**: v0.15.0
 
 This roadmap tracks active release milestones. Historical plans and completed
 project notes live under [`archive/`](archive/); the detailed test campaign is
@@ -29,17 +29,17 @@ details.
 
 ## v0.14.0 — 30% Coverage
 
-**Target**: 30% statement coverage
+**Status**: Released 2026-09-10
 
-**Current progress**: 28.49% after Day 6; approximately 415 covered
-statements remain at the current source count.
+- Raised unit-test statement coverage from 25.28% to 30.18%.
+- Raised `cmd/agents`, `cmd/embeddings`, `cmd/mcp`, and `cmd/vdb` from zero to
+  meaningful deterministic coverage.
+- Raised Weaviate adapter coverage from 16.7% to 44.7% through document and
+  query protocol tests.
+- Raised the Codecov project ratchet to 30%; patch coverage remains 80%.
 
-- Continue command-boundary coverage after raising `cmd/embeddings` from 0%
-  to 93.9%; target `cmd/mcp`, `cmd/agents`, and `cmd/vdb` next.
-- Continue fake HTTP/gRPC coverage for low-coverage vector database adapters.
-- Close high-value error and orchestration gaps identified by the coverage
-  report.
-- Keep the 25% project ratchet and 80% patch target green throughout.
+See [`releases/RELEASE_v0.14.0.md`](releases/RELEASE_v0.14.0.md) for release
+details.
 
 ## v0.15.0 — 40% Coverage
 
@@ -64,6 +64,8 @@ meaningful production code. A v1.0 release also requires:
 
 ## Release History
 
+- **v0.14.0** — 30% coverage milestone, command boundaries, and Weaviate
+  protocol coverage.
 - **v0.13.0** — Go 1.26.6, dependency security updates, coverage reporting,
   and the 25% quality milestone.
 - **v0.12.3** — Published patch before the quality campaign.

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-09-10
+
 ### Added
 
 - Added isolated `cmd/stack` tests for initialization templates, generated
@@ -16,8 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Raised statement coverage from the v0.13.0 baseline of 25.28% to 28.49% and
-  documented the remaining path to the 30% v0.14.0 milestone.
+- Raised statement coverage from the v0.13.0 baseline of 25.28% to 30.18% and
+  the Codecov project ratchet from 25% to 30%.
+- Raised command coverage for agents to 70.2%, embeddings to 93.9%, MCP to
+  90.1%, stack to 33.8%, and vector database management to 87.3%.
+- Raised Weaviate adapter coverage to 44.7% with deterministic document and
+  query protocol tests.
 
 ## [0.13.0] - 2026-09-08
 

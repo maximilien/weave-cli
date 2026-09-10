@@ -288,9 +288,9 @@ go tool cover -html=coverage.out -o coverage.html
 
 ### Current Coverage
 
-The v0.13.0 baseline is 25.28% statement coverage and 44.96% function
+The v0.14.0 baseline is 30.18% statement coverage and 49.27% function
 coverage. See [`tests/COVERAGE_PLAN.md`](tests/COVERAGE_PLAN.md) for package
-details, milestone history, and the path to 30%.
+details, milestone history, and the path to 40%.
 
 ## Adding New Tests
 

@@ -32,14 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-At the end of Day 6, the current source count makes these approximate
+At the end of Day 7, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 6 |
+| Target | Covered statements needed | Remaining after Day 7 |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+2,338) |
-| 25% | 6,883 | Achieved (+961) |
-| 30% | 8,259 | 415 |
+| 20% | 5,506 | Achieved (+2,801) |
+| 25% | 6,883 | Achieved (+1,424) |
+| 30% | 8,259 | Achieved (+48) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -188,14 +188,36 @@ code.
 - Reaching 30% requires approximately 415 additional covered statements at
   the current source count.
 
-### Path from 28.49% to 30%
+### Day 7 — Command Boundaries and 30% (2026-09-10)
 
-1. Cover validation and dependency boundaries in the remaining zero-coverage
-   `cmd/mcp`, `cmd/agents`, and `cmd/vdb` packages.
-2. Add deterministic protocol coverage to the OpenSearch and Elasticsearch
+- Promote the isolated agent lifecycle suite into the default unit lane and
+  cover command construction, display, editing, copying, and deletion.
+- Cover MCP validation, JSON-RPC command flows, argument parsing, and result
+  rendering with a deterministic local HTTP server.
+- Cover VDB command contracts, helpers, filtering, and configuration display.
+- Exit target: reach and stabilize 30% overall.
+
+#### Day 7 Results
+
+- Statements/lines: **30.18%** (`8,307 / 27,529`), an increase of 1.69
+  percentage points and 463 covered statements from Day 6.
+- Functions exercised: **49.27%** (`1,041 / 2,113`), an increase of 1.75
+  percentage points and 37 exercised functions from Day 6.
+- Raised `cmd/agents` from 0% to 70.2%, `cmd/mcp` from 0% to 90.1%, and
+  `cmd/vdb` from 0% to 87.3%.
+- All promoted and new unit tests use temporary directories, isolated
+  configuration, or a local fake server; none requires credentials or a live
+  external service.
+- The 30% milestone is achieved with 48 covered statements of margin, so the
+  Codecov project target advances to 30% for v0.14.0.
+
+### Path from 30.18% to 40%
+
+1. Add deterministic protocol coverage to the OpenSearch and Elasticsearch
    adapters.
-3. Use high-value gaps in `pkg/agents`, `pkg/config`, or `pkg/pipeline` to
-   close the remaining distance and stabilize the 30% ratchet.
+2. Cover the remaining zero-coverage `cmd/pipeline` and `cmd/serve` packages.
+3. Deepen high-value behavior and error paths in `pkg/agents`, `pkg/config`,
+   `pkg/pipeline`, and `pkg/stack`.
 
 Recalculate the remaining statement count after every slice. Prefer behavior
 and failure modes that protect users over tests written only to move the

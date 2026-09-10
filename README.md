@@ -1551,14 +1551,14 @@ See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 
 ### Test Coverage
 
-The v0.13.0 unit-test baseline is **25.28% statement coverage**
-(`6,960 / 27,529`) and **44.96% function coverage** (`950 / 2,113`).
-Codecov ratchets project coverage at 25% and requires 80% patch coverage.
+The v0.14.0 unit-test baseline is **30.18% statement coverage**
+(`8,307 / 27,529`) and **49.27% function coverage** (`1,041 / 2,113`).
+Codecov ratchets project coverage at 30% and requires 80% patch coverage.
 
 Integration lanes separately exercise CRUD, collection, semantic, BM25,
 hybrid, metadata, and end-to-end workflows against supported databases.
 See the [coverage plan](docs/tests/COVERAGE_PLAN.md) for package measurements
-and the path to 30%.
+and the path to 40%.
 
 ### Running Tests
 

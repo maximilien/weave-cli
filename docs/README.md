@@ -69,6 +69,7 @@ All VDB docs are under [`vdbs/`](vdbs/):
 ### Release Notes
 
 - **[Release Checklist](releases/RELEASE_CHECKLIST.md)** - Release process
+- **[v0.14.0](releases/RELEASE_v0.14.0.md)** - 30% coverage and command-boundary milestone
 - **[v0.13.0](releases/RELEASE_v0.13.0.md)** - Security, dependencies, and 25% coverage milestone
 - **[v0.11.5](releases/v0.11.5-RELEASE-NOTES.md)** | [v0.11.2](releases/RELEASE_v0.11.2.md) | [v0.11.1](releases/RELEASE_v0.11.1.md) | [v0.11.0](releases/RELEASE_v0.11.0.md)
 - **[v0.9.15](releases/RELEASE_v0.9.15.md)** | [v0.9.13](releases/RELEASE_v0.9.13.md) | [v0.9.1](releases/RELEASE_v0.9.1.md)

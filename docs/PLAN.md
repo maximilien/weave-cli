@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-09-10
 
-**Current milestone**: v0.14.0 at 30% statement coverage
+**Current milestone**: v0.15.0 at 40% statement coverage
 
 ## Completed — v0.13.0
 
@@ -14,29 +14,26 @@
 - [x] Prepare the changelog and release documentation.
 - [x] Tag `v0.13.0` and verify all release artifacts and checksums.
 
-## Next — v0.14.0 at 30%
+## Completed — v0.14.0
 
-The next minor release is tied to the 30% statement-coverage milestone. Day 6
-raised coverage to 28.49%; approximately 415 additional covered statements
-remain at the current source count. Recalculate the exact count whenever
-production code changes.
+- [x] Raise statement coverage from 25.28% to 30.18%.
+- [x] Raise the Codecov project ratchet from 25% to 30%.
+- [x] Add deterministic Weaviate query-protocol tests.
+- [x] Cover the agents, embeddings, MCP, stack, and VDB command boundaries.
+- [x] Keep lint, build, test, and security gates green.
+
+## Next — v0.15.0 at 40%
+
+The next minor release is tied to the 40% statement-coverage milestone. The
+v0.14.0 baseline is 30.18% (`8,307 / 27,529`). Recalculate the exact count
+whenever production code changes.
 
 Primary targets:
 
-1. Continue command validation and dependency boundaries after raising
-   `cmd/embeddings` from 0% to 93.9%; target `cmd/mcp`, `cmd/agents`, and
-   `cmd/vdb`.
-2. Close remaining Weaviate protocol gaps after query and document coverage
-   raised the adapter to 44.7%.
-3. Low-coverage OpenSearch, Elasticsearch, Pinecone, and Chroma adapters.
-4. High-impact paths in `pkg/agents`, `pkg/config`, and `pkg/pipeline`.
-
-## Then — v0.15.0 at 40%
-
-- Cover core orchestration happy paths and partial failures.
-- Add deterministic cancellation, retry, pagination, and timeout tests.
-- Establish a meaningful coverage floor across supported adapters.
-- Consolidate shared fake-server fixtures where duplication emerges.
+1. Cover core orchestration happy paths and partial failures.
+2. Add deterministic cancellation, retry, pagination, and timeout tests.
+3. Establish a meaningful coverage floor across supported adapters.
+4. Consolidate shared fake-server fixtures where duplication emerges.
 
 ## Continuous Workstreams
 
