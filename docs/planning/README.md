@@ -2,7 +2,7 @@
 
 **Current status**: v0.13.0 released; working toward v0.14.0 at 30% coverage
 
-**Last updated**: September 9, 2026
+**Last updated**: September 10, 2026
 
 ---
 
@@ -10,8 +10,8 @@
 
 ### 1. v0.14.0 coverage campaign
 
-- Raise statement coverage from 27.06% to 30%.
-- Continue command boundaries, Weaviate protocols, and low-coverage adapters.
+- Raise statement coverage from the Day 6 baseline of 28.49% to 30%.
+- Continue command boundaries and low-coverage adapter protocols.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 
 ### 2. v0.13.0 release follow-through
@@ -65,4 +65,4 @@ Phase 1 plans and historical docs: `../archive/planning/`
 
 ---
 
-**Last updated**: September 9, 2026
+**Last updated**: September 10, 2026

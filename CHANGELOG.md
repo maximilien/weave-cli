@@ -11,10 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added isolated `cmd/stack` tests for initialization templates, generated
   files, configuration validation, command contracts, and failure boundaries.
+- Added deterministic Weaviate query-protocol coverage and embeddings command
+  catalog, compatibility, recommendation, and credential tests.
 
 ### Changed
 
-- Raised statement coverage from the v0.13.0 baseline of 25.28% to 27.06% and
+- Raised statement coverage from the v0.13.0 baseline of 25.28% to 28.49% and
   documented the remaining path to the 30% v0.14.0 milestone.
 
 ## [0.13.0] - 2026-09-08

@@ -32,14 +32,14 @@ The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
 **25%**, then **30%** statement coverage. The 30% target is the first stretch
 goal; reaching it does not replace the long-term 80% goal.
 
-At the end of Day 5, the current source count makes these approximate
+At the end of Day 6, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 5 |
+| Target | Covered statements needed | Remaining after Day 6 |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+1,944) |
-| 25% | 6,883 | Achieved (+567) |
-| 30% | 8,259 | 809 |
+| 20% | 5,506 | Achieved (+2,338) |
+| 25% | 6,883 | Achieved (+961) |
+| 30% | 8,259 | 415 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -162,15 +162,40 @@ code.
   30% requires approximately 809 additional covered statements at the
   current source count.
 
-### Path from 27.06% to 30%
+### Day 6 — Queries and Command Catalogs (2026-09-10)
 
-1. Continue fake HTTP coverage for Weaviate query fallback, filtering, and
-   result-conversion paths.
-2. Cover validation and dependency boundaries in the zero-coverage
-   `cmd/mcp`, `cmd/agents`, `cmd/vdb`, and `cmd/embeddings` packages.
-3. Add deterministic protocol coverage to the OpenSearch and Elasticsearch
-   adapters, then use `pkg/agents`, `pkg/config`, or `pkg/pipeline` to close
-   any remaining gap.
+- Continue fake HTTP coverage for Weaviate query fallback, filtering, and
+  result-conversion paths.
+- Begin the zero-coverage command packages with the deterministic embeddings
+  catalog and display paths.
+- Exit target: exceed 28% overall and leave a measured final slice to 30%.
+
+#### Day 6 Results
+
+- Statements/lines: **28.49%** (`7,844 / 27,529`), an increase of 1.43
+  percentage points and 394 covered statements from Day 5.
+- Functions exercised: **47.52%** (`1,004 / 2,113`), an increase of 0.67
+  percentage points and 14 exercised functions from Day 5.
+- Raised the Weaviate adapter from 30.8% to 44.7% with fake HTTP coverage for
+  near-text, near-image, BM25, hybrid and simple fallbacks, filter encoding,
+  result conversion, malformed schemas, GraphQL failures, and transport
+  errors.
+- Raised `cmd/embeddings` from 0% to 93.9% with catalog integrity, API-key,
+  database filtering, compatibility display, and collection recommendation
+  coverage.
+- Tests remain isolated from live services, credentials, and developer home
+  state. The 25% ratchet now has 961 covered statements of margin.
+- Reaching 30% requires approximately 415 additional covered statements at
+  the current source count.
+
+### Path from 28.49% to 30%
+
+1. Cover validation and dependency boundaries in the remaining zero-coverage
+   `cmd/mcp`, `cmd/agents`, and `cmd/vdb` packages.
+2. Add deterministic protocol coverage to the OpenSearch and Elasticsearch
+   adapters.
+3. Use high-value gaps in `pkg/agents`, `pkg/config`, or `pkg/pipeline` to
+   close the remaining distance and stabilize the 30% ratchet.
 
 Recalculate the remaining statement count after every slice. Prefer behavior
 and failure modes that protect users over tests written only to move the

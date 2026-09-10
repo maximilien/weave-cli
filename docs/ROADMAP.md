@@ -1,6 +1,6 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-09-09
+**Last updated**: 2026-09-10
 
 **Current release**: v0.13.0
 
@@ -31,11 +31,11 @@ details.
 
 **Target**: 30% statement coverage
 
-**Current progress**: 27.06% after Day 5; approximately 809 covered
+**Current progress**: 28.49% after Day 6; approximately 415 covered
 statements remain at the current source count.
 
-- Continue command-boundary coverage after raising `cmd/stack` from 0% to
-  33.8%; target `cmd/mcp`, `cmd/agents`, and `cmd/vdb` next.
+- Continue command-boundary coverage after raising `cmd/embeddings` from 0%
+  to 93.9%; target `cmd/mcp`, `cmd/agents`, and `cmd/vdb` next.
 - Continue fake HTTP/gRPC coverage for low-coverage vector database adapters.
 - Close high-value error and orchestration gaps identified by the coverage
   report.
