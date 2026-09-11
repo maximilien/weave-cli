@@ -9,7 +9,106 @@ import (
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/spf13/cobra"
 )
+
+var vectorDBFlagNames = []string{
+	"weaviate", "weaviate-local", "weaviate-cloud",
+	"supabase", "supabase-local", "supabase-cloud",
+	"mongodb", "mongodb-local", "mongodb-cloud",
+	"milvus-local", "milvus-cloud", "chroma-local", "chroma-cloud",
+	"qdrant-local", "qdrant-cloud", "neo4j-local", "neo4j-cloud",
+	"opensearch-local", "opensearch-cloud", "mock", "all",
+}
+
+func newVectorDBSelectionCommand(t *testing.T, enabled ...string) *cobra.Command {
+	t.Helper()
+	cmd := &cobra.Command{Use: "test"}
+	for _, name := range vectorDBFlagNames {
+		cmd.Flags().Bool(name, false, "")
+	}
+	for _, name := range enabled {
+		if err := cmd.Flags().Set(name, "true"); err != nil {
+			t.Fatalf("set --%s: %v", name, err)
+		}
+	}
+	return cmd
+}
+
+func allVectorDBConfig() *config.Config {
+	types := []config.VectorDBType{
+		config.VectorDBTypeCloud, config.VectorDBTypeLocal,
+		config.VectorDBTypeSupabase, config.VectorDBTypeSupabaseLocal, config.VectorDBTypeSupabaseCloud,
+		config.VectorDBTypeMongoDB, config.VectorDBTypeMongoDBCloud,
+		config.VectorDBTypeMilvusLocal, config.VectorDBTypeMilvusCloud,
+		config.VectorDBTypeChromaLocal, config.VectorDBTypeChromaCloud,
+		config.VectorDBTypeQdrantLocal, config.VectorDBTypeQdrantCloud,
+		config.VectorDBTypeNeo4jLocal, config.VectorDBTypeNeo4jCloud,
+		config.VectorDBTypeOpenSearchLocal, config.VectorDBTypeOpenSearchCloud,
+		config.VectorDBTypeMock,
+	}
+	dbs := make([]config.VectorDBConfig, len(types))
+	for i, dbType := range types {
+		dbs[i] = config.VectorDBConfig{Name: string(dbType), Type: dbType}
+	}
+	return &config.Config{Databases: config.DatabasesConfig{Default: string(config.VectorDBTypeMock), VectorDatabases: dbs}}
+}
+
+func TestGetSelectedVectorDBs(t *testing.T) {
+	t.Setenv("SUPABASE_DATABASE_URL", "")
+	t.Setenv("SUPABASE_DATABASE_KEY", "")
+	cfg := allVectorDBConfig()
+
+	selection, err := GetSelectedVectorDBs(newVectorDBSelectionCommand(t), cfg)
+	if err != nil || len(selection.Configs) != 1 || selection.Configs[0].Type != config.VectorDBTypeMock {
+		t.Fatalf("default selection = %#v, %v", selection, err)
+	}
+
+	selection, err = GetSelectedVectorDBs(newVectorDBSelectionCommand(t, "all"), cfg)
+	if err != nil || len(selection.Configs) != len(cfg.Databases.VectorDatabases) {
+		t.Fatalf("all selection = %#v, %v", selection, err)
+	}
+
+	enabled := vectorDBFlagNames[:len(vectorDBFlagNames)-1]
+	selection, err = GetSelectedVectorDBs(newVectorDBSelectionCommand(t, enabled...), cfg)
+	if err != nil {
+		t.Fatalf("specific selection error = %v", err)
+	}
+	if len(selection.Configs) != 21 || len(selection.Types) != 21 {
+		t.Fatalf("specific selection returned %d configs and %d types", len(selection.Configs), len(selection.Types))
+	}
+
+	empty := &config.Config{}
+	if _, err := GetSelectedVectorDBs(newVectorDBSelectionCommand(t), empty); err == nil {
+		t.Fatal("empty default selection did not return an error")
+	}
+	for _, flag := range []string{
+		"weaviate", "weaviate-local", "weaviate-cloud", "supabase", "supabase-local", "supabase-cloud",
+		"mongodb", "mongodb-local", "mongodb-cloud", "milvus-local", "milvus-cloud", "chroma-local", "chroma-cloud",
+		"qdrant-cloud", "neo4j-local", "neo4j-cloud", "opensearch-cloud",
+	} {
+		t.Run("missing_"+flag, func(t *testing.T) {
+			clearVectorDBEnvironment(t)
+			if _, err := GetSelectedVectorDBs(newVectorDBSelectionCommand(t, flag), empty); err == nil {
+				t.Fatalf("--%s with empty config did not return an error", flag)
+			}
+		})
+	}
+}
+
+func clearVectorDBEnvironment(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{
+		"SUPABASE_DATABASE_URL", "SUPABASE_DATABASE_KEY", "DATABASE_URL", "SUPABASE_PROJECT_URL",
+		"SUPABASE_DATABASE_PASSWORD", "SUPABASE_PROJECT_API_KEY", "SUPABASE_ANON_KEY", "SUPABASE_KEY",
+		"MILVUS_CLOUD_ADDRESS", "CHROMA_URL", "CHROMA_CLOUD_API_KEY", "CHROMA_API_KEY",
+		"QDRANT_CLOUD_API_KEY", "QDRANT_API_KEY", "QDRANT_CLOUD_URL", "QDRANT_URL",
+		"NEO4J_PASSWORD", "NEO4J_CLOUD_URL", "NEO4J_CLOUD_USERNAME", "NEO4J_CLOUD_PASSWORD",
+		"OPENSEARCH_CLOUD_ADDRESS", "OPENSEARCH_CLOUD_USERNAME", "OPENSEARCH_CLOUD_PASSWORD", "OPENSEARCH_CLOUD_API_KEY",
+	} {
+		t.Setenv(key, "")
+	}
+}
 
 // TestSelectDefaultDatabase tests the SelectDefaultDatabase function
 func TestSelectDefaultDatabase(t *testing.T) {
