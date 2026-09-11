@@ -58,11 +58,13 @@ command_exists() {
 # Discover CGO flags for optional OCR support without depending on Homebrew versions.
 if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists tesseract lept; then
     ocr_cflags=$(pkg-config --cflags tesseract lept)
-    ocr_libs=$(pkg-config --libs tesseract lept)
+    # gosseract already supplies -ltesseract and -lleptonica. Add only the
+    # native search paths here to avoid duplicate-library linker warnings.
+    ocr_lib_dirs=$(pkg-config --libs-only-L tesseract lept)
     lept_include_dir=$(pkg-config --variable=includedir lept)
     lept_parent_dir=$(dirname "${lept_include_dir}")
     CGO_CPPFLAGS="${CGO_CPPFLAGS:-} ${ocr_cflags} -I${lept_parent_dir}"
-    CGO_LDFLAGS="${CGO_LDFLAGS:-} ${ocr_libs}"
+    CGO_LDFLAGS="${CGO_LDFLAGS:-} ${ocr_lib_dirs}"
     export CGO_CPPFLAGS
     export CGO_LDFLAGS
 fi
