@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added isolated coverage for pipeline and serve command boundaries, document
+  display and aggregation, schema conversion and export, vector database
+  selection, and batch-processing utilities.
+
+### Changed
+
+- Raised statement coverage from 30.18% to 35.04% and the Codecov project
+  ratchet from 30% to 35% on the path to v0.15.0 at 40%.
+- Removed duplicate native OCR library flags from local lint, build, and test
+  scripts so macOS link steps no longer emit duplicate-library warnings.
+- Changed `weave serve` startup and shutdown failures to propagate through
+  Cobra instead of terminating inside the command handler.
+
 ## [0.14.0] - 2026-09-10
 
 ### Added

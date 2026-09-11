@@ -28,18 +28,21 @@ raise the percentage.
 
 ## Near-Term Ratchet
 
-The first coverage campaign begins on 2026-09-05. Its targets are **20%**, then
-**25%**, then **30%** statement coverage. The 30% target is the first stretch
-goal; reaching it does not replace the long-term 80% goal.
+The first coverage campaign began on 2026-09-05. Its targets were **20%**,
+**25%**, and **30%** statement coverage. The v0.15.0 campaign adds a **35%**
+checkpoint before **40%**; these milestones do not replace the long-term 80%
+goal.
 
-At the end of Day 7, the current source count makes these approximate
+At the end of Day 8, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 7 |
+| Target | Covered statements needed | Remaining after Day 8 |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
 | 30% | 8,259 | Achieved (+48) |
+| 35% | 9,636 | Achieved (+11) |
+| 40% | 11,013 | 1,366 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -211,13 +214,34 @@ code.
 - The 30% milestone is achieved with 48 covered statements of margin, so the
   Codecov project target advances to 30% for v0.14.0.
 
-### Path from 30.18% to 40%
+### Day 8 — Command Completion and 35% (2026-09-11)
 
-1. Add deterministic protocol coverage to the OpenSearch and Elasticsearch
-   adapters.
-2. Cover the remaining zero-coverage `cmd/pipeline` and `cmd/serve` packages.
-3. Deepen high-value behavior and error paths in `pkg/agents`, `pkg/config`,
-   `pkg/pipeline`, and `pkg/stack`.
+- Cover the remaining pipeline and serve command boundaries.
+- Exercise document display, aggregation, schema conversion/export, vector
+  database selection, and batch-processing helpers without live services.
+- Remove duplicate native OCR linker flags from local quality scripts.
+- Exit target: reach and stabilize 35% overall.
+
+#### Day 8 Results
+
+- Statements/lines: **35.04%** (`9,647 / 27,531`), an increase of 4.86
+  percentage points and 1,340 covered statements from Day 7.
+- Functions exercised: **53.50%** (`1,131 / 2,114`), an increase of 4.23
+  percentage points and 90 exercised functions from Day 7.
+- Raised `cmd/pipeline` from 0% to 58.1%, `cmd/serve` from 0% to 80.0%,
+  `cmd/utils` from 5.4% to 29.8%, and `cmd/document` from 11.1% to 23.4%.
+- Tests use temporary directories, isolated environment variables, and a
+  loopback server lifecycle; none requires credentials or a live service.
+- Native OCR flags now contribute search paths only because gosseract already
+  supplies the libraries, eliminating duplicate-library linker warnings.
+- The Codecov project target advances to 35%; patch coverage remains 80%.
+
+### Path from 35.04% to 40%
+
+1. Add deterministic protocol coverage to OpenSearch and Elasticsearch.
+2. Deepen orchestration and failure coverage in `pkg/agents`, `pkg/pipeline`,
+   and `pkg/stack`.
+3. Cover low-risk command helpers in backup, collection, and configuration.
 
 Recalculate the remaining statement count after every slice. Prefer behavior
 and failure modes that protect users over tests written only to move the
@@ -234,10 +258,11 @@ For each daily slice:
 4. Record the new statement and function baseline in this document.
 5. Confirm Build, Test, Lint, and Security workflows are green on `main`.
 
-After 20%, 25%, or 30% is stable locally and on `main`, raise Codecov's project
-target to that value in a separate commit. Never lower the target or exclude
-meaningful production code to make a gate pass. Keep patch coverage at 80% so
-new and changed behavior remains well tested throughout the campaign.
+After 20%, 25%, 30%, or 35% is stable locally and on `main`, raise Codecov's
+project target to that value in a separate commit. Never lower the target or
+exclude meaningful production code to make a gate pass. Keep patch coverage
+at 80% so new and changed behavior remains well tested throughout the
+campaign.
 
 ## Long-Term Milestones
 

@@ -1,6 +1,6 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-11
 
 **Current milestone**: v0.15.0 at 40% statement coverage
 
@@ -25,8 +25,12 @@
 ## Next — v0.15.0 at 40%
 
 The next minor release is tied to the 40% statement-coverage milestone. The
-v0.14.0 baseline is 30.18% (`8,307 / 27,529`). Recalculate the exact count
-whenever production code changes.
+campaign has advanced from the v0.14.0 baseline of 30.18% (`8,307 / 27,529`)
+to the Day 8 checkpoint of 35.04% (`9,647 / 27,531`). Recalculate the exact
+count whenever production code changes.
+
+- [x] Reach 35% and raise the Codecov project ratchet to 35%.
+- [ ] Reach 40% and prepare v0.15.0.
 
 Primary targets:
 

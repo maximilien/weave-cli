@@ -1,6 +1,6 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-09-10
+**Last updated**: 2026-09-11
 
 **Current release**: v0.14.0
 
@@ -44,6 +44,8 @@ details.
 ## v0.15.0 — 40% Coverage
 
 **Target**: 40% statement coverage
+
+**Progress**: 35.04% (`9,647 / 27,531`) after Day 8
 
 - Deepen core orchestration coverage in `pkg/agents`, `pkg/config`,
   `pkg/pipeline`, and `pkg/stack`.

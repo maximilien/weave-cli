@@ -1,8 +1,8 @@
 # Weave CLI Planning Documents
 
-**Current status**: v0.14.0 released; working toward v0.15.0 at 40% coverage
+**Current status**: 35.04% coverage; working toward v0.15.0 at 40%
 
-**Last updated**: September 10, 2026
+**Last updated**: September 11, 2026
 
 ---
 
@@ -10,7 +10,8 @@
 
 ### 1. v0.15.0 coverage campaign
 
-- Raise statement coverage from the v0.14.0 baseline of 30.18% to 40%.
+- Raise statement coverage from the v0.14.0 baseline of 30.18% to 40%; the
+  Day 8 checkpoint is 35.04%.
 - Deepen core orchestration and low-coverage adapter protocols.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 
