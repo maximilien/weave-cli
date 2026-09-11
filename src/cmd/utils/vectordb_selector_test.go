@@ -55,8 +55,7 @@ func allVectorDBConfig() *config.Config {
 }
 
 func TestGetSelectedVectorDBs(t *testing.T) {
-	t.Setenv("SUPABASE_DATABASE_URL", "")
-	t.Setenv("SUPABASE_DATABASE_KEY", "")
+	clearVectorDBEnvironment(t)
 	cfg := allVectorDBConfig()
 
 	selection, err := GetSelectedVectorDBs(newVectorDBSelectionCommand(t), cfg)
