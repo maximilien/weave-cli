@@ -50,20 +50,24 @@ Examples:
   weave serve --metrics-port 9090 --log-format json --log-file /var/log/weave.log
 
 The server will gracefully shut down on SIGINT/SIGTERM signals.`,
-	Run: runServe,
+	RunE: runServe,
 }
 
 func init() {
 	ServeCmd.Flags().IntVar(&metricsPort, "metrics-port", 9090, "port for metrics and health endpoints")
 }
 
-func runServe(cmd *cobra.Command, args []string) {
+func runServe(cmd *cobra.Command, args []string) error {
+	return serveUntilSignal(metricsPort, nil)
+}
+
+func serveUntilSignal(port int, sigChan chan os.Signal) error {
 	logging.Info("Starting Weave metrics server...")
 	logging.Info("Version: %s", version.Get().Version)
 
 	// Create server
 	srv := server.New(&server.Config{
-		Port:         metricsPort,
+		Port:         port,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	})
@@ -82,20 +86,22 @@ func runServe(cmd *cobra.Command, args []string) {
 
 	// Start server
 	if err := srv.Start(); err != nil {
-		logging.Error("Failed to start metrics server: %v", err)
-		os.Exit(1)
+		return err
 	}
 
-	logging.Info("✅ Metrics server running on :%d", metricsPort)
-	logging.Info("   • Metrics:  http://localhost:%d/metrics", metricsPort)
-	logging.Info("   • Health:   http://localhost:%d/healthz", metricsPort)
-	logging.Info("   • Ready:    http://localhost:%d/readyz", metricsPort)
+	logging.Info("✅ Metrics server running on :%d", port)
+	logging.Info("   • Metrics:  http://localhost:%d/metrics", port)
+	logging.Info("   • Health:   http://localhost:%d/healthz", port)
+	logging.Info("   • Ready:    http://localhost:%d/readyz", port)
 	logging.Info("")
 	logging.Info("Press Ctrl+C to stop")
 
 	// Wait for interrupt signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	if sigChan == nil {
+		sigChan = make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		defer signal.Stop(sigChan)
+	}
 
 	<-sigChan
 
@@ -107,9 +113,9 @@ func runServe(cmd *cobra.Command, args []string) {
 	defer cancel()
 
 	if err := srv.Stop(ctx); err != nil {
-		logging.Error("Error during shutdown: %v", err)
-		os.Exit(1)
+		return err
 	}
 
 	logging.Info("Server stopped")
+	return nil
 }
