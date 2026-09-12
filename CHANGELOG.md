@@ -12,11 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added isolated coverage for pipeline and serve command boundaries, document
   display and aggregation, schema conversion and export, vector database
   selection, and batch-processing utilities.
+- Added loopback protocol coverage for OpenSearch and Elasticsearch collection,
+  document, bulk, schema, health, and query behavior.
+- Added agent output, report generation and fallback, Bash command-safety, and
+  progress-buffer coverage.
 
 ### Changed
 
-- Raised statement coverage from 30.18% to 35.04% and the Codecov project
-  ratchet from 30% to 35% on the path to v0.15.0 at 40%.
+- Raised statement coverage from 30.18% to 38.22% and the Codecov project
+  ratchet from 30% to 38% on the path to v0.15.0 at 40%.
 - Removed duplicate native OCR library flags from local lint, build, and test
   scripts so macOS link steps no longer emit duplicate-library warnings.
 - Changed `weave serve` startup and shutdown failures to propagate through

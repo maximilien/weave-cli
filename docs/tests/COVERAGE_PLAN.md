@@ -29,20 +29,21 @@ raise the percentage.
 ## Near-Term Ratchet
 
 The first coverage campaign began on 2026-09-05. Its targets were **20%**,
-**25%**, and **30%** statement coverage. The v0.15.0 campaign adds a **35%**
-checkpoint before **40%**; these milestones do not replace the long-term 80%
-goal.
+**25%**, and **30%** statement coverage. The v0.15.0 campaign adds **35%** and
+**38%** checkpoints before **40%**; these milestones do not replace the
+long-term 80% goal.
 
-At the end of Day 8, the current source count makes these approximate
+At the end of Day 9, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 8 |
+| Target | Covered statements needed | Remaining after Day 9 |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
 | 30% | 8,259 | Achieved (+48) |
 | 35% | 9,636 | Achieved (+11) |
-| 40% | 11,013 | 1,366 |
+| 38% | 10,462 | Achieved (+61) |
+| 40% | 11,013 | 490 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -236,12 +237,31 @@ code.
   supplies the libraries, eliminating duplicate-library linker warnings.
 - The Codecov project target advances to 35%; patch coverage remains 80%.
 
-### Path from 35.04% to 40%
+### Day 9 — Adapter Protocols and Agent Orchestration (2026-09-12)
 
-1. Add deterministic protocol coverage to OpenSearch and Elasticsearch.
-2. Deepen orchestration and failure coverage in `pkg/agents`, `pkg/pipeline`,
-   and `pkg/stack`.
-3. Cover low-risk command helpers in backup, collection, and configuration.
+- Add deterministic protocol coverage to OpenSearch and Elasticsearch.
+- Deepen output, reporting, and command-safety coverage in `pkg/agents`.
+- Exit target: reach and stabilize 38% overall.
+
+#### Day 9 Results
+
+- Statements/lines: **38.22%** (`10,523 / 27,531`), an increase of 3.18
+  percentage points and 876 covered statements from Day 8.
+- Functions exercised: **58.37%** (`1,234 / 2,114`), an increase of 4.87
+  percentage points and 103 exercised functions from Day 8.
+- Raised the OpenSearch adapter from 8.3% to 69.7% and the Elasticsearch
+  adapter from 10.3% to 73.3% with loopback protocol tests for collection,
+  document, bulk, schema, health, and query behavior.
+- Raised `pkg/agents` from 38.4% to 62.1% with output formatting, report
+  generation and fallback, Bash command validation, and progress-buffer tests.
+- Tests require no credentials or live database services. The Codecov project
+  target advances to 38%; patch coverage remains 80%.
+
+### Path from 38.22% to 40%
+
+1. Deepen orchestration and failure coverage in `pkg/pipeline` and `pkg/stack`.
+2. Cover low-risk command helpers in backup, collection, and configuration.
+3. Continue deterministic protocol coverage for the lowest database adapters.
 
 Recalculate the remaining statement count after every slice. Prefer behavior
 and failure modes that protect users over tests written only to move the
@@ -258,11 +278,10 @@ For each daily slice:
 4. Record the new statement and function baseline in this document.
 5. Confirm Build, Test, Lint, and Security workflows are green on `main`.
 
-After 20%, 25%, 30%, or 35% is stable locally and on `main`, raise Codecov's
+After an achieved checkpoint is stable locally and on `main`, raise Codecov's
 project target to that value in a separate commit. Never lower the target or
-exclude meaningful production code to make a gate pass. Keep patch coverage
-at 80% so new and changed behavior remains well tested throughout the
-campaign.
+exclude meaningful production code to make a gate pass. Keep patch coverage at
+80% so new and changed behavior remains well tested throughout the campaign.
 
 ## Long-Term Milestones
 

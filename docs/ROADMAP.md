@@ -1,6 +1,6 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-09-11
+**Last updated**: 2026-09-12
 
 **Current release**: v0.14.0
 
@@ -45,13 +45,14 @@ details.
 
 **Target**: 40% statement coverage
 
-**Progress**: 35.04% (`9,647 / 27,531`) after Day 8
+**Progress**: 38.22% (`10,523 / 27,531`) after Day 9
 
 - Deepen core orchestration coverage in `pkg/agents`, `pkg/config`,
   `pkg/pipeline`, and `pkg/stack`.
 - Exercise cancellation, retries, pagination, and partial-failure behavior
   across service boundaries.
 - Raise supported database adapters toward a consistent package-level floor.
+- Reach 40%, run the release gate, and prepare v0.15.0 from the green SHA.
 
 ## v1.0.0 — Production Stability
 
