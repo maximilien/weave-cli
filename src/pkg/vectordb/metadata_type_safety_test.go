@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 // TestMetadataTypeSafety_VarCharMetadata tests that VDB adapters handle
@@ -23,6 +22,7 @@ func TestMetadataTypeSafety_VarCharMetadata(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	_ = ctx
 
 	// Test document with metadata that might be stored as VARCHAR
 	testDoc := &Document{
