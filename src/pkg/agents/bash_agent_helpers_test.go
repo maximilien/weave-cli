@@ -4,9 +4,74 @@
 package agents
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestBashAgentExecuteOutcomes(t *testing.T) {
+	agent := NewBashAgent()
+	if result, err := agent.Execute(context.Background(), "invalid"); err == nil || result != nil {
+		t.Fatalf("Execute(invalid) = %#v, %v", result, err)
+	}
+
+	result, err := agent.Execute(context.Background(), &BashCommand{Command: "echo", Args: []string{"hello"}})
+	bashResult, ok := result.(*BashResult)
+	if err != nil || !ok || !bashResult.Success || strings.TrimSpace(bashResult.Stdout) != "hello" || bashResult.ExitCode != 0 {
+		t.Fatalf("Execute(echo) = %#v, %v", result, err)
+	}
+
+	result, err = agent.Execute(context.Background(), &BashCommand{Command: "pwd", WorkingDir: t.TempDir()})
+	bashResult = result.(*BashResult)
+	if err != nil || !bashResult.Success || strings.TrimSpace(bashResult.Stdout) == "" {
+		t.Fatalf("Execute(pwd) = %#v, %v", result, err)
+	}
+
+	agent.allowedCommands = append(agent.allowedCommands, "env")
+	result, err = agent.Execute(context.Background(), &BashCommand{Command: "env", Environment: map[string]string{"WEAVE_DAY": "10"}})
+	bashResult = result.(*BashResult)
+	if err != nil || !strings.Contains(bashResult.Stdout, "WEAVE_DAY=10") {
+		t.Fatalf("Execute(env) = %#v, %v", result, err)
+	}
+
+	result, err = agent.Execute(context.Background(), &BashCommand{Command: "which", Args: []string{"weave-command-that-does-not-exist"}})
+	bashResult = result.(*BashResult)
+	if err != nil || bashResult.Success || bashResult.ExitCode == 0 {
+		t.Fatalf("Execute(which missing) = %#v, %v", result, err)
+	}
+
+	inputPath := filepath.Join(t.TempDir(), "confirmation.txt")
+	if err := os.WriteFile(inputPath, []byte("yes\n"), 0o600); err != nil {
+		t.Fatalf("WriteFile(confirmation): %v", err)
+	}
+	input, err := os.Open(inputPath)
+	if err != nil {
+		t.Fatalf("Open(confirmation): %v", err)
+	}
+	defer input.Close()
+	originalStdin := os.Stdin
+	os.Stdin = input
+	t.Cleanup(func() { os.Stdin = originalStdin })
+	agent.SetOutputAgent(NewOutputAgent(OutputConfig{NoColor: true}))
+	result, err = agent.Execute(context.Background(), &BashCommand{Command: "echo shell | tr a-z A-Z"})
+	bashResult = result.(*BashResult)
+	if err != nil || !bashResult.Success || strings.TrimSpace(bashResult.Stdout) != "SHELL" {
+		t.Fatalf("Execute(shell) = %#v, %v", result, err)
+	}
+
+	tailFile := filepath.Join(t.TempDir(), "tail.txt")
+	if err := os.WriteFile(tailFile, []byte("line\n"), 0o600); err != nil {
+		t.Fatalf("WriteFile(tail): %v", err)
+	}
+	result, err = agent.Execute(context.Background(), &BashCommand{Command: "tail", Args: []string{"-f", tailFile}, Timeout: 20 * time.Millisecond})
+	bashResult = result.(*BashResult)
+	if err != nil || bashResult.Success {
+		t.Fatalf("Execute(timeout) = %#v, %v", result, err)
+	}
+}
 
 func TestBashAgentCommandValidation(t *testing.T) {
 	agent := NewBashAgent()
