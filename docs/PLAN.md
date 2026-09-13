@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-12
+**Last updated**: 2026-09-13
 
-**Current milestone**: v0.15.0 at 40% statement coverage
+**Current milestone**: validate and publish v0.15.0
 
 ## Completed — v0.13.0
 
@@ -22,18 +22,19 @@
 - [x] Cover the agents, embeddings, MCP, stack, and VDB command boundaries.
 - [x] Keep lint, build, test, and security gates green.
 
-## Next — v0.15.0 at 40%
+## Release Candidate — v0.15.0 at 40%
 
 The next minor release is tied to the 40% statement-coverage milestone. The
-campaign has advanced from the v0.14.0 baseline of 30.18% (`8,307 / 27,529`)
-to the Day 9 checkpoint of 38.22% (`10,523 / 27,531`). Recalculate the exact
-count whenever production code changes.
+campaign advanced from the v0.14.0 baseline of 30.18% (`8,307 / 27,529`) to
+40.06% (`11,029 / 27,531`) on Day 10.
 
 - [x] Reach 35% and raise the Codecov project ratchet to 35%.
 - [x] Reach 38% and raise the Codecov project ratchet to 38%.
-- [ ] Reach 40% and prepare v0.15.0.
+- [x] Reach 40% and prepare v0.15.0.
+- [ ] Confirm Build, Test, Lint, and Security on the release commit.
+- [ ] Tag v0.15.0 and verify release artifacts and checksums.
 
-Primary targets:
+Completed targets:
 
 1. Cover core orchestration happy paths and partial failures.
 2. Add deterministic cancellation, retry, pagination, and timeout tests.

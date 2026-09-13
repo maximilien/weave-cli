@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-09-13
+
 ### Added
 
 - Added isolated coverage for pipeline and serve command boundaries, document
@@ -16,11 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document, bulk, schema, health, and query behavior.
 - Added agent output, report generation and fallback, Bash command-safety, and
   progress-buffer coverage.
+- Added deterministic pipeline coverage for concurrent text, Markdown, JSON,
+  and YAML processing, resume and dry-run behavior, batching, and failures.
+- Added query, planning, evaluation, chunking, agent configuration, and custom
+  agent loader/registry lifecycle coverage.
 
 ### Changed
 
-- Raised statement coverage from 30.18% to 38.22% and the Codecov project
-  ratchet from 30% to 38% on the path to v0.15.0 at 40%.
+- Raised statement coverage from 30.18% to 40.06% and the Codecov project
+  ratchet from 30% to 40%.
 - Removed duplicate native OCR library flags from local lint, build, and test
   scripts so macOS link steps no longer emit duplicate-library warnings.
 - Changed `weave serve` startup and shutdown failures to propagate through

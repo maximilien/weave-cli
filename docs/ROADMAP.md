@@ -1,10 +1,10 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-09-12
+**Last updated**: 2026-09-13
 
 **Current release**: v0.14.0
 
-**Next release**: v0.15.0
+**Next release**: v0.15.0 release candidate
 
 This roadmap tracks active release milestones. Historical plans and completed
 project notes live under [`archive/`](archive/); the detailed test campaign is
@@ -43,9 +43,9 @@ details.
 
 ## v0.15.0 — 40% Coverage
 
-**Target**: 40% statement coverage
+**Status**: Release candidate 2026-09-13
 
-**Progress**: 38.22% (`10,523 / 27,531`) after Day 9
+**Result**: 40.06% (`11,029 / 27,531`) after Day 10
 
 - Deepen core orchestration coverage in `pkg/agents`, `pkg/config`,
   `pkg/pipeline`, and `pkg/stack`.
@@ -53,6 +53,9 @@ details.
   across service boundaries.
 - Raise supported database adapters toward a consistent package-level floor.
 - Reach 40%, run the release gate, and prepare v0.15.0 from the green SHA.
+
+See [`releases/RELEASE_v0.15.0.md`](releases/RELEASE_v0.15.0.md) for release
+details.
 
 ## v1.0.0 — Production Stability
 
@@ -67,6 +70,8 @@ meaningful production code. A v1.0 release also requires:
 
 ## Release History
 
+- **v0.15.0** — 40% coverage milestone, adapter protocols, pipeline
+  processing, and agent orchestration coverage.
 - **v0.14.0** — 30% coverage milestone, command boundaries, and Weaviate
   protocol coverage.
 - **v0.13.0** — Go 1.26.6, dependency security updates, coverage reporting,

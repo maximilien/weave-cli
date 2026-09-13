@@ -33,17 +33,17 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 9, the current source count makes these approximate
+At the end of Day 10, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 9 |
+| Target | Covered statements needed | Remaining after Day 10 |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
 | 30% | 8,259 | Achieved (+48) |
 | 35% | 9,636 | Achieved (+11) |
 | 38% | 10,462 | Achieved (+61) |
-| 40% | 11,013 | 490 |
+| 40% | 11,013 | Achieved (+16) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -257,11 +257,37 @@ code.
 - Tests require no credentials or live database services. The Codecov project
   target advances to 38%; patch coverage remains 80%.
 
-### Path from 38.22% to 40%
+### Day 10 — Core Orchestration and 40% (2026-09-13)
 
-1. Deepen orchestration and failure coverage in `pkg/pipeline` and `pkg/stack`.
-2. Cover low-risk command helpers in backup, collection, and configuration.
-3. Continue deterministic protocol coverage for the lowest database adapters.
+- Cover concurrent pipeline processing, resume state, dry runs, batching, and
+  failure reporting.
+- Exercise query, planning, evaluation, Bash, chunking, configuration, loader,
+  and registry behavior in `pkg/agents`.
+- Exit target: reach and stabilize 40% overall for v0.15.0.
+
+#### Day 10 Results
+
+- Statements/lines: **40.06%** (`11,029 / 27,531`), an increase of 1.84
+  percentage points and 506 covered statements from Day 9.
+- Functions exercised: **61.68%** (`1,304 / 2,114`), an increase of 3.31
+  percentage points and 70 exercised functions from Day 9.
+- Raised `pkg/pipeline` from 20.9% to 84.9% with deterministic processing,
+  batching, resume, dry-run, progress, and failure-path tests.
+- Raised `pkg/agents` from 62.1% to 81.7% with reasoning-agent contracts,
+  safe Bash execution, chunking analysis, configuration resolution, and
+  loader/registry lifecycle tests.
+- Tests use temporary directories, fake HTTP transports, and recording clients;
+  none requires credentials or a live service.
+- The Codecov project target advances to 40%; patch coverage remains 80%.
+
+### Path from 40.06% to 80%
+
+1. Raise low-coverage command packages, beginning with backup, collection,
+   configuration, document, schema, and stats behavior.
+2. Continue deterministic protocol coverage for supported database adapters
+   below 50%.
+3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
+   around validation, cancellation, retries, and partial failures.
 
 Recalculate the remaining statement count after every slice. Prefer behavior
 and failure modes that protect users over tests written only to move the

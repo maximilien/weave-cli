@@ -1,24 +1,24 @@
 # Weave CLI Planning Documents
 
-**Current status**: 38.22% coverage; working toward v0.15.0 at 40%
+**Current status**: 40.06% coverage; v0.15.0 release candidate
 
-**Last updated**: September 12, 2026
+**Last updated**: September 13, 2026
 
 ---
 
 ## Current Priorities
 
-### 1. v0.15.0 coverage campaign
+### 1. v0.15.0 release validation
 
-- Raise statement coverage from the v0.14.0 baseline of 30.18% to 40%; the
-  Day 9 checkpoint is 38.22%.
-- Deepen core orchestration and low-coverage adapter protocols.
+- The campaign raised statement coverage from the v0.14.0 baseline of 30.18%
+  to 40.06% on Day 10.
+- Validate the release commit, tag v0.15.0, and verify published artifacts.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 
-### 2. v0.14.0 release follow-through
+### 2. Continue toward 80% coverage
 
-- v0.14.0 was published on September 10, 2026.
-- Verify cross-platform artifacts and checksums after publication.
+- Preserve the 40% project ratchet and 80% patch target.
+- Prioritize low-coverage commands and supported database adapters.
 
 ### 3. Phase 2 — Cloud deployments
 
@@ -66,4 +66,4 @@ Phase 1 plans and historical docs: `../archive/planning/`
 
 ---
 
-**Last updated**: September 12, 2026
+**Last updated**: September 13, 2026
