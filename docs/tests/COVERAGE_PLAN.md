@@ -43,7 +43,7 @@ requirements:
 | 30% | 8,259 | Achieved (+48) |
 | 35% | 9,636 | Achieved (+11) |
 | 38% | 10,462 | Achieved (+61) |
-| 40% | 11,013 | Achieved (+16) |
+| 40% | 11,013 | Achieved (+15) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -267,8 +267,8 @@ code.
 
 #### Day 10 Results
 
-- Statements/lines: **40.06%** (`11,029 / 27,531`), an increase of 1.84
-  percentage points and 506 covered statements from Day 9.
+- Statements/lines: **40.06%** (`11,028 / 27,531`), an increase of 1.84
+  percentage points and 505 covered statements from Day 9.
 - Functions exercised: **61.68%** (`1,304 / 2,114`), an increase of 3.31
   percentage points and 70 exercised functions from Day 9.
 - Raised `pkg/pipeline` from 20.9% to 84.9% with deterministic processing,

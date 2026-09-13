@@ -15,7 +15,7 @@ or configuration changes.
 
 ### Coverage and orchestration reliability
 
-- Statement coverage increased to **40.06%** (`11,029 / 27,531`).
+- Statement coverage increased to **40.06%** (`11,028 / 27,531`).
 - Function coverage increased to **61.68%** (`1,304 / 2,114`).
 - Codecov project coverage is ratcheted to 40%; patch coverage remains 80%.
 - `pkg/pipeline` reached 84.9% with concurrent multi-format processing, resume,

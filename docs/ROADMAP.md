@@ -45,7 +45,7 @@ details.
 
 **Status**: Release candidate 2026-09-13
 
-**Result**: 40.06% (`11,029 / 27,531`) after Day 10
+**Result**: 40.06% (`11,028 / 27,531`) after Day 10
 
 - Deepen core orchestration coverage in `pkg/agents`, `pkg/config`,
   `pkg/pipeline`, and `pkg/stack`.

@@ -26,7 +26,7 @@
 
 The next minor release is tied to the 40% statement-coverage milestone. The
 campaign advanced from the v0.14.0 baseline of 30.18% (`8,307 / 27,529`) to
-40.06% (`11,029 / 27,531`) on Day 10.
+40.06% (`11,028 / 27,531`) on Day 10.
 
 - [x] Reach 35% and raise the Codecov project ratchet to 35%.
 - [x] Reach 38% and raise the Codecov project ratchet to 38%.
