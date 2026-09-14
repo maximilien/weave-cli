@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-13
+**Last updated**: 2026-09-14
 
-**Current milestone**: validate and publish v0.15.0
+**Current milestone**: continue from 42% toward the 60% adapter milestone
 
 ## Completed — v0.13.0
 
@@ -22,7 +22,7 @@
 - [x] Cover the agents, embeddings, MCP, stack, and VDB command boundaries.
 - [x] Keep lint, build, test, and security gates green.
 
-## Release Candidate — v0.15.0 at 40%
+## Completed — v0.15.0 at 40%
 
 The next minor release is tied to the 40% statement-coverage milestone. The
 campaign advanced from the v0.14.0 baseline of 30.18% (`8,307 / 27,529`) to
@@ -31,8 +31,8 @@ campaign advanced from the v0.14.0 baseline of 30.18% (`8,307 / 27,529`) to
 - [x] Reach 35% and raise the Codecov project ratchet to 35%.
 - [x] Reach 38% and raise the Codecov project ratchet to 38%.
 - [x] Reach 40% and prepare v0.15.0.
-- [ ] Confirm Build, Test, Lint, and Security on the release commit.
-- [ ] Tag v0.15.0 and verify release artifacts and checksums.
+- [x] Confirm Build, Test, Lint, and Security on the release commit.
+- [x] Tag v0.15.0 and verify release artifacts and checksums.
 
 Completed targets:
 
@@ -40,6 +40,13 @@ Completed targets:
 2. Add deterministic cancellation, retry, pagination, and timeout tests.
 3. Establish a meaningful coverage floor across supported adapters.
 4. Consolidate shared fake-server fixtures where duplication emerges.
+
+## Active — Post-v0.15 Coverage Campaign
+
+- [x] Reach 42% on Day 11 and raise the Codecov project ratchet to 42%.
+- [ ] Reach the next stable checkpoint at 45%.
+- [ ] Bring every supported vector database adapter above 50% on the path to
+  the 60% project milestone.
 
 ## Continuous Workstreams
 

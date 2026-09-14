@@ -33,7 +33,7 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 10, the current source count makes these approximate
+At the end of Day 11, the current source count makes these approximate
 requirements:
 
 | Target | Covered statements needed | Remaining after Day 10 |
@@ -44,6 +44,7 @@ requirements:
 | 35% | 9,636 | Achieved (+11) |
 | 38% | 10,462 | Achieved (+61) |
 | 40% | 11,013 | Achieved (+15) |
+| 42% | 11,564 | Achieved (+22) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -280,7 +281,29 @@ code.
   none requires credentials or a live service.
 - The Codecov project target advances to 40%; patch coverage remains 80%.
 
-### Path from 40.06% to 80%
+### Day 11 — Validation and Reporting Boundaries (2026-09-14)
+
+- Cover configuration validation, environment-independent path precedence,
+  and LLM HTTP protocols.
+- Exercise backup inventory, OCR fallback, collection comparison, collection
+  statistics, and schema recommendation output.
+- Exit target: exceed 42% overall and ratchet the project threshold to 42%.
+
+#### Day 11 Results
+
+- Statements/lines: **42.08%** (`11,586 / 27,531`), an increase of 2.02
+  percentage points and 558 covered statements from Day 10.
+- Functions exercised: **64.29%** (`1,359 / 2,114`), an increase of 2.61
+  percentage points and 55 exercised functions from Day 10.
+- Raised `pkg/llm` from 37.2% to 86.7%, `pkg/config` from 35.2% to 46.0%,
+  `pkg/image` from 31.9% to 53.6%, `cmd/backup` from 7.9% to 32.0%,
+  `cmd/collection` from 8.0% to 18.2%, `cmd/stats` from 26.4% to 59.1%, and
+  `cmd/schema` from 24.2% to 74.2%.
+- Tests use fake HTTP transports, temporary directories, mock databases, and
+  captured output; none requires credentials or a live service.
+- The Codecov project target advances to 42%; patch coverage remains 80%.
+
+### Path from 42.08% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.

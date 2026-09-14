@@ -53,10 +53,10 @@ or configuration changes.
 - [x] `./build.sh`
 - [x] `./test.sh --coverage`
 - [x] No reachable `govulncheck` findings
-- [ ] Build, Test, Lint, and Security workflows green on the release commit
-- [ ] Release workflow builds Linux AMD64/ARM64, macOS AMD64/ARM64, and
+- [x] Build, Test, Lint, and Security workflows green on the release commit
+- [x] Release workflow builds Linux AMD64/ARM64, macOS AMD64/ARM64, and
   Windows AMD64 artifacts
-- [ ] Published checksums verified
+- [x] Published checksums verified
 
 ## Installation
 
