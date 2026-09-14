@@ -4,10 +4,50 @@
 package stats
 
 import (
+	"context"
+	"io"
+	"os"
+	"strings"
 	"testing"
 
+	"github.com/fatih/color"
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
+
+func captureStatsOutput(t *testing.T, run func()) string {
+	t.Helper()
+	oldStdout := os.Stdout
+	oldStderr := os.Stderr
+	oldColorOutput := color.Output
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = writer
+	os.Stderr = writer
+	color.Output = writer
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+		os.Stderr = oldStderr
+		color.Output = oldColorOutput
+	})
+	run()
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = oldStdout
+	os.Stderr = oldStderr
+	color.Output = oldColorOutput
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := reader.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
 
 func TestAnalyzeMetadata(t *testing.T) {
 	tests := []struct {
@@ -214,5 +254,75 @@ func TestMetadataTypes(t *testing.T) {
 		if boolStats.Type != "bool" {
 			t.Errorf("bool_field type should be 'bool', got '%s'", boolStats.Type)
 		}
+	}
+}
+
+func TestCollectStatsWithMockDatabase(t *testing.T) {
+	dbConfig := &config.VectorDBConfig{
+		Name:               "mock",
+		Type:               config.VectorDBTypeMock,
+		Enabled:            true,
+		SimulateEmbeddings: true,
+		EmbeddingDimension: 384,
+	}
+	stats, err := collectStats(context.Background(), dbConfig, "Documents", 100, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if stats.CollectionName != "Documents" || stats.VectorDB != "mock" || stats.DocumentCount != 0 || len(stats.Metadata) != 0 {
+		t.Fatalf("unexpected mock statistics: %#v", stats)
+	}
+
+	badConfig := &config.VectorDBConfig{Type: config.VectorDBType("unsupported")}
+	if _, err := collectStats(context.Background(), badConfig, "Documents", 100, 5); err == nil || !strings.Contains(err.Error(), "failed to create client") {
+		t.Fatalf("expected client creation error, got %v", err)
+	}
+}
+
+func TestDisplayStatsWithMetadata(t *testing.T) {
+	stats := &CollectionStats{
+		CollectionName: "Documents",
+		DocumentCount:  3,
+		VectorDB:       "mock",
+		Metadata: map[string]MetadataFieldStat{
+			"year": {
+				Type:         "int",
+				UniqueValues: 2,
+				TopValues:    []ValueCount{{Value: "2026", Count: 2}, {Value: "2025", Count: 1}},
+			},
+			"author": {
+				Type:         "string",
+				UniqueValues: 1,
+				TopValues:    []ValueCount{{Value: "Max", Count: 3}},
+			},
+		},
+	}
+	output := captureStatsOutput(t, func() { displayStats(stats, 5) })
+	for _, want := range []string{
+		"Collection Statistics: Documents",
+		"Collection: Documents",
+		"Vector DB: mock",
+		"Documents: 3",
+		"Metadata Fields (2 total)",
+		"author",
+		"Unique values: 1",
+		"Max (3 occurrences)",
+		"2026 (2 occurrences)",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("display output missing %q:\n%s", want, output)
+		}
+	}
+	if strings.Index(output, "author") > strings.Index(output, "year") {
+		t.Fatalf("metadata fields should be alphabetically sorted:\n%s", output)
+	}
+}
+
+func TestDisplayStatsWithoutMetadata(t *testing.T) {
+	output := captureStatsOutput(t, func() {
+		displayStats(&CollectionStats{CollectionName: "Empty", VectorDB: "mock"}, 5)
+	})
+	if !strings.Contains(output, "No metadata fields found") {
+		t.Fatalf("unexpected empty metadata output:\n%s", output)
 	}
 }
