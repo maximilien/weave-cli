@@ -42,39 +42,45 @@ func (c *Client) SearchSemantic(ctx context.Context, collectionName, query strin
 		return nil, fmt.Errorf("semantic search failed: %w", err)
 	}
 
-	// Convert results - Query returns groups for each query text
+	// Convert the first result group for our single query. The pinned Chroma
+	// SDK's ToRecordsGroups implementation is currently a stub, so use the
+	// populated result accessors directly.
 	var results []*vectordb.QueryResult
-	recordGroups := result.ToRecordsGroups()
-	if len(recordGroups) == 0 {
+	idGroups := result.GetIDGroups()
+	if len(idGroups) == 0 {
 		return results, nil
 	}
-	records := recordGroups[0] // First group for our single query
-	for _, record := range records {
+	documentGroups := result.GetDocumentsGroups()
+	metadataGroups := result.GetMetadatasGroups()
+	distanceGroups := result.GetDistancesGroups()
+
+	for i, id := range idGroups[0] {
 		qr := &vectordb.QueryResult{
 			Document: vectordb.Document{
-				ID: string(record.ID()),
+				ID: string(id),
 			},
+			Score: 1.0,
 		}
-		if record.Document() != nil {
-			qr.Document.Content = record.Document().ContentString()
+		if len(documentGroups) > 0 && i < len(documentGroups[0]) && documentGroups[0][i] != nil {
+			qr.Document.Content = documentGroups[0][i].ContentString()
+		}
+		if len(distanceGroups) > 0 && i < len(distanceGroups[0]) {
+			qr.Score = 1.0 / (1.0 + float64(distanceGroups[0][i]))
 		}
 
-		// Default score
-		qr.Score = 1.0
-
-		// Add metadata if available
-		if record.Metadata() != nil {
+		if len(metadataGroups) > 0 && i < len(metadataGroups[0]) && metadataGroups[0][i] != nil {
+			metadata := metadataGroups[0][i]
 			qr.Document.Metadata = make(map[string]interface{})
-			if v, ok := record.Metadata().GetString("url"); ok {
+			if v, ok := metadata.GetString("url"); ok {
 				qr.Document.URL = v
 			}
-			if v, ok := record.Metadata().GetString("image"); ok {
+			if v, ok := metadata.GetString("image"); ok {
 				qr.Document.Image = v
 			}
-			if v, ok := record.Metadata().GetString("filename"); ok {
+			if v, ok := metadata.GetString("filename"); ok {
 				qr.Document.Metadata["filename"] = v
 			}
-			if v, ok := record.Metadata().GetString("type"); ok {
+			if v, ok := metadata.GetString("type"); ok {
 				qr.Document.Metadata["type"] = v
 			}
 		}

@@ -31,29 +31,7 @@ func (c *Client) CreateDocument(ctx context.Context, collectionName string, docu
 		content = document.Text
 	}
 
-	// Prepare metadata map - filter out unsupported types
-	// Chroma only supports string, int, float, bool in metadata
-	metadataMap := make(map[string]interface{})
-	if document.Metadata != nil {
-		for k, v := range document.Metadata {
-			// Only include primitive types that Chroma supports
-			switch v.(type) {
-			case string, int, int32, int64, float32, float64, bool:
-				metadataMap[k] = v
-				// Skip arrays, slices, maps and other complex types
-			}
-		}
-	}
-	// Add standard fields to metadata
-	if document.URL != "" {
-		metadataMap["url"] = document.URL
-	}
-	if document.Image != "" {
-		metadataMap["image"] = document.Image
-	}
-
-	// Prepare metadata - ALWAYS provide it (even if empty) to keep array lengths consistent
-	metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
+	metadata, err := documentMetadata(document)
 	if err != nil {
 		return fmt.Errorf("Chroma: failed to create metadata: %w", err)
 	}
@@ -147,22 +125,7 @@ func (c *Client) UpdateDocument(ctx context.Context, collectionName string, docu
 		content = document.Text
 	}
 
-	// Prepare metadata map
-	metadataMap := make(map[string]interface{})
-	if document.Metadata != nil {
-		for k, v := range document.Metadata {
-			metadataMap[k] = v
-		}
-	}
-	if document.URL != "" {
-		metadataMap["url"] = document.URL
-	}
-	if document.Image != "" {
-		metadataMap["image"] = document.Image
-	}
-
-	// Prepare metadata - ALWAYS provide it (even if empty) to keep array lengths consistent
-	metadata, err := chroma.NewDocumentMetadataFromMap(metadataMap)
+	metadata, err := documentMetadata(document)
 	if err != nil {
 		return fmt.Errorf("Chroma: failed to create metadata: %w", err)
 	}
@@ -309,20 +272,10 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 		}
 		contents = append(contents, content)
 
-		// Prepare metadata map
-		metadataMap := make(map[string]interface{})
-		if doc.Metadata != nil {
-			for k, v := range doc.Metadata {
-				metadataMap[k] = v
-			}
+		metadata, err := documentMetadata(doc)
+		if err != nil {
+			return fmt.Errorf("Chroma: failed to create metadata for document %s: %w", doc.ID, err)
 		}
-		if doc.URL != "" {
-			metadataMap["url"] = doc.URL
-		}
-		if doc.Image != "" {
-			metadataMap["image"] = doc.Image
-		}
-		metadata, _ := chroma.NewDocumentMetadataFromMap(metadataMap)
 		metadatas = append(metadatas, metadata)
 	}
 
@@ -337,6 +290,25 @@ func (c *Client) CreateDocuments(ctx context.Context, collectionName string, doc
 	}
 
 	return nil
+}
+
+// documentMetadata converts the primitive metadata types supported by Chroma
+// and adds the standard URL and image fields used by the vectordb interface.
+func documentMetadata(document *vectordb.Document) (chroma.DocumentMetadata, error) {
+	metadataMap := make(map[string]interface{})
+	for key, value := range document.Metadata {
+		switch value.(type) {
+		case string, int, int32, int64, float32, float64, bool:
+			metadataMap[key] = value
+		}
+	}
+	if document.URL != "" {
+		metadataMap["url"] = document.URL
+	}
+	if document.Image != "" {
+		metadataMap["image"] = document.Image
+	}
+	return chroma.NewDocumentMetadataFromMap(metadataMap)
 }
 
 // DeleteDocuments deletes multiple documents by ID
