@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-14
+**Last updated**: 2026-09-15
 
-**Current milestone**: continue from 42% toward the 60% adapter milestone
+**Current milestone**: continue from 45% toward the 60% adapter milestone
 
 ## Completed — v0.13.0
 
@@ -44,7 +44,7 @@ Completed targets:
 ## Active — Post-v0.15 Coverage Campaign
 
 - [x] Reach 42% on Day 11 and raise the Codecov project ratchet to 42%.
-- [ ] Reach the next stable checkpoint at 45%.
+- [x] Reach 45% on Day 12 and raise the Codecov project ratchet to 45%.
 - [ ] Bring every supported vector database adapter above 50% on the path to
   the 60% project milestone.
 

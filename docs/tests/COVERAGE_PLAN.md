@@ -33,10 +33,10 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 11, the current source count makes these approximate
+At the end of Day 12, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Remaining after Day 10 |
+| Target | Covered statements needed | Day 12 status |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
@@ -45,6 +45,7 @@ requirements:
 | 38% | 10,462 | Achieved (+61) |
 | 40% | 11,013 | Achieved (+15) |
 | 42% | 11,564 | Achieved (+22) |
+| 45% | 12,385 | Achieved (+78) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -303,7 +304,30 @@ code.
   captured output; none requires credentials or a live service.
 - The Codecov project target advances to 42%; patch coverage remains 80%.
 
-### Path from 42.08% to 80%
+### Day 12 — Chroma Protocols and Configuration Paths (2026-09-15)
+
+- Add deterministic collection, document, batch, metadata, schema, and search
+  protocol coverage for Chroma.
+- Exercise configuration loading, environment defaults, schema merging, fix
+  application, command display, template, shell-completion, and sync paths.
+- Exit target: reach and stabilize 45% overall.
+
+#### Day 12 Results
+
+- Statements/lines: **45.29%** (`12,463 / 27,521`), an increase of 3.21
+  percentage points and 877 covered statements from Day 11.
+- Functions exercised: **66.86%** (`1,414 / 2,115`), an increase of 2.57
+  percentage points and 55 exercised functions from Day 11.
+- Raised the Chroma adapter from 10.6% to 81.9%, `pkg/config` from 46.0% to
+  60.8%, and `cmd/config` from 15.9% to 40.0%.
+- Fixed Chroma semantic result conversion for the pinned SDK and made
+  primitive metadata filtering consistent across create, update, and batch
+  writes.
+- Tests use loopback HTTP servers and temporary directories; none requires
+  credentials, developer home state, or a live service.
+- The Codecov project target advances to 45%; patch coverage remains 80%.
+
+### Path from 45.29% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
