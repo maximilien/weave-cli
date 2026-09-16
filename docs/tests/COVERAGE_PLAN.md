@@ -33,10 +33,10 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 12, the current source count makes these approximate
+At the end of Day 13, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 12 status |
+| Target | Covered statements needed | Day 13 status |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
@@ -46,6 +46,7 @@ requirements:
 | 40% | 11,013 | Achieved (+15) |
 | 42% | 11,564 | Achieved (+22) |
 | 45% | 12,385 | Achieved (+78) |
+| 46% | 12,660 | Achieved (+243) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -327,12 +328,33 @@ code.
   credentials, developer home state, or a live service.
 - The Codecov project target advances to 45%; patch coverage remains 80%.
 
-### Path from 45.29% to 80%
+### Day 13 — Redis and MongoDB Adapter Protocols (2026-09-16)
+
+- Exercise Redis collection, document, query, health, response conversion,
+  pipelining, and server-error paths through an in-process RESP fixture.
+- Exercise MongoDB collection, index, document, query, schema metadata,
+  cursor decoding, and command-error paths through the driver's mock wire
+  deployment.
+- Exit target: move both adapters above 50% and ratchet overall coverage.
+
+#### Day 13 Results
+
+- Statements/lines: **46.88%** (`12,903 / 27,521`), an increase of 1.59
+  percentage points and 440 covered statements from Day 12.
+- Functions exercised: **69.65%** (`1,473 / 2,115`), an increase of 2.79
+  percentage points and 59 exercised functions from Day 12.
+- Raised the Redis adapter from 13.7% to 70.4% and the MongoDB adapter from
+  10.9% to 59.4%.
+- Tests use in-memory protocol connections and the MongoDB driver's mock
+  deployment; none requires credentials or a live service.
+- The Codecov project target advances to 46%; patch coverage remains 80%.
+
+### Path from 46.88% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
-2. Continue deterministic protocol coverage for supported database adapters
-   below 50%.
+2. Continue deterministic protocol coverage for Pinecone, Milvus, Neo4j,
+   Qdrant, Supabase, the mock adapter, and Weaviate, which remain below 50%.
 3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
    around validation, cancellation, retries, and partial failures.
 

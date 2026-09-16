@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-15
+**Last updated**: 2026-09-16
 
-**Current milestone**: continue from 45% toward the 60% adapter milestone
+**Current milestone**: continue from 46.88% toward the 60% adapter milestone
 
 ## Completed — v0.13.0
 
@@ -45,6 +45,8 @@ Completed targets:
 
 - [x] Reach 42% on Day 11 and raise the Codecov project ratchet to 42%.
 - [x] Reach 45% on Day 12 and raise the Codecov project ratchet to 45%.
+- [x] Raise Redis and MongoDB above 50% on Day 13 and ratchet project coverage
+  to 46%.
 - [ ] Bring every supported vector database adapter above 50% on the path to
   the 60% project milestone.
 
