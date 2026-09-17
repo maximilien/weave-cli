@@ -1,6 +1,6 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-09-16
+**Last updated**: 2026-09-17
 
 **Current release**: v0.15.0
 
@@ -59,9 +59,9 @@ details.
 
 ## Post-v0.15 Coverage Campaign
 
-**Current result**: 46.88% (`12,903 / 27,521`) after Day 13
+**Current result**: 50.06% (`13,777 / 27,521`) after Day 14
 
-- Preserve the 46% project ratchet and 80% patch target.
+- Preserve the 50% project ratchet and 80% patch target.
 - Continue command boundaries and database adapters toward the 60% checkpoint.
 - Bring every supported vector database adapter above 50% before the 60%
   project milestone.

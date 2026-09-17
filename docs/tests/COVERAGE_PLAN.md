@@ -33,10 +33,10 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 13, the current source count makes these approximate
+At the end of Day 14, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 13 status |
+| Target | Covered statements needed | Day 14 status |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
@@ -47,6 +47,7 @@ requirements:
 | 42% | 11,564 | Achieved (+22) |
 | 45% | 12,385 | Achieved (+78) |
 | 46% | 12,660 | Achieved (+243) |
+| 50% | 13,761 | Achieved (+16) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -349,12 +350,34 @@ code.
   deployment; none requires credentials or a live service.
 - The Codecov project target advances to 46%; patch coverage remains 80%.
 
-### Path from 46.88% to 80%
+### Day 14 — Adapter Protocol Expansion and 50% (2026-09-17)
+
+- Exercise Milvus collection, document, query, schema, health, conversion,
+  and failure paths through an in-process SDK fixture.
+- Exercise Qdrant collection, point, scroll, search, filter, conversion, and
+  health paths through deterministic generated-client implementations.
+- Cover the mock adapter lifecycle and Pinecone control plane without
+  credentials or live services.
+- Exit target: reach and stabilize 50% overall.
+
+#### Day 14 Results
+
+- Statements/lines: **50.06%** (`13,777 / 27,521`), an increase of 3.18
+  percentage points and 874 covered statements from Day 13.
+- Functions exercised: **73.66%** (`1,558 / 2,115`), an increase of 4.01
+  percentage points and 85 exercised functions from Day 13.
+- Raised Milvus from 11.1% to 61.3%, the mock adapter from 24.1% to 92.9%,
+  Qdrant from 20.6% to 68.4%, and Pinecone from 9.6% to 35.6%.
+- Tests use in-process SDK clients, generated gRPC client interfaces, and an
+  in-memory HTTP transport; none requires credentials or a live service.
+- The Codecov project target advances to 50%; patch coverage remains 80%.
+
+### Path from 50.06% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
-2. Continue deterministic protocol coverage for Pinecone, Milvus, Neo4j,
-   Qdrant, Supabase, the mock adapter, and Weaviate, which remain below 50%.
+2. Continue deterministic protocol coverage for Pinecone, Neo4j, Supabase,
+   and Weaviate, which remain below 50%.
 3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
    around validation, cancellation, retries, and partial failures.
 
