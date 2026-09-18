@@ -1,8 +1,8 @@
 # Weave CLI Planning Documents
 
-**Current status**: 50.06% coverage; v0.15.0 released
+**Current status**: 54.32% coverage; adapter floor complete; v0.15.0 released
 
-**Last updated**: September 17, 2026
+**Last updated**: September 18, 2026
 
 ---
 
@@ -11,15 +11,15 @@
 ### 1. Continue toward 80% coverage
 
 - The campaign raised statement coverage from the v0.14.0 baseline of 30.18%
-  to 40.06% for v0.15.0 and 50.06% on Day 14.
-- Preserve the 50% project ratchet and 80% patch target.
-- Continue toward 60%, prioritizing adapters that remain below 50%.
+  to 40.06% for v0.15.0 and 54.32% on Day 15.
+- Preserve the 54% project ratchet and 80% patch target.
+- Continue toward 60%, prioritizing command and core-package gaps.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 
 ### 2. Adapter consistency
 
-- Bring every supported vector database adapter above 50% before the 60%
-  overall milestone.
+- Preserve the completed 50% floor across every supported vector database
+  adapter while deepening error and pagination coverage.
 
 ### 3. Phase 2 — Cloud deployments
 
@@ -67,4 +67,4 @@ Phase 1 plans and historical docs: `../archive/planning/`
 
 ---
 
-**Last updated**: September 14, 2026
+**Last updated**: September 18, 2026

@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-17
+**Last updated**: 2026-09-18
 
-**Current milestone**: continue from 50.06% toward the 60% adapter milestone
+**Current milestone**: continue from 54.32% toward 60% with the adapter floor complete
 
 ## Completed — v0.13.0
 
@@ -49,8 +49,9 @@ Completed targets:
   to 46%.
 - [x] Reach 50% on Day 14 by raising Milvus, the mock adapter, and Qdrant
   above 50% and adding Pinecone control-plane coverage.
-- [ ] Bring every supported vector database adapter above 50% on the path to
-  the 60% project milestone.
+- [x] Bring every supported vector database adapter above 50% on Day 15 by
+  covering Supabase, Neo4j, Weaviate, and the Pinecone data plane.
+- [ ] Reach and stabilize 60% statement coverage.
 
 ## Continuous Workstreams
 

@@ -33,10 +33,10 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 14, the current source count makes these approximate
+At the end of Day 15, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 14 status |
+| Target | Covered statements needed | Day 15 status |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
@@ -48,6 +48,7 @@ requirements:
 | 45% | 12,385 | Achieved (+78) |
 | 46% | 12,660 | Achieved (+243) |
 | 50% | 13,761 | Achieved (+16) |
+| 54% | 14,872 | Achieved (+88) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -372,12 +373,36 @@ code.
   in-memory HTTP transport; none requires credentials or a live service.
 - The Codecov project target advances to 50%; patch coverage remains 80%.
 
-### Path from 50.06% to 80%
+### Day 15 — Complete the Adapter Floor (2026-09-18)
+
+- Exercise Supabase SQL collection, document, query, schema, transaction, and
+  failure paths with a deterministic `database/sql` driver.
+- Exercise Neo4j Cypher behavior through a narrow query executor boundary.
+- Cover Weaviate adapter query, fallback, collection, schema, validation, and
+  error-conversion paths through its fake HTTP protocol server.
+- Exercise Pinecone document and metadata operations through a narrow data
+  plane boundary over the public SDK types.
+- Exit target: bring every supported vector database adapter above 50%.
+
+#### Day 15 Results
+
+- Statements/lines: **54.32%** (`14,960 / 27,540`), an increase of 4.26
+  percentage points and 1,183 covered statements from Day 14.
+- Functions exercised: **77.21%** (`1,636 / 2,119`), an increase of 3.55
+  percentage points and 78 exercised functions from Day 14.
+- Raised Supabase from 21.4% to 80.7%, Neo4j from 15.1% to 83.0%, Weaviate
+  from 44.7% to 52.9%, and Pinecone from 35.6% to 70.8%.
+- Every supported vector database adapter now exceeds 50% statement coverage.
+- Tests use deterministic SQL, HTTP, SDK, and query-executor fixtures; none
+  requires credentials or a live service.
+- The Codecov project target advances to 54%; patch coverage remains 80%.
+
+### Path from 54.32% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
-2. Continue deterministic protocol coverage for Pinecone, Neo4j, Supabase,
-   and Weaviate, which remain below 50%.
+2. Deepen adapter error and pagination coverage while preserving the new 50%
+   package floor.
 3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
    around validation, cancellation, retries, and partial failures.
 
