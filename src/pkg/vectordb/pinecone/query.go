@@ -16,7 +16,8 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeQuery))
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
@@ -84,12 +85,12 @@ func (a *Adapter) SearchSemantic(ctx context.Context, collectionName, query stri
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to index: %w", err)
 	}

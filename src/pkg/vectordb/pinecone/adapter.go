@@ -19,6 +19,7 @@ import (
 // Adapter wraps the Pinecone client to implement the vectordb.VectorDBClient interface
 type Adapter struct {
 	client    *pinecone.Client
+	executor  vectorExecutor
 	config    *vectordb.Config
 	llmClient *llm.OpenAIClient
 	apiKey    string
@@ -63,11 +64,49 @@ func NewAdapter(config *vectordb.Config) (*Adapter, error) {
 
 	return &Adapter{
 		client:    pc,
+		executor:  sdkVectorExecutor{client: pc},
 		config:    config,
 		llmClient: llmClient,
 		apiKey:    apiKey,
 		host:      host,
 	}, nil
+}
+
+type vectorExecutor interface {
+	DescribeIndex(context.Context, string) (*pinecone.Index, error)
+	Index(pinecone.NewIndexConnParams) (vectorIndex, error)
+}
+
+type vectorIndex interface {
+	Close() error
+	UpsertVectors(context.Context, []*pinecone.Vector) (uint32, error)
+	FetchVectors(context.Context, []string) (*pinecone.FetchVectorsResponse, error)
+	ListVectors(context.Context, *pinecone.ListVectorsRequest) (*pinecone.ListVectorsResponse, error)
+	QueryByVectorValues(context.Context, *pinecone.QueryByVectorValuesRequest) (*pinecone.QueryVectorsResponse, error)
+	DeleteVectorsById(context.Context, []string) error
+	DeleteVectorsByFilter(context.Context, *pinecone.MetadataFilter) error
+}
+
+type sdkVectorExecutor struct {
+	client *pinecone.Client
+}
+
+func (e sdkVectorExecutor) DescribeIndex(ctx context.Context, name string) (*pinecone.Index, error) {
+	return e.client.DescribeIndex(ctx, name)
+}
+
+func (e sdkVectorExecutor) Index(params pinecone.NewIndexConnParams) (vectorIndex, error) {
+	return e.client.Index(params)
+}
+
+func (a *Adapter) vectorExecutor() vectorExecutor {
+	if a.executor != nil {
+		return a.executor
+	}
+	if a.client == nil {
+		return nil
+	}
+	return sdkVectorExecutor{client: a.client}
 }
 
 // Health checks the health of the Pinecone connection

@@ -17,17 +17,18 @@ func (a *Adapter) CreateDocument(ctx context.Context, collectionName string, doc
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return fmt.Errorf("failed to connect to index: %w", err)
 	}
@@ -105,17 +106,18 @@ func (a *Adapter) GetDocument(ctx context.Context, collectionName, id string) (*
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to index: %w", err)
 	}
@@ -171,17 +173,18 @@ func (a *Adapter) DeleteDocument(ctx context.Context, collectionName, id string)
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return fmt.Errorf("failed to connect to index: %w", err)
 	}
@@ -201,17 +204,18 @@ func (a *Adapter) ListDocuments(ctx context.Context, collectionName string, limi
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return nil, fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return nil, fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to index: %w", err)
 	}
@@ -280,7 +284,8 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
 
@@ -289,12 +294,12 @@ func (a *Adapter) CreateDocuments(ctx context.Context, collectionName string, do
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return fmt.Errorf("failed to connect to index: %w", err)
 	}
@@ -373,7 +378,8 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, id
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeoutFor(vectordb.OperationTypeBulk))
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
 
@@ -382,12 +388,12 @@ func (a *Adapter) DeleteDocuments(ctx context.Context, collectionName string, id
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return fmt.Errorf("failed to connect to index: %w", err)
 	}
@@ -407,17 +413,18 @@ func (a *Adapter) DeleteDocumentsByMetadata(ctx context.Context, collectionName 
 	ctx, cancel := context.WithTimeout(ctx, a.getTimeout())
 	defer cancel()
 
-	if a.client == nil {
+	executor := a.vectorExecutor()
+	if executor == nil {
 		return fmt.Errorf("Pinecone client not initialized")
 	}
 
 	// Get index connection
-	idx, err := a.client.DescribeIndex(ctx, collectionName)
+	idx, err := executor.DescribeIndex(ctx, collectionName)
 	if err != nil {
 		return fmt.Errorf("failed to describe index: %w", err)
 	}
 
-	idxConn, err := a.client.Index(pinecone.NewIndexConnParams{Host: idx.Host})
+	idxConn, err := executor.Index(pinecone.NewIndexConnParams{Host: idx.Host})
 	if err != nil {
 		return fmt.Errorf("failed to connect to index: %w", err)
 	}
