@@ -16,8 +16,26 @@ import (
 
 // Client wraps the Neo4j driver to provide vector database operations
 type Client struct {
+	driver   neo4j.DriverWithContext
+	executor cypherExecutor
+	config   *Config
+}
+
+// cypherExecutor separates adapter operations from the concrete Neo4j query API.
+// The production implementation delegates to neo4j.ExecuteQuery.
+type cypherExecutor interface {
+	ExecuteQuery(ctx context.Context, query string, params map[string]interface{}, database string) (*neo4j.EagerResult, error)
+}
+
+type driverCypherExecutor struct {
 	driver neo4j.DriverWithContext
-	config *Config
+}
+
+func (e *driverCypherExecutor) ExecuteQuery(ctx context.Context, query string, params map[string]interface{}, database string) (*neo4j.EagerResult, error) {
+	return neo4j.ExecuteQuery(ctx, e.driver, query, params,
+		neo4j.EagerResultTransformer,
+		neo4j.ExecuteQueryWithDatabase(database),
+	)
 }
 
 // NewClient creates a new Neo4j client
@@ -56,8 +74,9 @@ func NewClient(config *Config) (*Client, error) {
 	}
 
 	return &Client{
-		driver: driver,
-		config: config,
+		driver:   driver,
+		executor: &driverCypherExecutor{driver: driver},
+		config:   config,
 	}, nil
 }
 
@@ -107,10 +126,11 @@ func (c *Client) executeQuery(ctx context.Context, query string, params map[stri
 	ctx, cancel := context.WithTimeout(ctx, c.getTimeout())
 	defer cancel()
 
-	result, err := neo4j.ExecuteQuery(ctx, c.driver, query, params,
-		neo4j.EagerResultTransformer,
-		neo4j.ExecuteQueryWithDatabase(c.config.Database),
-	)
+	executor := c.executor
+	if executor == nil {
+		executor = &driverCypherExecutor{driver: c.driver}
+	}
+	result, err := executor.ExecuteQuery(ctx, query, params, c.config.Database)
 	if err != nil {
 		return nil, err
 	}
