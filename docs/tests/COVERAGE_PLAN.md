@@ -48,7 +48,7 @@ requirements:
 | 45% | 12,385 | Achieved (+78) |
 | 46% | 12,660 | Achieved (+243) |
 | 50% | 13,761 | Achieved (+16) |
-| 54% | 14,872 | Achieved (+88) |
+| 54% | 14,872 | Achieved (+87) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -386,11 +386,11 @@ code.
 
 #### Day 15 Results
 
-- Statements/lines: **54.32%** (`14,960 / 27,540`), an increase of 4.26
-  percentage points and 1,183 covered statements from Day 14.
+- Statements/lines: **54.32%** (`14,959 / 27,540`), an increase of 4.26
+  percentage points and 1,182 covered statements from Day 14.
 - Functions exercised: **77.21%** (`1,636 / 2,119`), an increase of 3.55
   percentage points and 78 exercised functions from Day 14.
-- Raised Supabase from 21.4% to 80.7%, Neo4j from 15.1% to 83.0%, Weaviate
+- Raised Supabase from 21.4% to 80.6%, Neo4j from 15.1% to 83.0%, Weaviate
   from 44.7% to 52.9%, and Pinecone from 35.6% to 70.8%.
 - Every supported vector database adapter now exceeds 50% statement coverage.
 - Tests use deterministic SQL, HTTP, SDK, and query-executor fixtures; none
