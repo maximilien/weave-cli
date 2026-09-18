@@ -5,12 +5,12 @@ codecov:
 coverage:
   precision: 2
   round: down
-  range: "50...80"
+  range: "54...80"
 
   status:
     project:
       default:
-        target: 50%        # Day 14 development baseline
+        target: 54%        # Day 15 development baseline
         threshold: 1%      # Prevent meaningful regressions while coverage grows
         if_ci_failed: error
 
