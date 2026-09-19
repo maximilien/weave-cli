@@ -33,10 +33,10 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 15, the current source count makes these approximate
+At the end of Day 16, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 15 status |
+| Target | Covered statements needed | Day 16 status |
 | --- | ---: | ---: |
 | 20% | 5,506 | Achieved (+2,801) |
 | 25% | 6,883 | Achieved (+1,424) |
@@ -49,6 +49,7 @@ requirements:
 | 46% | 12,660 | Achieved (+243) |
 | 50% | 13,761 | Achieved (+16) |
 | 54% | 14,872 | Achieved (+87) |
+| 55% | 15,147 | Achieved (+139) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -397,7 +398,30 @@ code.
   requires credentials or a live service.
 - The Codecov project target advances to 54%; patch coverage remains 80%.
 
-### Path from 54.32% to 80%
+### Day 16 — Collection Commands and PDF Context (2026-09-19)
+
+- Exercise collection list, show, summary, query, cross-database query,
+  delete-all, delete-schema, selector, flag, and cancellation paths with an
+  isolated mock configuration.
+- Exercise PDF fallback sizing, rendering-command detection, deterministic
+  `pdftotext` page splitting, image captions, OCR context, metadata
+  truncation, headings, and extraction failures.
+- Exit target: raise low-coverage command behavior and move `pkg/pdf` above
+  50% without live services or developer credentials.
+
+#### Day 16 Results
+
+- Statements/lines: **55.50%** (`15,286 / 27,540`), an increase of 1.18
+  percentage points and 327 covered statements from Day 15.
+- Functions exercised: **78.10%** (`1,655 / 2,119`), an increase of 0.89
+  percentage points and 19 exercised functions from Day 15.
+- Raised `cmd/collection` from 18.15% to 42.35% and `pkg/pdf` from 28.68% to
+  56.84%.
+- Tests use temporary configuration, mock database clients, temporary files,
+  and a fake `pdftotext` executable; none requires a live service.
+- The Codecov project target advances to 55%; patch coverage remains 80%.
+
+### Path from 55.50% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
