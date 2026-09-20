@@ -59,7 +59,7 @@ details.
 
 ## Post-v0.15 Coverage Campaign
 
-**Current result**: 57.03% (`15,705 / 27,540`) after Day 17
+**Current result**: 57.02% (`15,704 / 27,540`) after Day 17
 
 - Preserve the 57% project ratchet and 80% patch target.
 - Continue command boundaries and database adapters toward the 60% checkpoint.

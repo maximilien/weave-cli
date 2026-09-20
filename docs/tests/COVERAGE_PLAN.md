@@ -38,21 +38,21 @@ requirements:
 
 | Target | Covered statements needed | Day 17 status |
 | --- | ---: | ---: |
-| 20% | 5,508 | Achieved (+10,197) |
-| 25% | 6,885 | Achieved (+8,820) |
-| 30% | 8,262 | Achieved (+7,443) |
-| 35% | 9,639 | Achieved (+6,066) |
-| 38% | 10,466 | Achieved (+5,239) |
-| 40% | 11,016 | Achieved (+4,689) |
-| 42% | 11,567 | Achieved (+4,138) |
-| 45% | 12,393 | Achieved (+3,312) |
-| 46% | 12,669 | Achieved (+3,036) |
-| 50% | 13,770 | Achieved (+1,935) |
-| 54% | 14,872 | Achieved (+833) |
-| 55% | 15,147 | Achieved (+558) |
-| 56% | 15,423 | Achieved (+282) |
-| 57% | 15,698 | Achieved (+7) |
-| 60% | 16,524 | Remaining 819 |
+| 20% | 5,508 | Achieved (+10,196) |
+| 25% | 6,885 | Achieved (+8,819) |
+| 30% | 8,262 | Achieved (+7,442) |
+| 35% | 9,639 | Achieved (+6,065) |
+| 38% | 10,466 | Achieved (+5,238) |
+| 40% | 11,016 | Achieved (+4,688) |
+| 42% | 11,567 | Achieved (+4,137) |
+| 45% | 12,393 | Achieved (+3,311) |
+| 46% | 12,669 | Achieved (+3,035) |
+| 50% | 13,770 | Achieved (+1,934) |
+| 54% | 14,872 | Achieved (+832) |
+| 55% | 15,147 | Achieved (+557) |
+| 56% | 15,423 | Achieved (+281) |
+| 57% | 15,698 | Achieved (+6) |
+| 60% | 16,524 | Remaining 820 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -437,8 +437,8 @@ code.
 
 #### Day 17 Results
 
-- Statements/lines: **57.03%** (`15,705 / 27,540`), an increase of 1.53
-  percentage points and 419 covered statements from Day 16.
+- Statements/lines: **57.02%** (`15,704 / 27,540`), an increase of 1.52
+  percentage points and 418 covered statements from Day 16.
 - Functions exercised: **79.24%** (`1,679 / 2,119`), an increase of 1.14
   percentage points and 24 exercised functions from Day 16.
 - Raised `cmd/document` from 23.44% to 58.30%.
@@ -447,7 +447,7 @@ code.
   live service.
 - The Codecov project target advances to 57%; patch coverage remains 80%.
 
-### Path from 57.03% to 80%
+### Path from 57.02% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.

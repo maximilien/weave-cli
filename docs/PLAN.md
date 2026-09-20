@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-09-20
 
-**Current milestone**: continue from 57.03% toward 60% with the adapter floor complete
+**Current milestone**: continue from 57.02% toward 60% with the adapter floor complete
 
 ## Completed — v0.13.0
 
