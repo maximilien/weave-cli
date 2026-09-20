@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-19
+**Last updated**: 2026-09-20
 
-**Current milestone**: continue from 55.50% toward 60% with the adapter floor complete
+**Current milestone**: continue from 57.03% toward 60% with the adapter floor complete
 
 ## Completed — v0.13.0
 
@@ -53,6 +53,8 @@ Completed targets:
   covering Supabase, Neo4j, Weaviate, and the Pinecone data plane.
 - [x] Reach 55% on Day 16 by covering collection command paths and PDF context
   extraction behavior.
+- [x] Reach 57% on Day 17 by covering document command, inspection, and PDF
+  conversion behavior.
 - [ ] Reach and stabilize 60% statement coverage.
 
 ## Continuous Workstreams

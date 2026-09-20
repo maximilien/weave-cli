@@ -33,23 +33,26 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 16, the current source count makes these approximate
+At the end of Day 17, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 16 status |
+| Target | Covered statements needed | Day 17 status |
 | --- | ---: | ---: |
-| 20% | 5,506 | Achieved (+2,801) |
-| 25% | 6,883 | Achieved (+1,424) |
-| 30% | 8,259 | Achieved (+48) |
-| 35% | 9,636 | Achieved (+11) |
-| 38% | 10,462 | Achieved (+61) |
-| 40% | 11,013 | Achieved (+15) |
-| 42% | 11,564 | Achieved (+22) |
-| 45% | 12,385 | Achieved (+78) |
-| 46% | 12,660 | Achieved (+243) |
-| 50% | 13,761 | Achieved (+16) |
-| 54% | 14,872 | Achieved (+87) |
-| 55% | 15,147 | Achieved (+139) |
+| 20% | 5,508 | Achieved (+10,197) |
+| 25% | 6,885 | Achieved (+8,820) |
+| 30% | 8,262 | Achieved (+7,443) |
+| 35% | 9,639 | Achieved (+6,066) |
+| 38% | 10,466 | Achieved (+5,239) |
+| 40% | 11,016 | Achieved (+4,689) |
+| 42% | 11,567 | Achieved (+4,138) |
+| 45% | 12,393 | Achieved (+3,312) |
+| 46% | 12,669 | Achieved (+3,036) |
+| 50% | 13,770 | Achieved (+1,935) |
+| 54% | 14,872 | Achieved (+833) |
+| 55% | 15,147 | Achieved (+558) |
+| 56% | 15,423 | Achieved (+282) |
+| 57% | 15,698 | Achieved (+7) |
+| 60% | 16,524 | Remaining 819 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -421,7 +424,30 @@ code.
   and a fake `pdftotext` executable; none requires a live service.
 - The Codecov project target advances to 55%; patch coverage remains 80%.
 
-### Path from 55.50% to 80%
+### Day 17 — Document Command Boundaries (2026-09-20)
+
+- Exercise document inspection for text, image, unsupported, missing, and
+  invalid PDF inputs.
+- Exercise Ghostscript and ImageMagick conversion helpers with temporary fake
+  executables, including single-file, directory, recursive, and failure paths.
+- Exercise document list, show, count, create, glob, storage-option, delete,
+  cancellation, and command-contract paths with an isolated mock database.
+- Exit target: raise `cmd/document` above 50% without credentials or live
+  services.
+
+#### Day 17 Results
+
+- Statements/lines: **57.03%** (`15,705 / 27,540`), an increase of 1.53
+  percentage points and 419 covered statements from Day 16.
+- Functions exercised: **79.24%** (`1,679 / 2,119`), an increase of 1.14
+  percentage points and 24 exercised functions from Day 16.
+- Raised `cmd/document` from 23.44% to 58.30%.
+- Tests use temporary configuration, files, directories, mock database
+  clients, and fake conversion executables; none requires credentials or a
+  live service.
+- The Codecov project target advances to 57%; patch coverage remains 80%.
+
+### Path from 57.03% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
