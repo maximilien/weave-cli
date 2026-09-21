@@ -215,6 +215,9 @@ func checkSingleDatabase(ctx context.Context, dbName string, dbConfig *config.Ve
 		SimilarityMetric: dbConfig.SimilarityMetric,
 		Timeout:          dbConfig.Timeout,
 	}
+	for _, collection := range dbConfig.Collections {
+		vdbConfig.Collections = append(vdbConfig.Collections, collection.Name)
+	}
 
 	client, err := vectordb.CreateClient(vdbConfig)
 	if err != nil {
