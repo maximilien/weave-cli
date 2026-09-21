@@ -177,6 +177,35 @@ func TestPM2Stop_NoPM2Installed(t *testing.T) {
 	assert.Contains(t, err.Error(), "pm2 not installed")
 }
 
+func TestPM2CommandPaths(t *testing.T) {
+	binDir := t.TempDir()
+	pm2 := filepath.Join(binDir, "pm2")
+	script := `#!/bin/sh
+case "$1" in
+  status) echo "online: $2" ;;
+  list) echo "process list" ;;
+  *) exit 0 ;;
+esac
+`
+	if err := os.WriteFile(pm2, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	assert.NoError(t, PM2Start("dashboard", "ecosystem.config.js"))
+	assert.NoError(t, PM2Stop("dashboard"))
+	assert.NoError(t, PM2Restart("dashboard"))
+	status, err := PM2Status("dashboard")
+	assert.NoError(t, err)
+	assert.Contains(t, status, "online")
+	assert.NoError(t, PM2Logs("dashboard", 25, false))
+	assert.NoError(t, PM2Logs("dashboard", 25, true))
+	list, err := PM2List()
+	assert.NoError(t, err)
+	assert.Contains(t, list, "process list")
+	assert.NoError(t, PM2Monit())
+}
+
 func TestPM2ConfigStruct(t *testing.T) {
 	// Test PM2Config struct can be created and has expected fields
 	config := PM2Config{
