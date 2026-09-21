@@ -16,16 +16,8 @@ import (
 )
 
 func TestBackupCreateWithMockVDB(t *testing.T) {
-	// Skip test - requires OCR dependencies (gosseract/tesseract)
-	// Run manually with: go test -v -tags=integration ./src/cmd/backup/...
-	t.Skip("Skipping backup integration test - requires OCR dependencies")
-
 	// Create temp directory for backup
-	tmpDir, err := os.MkdirTemp("", "backup-integration-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Create mock VDB client with test data
 	mockClient := mockdb.NewClient(&config.MockConfig{
@@ -131,13 +123,7 @@ func TestBackupCreateWithMockVDB(t *testing.T) {
 }
 
 func TestBackupCreateCompressed(t *testing.T) {
-	t.Skip("Skipping backup integration test - requires OCR dependencies")
-
-	tmpDir, err := os.MkdirTemp("", "backup-compressed-*")
-	if err != nil {
-		t.Fatalf("Failed to create temp dir: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
+	tmpDir := t.TempDir()
 
 	// Create backup with data
 	backup := backuppkg.NewBackupFormat("TestCol", "mock", "text-embedding-3-small", 1536)
