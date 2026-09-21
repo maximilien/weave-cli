@@ -206,6 +206,26 @@ esac
 	assert.NoError(t, PM2Monit())
 }
 
+func TestPM2CommandFailures(t *testing.T) {
+	binDir := t.TempDir()
+	pm2 := filepath.Join(binDir, "pm2")
+	if err := os.WriteFile(pm2, []byte("#!/bin/sh\necho failed\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	assert.Error(t, PM2Start("dashboard", "ecosystem.config.js"))
+	assert.Error(t, PM2Restart("dashboard"))
+	status, err := PM2Status("dashboard")
+	assert.NoError(t, err)
+	assert.Contains(t, status, "failed")
+	assert.Error(t, PM2Logs("dashboard", 10, false))
+	list, err := PM2List()
+	assert.Error(t, err)
+	assert.Empty(t, list)
+	assert.Error(t, PM2Monit())
+}
+
 func TestPM2ConfigStruct(t *testing.T) {
 	// Test PM2Config struct can be created and has expected fields
 	config := PM2Config{

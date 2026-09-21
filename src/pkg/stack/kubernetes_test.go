@@ -82,3 +82,33 @@ esac
 	assert.NoError(t, GetPodLogs("app=test", "kind-test", false, 20))
 	assert.NoError(t, GetPodLogs("app=test", "", true, 10))
 }
+
+func TestKubernetesCommandFailures(t *testing.T) {
+	binDir := t.TempDir()
+	kubectl := filepath.Join(binDir, "kubectl")
+	script := `#!/bin/sh
+if [ "$KUBE_MODE" = "fail" ]; then exit 1; fi
+if [ "$KUBE_MODE" = "empty" ]; then exit 0; fi
+echo 'not-json'
+`
+	if err := os.WriteFile(kubectl, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+
+	t.Setenv("KUBE_MODE", "empty")
+	ready, err := checkPodsReady("app=test", "")
+	assert.NoError(t, err)
+	assert.False(t, ready)
+
+	t.Setenv("KUBE_MODE", "malformed")
+	_, err = GetPods("app=test", "")
+	assert.Error(t, err)
+
+	t.Setenv("KUBE_MODE", "fail")
+	_, err = checkPodsReady("app=test", "")
+	assert.Error(t, err)
+	_, err = GetPods("app=test", "")
+	assert.Error(t, err)
+	assert.Error(t, GetPodLogs("app=test", "", false, 10))
+}

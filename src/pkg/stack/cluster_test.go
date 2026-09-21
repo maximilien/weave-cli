@@ -5,6 +5,7 @@ package stack
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -235,4 +236,71 @@ func TestDeleteCluster(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClusterStatusAndDeleteCommandPaths(t *testing.T) {
+	binDir := t.TempDir()
+	scripts := map[string]string{
+		"kind": `#!/bin/sh
+if [ "$1" = "get" ]; then
+  if [ "$KIND_MODE" = "missing" ]; then echo other; else echo weave-test; fi
+  exit 0
+fi
+if [ "$KIND_MODE" = "fail" ]; then echo failed; exit 1; fi
+`,
+		"kubectl": `#!/bin/sh
+if [ "$KUBE_FAIL" = "true" ]; then exit 1; fi
+`,
+		"minikube": `#!/bin/sh
+if [ "$1" = "status" ]; then
+  if [ "$MINI_MODE" = "fail" ]; then exit 1; fi
+  if [ "$MINI_MODE" = "running" ]; then echo Running; else echo Stopped; fi
+  exit 0
+fi
+if [ "$MINI_MODE" = "fail" ]; then echo failed; exit 1; fi
+`,
+	}
+	for name, script := range scripts {
+		if err := os.WriteFile(filepath.Join(binDir, name), []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Setenv("PATH", binDir)
+
+	status, err := GetClusterStatus(&ClusterInfo{Provider: "kind", Name: "weave-test"})
+	assert.NoError(t, err)
+	assert.Equal(t, "active", status)
+	t.Setenv("KUBE_FAIL", "true")
+	status, err = GetClusterStatus(&ClusterInfo{Provider: "kind", Name: "weave-test"})
+	assert.NoError(t, err)
+	assert.Equal(t, "error", status)
+	t.Setenv("KIND_MODE", "missing")
+	status, err = GetClusterStatus(&ClusterInfo{Provider: "kind", Name: "weave-test"})
+	assert.NoError(t, err)
+	assert.Equal(t, "stopped", status)
+
+	for _, test := range []struct {
+		mode string
+		want string
+	}{
+		{mode: "running", want: "active"},
+		{mode: "stopped", want: "stopped"},
+		{mode: "fail", want: "stopped"},
+	} {
+		t.Setenv("MINI_MODE", test.mode)
+		status, err = GetClusterStatus(&ClusterInfo{Provider: "minikube"})
+		assert.NoError(t, err)
+		assert.Equal(t, test.want, status)
+	}
+	_, err = GetClusterStatus(&ClusterInfo{Provider: "unsupported"})
+	assert.Error(t, err)
+
+	t.Setenv("KIND_MODE", "ok")
+	assert.NoError(t, DeleteCluster(&ClusterInfo{Provider: "kind", Name: "weave-test"}))
+	t.Setenv("MINI_MODE", "running")
+	assert.NoError(t, DeleteCluster(&ClusterInfo{Provider: "minikube"}))
+	t.Setenv("KIND_MODE", "fail")
+	assert.Error(t, DeleteCluster(&ClusterInfo{Provider: "kind", Name: "weave-test"}))
+	t.Setenv("MINI_MODE", "fail")
+	assert.Error(t, DeleteCluster(&ClusterInfo{Provider: "minikube"}))
 }
