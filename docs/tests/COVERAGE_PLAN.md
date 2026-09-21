@@ -33,27 +33,27 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 18, the current source count makes these approximate
+At the end of Day 19, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 18 status |
+| Target | Covered statements needed | Day 19 status |
 | --- | ---: | ---: |
-| 20% | 5,510 | Achieved (+10,540) |
-| 25% | 6,887 | Achieved (+9,163) |
-| 30% | 8,265 | Achieved (+7,785) |
-| 35% | 9,642 | Achieved (+6,408) |
-| 38% | 10,468 | Achieved (+5,582) |
-| 40% | 11,019 | Achieved (+5,031) |
-| 42% | 11,570 | Achieved (+4,480) |
-| 45% | 12,397 | Achieved (+3,653) |
-| 46% | 12,672 | Achieved (+3,378) |
-| 50% | 13,774 | Achieved (+2,276) |
-| 54% | 14,876 | Achieved (+1,174) |
-| 55% | 15,151 | Achieved (+899) |
-| 56% | 15,427 | Achieved (+623) |
-| 57% | 15,702 | Achieved (+348) |
-| 58% | 15,978 | Achieved (+72) |
-| 60% | 16,529 | Remaining 479 |
+| 20% | 5,510 | Achieved (+11,037) |
+| 25% | 6,887 | Achieved (+9,660) |
+| 30% | 8,265 | Achieved (+8,282) |
+| 35% | 9,642 | Achieved (+6,905) |
+| 38% | 10,468 | Achieved (+6,079) |
+| 40% | 11,019 | Achieved (+5,528) |
+| 42% | 11,570 | Achieved (+4,977) |
+| 45% | 12,397 | Achieved (+4,150) |
+| 46% | 12,672 | Achieved (+3,875) |
+| 50% | 13,774 | Achieved (+2,773) |
+| 54% | 14,876 | Achieved (+1,671) |
+| 55% | 15,151 | Achieved (+1,396) |
+| 56% | 15,427 | Achieved (+1,120) |
+| 57% | 15,702 | Achieved (+845) |
+| 58% | 15,978 | Achieved (+569) |
+| 60% | 16,529 | Achieved (+18) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -472,10 +472,32 @@ code.
   none requires credentials, network access, or a live service.
 - The Codecov project target advances to 58%; patch coverage remains 80%.
 
-### Path from 58.26% to 80%
+### Day 19 — Configuration and Stack Boundaries (2026-09-21)
 
-1. Raise low-coverage command packages, beginning with backup, collection,
-   configuration, document, schema, and stats behavior.
+- Exercise configuration list, show, schema, create, update, validation, and
+  agent-template paths with temporary files and isolated configuration.
+- Exercise collection comparison and re-embedding validation through the
+  configured in-memory mock adapter.
+- Exercise PM2, Kubernetes, and cluster status, deletion, and failure paths
+  through temporary fake executables.
+- Exit target: cross and stabilize 60% overall without live services.
+
+#### Day 19 Results
+
+- Statements/lines: **60.07%** (`16,547 / 27,547`), an increase of 1.81
+  percentage points and 497 covered statements from Day 18.
+- Functions exercised: **81.03%** (`1,717 / 2,119`), an increase of 1.23
+  percentage points and 26 exercised functions from Day 18.
+- Raised `cmd/config` from 40.00% to 58.92%, `cmd/collection` from 42.35% to
+  49.83%, and `pkg/stack` from 33.22% to 48.47%.
+- Tests use temporary homes, configuration files, in-memory mock clients, and
+  fake process executables; none requires credentials or a live service.
+- The Codecov project target advances to 60%; patch coverage remains 80%.
+
+### Path from 60.07% to 80%
+
+1. Raise low-coverage command packages, beginning with collection,
+   configuration, document, stack, stats, and shared utility behavior.
 2. Deepen adapter error and pagination coverage while preserving the new 50%
    package floor.
 3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`

@@ -4,7 +4,7 @@
 
 **Current release**: v0.15.0
 
-**Next quality checkpoint**: 60% statement coverage with every adapter above 50%
+**Next quality checkpoint**: continue from 60% toward the long-term 80% target
 
 This roadmap tracks active release milestones. Historical plans and completed
 project notes live under [`archive/`](archive/); the detailed test campaign is
@@ -59,10 +59,10 @@ details.
 
 ## Post-v0.15 Coverage Campaign
 
-**Current result**: 58.26% (`16,050 / 27,547`) after Day 18
+**Current result**: 60.07% (`16,547 / 27,547`) after Day 19
 
-- Preserve the 58% project ratchet and 80% patch target.
-- Continue command boundaries and database adapters toward the 60% checkpoint.
+- Preserve the 60% project ratchet and 80% patch target.
+- Continue deepening command and core-package boundaries toward 80%.
 - Preserve the completed 50% package floor across every supported vector
   database adapter.
 

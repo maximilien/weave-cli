@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-09-21
 
-**Current milestone**: continue from 58.26% toward 60% with the adapter floor complete
+**Current milestone**: continue from 60.07% toward 80% with the adapter floor complete
 
 ## Completed — v0.13.0
 
@@ -56,7 +56,8 @@ Completed targets:
 - [x] Reach 57% on Day 17 by covering document command, inspection, and PDF
   conversion behavior.
 - [x] Reach 58% on Day 18 by covering backup and health command behavior.
-- [ ] Reach and stabilize 60% statement coverage.
+- [x] Reach 60% on Day 19 by covering configuration, collection comparison,
+  and stack process boundaries.
 
 ## Continuous Workstreams
 
