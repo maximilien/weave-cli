@@ -10,8 +10,67 @@ import (
 	"testing"
 
 	pkgconfig "github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+const commandPathConfig = `databases:
+  default: local
+  vector_databases:
+    - name: local
+      type: mock
+      enabled: true
+      simulate_embeddings: true
+      embedding_dimension: 384
+      collections:
+        - name: Docs
+          type: text
+    - name: cloud
+      type: qdrant-cloud
+      url: https://database.example
+      api_key: secret
+  schemas:
+    - name: direct
+      schema:
+        class: DirectDocs
+        vectorizer: none
+        properties:
+          - name: title
+            datatype: [text]
+            description: document title
+            json_schema:
+              type: string
+      metadata:
+        source:
+          type: string
+          json_schema:
+            type: string
+        version: 1
+    - name: nested
+      schema:
+        schema:
+          class: NestedDocs
+          vectorizer: text2vec-openai
+`
+
+func setupCommandPathConfig(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	if err := os.Mkdir(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", home)
+	t.Chdir(root)
+	path := filepath.Join(root, "config.yaml")
+	if err := os.WriteFile(path, []byte(commandPathConfig), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	viper.Reset()
+	viper.Set("config", path)
+	t.Cleanup(viper.Reset)
+	return root
+}
 
 func richConfig() (*pkgconfig.Config, map[string]pkgconfig.VectorDBType) {
 	database := pkgconfig.VectorDBConfig{
@@ -223,6 +282,157 @@ func TestConfigSyncCopiesLocalFiles(t *testing.T) {
 	}
 	syncEnv = false
 	syncConfigYAML = false
+}
+
+func TestConfigReadCommands(t *testing.T) {
+	setupCommandPathConfig(t)
+
+	for _, test := range []struct {
+		name    string
+		details bool
+		cloud   bool
+		local   bool
+		sortBy  string
+	}{
+		{name: "table", sortBy: "name"},
+		{name: "details", details: true, sortBy: "type"},
+		{name: "cloud", cloud: true, sortBy: "deployment"},
+		{name: "local", local: true, sortBy: "name"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().Bool("details", test.details, "")
+			cmd.Flags().Bool("cloud", test.cloud, "")
+			cmd.Flags().Bool("local", test.local, "")
+			cmd.Flags().String("sort-by", test.sortBy, "")
+			runList(cmd, nil)
+		})
+	}
+
+	runListSchemas(&cobra.Command{}, nil)
+
+	for _, format := range []string{"text", "json", "yaml"} {
+		t.Run("show-"+format, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().String("output", format, "")
+			runShow(cmd, nil)
+			if format == "text" {
+				runShow(cmd, []string{"local"})
+			}
+		})
+	}
+}
+
+func TestConfigSchemaCommandFormats(t *testing.T) {
+	setupCommandPathConfig(t)
+	for _, test := range []struct {
+		name string
+		yaml bool
+		json bool
+	}{
+		{name: "formatted"},
+		{name: "yaml", yaml: true},
+		{name: "json", json: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.Flags().Bool("yaml", test.yaml, "")
+			cmd.Flags().Bool("json", test.json, "")
+			runShowSchema(cmd, []string{"direct"})
+		})
+	}
+	cmd := &cobra.Command{}
+	cmd.Flags().Bool("yaml", false, "")
+	cmd.Flags().Bool("json", false, "")
+	runShowSchema(cmd, []string{"nested"})
+}
+
+func TestConfigCreateAndUpdateCommandPaths(t *testing.T) {
+	root := t.TempDir()
+	home := filepath.Join(root, "home")
+	if err := os.Mkdir(home, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", home)
+	t.Chdir(root)
+	if err := os.WriteFile("config.yaml.example", []byte(commandPathConfig), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	createEnv, createConfigYAML, createGlobal = false, true, false
+	withConfigStdin(t, "y\n", func() { runConfigCreate(&cobra.Command{}, nil) })
+	if _, err := os.Stat("config.yaml"); err != nil {
+		t.Fatalf("created config: %v", err)
+	}
+
+	updateEnv, updateConfigYAML, weaveMCP, updateGlobal = false, true, false, false
+	withConfigStdin(t, "n\n", func() { runConfigUpdate(&cobra.Command{}, nil) })
+
+	if err := os.Remove("config.yaml"); err != nil {
+		t.Fatal(err)
+	}
+	updateGlobal = true
+	withConfigStdin(t, "y\n", func() { runConfigUpdate(&cobra.Command{}, nil) })
+	if _, err := os.Stat(filepath.Join(home, ".weave-cli", "config.yaml")); err != nil {
+		t.Fatalf("global config: %v", err)
+	}
+
+	t.Cleanup(func() {
+		createEnv, createConfigYAML, createGlobal = false, false, false
+		updateEnv, updateConfigYAML, weaveMCP, updateGlobal = false, false, false, false
+	})
+}
+
+func TestConfigAgentsTemplateCommand(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", filepath.Join(root, "home"))
+	if err := os.Mkdir("configs", 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("configs/weave-agents.yaml", []byte("llm:\n  provider: openai\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	agentsGlobal, agentsShowTemplate = false, true
+	runConfigAgents(&cobra.Command{}, nil)
+	agentsShowTemplate = false
+	runConfigAgents(&cobra.Command{}, nil)
+	if _, err := os.Stat("weave-agents.yaml"); err != nil {
+		t.Fatalf("agents config: %v", err)
+	}
+	t.Cleanup(func() { agentsGlobal, agentsShowTemplate = false, false })
+}
+
+func TestConfigValidationPaths(t *testing.T) {
+	root := setupCommandPathConfig(t)
+	cfg, output, err := validateConfig(filepath.Join(root, "config.yaml"))
+	if err != nil || cfg == nil || output != "" {
+		t.Fatalf("validateConfig(valid) = %#v, %q, %v", cfg, output, err)
+	}
+
+	invalid := `databases:
+  default: mongo
+  vector_databases:
+    - {name: mongo, type: mongodb}
+    - {name: milvus, type: milvus-cloud}
+    - {name: chroma, type: chroma-cloud}
+    - {name: qdrant, type: qdrant-cloud}
+`
+	path := filepath.Join(root, "invalid.yaml")
+	if err := os.WriteFile(path, []byte(invalid), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	viper.Reset()
+	viper.Set("config", path)
+	_, output, err = validateConfig(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{"database_url", "api_key", "tenant"} {
+		if !strings.Contains(output, field) {
+			t.Errorf("validation output missing %q: %s", field, output)
+		}
+	}
 }
 
 func requireNoError(t *testing.T, err error) {
