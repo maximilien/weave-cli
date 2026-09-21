@@ -33,26 +33,27 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 17, the current source count makes these approximate
+At the end of Day 18, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 17 status |
+| Target | Covered statements needed | Day 18 status |
 | --- | ---: | ---: |
-| 20% | 5,508 | Achieved (+10,196) |
-| 25% | 6,885 | Achieved (+8,819) |
-| 30% | 8,262 | Achieved (+7,442) |
-| 35% | 9,639 | Achieved (+6,065) |
-| 38% | 10,466 | Achieved (+5,238) |
-| 40% | 11,016 | Achieved (+4,688) |
-| 42% | 11,567 | Achieved (+4,137) |
-| 45% | 12,393 | Achieved (+3,311) |
-| 46% | 12,669 | Achieved (+3,035) |
-| 50% | 13,770 | Achieved (+1,934) |
-| 54% | 14,872 | Achieved (+832) |
-| 55% | 15,147 | Achieved (+557) |
-| 56% | 15,423 | Achieved (+281) |
-| 57% | 15,698 | Achieved (+6) |
-| 60% | 16,524 | Remaining 820 |
+| 20% | 5,510 | Achieved (+10,540) |
+| 25% | 6,887 | Achieved (+9,163) |
+| 30% | 8,265 | Achieved (+7,785) |
+| 35% | 9,642 | Achieved (+6,408) |
+| 38% | 10,468 | Achieved (+5,582) |
+| 40% | 11,019 | Achieved (+5,031) |
+| 42% | 11,570 | Achieved (+4,480) |
+| 45% | 12,397 | Achieved (+3,653) |
+| 46% | 12,672 | Achieved (+3,378) |
+| 50% | 13,774 | Achieved (+2,276) |
+| 54% | 14,876 | Achieved (+1,174) |
+| 55% | 15,151 | Achieved (+899) |
+| 56% | 15,427 | Achieved (+623) |
+| 57% | 15,702 | Achieved (+348) |
+| 58% | 15,978 | Achieved (+72) |
+| 60% | 16,529 | Remaining 479 |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -447,7 +448,31 @@ code.
   live service.
 - The Codecov project target advances to 57%; patch coverage remains 80%.
 
-### Path from 57.02% to 80%
+### Day 18 — Backup and Health Commands (2026-09-21)
+
+- Preserve configured mock collections through the vector-database factory so
+  command paths see the same collections declared in YAML.
+- Exercise compressed and uncompressed backup creation, batched restore,
+  overwrite, cross-database messaging, missing inputs, and remote-storage
+  validation without network access.
+- Exercise healthy and failed database checks, collection reporting, JSON,
+  detail, summary, sorting, URL truncation, and progressive output.
+- Exit target: move `cmd/backup` above 70%, raise root command coverage, and
+  cross 58% overall.
+
+#### Day 18 Results
+
+- Statements/lines: **58.26%** (`16,050 / 27,547`), an increase of 1.24
+  percentage points and 346 covered statements from Day 17.
+- Functions exercised: **79.80%** (`1,691 / 2,119`), an increase of 0.56
+  percentage points and 12 exercised functions from Day 17.
+- Raised `cmd/backup` from 32.01% to 78.97%, root `cmd` from 37.78% to
+  63.86%, and the mock adapter from 92.91% to 93.06%.
+- Tests use temporary configuration and files plus in-memory mock clients;
+  none requires credentials, network access, or a live service.
+- The Codecov project target advances to 58%; patch coverage remains 80%.
+
+### Path from 58.26% to 80%
 
 1. Raise low-coverage command packages, beginning with backup, collection,
    configuration, document, schema, and stats behavior.
