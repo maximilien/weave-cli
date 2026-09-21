@@ -47,9 +47,10 @@ type Config struct {
 	Timeout      int          `yaml:"timeout,omitempty"`
 
 	// Mock-specific configuration
-	Enabled            bool `yaml:"enabled,omitempty"`
-	SimulateEmbeddings bool `yaml:"simulate_embeddings,omitempty"`
-	EmbeddingDimension int  `yaml:"embedding_dimension,omitempty"`
+	Enabled            bool     `yaml:"enabled,omitempty"`
+	SimulateEmbeddings bool     `yaml:"simulate_embeddings,omitempty"`
+	EmbeddingDimension int      `yaml:"embedding_dimension,omitempty"`
+	Collections        []string `yaml:"collections,omitempty"`
 
 	// Supabase-specific configuration
 	DatabaseURL string `yaml:"database_url,omitempty"`
@@ -177,6 +178,9 @@ func CreateClientFromVectorDBConfig(cfg *config.VectorDBConfig) (VectorDBClient,
 		Enabled:            cfg.Enabled,
 		SimulateEmbeddings: cfg.SimulateEmbeddings,
 		EmbeddingDimension: cfg.EmbeddingDimension,
+	}
+	for _, collection := range cfg.Collections {
+		newConfig.Collections = append(newConfig.Collections, collection.Name)
 	}
 
 	// Build external storage configuration (v0.10.0+)

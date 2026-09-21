@@ -17,6 +17,7 @@ func TestNewAdapter(t *testing.T) {
 		Enabled:            true,
 		EmbeddingDimension: 384,
 		SimulateEmbeddings: true,
+		Collections:        []string{"Docs", "Images"},
 	}
 
 	adapter, err := NewAdapter(config)
@@ -34,6 +35,13 @@ func TestNewAdapter(t *testing.T) {
 
 	if adapter.config != config {
 		t.Error("Expected adapter to store config reference")
+	}
+	collections, err := adapter.ListCollections(context.Background())
+	if err != nil {
+		t.Fatalf("ListCollections() error: %v", err)
+	}
+	if len(collections) != 2 {
+		t.Fatalf("configured collections = %#v", collections)
 	}
 }
 

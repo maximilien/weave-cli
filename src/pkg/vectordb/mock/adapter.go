@@ -19,12 +19,17 @@ type Adapter struct {
 
 // NewAdapter creates a new mock adapter
 func NewAdapter(vdbConfig *vectordb.Config) (*Adapter, error) {
+	collections := make([]config.MockCollection, 0, len(vdbConfig.Collections))
+	for _, name := range vdbConfig.Collections {
+		collections = append(collections, config.MockCollection{Name: name})
+	}
+
 	// Convert vectordb.Config to config.MockConfig
 	mockConfig := &config.MockConfig{
 		Enabled:            vdbConfig.Enabled,
 		SimulateEmbeddings: vdbConfig.SimulateEmbeddings,
 		EmbeddingDimension: vdbConfig.EmbeddingDimension,
-		Collections:        []config.MockCollection{}, // Will be populated as needed
+		Collections:        collections,
 	}
 
 	client := mockClient.NewClient(mockConfig)

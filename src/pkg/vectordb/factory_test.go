@@ -100,6 +100,10 @@ func TestGlobalRegistryAndLegacyConfigConversion(t *testing.T) {
 		ImageStoragePathPrefix: "prefix",
 		ImageStorageUseSSL:     true,
 		PDFStorageEnabled:      true,
+		Collections: []legacyconfig.Collection{
+			{Name: "Docs"},
+			{Name: "Images"},
+		},
 	}
 	if _, err := CreateClientFromVectorDBConfig(legacy); err != nil {
 		t.Fatalf("CreateClientFromVectorDBConfig() error: %v", err)
@@ -107,6 +111,9 @@ func TestGlobalRegistryAndLegacyConfigConversion(t *testing.T) {
 	converted := factory.createdConfig
 	if converted == nil || converted.URL != legacy.URL || converted.VectorDimensions != 1536 {
 		t.Fatalf("converted config = %#v", converted)
+	}
+	if len(converted.Collections) != 2 || converted.Collections[0] != "Docs" || converted.Collections[1] != "Images" {
+		t.Fatalf("converted collections = %#v", converted.Collections)
 	}
 	if converted.ImageStorage == nil || converted.ImageStorage.PathPrefix != "prefix" {
 		t.Fatalf("converted image storage = %#v", converted.ImageStorage)
