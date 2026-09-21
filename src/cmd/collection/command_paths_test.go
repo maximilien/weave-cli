@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
@@ -32,6 +33,11 @@ func setupMockCollectionConfig(t *testing.T) {
       enabled: true
       simulate_embeddings: true
       embedding_dimension: 3
+      collections:
+        - name: Docs
+          type: text
+        - name: Images
+          type: image
 `
 	if err := os.WriteFile(path, []byte(contents), 0o600); err != nil {
 		t.Fatalf("write config: %v", err)
@@ -105,6 +111,7 @@ func TestCollectionReadCommandPathsWithMockDatabase(t *testing.T) {
 
 func TestCollectionMutationCommandPathsWithMockDatabase(t *testing.T) {
 	setupMockCollectionConfig(t)
+
 	withCollectionStdin(t, "\n", func() {
 		runCollectionDeleteAll(DeleteAllCmd, nil)
 	})
@@ -135,6 +142,54 @@ func TestCollectionMutationCommandPathsWithMockDatabase(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = DeleteSchemaCmd.Flags().Set("pattern", "") })
 	runCollectionDeleteSchema(DeleteSchemaCmd, nil)
+}
+
+func TestCollectionComparisonAndReembedPathsWithMockDatabase(t *testing.T) {
+	setupMockCollectionConfig(t)
+	report := filepath.Join(t.TempDir(), "comparison.md")
+	for name, value := range map[string]string{
+		"query":  "first query,second query",
+		"top-k":  "2",
+		"report": report,
+		"format": "markdown",
+	} {
+		if err := CompareCmd.Flags().Set(name, value); err != nil {
+			t.Fatalf("set compare flag %s: %v", name, err)
+		}
+	}
+	runCompare(CompareCmd, []string{"Docs", "Images"})
+	if data, err := os.ReadFile(report); err != nil || !strings.Contains(string(data), "Embedding Model Comparison") {
+		t.Fatalf("comparison report = %q, %v", data, err)
+	}
+	if err := CompareCmd.Flags().Set("report", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := CompareCmd.Flags().Set("format", "json"); err != nil {
+		t.Fatal(err)
+	}
+	runCompare(CompareCmd, []string{"Docs", "Images"})
+
+	for name, value := range map[string]string{
+		"new-embedding": "text-embedding-3-small",
+		"output":        "Docs",
+		"batch-size":    "10",
+		"skip-existing": "true",
+	} {
+		if err := ReEmbedCmd.Flags().Set(name, value); err != nil {
+			t.Fatalf("set reembed flag %s: %v", name, err)
+		}
+	}
+	runReEmbed(ReEmbedCmd, []string{"Docs"})
+	t.Cleanup(func() {
+		_ = CompareCmd.Flags().Set("query", "")
+		_ = CompareCmd.Flags().Set("top-k", "5")
+		_ = CompareCmd.Flags().Set("report", "")
+		_ = CompareCmd.Flags().Set("format", "markdown")
+		_ = ReEmbedCmd.Flags().Set("new-embedding", "")
+		_ = ReEmbedCmd.Flags().Set("output", "")
+		_ = ReEmbedCmd.Flags().Set("batch-size", "100")
+		_ = ReEmbedCmd.Flags().Set("skip-existing", "false")
+	})
 }
 
 func withCollectionStdin(t *testing.T, input string, run func()) {
