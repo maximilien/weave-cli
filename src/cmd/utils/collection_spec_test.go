@@ -6,9 +6,42 @@ package utils
 import (
 	"testing"
 
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestVDBConfigResolver(t *testing.T) {
+	defaultConfig := &config.VectorDBConfig{Name: "default", Type: config.VectorDBTypeMock}
+	cfg := &config.Config{Databases: config.DatabasesConfig{VectorDatabases: []config.VectorDBConfig{
+		{Name: "local", Type: config.VectorDBTypeLocal},
+		{Name: "named-cloud", Type: config.VectorDBTypeMilvusCloud},
+	}}}
+	resolver := NewVDBConfigResolver(cfg, defaultConfig)
+
+	resolved, err := resolver.ResolveConfigs([]CollectionSpec{
+		{Name: "DefaultDocs"},
+		{Name: "LocalDocs", VDBKey: "weaviate-local"},
+		{Name: "CloudDocs", VDBKey: "named-cloud"},
+	})
+	require.NoError(t, err)
+	assert.Same(t, defaultConfig, resolved["DefaultDocs"])
+	assert.Equal(t, config.VectorDBTypeLocal, resolved["LocalDocs"].Type)
+	assert.Equal(t, config.VectorDBTypeMilvusCloud, resolved["CloudDocs"].Type)
+
+	// Resolve the same key again to exercise the cache.
+	cached, err := resolver.resolveByKey("weaviate-local")
+	require.NoError(t, err)
+	assert.Same(t, resolved["LocalDocs"], cached)
+
+	_, err = resolver.ResolveConfigs([]CollectionSpec{{Name: "Missing", VDBKey: "unknown"}})
+	assert.ErrorContains(t, err, `failed to resolve VDB "unknown"`)
+	_, err = NewVDBConfigResolver(nil, defaultConfig).resolveByKey("unknown")
+	assert.ErrorContains(t, err, "no config available")
+	_, err = NewVDBConfigResolver(cfg, nil).ResolveConfigs([]CollectionSpec{{Name: "NoDefault"}})
+	assert.ErrorContains(t, err, "no default VDB configured")
+	assert.Equal(t, "weaviate-local", getVDBKey(&cfg.Databases.VectorDatabases[0]))
+}
 
 func TestParseCollectionSpec(t *testing.T) {
 	tests := []struct {

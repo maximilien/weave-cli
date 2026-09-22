@@ -120,6 +120,55 @@ func TestCheckRequiredEnvVars(t *testing.T) {
 	}
 }
 
+func TestREPLConfigurationErrorBoundaries(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for _, key := range []string{"WEAVIATE_URL", "WEAVIATE_API_KEY", "OPENAI_API_KEY", "WEAVE_MCP_STDIO_PATH"} {
+		t.Setenv(key, "")
+	}
+	if err := os.WriteFile(".env", []byte("# fixture\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile("config.yaml", []byte("databases: {}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	configErr := CheckREPLRequiredEnvVars()
+	if configErr == nil || configErr.Error() != "Missing required REPL configuration" {
+		t.Fatalf("unexpected REPL config error: %#v", configErr)
+	}
+	if !configErr.EnvFileExists || !configErr.ConfigFileExists || len(configErr.MissingVars) != 4 {
+		t.Fatalf("unexpected REPL error details: %#v", configErr)
+	}
+	formatted := formatREPLConfigError(configErr)
+	for _, want := range []string{
+		"REPL Configuration Error",
+		"WEAVE_MCP_STDIO_PATH",
+		"weave config update --weave-mcp",
+		"Update your existing .env file",
+	} {
+		if !strings.Contains(formatted, want) {
+			t.Errorf("formatted REPL error missing %q:\n%s", want, formatted)
+		}
+	}
+	if !containsString(configErr.MissingVars, "OPENAI_API_KEY") || containsString(configErr.MissingVars, "ABSENT") {
+		t.Fatal("containsString returned an unexpected result")
+	}
+
+	for _, key := range []string{"WEAVIATE_URL", "WEAVIATE_API_KEY", "OPENAI_API_KEY", "WEAVE_MCP_STDIO_PATH"} {
+		t.Setenv(key, "fixture")
+	}
+	if err := CheckREPLRequiredEnvVars(); err != nil {
+		t.Fatalf("expected complete REPL configuration, got %v", err)
+	}
+
+	mcpError := formatMCPConnectionError("executable file not found")
+	for _, want := range []string{"REPL MCP Connection Error", "weave config update --weave-mcp", "Binary not found"} {
+		if !strings.Contains(mcpError, want) {
+			t.Errorf("formatted MCP error missing %q:\n%s", want, mcpError)
+		}
+	}
+}
+
 func TestFormatConfigError(t *testing.T) {
 	tests := []struct {
 		name           string

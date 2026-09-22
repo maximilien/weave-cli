@@ -4,8 +4,64 @@
 package agents
 
 import (
+	"context"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 )
+
+func TestSchemaAgentDocumentSampleBoundaries(t *testing.T) {
+	agent := &SchemaAgent{}
+	if agent.Name() != "schema-agent" {
+		t.Fatalf("Name() = %q", agent.Name())
+	}
+	if _, err := agent.Execute(context.Background(), "invalid"); err == nil {
+		t.Fatal("expected invalid input type error")
+	}
+
+	root := t.TempDir()
+	jsonPath := filepath.Join(root, "sample.json")
+	jsonData := `{"title":"fixture","count":2}`
+	if err := os.WriteFile(jsonPath, []byte(jsonData), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	jsonSample := agent.extractDocumentSample(jsonPath)
+	if jsonSample == nil || jsonSample.Type != "json" || jsonSample.Fields["title"] != "fixture" {
+		t.Fatalf("unexpected JSON sample: %#v", jsonSample)
+	}
+
+	textPath := filepath.Join(root, "sample.txt")
+	longText := strings.Repeat("x", 1100)
+	if err := os.WriteFile(textPath, []byte(longText), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	textSample := agent.extractDocumentSample(textPath)
+	if textSample == nil || textSample.Type != "txt" || len(textSample.Preview) != 1000 {
+		t.Fatalf("unexpected text sample: %#v", textSample)
+	}
+
+	markdownPath := filepath.Join(root, "sample.md")
+	if err := os.WriteFile(markdownPath, []byte("# Heading"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	samples := agent.extractSamples([]string{
+		filepath.Join(root, "missing.txt"), jsonPath, markdownPath, textPath,
+	}, 2)
+	if len(samples) != 2 || samples[1].Type != "md" {
+		t.Fatalf("unexpected samples: %#v", samples)
+	}
+
+	badJSON := filepath.Join(root, "bad.json")
+	if err := os.WriteFile(badJSON, []byte("{"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range []string{badJSON, filepath.Join(root, "unknown.bin"), filepath.Join(root, "missing.pdf")} {
+		if sample := agent.extractDocumentSample(path); sample != nil {
+			t.Fatalf("expected no sample for %s: %#v", path, sample)
+		}
+	}
+}
 
 func TestAnalyzeStructure_ChunkingMetrics(t *testing.T) {
 	agent := &SchemaAgent{}
