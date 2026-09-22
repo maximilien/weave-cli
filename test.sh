@@ -1013,6 +1013,11 @@ run_coverage_tests() {
         -coverprofile="$coverage_profile" ./src/...; then
         print_status "Generating coverage report..."
 
+        # Go may leave blank separators in profiles produced across many packages;
+        # cover rejects those even though the profile entries are otherwise valid.
+        awk 'NF' "$coverage_profile" > "${coverage_profile}.tmp"
+        mv "${coverage_profile}.tmp" "$coverage_profile"
+
         # Generate HTML coverage report
         go tool cover -html="$coverage_profile" -o "$coverage_html"
 
