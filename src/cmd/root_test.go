@@ -8,8 +8,41 @@ import (
 	"testing"
 
 	"github.com/fatih/color"
+	"github.com/maximilien/weave-cli/src/pkg/doctor"
 	"github.com/spf13/cobra"
 )
+
+func TestRunDoctorFixSuggestions(t *testing.T) {
+	results := []doctor.CheckResult{
+		{Section: doctor.SectionConfig, Name: "Config file", Status: doctor.StatusFail, Fix: "replace config"},
+		{Section: doctor.SectionEnv, Name: "API key", Status: doctor.StatusWarn, Fix: "export API_KEY=value"},
+		{Section: doctor.SectionSystem, Name: "Tool", Status: doctor.StatusFail, Fix: "install tool"},
+		{Section: doctor.SectionSystem, Name: "Healthy", Status: doctor.StatusOK, Fix: "ignored"},
+		{Section: doctor.SectionSystem, Name: "No guidance", Status: doctor.StatusFail},
+	}
+	output := captureHealthOutput(t, func() { runDoctorFix(nil, results) })
+	for _, want := range []string{
+		"Auto-fix suggestions",
+		"Config file → weave config fix --errors-only",
+		"API key → export API_KEY=value",
+		"Tool → install tool",
+	} {
+		if !strings.Contains(output, want) {
+			t.Errorf("doctor fix output missing %q:\n%s", want, output)
+		}
+	}
+	for _, unwanted := range []string{"Healthy", "No guidance"} {
+		if strings.Contains(output, unwanted) {
+			t.Errorf("doctor fix output unexpectedly contains %q:\n%s", unwanted, output)
+		}
+	}
+
+	if output := captureHealthOutput(t, func() {
+		runDoctorFix(nil, []doctor.CheckResult{{Status: doctor.StatusOK, Fix: "ignored"}})
+	}); output != "" {
+		t.Fatalf("expected no suggestions, got %q", output)
+	}
+}
 
 func TestStaticCompletionValues(t *testing.T) {
 	tests := []struct {

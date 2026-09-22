@@ -7,12 +7,14 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
+	"github.com/spf13/viper"
 )
 
 func captureStatsOutput(t *testing.T, run func()) string {
@@ -324,5 +326,58 @@ func TestDisplayStatsWithoutMetadata(t *testing.T) {
 	})
 	if !strings.Contains(output, "No metadata fields found") {
 		t.Fatalf("unexpected empty metadata output:\n%s", output)
+	}
+}
+
+func TestRunStatsOutputFormats(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", root)
+	t.Setenv("WEAVE_SKIP_CONFIG_VALIDATION", "true")
+	t.Setenv("VECTOR_DB_TYPE", "mock")
+	t.Setenv("WEAVIATE_URL", "https://fixture.invalid")
+	t.Setenv("WEAVIATE_API_KEY", "fixture")
+	t.Setenv("OPENAI_API_KEY", "fixture")
+	configPath := filepath.Join(root, "config.yaml")
+	configData := `databases:
+  default: fixture
+  vector_databases:
+    - name: fixture
+      type: mock
+      enabled: true
+      simulate_embeddings: true
+      embedding_dimension: 3
+`
+	if err := os.WriteFile(configPath, []byte(configData), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	viper.Reset()
+	viper.Set("config", configPath)
+	viper.Set("env", "")
+	viper.Set("quiet", true)
+	viper.Set("no-color", true)
+	t.Cleanup(func() {
+		_ = Cmd.Flags().Set("output", "text")
+		viper.Reset()
+	})
+
+	tests := []struct {
+		format string
+		want   string
+	}{
+		{format: "text", want: "Collection Statistics: Docs"},
+		{format: "json", want: `"collection_name": "Docs"`},
+		{format: "yaml", want: "collection_name: Docs"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.format, func(t *testing.T) {
+			if err := Cmd.Flags().Set("output", tt.format); err != nil {
+				t.Fatal(err)
+			}
+			output := captureStatsOutput(t, func() { runStats(Cmd, []string{"Docs"}) })
+			if !strings.Contains(output, tt.want) {
+				t.Fatalf("%s output missing %q:\n%s", tt.format, tt.want, output)
+			}
+		})
 	}
 }
