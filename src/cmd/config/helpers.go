@@ -8,9 +8,16 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/fatih/color"
 	"golang.org/x/term"
+)
+
+var (
+	stdinReaderMu sync.Mutex
+	stdinReader   *bufio.Reader
+	stdinFile     *os.File
 )
 
 // envVariable represents an environment variable with metadata
@@ -508,8 +515,13 @@ func copyFile(src, dst string) error {
 // Input/output helpers
 
 func readLine() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	line, err := reader.ReadString('\n')
+	stdinReaderMu.Lock()
+	defer stdinReaderMu.Unlock()
+	if stdinReader == nil || stdinFile != os.Stdin {
+		stdinFile = os.Stdin
+		stdinReader = bufio.NewReader(os.Stdin)
+	}
+	line, err := stdinReader.ReadString('\n')
 	if err != nil {
 		return "", err
 	}

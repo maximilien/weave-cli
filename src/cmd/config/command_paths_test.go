@@ -383,6 +383,50 @@ func TestConfigCreateAndUpdateCommandPaths(t *testing.T) {
 	})
 }
 
+func TestConfigEnvironmentFileCommandPaths(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", filepath.Join(root, "home"))
+	viper.Reset()
+	viper.Set("mock", true)
+	t.Cleanup(viper.Reset)
+
+	createVariables := getEnvVariables("mock")
+	if len(createVariables) == 0 {
+		t.Fatal("mock environment variable list is empty")
+	}
+	template := "# environment template\n" + createVariables[0].Key + "=example\n"
+	if err := os.WriteFile(".env.example", []byte(template), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	createInput := "created-value\n" + strings.Repeat("\n", len(createVariables)-1) + "y\n"
+	withConfigStdin(t, createInput, func() {
+		requireNoError(t, createEnvFileInDir("."))
+	})
+	created := loadEnvFile(".env")
+	if created[createVariables[0].Key] != "created-value" {
+		t.Fatalf("created environment = %#v", created)
+	}
+
+	updateVariables := getEnvVariables("")
+	updateInput := "updated-value\n" + strings.Repeat("\n", len(updateVariables)-1) + "y\n"
+	withConfigStdin(t, updateInput, func() {
+		requireNoError(t, updateEnvFileInDir("."))
+	})
+	updated := loadEnvFile(".env")
+	if updated[updateVariables[0].Key] != "updated-value" {
+		t.Fatalf("updated environment = %#v", updated)
+	}
+
+	cancelInput := strings.Repeat("\n", len(createVariables)) + "n\n"
+	withConfigStdin(t, cancelInput, func() {
+		requireNoError(t, createEnvFileInDir(filepath.Join(root, "cancelled")))
+	})
+	if _, err := os.Stat(filepath.Join(root, "cancelled", ".env")); !os.IsNotExist(err) {
+		t.Fatalf("cancelled environment file exists: %v", err)
+	}
+}
+
 func TestConfigAgentsTemplateCommand(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
