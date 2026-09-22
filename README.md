@@ -1552,9 +1552,9 @@ See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 ### Test Coverage
 
 The v0.15.0 release baseline is **40.06% statement coverage**. Current
-development coverage after Day 11 is **42.08%** (`11,586 / 27,531`) with
-**64.29% function coverage** (`1,359 / 2,114`). Codecov ratchets project
-coverage at 42% and requires 80% patch coverage.
+development coverage after Day 20 is **62.17%** (`17,128 / 27,551`) with
+**83.53% function coverage** (`1,770 / 2,119`). Codecov ratchets project
+coverage at 62% and requires 80% patch coverage.
 
 Integration lanes separately exercise CRUD, collection, semantic, BM25,
 hybrid, metadata, and end-to-end workflows against supported databases.

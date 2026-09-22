@@ -33,27 +33,28 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 19, the current source count makes these approximate
+At the end of Day 20, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 19 status |
+| Target | Covered statements needed | Day 20 status |
 | --- | ---: | ---: |
-| 20% | 5,510 | Achieved (+11,037) |
-| 25% | 6,887 | Achieved (+9,660) |
-| 30% | 8,265 | Achieved (+8,282) |
-| 35% | 9,642 | Achieved (+6,905) |
-| 38% | 10,468 | Achieved (+6,079) |
-| 40% | 11,019 | Achieved (+5,528) |
-| 42% | 11,570 | Achieved (+4,977) |
-| 45% | 12,397 | Achieved (+4,150) |
-| 46% | 12,672 | Achieved (+3,875) |
-| 50% | 13,774 | Achieved (+2,773) |
-| 54% | 14,876 | Achieved (+1,671) |
-| 55% | 15,151 | Achieved (+1,396) |
-| 56% | 15,427 | Achieved (+1,120) |
-| 57% | 15,702 | Achieved (+845) |
-| 58% | 15,978 | Achieved (+569) |
-| 60% | 16,529 | Achieved (+18) |
+| 20% | 5,510 | Achieved (+11,618) |
+| 25% | 6,887 | Achieved (+10,241) |
+| 30% | 8,265 | Achieved (+8,863) |
+| 35% | 9,642 | Achieved (+7,486) |
+| 38% | 10,468 | Achieved (+6,660) |
+| 40% | 11,019 | Achieved (+6,109) |
+| 42% | 11,570 | Achieved (+5,558) |
+| 45% | 12,397 | Achieved (+4,731) |
+| 46% | 12,672 | Achieved (+4,456) |
+| 50% | 13,774 | Achieved (+3,354) |
+| 54% | 14,876 | Achieved (+2,252) |
+| 55% | 15,151 | Achieved (+1,977) |
+| 56% | 15,427 | Achieved (+1,701) |
+| 57% | 15,702 | Achieved (+1,426) |
+| 58% | 15,978 | Achieved (+1,150) |
+| 60% | 16,529 | Achieved (+599) |
+| 62% | 17,082 | Achieved (+46) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -494,7 +495,34 @@ code.
   fake process executables; none requires credentials or a live service.
 - The Codecov project target advances to 60%; patch coverage remains 80%.
 
-### Path from 60.07% to 80%
+### Day 20 — Command Utilities and Configuration Boundaries (2026-09-22)
+
+- Exercise shared vector-database dispatch, processing reports, glob matching,
+  display helpers, confirmations, and collection-spec resolution.
+- Exercise multi-prompt environment-file creation and updates while preserving
+  buffered piped input between prompts.
+- Exercise stack backup pagination, compression, missing collections, and
+  output failures with in-memory mock clients and temporary files.
+- Exercise statistics output formats, doctor remediation guidance, REPL
+  configuration diagnostics, and schema-agent document sampling.
+- Make the coverage summary visually enforce the 80% target: green at or
+  above 80%, yellow from 79% through 79.99%, and red below 79%.
+- Exit target: cross and stabilize 62% overall without live services.
+
+#### Day 20 Results
+
+- Statements/lines: **62.17%** (`17,128 / 27,551`), an increase of 2.10
+  percentage points and 581 covered statements from Day 19.
+- Functions exercised: **83.53%** (`1,770 / 2,119`), an increase of 2.50
+  percentage points and 53 exercised functions from Day 19.
+- Raised `cmd/utils` from 29.80% to 35.14%, `cmd/config` from 58.92% to
+  66.07%, `cmd/stack` from 33.84% to 44.02%, `cmd/stats` from 59.09% to
+  78.18%, and `pkg/config` from 60.77% to 66.42%.
+- Tests use temporary homes and files, in-memory mock clients, and isolated
+  input streams; none requires credentials or a live service.
+- The Codecov project target advances to 62%; patch coverage remains 80%.
+
+### Path from 62.17% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.

@@ -12,12 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added deterministic coverage for configuration validation and path
   precedence, OpenAI completion and embedding protocols, backup inventory and
   validation output, OCR fallback behavior, collection comparison reports,
-  collection statistics, and schema recommendation output.
+  collection statistics, schema recommendation output, shared command
+  utilities, stack backups, configuration diagnostics, and document sampling.
 
 ### Changed
 
-- Raised statement coverage from 40.06% to 42.08% and the Codecov project
-  ratchet from 40% to 42%.
+- Raised development statement coverage to 62.17% and the Codecov project
+  ratchet to 62%; patch coverage remains 80%.
+- Colorized the local coverage summary against the 80% target: green at or
+  above target, yellow within one percentage point, and red below that range.
 
 ## [0.15.0] - 2026-09-13
 
