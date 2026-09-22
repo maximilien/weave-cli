@@ -1022,7 +1022,7 @@ run_coverage_tests() {
         echo ""
         echo "Coverage summary"
         echo "----------------"
-        awk '
+        awk -v red="$RED" -v green="$GREEN" -v yellow="$YELLOW" -v reset="$NC" '
             /^mode:/ { next }
             {
                 total += $2
@@ -1030,11 +1030,12 @@ run_coverage_tests() {
             }
             END {
                 pct = total ? (covered / total) * 100 : 0
-                printf "  %-12s %8.2f%% %10d / %d\n", "Statements", pct, covered, total
-                printf "  %-12s %8.2f%% %10d / %d\n", "Lines", pct, covered, total
+                color = pct >= 80 ? green : (pct >= 79 ? yellow : red)
+                printf "%s  %-12s %8.2f%% %10d / %d%s\n", color, "Statements", pct, covered, total, reset
+                printf "%s  %-12s %8.2f%% %10d / %d%s\n", color, "Lines", pct, covered, total, reset
             }
         ' "$coverage_profile"
-        awk '
+        awk -v red="$RED" -v green="$GREEN" -v yellow="$YELLOW" -v reset="$NC" '
             /^total:/ { next }
             NF >= 3 {
                 total++
@@ -1044,7 +1045,8 @@ run_coverage_tests() {
             }
             END {
                 pct = total ? (covered / total) * 100 : 0
-                printf "  %-12s %8.2f%% %10d / %d\n", "Functions", pct, covered, total
+                color = pct >= 80 ? green : (pct >= 79 ? yellow : red)
+                printf "%s  %-12s %8.2f%% %10d / %d%s\n", color, "Functions", pct, covered, total, reset
             }
         ' "$coverage_text"
         echo "  Branches: n/a (not reported by Go coverage)"
