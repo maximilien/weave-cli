@@ -63,6 +63,8 @@ Completed targets:
 - [x] Reach 64% on Day 21 by covering Opik synchronization, remote backup
   protocols, interactive configuration fixes, doctor output, and agent and
   command initialization boundaries.
+- [ ] Reach 65% on Day 22 (2026-09-24), beginning the one-percentage-point
+  daily coverage cadence, then raise the Codecov project target to 65%.
 
 ## Continuous Workstreams
 
@@ -79,8 +81,9 @@ Completed targets:
 - Keep tests isolated from developer credentials, home directories, and live
   services.
 - Prefer temporary directories and fake HTTP/gRPC servers.
-- Keep Codecov project coverage ratcheted at achieved milestones and patch
-  coverage at 80%.
+- Beginning with Day 22, raise the daily checkpoint and Codecov project target
+  exactly one percentage point at a time; overshoot is acceptable but does not
+  skip the following day's rung. Keep patch coverage at 80%.
 
 ### Documentation
 

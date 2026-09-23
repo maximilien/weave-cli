@@ -12,7 +12,9 @@
 
 - The campaign raised statement coverage from the v0.14.0 baseline of 30.18%
   to 40.06% for v0.15.0 and 64.07% on Day 21.
-- Preserve the 64% project ratchet and 80% patch target.
+- Preserve the 64% project ratchet and 80% patch target today.
+- Starting with Day 22 on 2026-09-24, advance one percentage-point checkpoint
+  per day; 65% is next, and overshoot does not skip the following day's rung.
 - Continue toward 80%, prioritizing command and core-package gaps.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 

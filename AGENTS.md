@@ -31,6 +31,10 @@ Run the standard local gate before handing off changes:
 - Go coverage does not report branch coverage. Treat 80% statement coverage as
   the target, report the current baseline, and improve low-coverage packages
   without weakening or excluding meaningful production code.
+- Beginning with Day 22, advance the daily coverage checkpoint and Codecov
+  project target by exactly one percentage point. Overshooting the day's
+  checkpoint is acceptable, but do not skip the next daily percentage-point
+  rung unless the user explicitly requests a faster cadence.
 - Unit tests must isolate filesystem and environment state with `t.TempDir`,
   `t.Setenv`, or equivalent helpers. Do not depend on credentials from `.env`
   or write into the developer's home directory.

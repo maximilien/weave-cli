@@ -61,6 +61,13 @@ These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
 code.
 
+Beginning with Day 22 on 2026-09-24, the campaign advances in one-percentage-
+point daily checkpoints: **65%**, then **66%**, continuing one rung at a time
+toward **80%**. A daily slice may finish above its checkpoint, but that
+overshoot does not skip the following day's rung. After validation on `main`,
+raise the Codecov project target by exactly one percentage point for that day
+unless the user explicitly requests a faster cadence.
+
 ### Day 1 — Small Reusable Packages (2026-09-05)
 
 - Add deterministic tests for `pkg/health`, `pkg/metrics`, `pkg/server`, and
@@ -554,11 +561,12 @@ code.
 
 ### Path from 64.07% to 80%
 
-1. Raise low-coverage command packages, beginning with collection,
+1. Reach and stabilize the **65%** Day 22 checkpoint on 2026-09-24.
+2. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
-2. Deepen adapter error and pagination coverage while preserving the new 50%
+3. Deepen adapter error and pagination coverage while preserving the new 50%
    package floor.
-3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
+4. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
    around validation, cancellation, retries, and partial failures.
 
 Recalculate the remaining statement count after every slice. Prefer behavior
@@ -577,9 +585,11 @@ For each daily slice:
 5. Confirm Build, Test, Lint, and Security workflows are green on `main`.
 
 After an achieved checkpoint is stable locally and on `main`, raise Codecov's
-project target to that value in a separate commit. Never lower the target or
-exclude meaningful production code to make a gate pass. Keep patch coverage at
-80% so new and changed behavior remains well tested throughout the campaign.
+project target by one percentage point in a separate commit. Overshoot is
+welcome, but beginning with Day 22 it does not authorize skipping the next
+daily rung. Never lower the target or exclude meaningful production code to
+make a gate pass. Keep patch coverage at 80% so new and changed behavior
+remains well tested throughout the campaign.
 
 ## Long-Term Milestones
 
