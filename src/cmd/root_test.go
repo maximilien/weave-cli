@@ -4,13 +4,65 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/fatih/color"
 	"github.com/maximilien/weave-cli/src/pkg/doctor"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+func TestInitializationBoundaries(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	configPath := filepath.Join(root, "config.yaml")
+	if err := os.WriteFile(configPath, []byte("logging:\n  level: debug\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	oldCfgFile := cfgFile
+	oldLogLevel, oldLogFormat, oldLogFile := logLevel, logFormat, logFile
+	oldNoColor, oldEnableMetrics := noColor, enableMetrics
+	t.Cleanup(func() {
+		cfgFile = oldCfgFile
+		logLevel, logFormat, logFile = oldLogLevel, oldLogFormat, oldLogFile
+		noColor, enableMetrics = oldNoColor, oldEnableMetrics
+		viper.Reset()
+	})
+
+	viper.Reset()
+	viper.Set("verbose", true)
+	cfgFile = configPath
+	initConfig()
+	if viper.ConfigFileUsed() != configPath {
+		t.Fatalf("config file used = %q", viper.ConfigFileUsed())
+	}
+	cfgFile = filepath.Join(root, "missing.yaml")
+	initConfig()
+
+	cmd := &cobra.Command{Use: "fixture"}
+	cmd.Flags().Bool("verbose", false, "")
+	cmd.Flags().Bool("quiet", false, "")
+	logLevel, logFormat, logFile = "invalid", "unknown", ""
+	noColor, enableMetrics = true, false
+	initLogging(cmd, nil)
+
+	logLevel, logFormat, logFile = "debug", "json", filepath.Join(root, "weave.log")
+	if err := cmd.Flags().Set("verbose", "true"); err != nil {
+		t.Fatal(err)
+	}
+	initLogging(cmd, nil)
+	if err := cmd.Flags().Set("quiet", "true"); err != nil {
+		t.Fatal(err)
+	}
+	initLogging(cmd, nil)
+
+	logFormat, logFile = "text", ""
+	combinedPreRun(cmd, nil)
+}
 
 func TestRunDoctorFixSuggestions(t *testing.T) {
 	results := []doctor.CheckResult{
