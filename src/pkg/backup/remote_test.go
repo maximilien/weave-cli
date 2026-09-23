@@ -4,10 +4,141 @@
 package backup
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 )
+
+type failingBackupReader struct{}
+
+func (failingBackupReader) Read([]byte) (int, error) { return 0, fmt.Errorf("read failure") }
+
+func TestRemoteStorageProtocolLifecycle(t *testing.T) {
+	objects := make(map[string][]byte)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		key := strings.TrimPrefix(r.URL.Path, "/fixture-bucket/")
+		if r.URL.Query().Get("list-type") == "2" {
+			w.Header().Set("Content-Type", "application/xml")
+			_, _ = fmt.Fprint(w, `<?xml version="1.0" encoding="UTF-8"?><ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>fixture-bucket</Name><IsTruncated>false</IsTruncated><Contents><Key>backups/one.weavebak</Key><Size>3</Size></Contents><Contents><Key>backups/two.weavebak</Key><Size>3</Size></Contents></ListBucketResult>`)
+			return
+		}
+		switch r.Method {
+		case http.MethodPut:
+			data, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("read upload: %v", err)
+			}
+			objects[key] = data
+			w.WriteHeader(http.StatusOK)
+		case http.MethodGet:
+			data, ok := objects[key]
+			if !ok {
+				http.Error(w, "missing", http.StatusNotFound)
+				return
+			}
+			_, _ = w.Write(data)
+		case http.MethodHead:
+			if _, ok := objects[key]; !ok {
+				http.Error(w, "missing", http.StatusNotFound)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		case http.MethodDelete:
+			delete(objects, key)
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.Error(w, "unsupported", http.StatusMethodNotAllowed)
+		}
+	}))
+	defer server.Close()
+
+	storage, err := NewRemoteStorage(&RemoteStorageConfig{
+		Type: "minio", Endpoint: server.URL, Region: "us-east-1", Bucket: "fixture-bucket",
+		AccessKeyID: "fixture", SecretAccessKey: "fixture", PathPrefix: "backups",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := storage.Upload(ctx, "one.weavebak", []byte("one")); err != nil {
+		t.Fatal(err)
+	}
+	if err := storage.UploadStream(ctx, "two.weavebak", bytes.NewBufferString("two")); err != nil {
+		t.Fatal(err)
+	}
+	if err := storage.UploadStream(ctx, "bad.weavebak", failingBackupReader{}); err == nil || !strings.Contains(err.Error(), "read backup data") {
+		t.Fatalf("expected stream read error, got %v", err)
+	}
+
+	data, err := storage.Download(ctx, "one.weavebak")
+	if err != nil || string(data) != "one" {
+		t.Fatalf("Download() = (%q, %v)", data, err)
+	}
+	stream, err := storage.DownloadStream(ctx, "two.weavebak")
+	if err != nil {
+		t.Fatal(err)
+	}
+	streamData, err := io.ReadAll(stream)
+	_ = stream.Close()
+	if err != nil || string(streamData) != "two" {
+		t.Fatalf("DownloadStream() = (%q, %v)", streamData, err)
+	}
+
+	keys, err := storage.List(ctx, "")
+	if err != nil || len(keys) != 2 || keys[0] != "one.weavebak" || keys[1] != "two.weavebak" {
+		t.Fatalf("List() = (%v, %v)", keys, err)
+	}
+	exists, err := storage.Exists(ctx, "one.weavebak")
+	if err != nil || !exists {
+		t.Fatalf("Exists(existing) = (%v, %v)", exists, err)
+	}
+	if err := storage.Delete(ctx, "one.weavebak"); err != nil {
+		t.Fatal(err)
+	}
+	exists, err = storage.Exists(ctx, "one.weavebak")
+	if err != nil || exists {
+		t.Fatalf("Exists(deleted) = (%v, %v)", exists, err)
+	}
+}
+
+func TestRemoteStorageProtocolErrors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "backend unavailable", http.StatusInternalServerError)
+	}))
+	defer server.Close()
+	storage, err := NewRemoteStorage(&RemoteStorageConfig{
+		Type: "minio", Endpoint: server.URL, Region: "us-east-1", Bucket: "fixture-bucket",
+		AccessKeyID: "fixture", SecretAccessKey: "fixture",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := storage.Upload(ctx, "file", nil); err == nil || !strings.Contains(err.Error(), "failed to upload") {
+		t.Fatalf("expected upload error, got %v", err)
+	}
+	if _, err := storage.Download(ctx, "file"); err == nil || !strings.Contains(err.Error(), "failed to download") {
+		t.Fatalf("expected download error, got %v", err)
+	}
+	if _, err := storage.DownloadStream(ctx, "file"); err == nil || !strings.Contains(err.Error(), "failed to download") {
+		t.Fatalf("expected download stream error, got %v", err)
+	}
+	if _, err := storage.List(ctx, ""); err == nil || !strings.Contains(err.Error(), "failed to list") {
+		t.Fatalf("expected list error, got %v", err)
+	}
+	if err := storage.Delete(ctx, "file"); err == nil || !strings.Contains(err.Error(), "failed to delete") {
+		t.Fatalf("expected delete error, got %v", err)
+	}
+	if exists, err := storage.Exists(ctx, "file"); err == nil || exists {
+		t.Fatalf("expected exists backend error, got (%v, %v)", exists, err)
+	}
+}
 
 // TestRemoteStorageConfig tests configuration validation
 func TestRemoteStorageConfig(t *testing.T) {
