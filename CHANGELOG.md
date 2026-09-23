@@ -14,11 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   validation output, OCR fallback behavior, collection comparison reports,
   collection statistics, schema recommendation output, shared command
   utilities, stack backups, configuration diagnostics, and document sampling.
+- Added isolated protocol and lifecycle coverage for Opik dataset and trace
+  synchronization, S3-compatible remote backups, evaluation runners and result
+  commands, doctor renderers, interactive configuration fixes, root command
+  initialization, and agent utility boundaries.
 
 ### Changed
 
-- Raised development statement coverage to 62.17% and the Codecov project
-  ratchet to 62%; patch coverage remains 80%.
+- Raised development statement coverage to 64.07% and the Codecov project
+  ratchet to 64%; patch coverage remains 80%.
 - Colorized the local coverage summary against the 80% target: green at or
   above target, yellow within one percentage point, and red below that range.
 

@@ -33,28 +33,29 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 20, the current source count makes these approximate
+At the end of Day 21, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 20 status |
+| Target | Covered statements needed | Day 21 status |
 | --- | ---: | ---: |
-| 20% | 5,510 | Achieved (+11,618) |
-| 25% | 6,887 | Achieved (+10,241) |
-| 30% | 8,265 | Achieved (+8,863) |
-| 35% | 9,642 | Achieved (+7,486) |
-| 38% | 10,468 | Achieved (+6,660) |
-| 40% | 11,019 | Achieved (+6,109) |
-| 42% | 11,570 | Achieved (+5,558) |
-| 45% | 12,397 | Achieved (+4,731) |
-| 46% | 12,672 | Achieved (+4,456) |
-| 50% | 13,774 | Achieved (+3,354) |
-| 54% | 14,876 | Achieved (+2,252) |
-| 55% | 15,151 | Achieved (+1,977) |
-| 56% | 15,427 | Achieved (+1,701) |
-| 57% | 15,702 | Achieved (+1,426) |
-| 58% | 15,978 | Achieved (+1,150) |
-| 60% | 16,529 | Achieved (+599) |
-| 62% | 17,082 | Achieved (+46) |
+| 20% | 5,510 | Achieved (+12,142) |
+| 25% | 6,887 | Achieved (+10,765) |
+| 30% | 8,265 | Achieved (+9,387) |
+| 35% | 9,642 | Achieved (+8,010) |
+| 38% | 10,468 | Achieved (+7,184) |
+| 40% | 11,019 | Achieved (+6,633) |
+| 42% | 11,570 | Achieved (+6,082) |
+| 45% | 12,397 | Achieved (+5,255) |
+| 46% | 12,672 | Achieved (+4,980) |
+| 50% | 13,774 | Achieved (+3,878) |
+| 54% | 14,876 | Achieved (+2,776) |
+| 55% | 15,151 | Achieved (+2,501) |
+| 56% | 15,427 | Achieved (+2,225) |
+| 57% | 15,702 | Achieved (+1,950) |
+| 58% | 15,978 | Achieved (+1,674) |
+| 60% | 16,529 | Achieved (+1,123) |
+| 62% | 17,082 | Achieved (+570) |
+| 64% | 17,633 | Achieved (+19) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -522,7 +523,36 @@ code.
   input streams; none requires credentials or a live service.
 - The Codecov project target advances to 62%; patch coverage remains 80%.
 
-### Path from 62.17% to 80%
+### Day 21 — Remote Protocol and Interactive Boundaries (2026-09-23)
+
+- Exercise the Opik dataset lifecycle, item upserts, experiment synchronization,
+  trace creation and completion, URL derivation, and API/transport failures
+  through a local protocol fixture.
+- Exercise S3-compatible upload, streaming, download, listing, existence, and
+  deletion behavior plus backend failures through a local MinIO-style fixture.
+- Exercise interactive configuration choices, validation retries, summaries,
+  environment-file helpers, and minimal configuration generation with isolated
+  input streams and temporary files.
+- Exercise doctor text and JSON output, evaluation runner success and failure,
+  result list/show formats, root initialization, and agent helper boundaries.
+- Exit target: cross and stabilize 64% overall without credentials or live
+  services.
+
+#### Day 21 Results
+
+- Statements/lines: **64.07%** (`17,652 / 27,551`), an increase of 1.90
+  percentage points and 524 covered statements from Day 20.
+- Functions exercised: **86.50%** (`1,833 / 2,119`), an increase of 2.97
+  percentage points and 63 exercised functions from Day 20.
+- Raised `pkg/evaluation` from 60.53% to 81.99%, `pkg/backup` from 60.96% to
+  91.78%, `pkg/config` from 66.42% to 78.39%, `pkg/doctor` from 57.89% to
+  73.10%, root `cmd` from 67.60% to 73.97%, and `pkg/agents` from 83.76% to
+  86.53%.
+- Tests use temporary files, isolated input streams, fake LLM responses, and
+  localhost HTTP fixtures; none requires credentials or a live service.
+- The Codecov project target advances to 64%; patch coverage remains 80%.
+
+### Path from 64.07% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.

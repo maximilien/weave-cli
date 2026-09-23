@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-22
+**Last updated**: 2026-09-23
 
-**Current milestone**: continue from 62.17% toward 80% with the adapter floor complete
+**Current milestone**: continue from 64.07% toward 80% with the adapter floor complete
 
 ## Completed — v0.13.0
 
@@ -60,6 +60,9 @@ Completed targets:
   and stack process boundaries.
 - [x] Reach 62% on Day 20 by covering shared command utilities, configuration
   prompts, stack backups, statistics output, and configuration diagnostics.
+- [x] Reach 64% on Day 21 by covering Opik synchronization, remote backup
+  protocols, interactive configuration fixes, doctor output, and agent and
+  command initialization boundaries.
 
 ## Continuous Workstreams
 
