@@ -5,8 +5,10 @@ package evaluation
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -21,6 +23,54 @@ func TestNewRunner(t *testing.T) {
 
 	if runner.llmClient == nil {
 		t.Error("Runner should have LLM client")
+	}
+}
+
+func TestRunEvaluationLifecycle(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("HOME", root)
+	if err := os.MkdirAll(filepath.Join("configs", "agents"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	agentYAML := `name: fixture-agent
+type: rag
+description: fixture
+llm:
+  model: fixture-model
+system_prompt: Answer accurately.
+`
+	if err := os.WriteFile(filepath.Join("configs", "agents", "fixture-agent.yaml"), []byte(agentYAML), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	dataset := &Dataset{
+		Name: "fixture-dataset",
+		TestCases: []TestCase{{
+			ID: "case-1", Query: "Question?", ExpectedAnswer: "Answer", MustCite: true,
+			RetrievedContext: []string{"Answer context"},
+		}},
+	}
+
+	runner := NewRunner(&MockLLMClient{response: "0.85 [1]"})
+	run, err := runner.RunEvaluation(context.Background(), dataset, "fixture-agent", "Docs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(run.Results) != 1 || run.Config.Parameters["evaluator_provider"] != "local" || run.Results[0].ActualAnswer == "" {
+		t.Fatalf("unexpected evaluation run: %#v", run)
+	}
+
+	failingRunner := NewRunner(&MockLLMClient{err: errors.New("LLM unavailable")})
+	failedRun, err := failingRunner.RunEvaluation(context.Background(), dataset, "fixture-agent", "Docs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(failedRun.Results) != 1 || failedRun.Results[0].Passed || len(failedRun.Results[0].Errors) != 1 {
+		t.Fatalf("unexpected failed run: %#v", failedRun)
+	}
+
+	if _, err := runner.RunEvaluation(context.Background(), dataset, "missing-agent", "Docs"); err == nil || !strings.Contains(err.Error(), "failed to load agent") {
+		t.Fatalf("expected agent loading error, got %v", err)
 	}
 }
 

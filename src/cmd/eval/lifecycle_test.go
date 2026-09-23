@@ -56,6 +56,31 @@ func TestDatasetLifecycleHelpers(t *testing.T) {
 	}
 }
 
+func TestEvaluationResultListAndShowCommands(t *testing.T) {
+	setupEvalWorkspace(t)
+	listRuns("text")
+
+	run := sampleEvaluationRun()
+	if _, err := evaluation.SaveResults(run, "json"); err != nil {
+		t.Fatal(err)
+	}
+	for _, format := range []string{"text", "json", "yaml"} {
+		listRuns(format)
+		showResults(run.ID, format)
+	}
+
+	listCommand := NewListCommand()
+	listCommand.SetArgs([]string{"--output", "json"})
+	if err := listCommand.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	showCommand := NewShowCommand()
+	showCommand.SetArgs([]string{run.ID, "--output", "yaml"})
+	if err := showCommand.Execute(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestInteractiveDatasetAndPromptHelpers(t *testing.T) {
 	dataset := createInteractiveDataset("minimal", false)
 	if dataset.Name != "minimal" || dataset.Version != "1.0.0" || len(dataset.TestCases) != 1 {
