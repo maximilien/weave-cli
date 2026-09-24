@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-23
+**Last updated**: 2026-09-24
 
-**Current milestone**: continue from 64.07% toward 80% with the adapter floor complete
+**Current milestone**: continue from 65.01% toward 80% in one-point daily steps
 
 ## Completed — v0.13.0
 
@@ -63,8 +63,10 @@ Completed targets:
 - [x] Reach 64% on Day 21 by covering Opik synchronization, remote backup
   protocols, interactive configuration fixes, doctor output, and agent and
   command initialization boundaries.
-- [ ] Reach 65% on Day 22 (2026-09-24), beginning the one-percentage-point
+- [x] Reach 65% on Day 22 (2026-09-24), beginning the one-percentage-point
   daily coverage cadence, then raise the Codecov project target to 65%.
+- [ ] Reach 66% on Day 23 (2026-09-25) and raise the Codecov project target
+  to 66%.
 
 ## Continuous Workstreams
 

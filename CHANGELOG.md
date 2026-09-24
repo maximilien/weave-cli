@@ -18,11 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   synchronization, S3-compatible remote backups, evaluation runners and result
   commands, doctor renderers, interactive configuration fixes, root command
   initialization, and agent utility boundaries.
+- Added isolated collection listing, schema, and metadata display coverage,
+  plus Helm chart, template, install, and uninstall workflow tests.
 
 ### Changed
 
-- Raised development statement coverage to 64.07% and the Codecov project
-  ratchet to 64%; patch coverage remains 80%.
+- Raised development statement coverage to 65.01% and the Codecov project
+  ratchet to 65%; patch coverage remains 80%.
 - Colorized the local coverage summary against the 80% target: green at or
   above target, yellow within one percentage point, and red below that range.
 

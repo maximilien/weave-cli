@@ -33,29 +33,31 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 21, the current source count makes these approximate
+At the end of Day 22, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 21 status |
+| Target | Covered statements needed | Day 22 status |
 | --- | ---: | ---: |
-| 20% | 5,510 | Achieved (+12,142) |
-| 25% | 6,887 | Achieved (+10,765) |
-| 30% | 8,265 | Achieved (+9,387) |
-| 35% | 9,642 | Achieved (+8,010) |
-| 38% | 10,468 | Achieved (+7,184) |
-| 40% | 11,019 | Achieved (+6,633) |
-| 42% | 11,570 | Achieved (+6,082) |
-| 45% | 12,397 | Achieved (+5,255) |
-| 46% | 12,672 | Achieved (+4,980) |
-| 50% | 13,774 | Achieved (+3,878) |
-| 54% | 14,876 | Achieved (+2,776) |
-| 55% | 15,151 | Achieved (+2,501) |
-| 56% | 15,427 | Achieved (+2,225) |
-| 57% | 15,702 | Achieved (+1,950) |
-| 58% | 15,978 | Achieved (+1,674) |
-| 60% | 16,529 | Achieved (+1,123) |
-| 62% | 17,082 | Achieved (+570) |
-| 64% | 17,633 | Achieved (+19) |
+| 20% | 5,510 | Achieved (+12,400) |
+| 25% | 6,887 | Achieved (+11,023) |
+| 30% | 8,265 | Achieved (+9,645) |
+| 35% | 9,642 | Achieved (+8,268) |
+| 38% | 10,468 | Achieved (+7,442) |
+| 40% | 11,019 | Achieved (+6,891) |
+| 42% | 11,570 | Achieved (+6,340) |
+| 45% | 12,397 | Achieved (+5,513) |
+| 46% | 12,672 | Achieved (+5,238) |
+| 50% | 13,774 | Achieved (+4,136) |
+| 54% | 14,876 | Achieved (+3,034) |
+| 55% | 15,151 | Achieved (+2,759) |
+| 56% | 15,427 | Achieved (+2,483) |
+| 57% | 15,702 | Achieved (+2,208) |
+| 58% | 15,978 | Achieved (+1,932) |
+| 60% | 16,529 | Achieved (+1,381) |
+| 62% | 17,082 | Achieved (+828) |
+| 64% | 17,633 | Achieved (+277) |
+| 65% | 17,909 | Achieved (+1) |
+| 66% | 18,184 | Next checkpoint (-274) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -559,9 +561,32 @@ unless the user explicitly requests a faster cadence.
   localhost HTTP fixtures; none requires credentials or a live service.
 - The Codecov project target advances to 64%; patch coverage remains 80%.
 
-### Path from 64.07% to 80%
+### Day 22 — Collection Display and Helm Workflows (2026-09-24)
 
-1. Reach and stabilize the **65%** Day 22 checkpoint on 2026-09-24.
+- Exercise mock and local Weaviate collection listing, limits, JSON output,
+  schema display, and metadata analysis with isolated fixtures.
+- Run previously skipped Helm chart generation and template-copy tests from
+  temporary fixture directories; exercise install and uninstall arguments and
+  failures with a local fake executable.
+- Exit target: reach the first one-percentage-point checkpoint at 65%.
+
+#### Day 22 Results
+
+- Statements/lines: **65.01%** (`17,910 / 27,551`), an increase of 0.94
+  percentage points and 258 covered statements from Day 21.
+- Functions exercised: **87.02%** (`1,844 / 2,119`), an increase of 0.52
+  percentage points and 11 exercised functions from Day 21.
+- Raised `cmd/utils` from 35.10% to 39.77% and `pkg/stack` from 48.47% to
+  53.52%.
+- Tests use temporary directories, a loopback Weaviate protocol fixture,
+  in-memory mock collections, and a fake Helm executable. No live services or
+  credentials are required.
+- The Codecov project target advances one point to 65%; patch coverage remains
+  80%.
+
+### Path from 65.01% to 80%
+
+1. Reach and stabilize the **66%** Day 23 checkpoint on 2026-09-25.
 2. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
 3. Deepen adapter error and pagination coverage while preserving the new 50%
