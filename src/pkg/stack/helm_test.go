@@ -6,6 +6,7 @@ package stack
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -189,10 +190,7 @@ func TestSaveHelmValues(t *testing.T) {
 }
 
 func TestGenerateHelmChart(t *testing.T) {
-	// Skip if not in project root (templates not accessible from test dir)
-	if _, err := os.Stat("templates/helm/weave-stack"); os.IsNotExist(err) {
-		t.Skip("Skipping: templates directory not found (run from project root)")
-	}
+	prepareHelmTemplateFixture(t)
 
 	tmpDir := t.TempDir()
 	outputDir := filepath.Join(tmpDir, "helm-chart")
@@ -232,10 +230,7 @@ func TestGenerateHelmChart(t *testing.T) {
 }
 
 func TestCopyHelmTemplates(t *testing.T) {
-	// Skip if not in project root (templates not accessible from test dir)
-	if _, err := os.Stat("templates/helm/weave-stack"); os.IsNotExist(err) {
-		t.Skip("Skipping: templates directory not found (run from project root)")
-	}
+	prepareHelmTemplateFixture(t)
 
 	tmpDir := t.TempDir()
 	outputDir := filepath.Join(tmpDir, "kubernetes")
@@ -279,6 +274,66 @@ func TestCopyHelmTemplates(t *testing.T) {
 	assert.Equal(t, "weave-stack", chart["name"])
 	assert.NotEmpty(t, chart["version"])
 	assert.NotEmpty(t, chart["description"])
+}
+
+func prepareHelmTemplateFixture(t *testing.T) {
+	t.Helper()
+	root := t.TempDir()
+	t.Chdir(root)
+	dir := filepath.Join(root, "templates", "helm", "weave-stack")
+	if err := os.MkdirAll(filepath.Join(dir, "templates"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"Chart.yaml", "templates/_helpers.tpl", "templates/milvus-deployment.yaml", "templates/milvus-service.yaml", "templates/vectordb-pvc.yaml"} {
+		contents := "fixture: " + name + "\n"
+		if name == "Chart.yaml" {
+			contents = "name: weave-stack\nversion: 0.1.0\ndescription: test chart\n"
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(contents), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestHelmCommandsWithLocalExecutable(t *testing.T) {
+	binDir := t.TempDir()
+	logPath := filepath.Join(t.TempDir(), "helm-args.txt")
+	script := "#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$WEAVE_HELM_TEST_LOG\"\nif [ \"$WEAVE_HELM_TEST_FAIL\" = 1 ]; then echo fixture-failure; exit 7; fi\n"
+	if err := os.WriteFile(filepath.Join(binDir, "helm"), []byte(script), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+	t.Setenv("WEAVE_HELM_TEST_LOG", logPath)
+
+	if err := HelmInstall("/tmp/chart", "fixture", "test-namespace", "60s", "kind-test"); err != nil {
+		t.Fatal(err)
+	}
+	args, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(args), "install\nfixture\n/tmp/chart\n") || !strings.Contains(string(args), "--kube-context\nkind-test\n") {
+		t.Fatalf("install arguments = %q", args)
+	}
+
+	if err := HelmUninstall("fixture", "test-namespace", ""); err != nil {
+		t.Fatal(err)
+	}
+	args, err = os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(args), "--kube-context") || !strings.HasPrefix(string(args), "uninstall\nfixture\n--namespace\ntest-namespace\n") {
+		t.Fatalf("uninstall arguments = %q", args)
+	}
+
+	t.Setenv("WEAVE_HELM_TEST_FAIL", "1")
+	if err := HelmInstall("/tmp/chart", "fixture", "test-namespace", "60s", ""); err == nil || !strings.Contains(err.Error(), "fixture-failure") {
+		t.Fatalf("install failure = %v", err)
+	}
+	if err := HelmUninstall("fixture", "test-namespace", "kind-test"); err == nil || !strings.Contains(err.Error(), "fixture-failure") {
+		t.Fatalf("uninstall failure = %v", err)
+	}
 }
 
 func TestCopyFile(t *testing.T) {
