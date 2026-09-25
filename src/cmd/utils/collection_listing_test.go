@@ -131,6 +131,19 @@ func TestListWeaviateCollectionsOutputs(t *testing.T) {
 	if !strings.Contains(metadataOutput, "from 2 documents") || !strings.Contains(metadataOutput, "Sample:") {
 		t.Fatalf("metadata output = %q", metadataOutput)
 	}
+
+	summary := captureUtilsOutput(t, func() {
+		ShowWeaviateCollection(context.Background(), cfg, "Docs", 1, false, false, true, true, false, false, false, "", "", false)
+	})
+	if !strings.Contains(summary, "first") || !strings.Contains(summary, "from 2 documents") {
+		t.Fatalf("collection summary = %q", summary)
+	}
+	fullSummary := captureUtilsOutput(t, func() {
+		ShowWeaviateCollection(context.Background(), cfg, "Docs", 3, true, false, false, false, false, false, false, "", "", false)
+	})
+	if !strings.Contains(fullSummary, "first") {
+		t.Fatalf("untruncated collection summary = %q", fullSummary)
+	}
 }
 
 func captureUtilsOutput(t *testing.T, run func()) string {
