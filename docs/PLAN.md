@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-09-24
+**Last updated**: 2026-09-25
 
-**Current milestone**: continue from 65.01% toward 80% in one-point daily steps
+**Current milestone**: continue from 66.08% toward 80% in one-point daily steps
 
 ## Completed — v0.13.0
 
@@ -65,8 +65,10 @@ Completed targets:
   command initialization boundaries.
 - [x] Reach 65% on Day 22 (2026-09-24), beginning the one-percentage-point
   daily coverage cadence, then raise the Codecov project target to 65%.
-- [ ] Reach 66% on Day 23 (2026-09-25) and raise the Codecov project target
+- [x] Reach 66% on Day 23 (2026-09-25) and raise the Codecov project target
   to 66%.
+- [ ] Reach 67% on Day 24 (2026-09-26) and raise the Codecov project target
+  to 67%.
 
 ## Continuous Workstreams
 

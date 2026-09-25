@@ -20,11 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   initialization, and agent utility boundaries.
 - Added isolated collection listing, schema, and metadata display coverage,
   plus Helm chart, template, install, and uninstall workflow tests.
+- Added isolated generic and mock document ingestion coverage for sequential,
+  parallel, text, image, read, and summary paths.
 
 ### Changed
 
-- Raised development statement coverage to 65.01% and the Codecov project
-  ratchet to 65%; patch coverage remains 80%.
+- Raised development statement coverage to 66.08% and the Codecov project
+  ratchet to 66%; patch coverage remains 80%.
 - Colorized the local coverage summary against the 80% target: green at or
   above target, yellow within one percentage point, and red below that range.
 

@@ -33,10 +33,10 @@ The first coverage campaign began on 2026-09-05. Its targets were **20%**,
 **38%** checkpoints before **40%**; these milestones do not replace the
 long-term 80% goal.
 
-At the end of Day 22, the current source count makes these approximate
+At the end of Day 23, the current source count makes these approximate
 requirements:
 
-| Target | Covered statements needed | Day 22 status |
+| Target | Covered statements needed | Day 23 status |
 | --- | ---: | ---: |
 | 20% | 5,510 | Achieved (+12,400) |
 | 25% | 6,887 | Achieved (+11,023) |
@@ -56,8 +56,9 @@ requirements:
 | 60% | 16,529 | Achieved (+1,381) |
 | 62% | 17,082 | Achieved (+828) |
 | 64% | 17,633 | Achieved (+277) |
-| 65% | 17,909 | Achieved (+1) |
-| 66% | 18,184 | Next checkpoint (-274) |
+| 65% | 17,909 | Achieved (+298) |
+| 66% | 18,184 | Achieved (+23) |
+| 67% | 18,460 | Next checkpoint (-253) |
 
 These counts are planning estimates. Use the percentage reported by
 `./test.sh --coverage` because the denominator will change with production
@@ -584,9 +585,32 @@ unless the user explicitly requests a faster cadence.
 - The Codecov project target advances one point to 65%; patch coverage remains
   80%.
 
-### Path from 65.01% to 80%
+### Day 23 — Document Ingestion and Read Paths (2026-09-25)
 
-1. Reach and stabilize the **66%** Day 23 checkpoint on 2026-09-25.
+- Exercise generic text ingestion sequentially and with worker pools, including
+  chunk metadata, missing collections, and missing files.
+- Exercise legacy mock text and image ingestion for both current and legacy
+  schema conventions, including metadata and encoded image data.
+- Exercise document JSON and text reads plus collection summaries through local
+  mock and loopback Weaviate fixtures.
+- Exit target: reach the one-percentage-point checkpoint at 66%.
+
+#### Day 23 Results
+
+- Statements/lines: **66.08%** (`18,207 / 27,551`), an increase of 1.07
+  percentage points and 297 covered statements from Day 22.
+- Functions exercised: **87.49%** (`1,854 / 2,119`), an increase of 0.47
+  percentage points and 10 exercised functions from Day 22.
+- Raised `cmd/utils` from 39.77% to 46.22%.
+- Tests use temporary files, in-memory mock clients, a loopback Weaviate
+  fixture, and fake process boundaries; no credentials or live services are
+  required.
+- The Codecov project target advances one point to 66%; patch coverage remains
+  80%.
+
+### Path from 66.08% to 80%
+
+1. Reach and stabilize the **67%** Day 24 checkpoint on 2026-09-26.
 2. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
 3. Deepen adapter error and pagination coverage while preserving the new 50%
