@@ -4,6 +4,7 @@
 package reembedding
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -26,6 +27,19 @@ func TestNewProgressTracker(t *testing.T) {
 
 	if tracker.startTime.IsZero() {
 		t.Error("Expected non-zero start time")
+	}
+}
+
+func TestProgressStatusMessage(t *testing.T) {
+	zero := NewProgressTracker(0)
+	if zero.GetStatusMessage() != "" {
+		t.Fatal("zero-total status should be empty")
+	}
+	tracker := NewProgressTracker(10)
+	tracker.Update(5)
+	status := tracker.GetStatusMessage()
+	if !strings.Contains(status, "50%") || !strings.Contains(status, "5/10 docs") {
+		t.Fatalf("unexpected status: %s", status)
 	}
 }
 

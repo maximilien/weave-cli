@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
@@ -530,6 +531,85 @@ func TestCreateCollection(t *testing.T) {
 	err = client.CreateCollection(ctx, "NewCollection", "text-embedding-ada-002", nil)
 	if err == nil {
 		t.Error("Expected error when creating duplicate collection, got nil")
+	}
+}
+
+func TestCollectionAndDocumentLifecycle(t *testing.T) {
+	client := createTestClient()
+	ctx := context.Background()
+
+	if err := client.CreateCollectionWithSchema(ctx, "Lifecycle", &vectordb.CollectionSchema{}); err != nil {
+		t.Fatalf("creating collection with schema: %v", err)
+	}
+	if err := client.CreateCollectionWithSchema(ctx, "Lifecycle", &vectordb.CollectionSchema{}); err == nil {
+		t.Fatal("expected duplicate collection error")
+	}
+
+	doc := Document{ID: "lifecycle-1", Content: "before", Metadata: map[string]interface{}{"kind": "draft"}}
+	if err := client.CreateDocument(ctx, "Lifecycle", doc); err != nil {
+		t.Fatalf("creating document: %v", err)
+	}
+	if err := client.CreateDocument(ctx, "Lifecycle", doc); err == nil {
+		t.Fatal("expected duplicate document error")
+	}
+	if err := client.CreateDocument(ctx, "Missing", doc); err == nil {
+		t.Fatal("expected missing collection error")
+	}
+
+	exists, err := client.CollectionExists(ctx, "Lifecycle")
+	if err != nil || !exists {
+		t.Fatalf("expected Lifecycle to exist, got exists=%v err=%v", exists, err)
+	}
+	exists, err = client.CollectionExists(ctx, "Missing")
+	if err != nil || exists {
+		t.Fatalf("expected Missing not to exist, got exists=%v err=%v", exists, err)
+	}
+
+	if err := client.UpdateDocument(ctx, "Lifecycle", "lifecycle-1", "after", map[string]interface{}{"kind": "published"}); err != nil {
+		t.Fatalf("updating document: %v", err)
+	}
+	updated, err := client.GetDocument(ctx, "Lifecycle", "lifecycle-1")
+	if err != nil {
+		t.Fatalf("getting updated document: %v", err)
+	}
+	if updated.Content != "after" || updated.Metadata["kind"] != "published" || updated.Metadata["updated_at"] == nil {
+		t.Fatalf("document was not updated: %+v", updated)
+	}
+	if err := client.UpdateDocument(ctx, "Lifecycle", "missing", "", nil); err == nil {
+		t.Fatal("expected missing document error")
+	}
+	if err := client.UpdateDocument(ctx, "Missing", "lifecycle-1", "", nil); err == nil {
+		t.Fatal("expected missing collection error")
+	}
+}
+
+func TestCreateDocumentsBatch(t *testing.T) {
+	client := createTestClient()
+	ctx := context.Background()
+	if err := client.CreateCollection(ctx, "Batch", "", nil); err != nil {
+		t.Fatalf("creating batch collection: %v", err)
+	}
+
+	docs := []*vectordb.Document{
+		{ID: "batch-1", Text: "text fallback", Metadata: map[string]interface{}{"n": 1}},
+		nil,
+		{ID: "batch-2", Content: "content wins", Text: "ignored"},
+	}
+	if err := client.CreateDocuments(ctx, "Batch", docs); err != nil {
+		t.Fatalf("creating batch documents: %v", err)
+	}
+	created, err := client.ListDocuments(ctx, "Batch", 0)
+	if err != nil || len(created) != 2 {
+		t.Fatalf("expected two batch documents, got %d err=%v", len(created), err)
+	}
+	if created[0].Content != "text fallback" || created[1].Content != "content wins" {
+		t.Fatalf("unexpected batch content: %+v", created)
+	}
+	if err := client.CreateDocuments(ctx, "Batch", []*vectordb.Document{{ID: "batch-1"}}); err == nil {
+		t.Fatal("expected duplicate batch document error")
+	}
+	if err := client.CreateDocuments(ctx, "Missing", docs); err == nil {
+		t.Fatal("expected missing collection error")
 	}
 }
 

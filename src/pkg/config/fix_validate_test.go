@@ -294,3 +294,15 @@ func TestGetFieldSuggestions(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateToken(t *testing.T) {
+	valid := "this-is-a-valid-token-1234"
+	if err := validateToken(valid); err != nil {
+		t.Fatalf("valid token rejected: %v", err)
+	}
+	for _, value := range []string{"short", "your-token-please-use", strings.Repeat("x", 513)} {
+		if err := validateToken(value); err == nil {
+			t.Errorf("expected token validation error for %q", value)
+		}
+	}
+}

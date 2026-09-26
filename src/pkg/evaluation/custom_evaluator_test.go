@@ -218,6 +218,9 @@ func TestCustomEvaluatorExecution(t *testing.T) {
 		Query:          "What is AI?",
 		ExpectedAnswer: "Artificial Intelligence",
 	}
+	if NewCustomEvaluator(&CustomEvaluatorDef{Name: "named"}, mockClient).Name() != "named" {
+		t.Fatal("Name did not return definition name")
+	}
 
 	t.Run("LLMJudgeEvaluator", func(t *testing.T) {
 		def := &CustomEvaluatorDef{

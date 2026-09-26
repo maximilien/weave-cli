@@ -299,6 +299,31 @@ databases:
 	}
 }
 
+func TestYAMLEditor_SaveToFile(t *testing.T) {
+	source := filepath.Join(t.TempDir(), "source.yaml")
+	target := filepath.Join(t.TempDir(), "target.yaml")
+	if err := os.WriteFile(source, []byte("name: before\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	editor, err := NewYAMLEditor(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := editor.SetValue("name", "after"); err != nil {
+		t.Fatal(err)
+	}
+	if err := editor.SaveToFile(target); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "after") {
+		t.Fatalf("saved YAML missing update: %s", data)
+	}
+}
+
 // Helper function to get value at a path in a map
 func getValueAtPath(data map[string]interface{}, path string) interface{} {
 	segments, err := parsePath(path)
