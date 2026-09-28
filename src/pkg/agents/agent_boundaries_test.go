@@ -80,4 +80,36 @@ func TestAgentUtilityBoundaries(t *testing.T) {
 	if schemaAgent == nil || schemaAgent.Name() != "schema-agent" {
 		t.Fatalf("NewSchemaAgent(nil) = %#v", schemaAgent)
 	}
+	if _, err := schemaAgent.Execute(context.Background(), "invalid"); err == nil {
+		t.Fatal("expected schema input type error")
+	}
+	if _, err := schemaAgent.Execute(context.Background(), &SchemaAnalysisInput{SampleFiles: []string{"missing.txt"}, MaxSamples: 1}); err == nil {
+		t.Fatal("expected missing sample error")
+	}
+}
+
+func TestBashAgentExecutionPaths(t *testing.T) {
+	agent := NewBashAgent()
+	if _, err := agent.Execute(context.Background(), "not-a-command"); err == nil {
+		t.Fatal("expected invalid input type error")
+	}
+	resultValue, err := agent.Execute(context.Background(), &BashCommand{
+		Command: "echo", Args: []string{"hello"}, Environment: map[string]string{"DAY": "25"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result := resultValue.(*BashResult)
+	if !result.Success || !strings.Contains(result.Stdout, "hello") || result.ExitCode != 0 {
+		t.Fatalf("unexpected echo result: %#v", result)
+	}
+
+	resultValue, err = agent.Execute(context.Background(), &BashCommand{Command: "ls", Args: []string{"/path/that/does/not/exist"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result = resultValue.(*BashResult)
+	if result.Success || result.ExitCode == 0 || result.Stderr == "" {
+		t.Fatalf("unexpected failure result: %#v", result)
+	}
 }
