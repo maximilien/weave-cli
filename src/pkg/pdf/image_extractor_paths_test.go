@@ -7,6 +7,23 @@ import (
 )
 
 func TestImageExtractionErrorAndMetadataPaths(t *testing.T) {
+	fallbackDir := t.TempDir()
+	if _, err := extractImagesWithFallback(filepath.Join(fallbackDir, "missing.pdf"), fallbackDir, false, 0, true); err != nil {
+		t.Fatalf("fallback extraction: %v", err)
+	}
+	binDir := t.TempDir()
+	fakePDFImages := filepath.Join(binDir, "pdfimages")
+	if err := os.WriteFile(fakePDFImages, []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", binDir)
+	if _, err := extractImagesWithFallback(filepath.Join(fallbackDir, "missing.pdf"), fallbackDir, false, 0, true); err != nil {
+		t.Fatalf("empty fallback extraction: %v", err)
+	}
+	t.Setenv("PATH", filepath.Join(fallbackDir, "no-tools"))
+	if _, err := extractImagesWithFallback(filepath.Join(fallbackDir, "missing.pdf"), fallbackDir, false, 0, false); err != nil {
+		t.Fatalf("missing-tool fallback extraction: %v", err)
+	}
 	if _, err := extractPDFImages(filepath.Join(t.TempDir(), "missing.pdf"), false, 0, true); err == nil {
 		t.Fatal("expected missing PDF extraction error")
 	}

@@ -1,6 +1,11 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestShellSetupPathsDay27(t *testing.T) {
 	for _, shell := range []string{"bash", "zsh", "fish", "powershell", "pwsh"} {
@@ -18,4 +23,26 @@ func TestShellSetupPathsDay27(t *testing.T) {
 	}
 	t.Setenv("SHELL", "")
 	_ = detectShell()
+}
+
+func TestPerformSetupFileBranches(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shellrc")
+	oldUpdate := updateCompletion
+	t.Cleanup(func() { updateCompletion = oldUpdate })
+	updateCompletion = false
+	setup := &ShellSetup{ConfigFile: path, CompletionLine: "source <(weave completion bash)"}
+	if err := performSetup(setup); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || !strings.Contains(string(data), "weave completion bash") {
+		t.Fatalf("setup file: %q err=%v", data, err)
+	}
+	if err := performSetup(setup); err != nil {
+		t.Fatal(err)
+	}
+	updateCompletion = true
+	if err := performSetup(setup); err != nil {
+		t.Fatal(err)
+	}
 }
