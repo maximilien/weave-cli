@@ -7,9 +7,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -72,6 +74,35 @@ func TestDocumentReadCommandPathsWithMockDatabase(t *testing.T) {
 	})
 
 	runDocumentCount(CountCmd, []string{"Docs", "Images"})
+}
+
+func TestBatchProcessingFailurePath(t *testing.T) {
+	root := setupMockDocumentConfig(t)
+	cfg, err := config.LoadConfig(filepath.Join(root, "config.yaml"), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbConfig := &cfg.Databases.VectorDatabases[0]
+	dbConfig.Collections = []config.Collection{{Name: "Docs"}}
+	progress := &BatchProgress{TotalFiles: 1, StartTime: time.Now()}
+	status := processFileWithRetry(context.Background(), dbConfig, filepath.Join(root, "missing.txt"), "Docs", 0, 100, "", false, 0, 1, progress, &sync.Mutex{})
+	if status.Success || status.Error == "" || progress.FailedFiles != 1 {
+		t.Fatalf("unexpected batch failure status: %#v progress=%#v", status, progress)
+	}
+	validPath := filepath.Join(root, "valid.txt")
+	if err := os.WriteFile(validPath, []byte("batch document content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	validProgress := &BatchProgress{TotalFiles: 1, StartTime: time.Now()}
+	valid := processFileWithRetry(context.Background(), dbConfig, validPath, "Docs", 0, 100, "", false, 0, 1, validProgress, &sync.Mutex{})
+	if !valid.Success || valid.Error != "" || validProgress.SuccessFiles != 1 {
+		t.Fatalf("unexpected batch success status: %#v progress=%#v", valid, validProgress)
+	}
+	parallelProgress := &BatchProgress{TotalFiles: 1, StartTime: time.Now()}
+	results := processBatchFiles(context.Background(), dbConfig, []string{validPath}, "Docs", 2, 0, 100, "", false, 0, 1, parallelProgress)
+	if len(results) != 1 || !results[0].Success {
+		t.Fatalf("unexpected parallel batch results: %#v", results)
+	}
 }
 
 func TestDocumentCreateCommandPathsWithMockDatabase(t *testing.T) {
