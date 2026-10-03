@@ -84,3 +84,26 @@ func TestMetadataHydrationAndDeletionFlows(t *testing.T) {
 		t.Fatalf("deleted count=%d err=%v", count, err)
 	}
 }
+
+func TestEmptyCollectionAndMissingDocumentPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/v1/schema/Empty" {
+			_, _ = io.WriteString(w, `{"properties":[{"name":"content","dataType":["text"]}]}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Empty":[]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := client.DeleteAllDocuments(ctx, "Empty"); err != nil {
+		t.Fatalf("empty delete: %v", err)
+	}
+	if _, err := client.getDocumentSimple(ctx, "Empty", "missing"); err == nil {
+		t.Fatal("expected missing document error")
+	}
+}
