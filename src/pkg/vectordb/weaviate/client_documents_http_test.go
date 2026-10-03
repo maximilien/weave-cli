@@ -218,6 +218,26 @@ func TestCountDocumentsWithFakeGraphQLServer(t *testing.T) {
 	}
 }
 
+func TestListDocumentsFallsBackWhenSchemaUnavailable(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/schema/") {
+			http.Error(w, "schema unavailable", http.StatusInternalServerError)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1"}},{"_additional":{"id":"doc-2"}}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs, err := client.ListDocuments(context.Background(), "Docs", 2)
+	if err != nil || len(docs) != 2 || docs[0].ID != "doc-1" {
+		t.Fatalf("ListDocuments fallback = (%#v, %v)", docs, err)
+	}
+}
+
 func TestBuildMetadataQueryWithFakeSchemaServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Openai-Api-Key"); got != "openai-key" {
