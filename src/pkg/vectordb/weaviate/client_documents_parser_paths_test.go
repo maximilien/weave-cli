@@ -56,3 +56,31 @@ func TestMetadataQueryFilterBranches(t *testing.T) {
 		t.Fatal("expected invalid metadata filter")
 	}
 }
+
+func TestMetadataHydrationAndDeletionFlows(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/v1/objects/Docs/doc-1" {
+			_, _ = io.WriteString(w, `{"id":"doc-1","properties":{"content":"hello","metadata":"{\"kind\":\"pdf\"}"}}`)
+			return
+		}
+		if r.Method == http.MethodDelete && r.URL.Path == "/v1/objects/Docs/doc-1" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1"}}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	docs, err := client.GetDocumentsByMetadata(ctx, "Docs", []string{"kind=pdf"})
+	if err != nil || len(docs) != 1 || docs[0].Content != "hello" {
+		t.Fatalf("hydrated docs=%#v err=%v", docs, err)
+	}
+	if count, err := client.DeleteDocumentsByMetadata(ctx, "Docs", []string{"kind=pdf"}); err != nil || count != 1 {
+		t.Fatalf("deleted count=%d err=%v", count, err)
+	}
+}
