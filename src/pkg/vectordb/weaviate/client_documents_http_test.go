@@ -238,6 +238,52 @@ func TestListDocumentsFallsBackWhenSchemaUnavailable(t *testing.T) {
 	}
 }
 
+func TestListDocumentsParsesPropertiesAndVectors(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/schema/") {
+			_, _ = io.WriteString(w, `{"properties":[{"name":"text","dataType":["text"]},{"name":"metadata","dataType":["object"],"nestedProperties":[{"name":"author"}]}]}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1","vector":[0.1,0.2]},"text":"hello","metadata":"{\"author\":\"Ada\"}","title":"Greeting"}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs, err := client.ListDocuments(context.Background(), "Docs", 5)
+	if err != nil || len(docs) != 1 || docs[0].ID != "doc-1" || docs[0].Content == "" {
+		t.Fatalf("ListDocuments parsed = (%#v, %v)", docs, err)
+	}
+	if len(docs[0].Embedding) != 2 || docs[0].Metadata["author"] != "Ada" {
+		t.Fatalf("ListDocuments metadata/vector = %#v", docs[0])
+	}
+}
+
+func TestListDocumentsImageMetadataFallback(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/schema/") {
+			_, _ = io.WriteString(w, `{"properties":[{"name":"metadata","dataType":["object"],"nestedProperties":[{"name":"image_index"}]}]}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"ImageDocuments":[{"_additional":{"id":"img-1","vector":[1]},"metadata":"not-json","description":""}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs, err := client.ListDocuments(context.Background(), "ImageDocuments", 2)
+	if err != nil || len(docs) != 1 || docs[0].ID != "img-1" {
+		t.Fatalf("image list = (%#v, %v)", docs, err)
+	}
+	if docs[0].Metadata["image"] == nil || docs[0].Metadata["metadata"] != "not-json" {
+		t.Fatalf("image metadata fallback = %#v", docs[0].Metadata)
+	}
+}
+
 func TestBuildMetadataQueryWithFakeSchemaServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Openai-Api-Key"); got != "openai-key" {
