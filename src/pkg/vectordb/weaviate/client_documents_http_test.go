@@ -284,6 +284,25 @@ func TestListDocumentsImageMetadataFallback(t *testing.T) {
 	}
 }
 
+func TestListDocumentsReturnsOriginalErrorAfterFallbacksFail(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/schema/") {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		_, _ = io.WriteString(w, `{"errors":[{"message":"class Docs not found"}]}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.ListDocuments(context.Background(), "Docs", 1); err == nil {
+		t.Fatal("expected fallback list error")
+	}
+}
+
 func TestBuildMetadataQueryWithFakeSchemaServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Openai-Api-Key"); got != "openai-key" {

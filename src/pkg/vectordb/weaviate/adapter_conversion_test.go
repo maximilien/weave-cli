@@ -1,6 +1,7 @@
 package weaviate
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -8,6 +9,9 @@ import (
 
 func TestAdapterDocumentConversions(t *testing.T) {
 	a := &Adapter{}
+	if err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
 	if a.convertDocument(nil) != nil || a.convertDocumentFromWeaviate(nil) != nil || a.convertDocumentsFromWeaviate(nil) != nil {
 		t.Fatal("nil conversions should remain nil")
 	}
@@ -34,5 +38,13 @@ func TestAdapterDocumentConversions(t *testing.T) {
 	schema := a.convertSchemaFromWeaviate(&CollectionSchema{Class: "Docs", Vectorizer: "none", Properties: []SchemaProperty{{Name: "meta", DataType: []string{"object"}, NestedProperties: []SchemaProperty{{Name: "author"}}}}})
 	if schema.Class != "Docs" || len(schema.Properties) != 1 || len(schema.Properties[0].NestedProperties) != 1 {
 		t.Fatalf("schema conversion mismatch: %#v", schema)
+	}
+	if a.wrapError(nil, "noop") != nil {
+		t.Fatal("nil error should remain nil")
+	}
+	for _, message := range []string{"connection refused", "unauthorized", "not found", "other"} {
+		if a.wrapError(errors.New(message), "operation") == nil {
+			t.Fatalf("wrapError(%q) returned nil", message)
+		}
 	}
 }
