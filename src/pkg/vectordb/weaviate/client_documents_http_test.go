@@ -349,6 +349,32 @@ func TestDeleteDocumentsBulkSequentialPaths(t *testing.T) {
 	}
 }
 
+func TestListDocumentsAggregationFallback(t *testing.T) {
+	call := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/v1/schema/") {
+			_, _ = io.WriteString(w, `{"properties":[{"name":"text","dataType":["text"]}]}`)
+			return
+		}
+		call++
+		if call == 1 {
+			_, _ = io.WriteString(w, `{"errors":[{"message":"class Docs not found"}]}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Aggregate":{"Docs":[{"meta":{"count":0}}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs, err := client.ListDocuments(context.Background(), "Docs", 1)
+	if err != nil || len(docs) != 0 {
+		t.Fatalf("aggregation fallback = (%#v, %v)", docs, err)
+	}
+}
+
 func TestBuildMetadataQueryWithFakeSchemaServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Openai-Api-Key"); got != "openai-key" {

@@ -107,3 +107,102 @@ func TestEmptyCollectionAndMissingDocumentPaths(t *testing.T) {
 		t.Fatal("expected missing document error")
 	}
 }
+
+func TestDeleteAllDocumentsNonEmptyCollection(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		if r.URL.Path == "/v1/schema/Docs" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1"}},{"_additional":{"id":"doc-2"}}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteAllDocuments(context.Background(), "Docs"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeleteAllDocumentsFailureBranches(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete {
+			http.Error(w, "failed", http.StatusBadGateway)
+			return
+		}
+		if r.URL.Path == "/v1/schema/Docs" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, `{"errors":[{"message":"class Docs not found"}]}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteAllDocuments(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected list failure")
+	}
+}
+
+func TestDeleteAllDocumentsPartialDeletionFailure(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodDelete {
+			http.Error(w, "failed", http.StatusBadGateway)
+			return
+		}
+		if r.URL.Path == "/v1/schema/Docs" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1"}}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteAllDocuments(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected partial deletion failure")
+	}
+}
+
+func TestListDocumentsSimpleGraphQLErrorMessages(t *testing.T) {
+	responses := []string{
+		`{"errors":[{"message":"class Docs not found"}]}`,
+		`{"errors":[{"message":"Unknown class Docs"}]}`,
+		`{"errors":[{"message":"Did you mean Other?"}]}`,
+		`{"errors":[{"message":"generic failure"}]}`,
+		`{"data":{"Get":{"Docs":[{"_additional":{}},"bad"]}}}`,
+		`{"data":{"Get":{}}}`,
+		`{"data":{}}`,
+	}
+	call := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		response := responses[len(responses)-1]
+		if call < len(responses) {
+			response = responses[call]
+		}
+		call++
+		_, _ = io.WriteString(w, response)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < len(responses); i++ {
+		_, _ = client.listDocumentsSimple(context.Background(), "Docs", 2)
+	}
+}
