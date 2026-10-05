@@ -303,6 +303,52 @@ func TestListDocumentsReturnsOriginalErrorAfterFallbacksFail(t *testing.T) {
 	}
 }
 
+func TestClientMetadataQueryErrorShapes(t *testing.T) {
+	responses := []string{`{"errors":[{"message":"bad filter"}]}`, `{`}
+	call := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if call == 0 {
+			_, _ = io.WriteString(w, responses[0])
+		} else {
+			_, _ = io.WriteString(w, responses[1])
+		}
+		call++
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 2; i++ {
+		if _, err := client.queryDocumentsByMetadata(context.Background(), "Docs", map[string]string{"kind": "pdf"}); err == nil {
+			t.Fatal("expected metadata query error")
+		}
+	}
+}
+
+func TestDeleteDocumentsBulkSequentialPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			http.NotFound(w, r)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/failed") {
+			http.Error(w, "failed", http.StatusBadGateway)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count, err := client.DeleteDocumentsBulk(context.Background(), "Docs", []string{"one", "failed", "two"}); err != nil || count != 2 {
+		t.Fatalf("bulk deletion = (%d, %v)", count, err)
+	}
+}
+
 func TestBuildMetadataQueryWithFakeSchemaServer(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if got := r.Header.Get("X-Openai-Api-Key"); got != "openai-key" {
