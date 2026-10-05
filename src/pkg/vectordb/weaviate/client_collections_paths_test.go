@@ -57,3 +57,27 @@ func TestCreateCollectionRESTSchemaPaths(t *testing.T) {
 		t.Fatalf("expected invalid metadata filter, got count=%d err=%v", count, err)
 	}
 }
+
+func TestGetCollectionCountMalformedAggregate(t *testing.T) {
+	responses := []string{`{"data":{}}`, `{"data":{"Aggregate":"bad"}}`, `{"data":{"Aggregate":{"Docs":"bad"}}}`, `{"data":{"Aggregate":{"Docs":[]}}}`}
+	call := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		response := responses[len(responses)-1]
+		if call < len(responses) {
+			response = responses[call]
+		}
+		_, _ = io.WriteString(w, response)
+		call++
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range responses {
+		if count, err := client.GetCollectionCount(context.Background(), "Docs"); err != nil || count != 0 {
+			t.Fatalf("malformed aggregate = (%d, %v)", count, err)
+		}
+	}
+}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -130,5 +131,71 @@ func TestWeaveClientDeleteCollectionRESTEmptyAndQueryErrors(t *testing.T) {
 	}
 	if err := badClient.deleteCollectionViaREST(context.Background(), "Docs"); err == nil {
 		t.Fatal("expected collection deletion error")
+	}
+}
+
+func TestWeaveClientDeleteCollectionSchemaStatusPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/schema/Docs" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Header.Get("Authorization") == "Bearer key" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		http.Error(w, "forbidden", http.StatusForbidden)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewWeaveClient(&Config{URL: server.URL, APIKey: "key", Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteCollectionSchema(context.Background(), "Docs"); err != nil {
+		t.Fatal(err)
+	}
+	unauthorized, err := NewWeaveClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := unauthorized.DeleteCollectionSchema(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected schema deletion status error")
+	}
+}
+
+func TestWeaveClientDeleteDocumentStatusPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/ok") {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"id":"ok","properties":{}}`)
+			return
+		}
+		if r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/failed") {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"id":"failed","properties":{}}`)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/ok") {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		if strings.HasSuffix(r.URL.Path, "/missing") {
+			http.NotFound(w, r)
+			return
+		}
+		http.Error(w, "failed", http.StatusBadGateway)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewWeaveClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteDocument(context.Background(), "Docs", "ok"); err != nil {
+		t.Fatal(err)
+	}
+	for _, id := range []string{"missing", "failed"} {
+		if err := client.DeleteDocument(context.Background(), "Docs", id); err == nil {
+			t.Fatalf("expected delete error for %s", id)
+		}
 	}
 }
