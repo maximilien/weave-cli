@@ -81,3 +81,22 @@ func TestGetCollectionCountMalformedAggregate(t *testing.T) {
 		}
 	}
 }
+
+func TestGetCollectionCountSuccessShape(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `{"data":{"Aggregate":{"Docs":[{"meta":{"count":7.0}}]}}}`)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	count, err := client.GetCollectionCount(context.Background(), "Docs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count != 7 {
+		t.Fatalf("count = %d, want 7", count)
+	}
+}
