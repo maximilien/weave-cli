@@ -13,6 +13,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
@@ -20,6 +21,18 @@ type elasticsearchRecorder struct {
 	mu     sync.Mutex
 	paths  []string
 	bodies []string
+}
+
+type elasticsearchRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f elasticsearchRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func elasticsearchLLMResponse(status int, body string) *http.Response {
+	header := make(http.Header)
+	header.Set("Content-Type", "application/json")
+	return &http.Response{StatusCode: status, Status: http.StatusText(status), Header: header, Body: io.NopCloser(strings.NewReader(body))}
 }
 
 func (r *elasticsearchRecorder) record(req *http.Request) string {
@@ -254,6 +267,32 @@ func TestAdapterProtocolSearch(t *testing.T) {
 	defer recorder.mu.Unlock()
 	if !strings.Contains(strings.Join(recorder.bodies, "\n"), "multi_match") {
 		t.Fatalf("search bodies = %#v", recorder.bodies)
+	}
+}
+
+func TestAdapterProtocolHybridSearch(t *testing.T) {
+	adapter, recorder := newElasticsearchProtocolAdapter(t)
+	embeddingClient, err := llm.NewOpenAIClientWithHTTP("test-key", &http.Client{
+		Transport: elasticsearchRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			if req.URL.Path != "/v1/embeddings" {
+				t.Fatalf("unexpected OpenAI path: %s", req.URL.Path)
+			}
+			return elasticsearchLLMResponse(http.StatusOK, `{"object":"list","data":[{"object":"embedding","embedding":[0.1,0.2,0.3],"index":0}],"model":"text-embedding-3-small","usage":{"prompt_tokens":1,"total_tokens":1}}`), nil
+		}),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	adapter.llmClient = embeddingClient
+
+	results, err := adapter.SearchHybrid(context.Background(), "docs", "hello", &vectordb.QueryOptions{TopK: 2})
+	if err != nil || len(results) != 1 || results[0].Document.ID != "one" {
+		t.Fatalf("SearchHybrid() = %#v, %v", results, err)
+	}
+	recorder.mu.Lock()
+	defer recorder.mu.Unlock()
+	if !strings.Contains(strings.Join(recorder.bodies, "\n"), "vector_field") {
+		t.Fatalf("hybrid search body = %#v", recorder.bodies)
 	}
 }
 
