@@ -5,9 +5,22 @@ package chroma
 import (
 	"context"
 	"testing"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 func TestNoopEmbeddingQuery(t *testing.T) {
+	factory := NewFactory()
+	if _, err := factory.CreateClient(&vectordb.Config{URL: "http://127.0.0.1:8000"}); err != nil {
+		t.Fatal(err)
+	}
+	client, err := NewClient(&Config{URL: "http://127.0.0.1:1", Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Health(context.Background()); err == nil {
+		t.Fatal("expected Chroma health error")
+	}
 	fn := &noopEmbeddingFunction{dimensions: 4}
 	embedding, err := fn.EmbedQuery(context.Background(), "query")
 	if err != nil || embedding.Len() != 4 {
