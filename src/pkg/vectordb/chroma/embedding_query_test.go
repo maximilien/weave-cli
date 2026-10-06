@@ -47,3 +47,30 @@ func TestChromaHealthAuthenticationError(t *testing.T) {
 		t.Fatal("expected authentication health error")
 	}
 }
+
+func TestChromaHealthGenericErrorAndSuccess(t *testing.T) {
+	failed := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("backend error"))
+	}))
+	t.Cleanup(failed.Close)
+	client, err := NewClient(&Config{URL: failed.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Health(context.Background()); err == nil {
+		t.Fatal("expected generic health error")
+	}
+	success := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"nanosecond heartbeat":1}`))
+	}))
+	t.Cleanup(success.Close)
+	client, err = NewClient(&Config{URL: success.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Health(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+}
