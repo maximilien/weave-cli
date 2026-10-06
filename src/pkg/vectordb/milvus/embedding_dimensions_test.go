@@ -3,6 +3,9 @@ package milvus
 import "testing"
 
 func TestEmbeddingDimensionMappings(t *testing.T) {
+	if _, err := NewClient(&Config{}); err == nil {
+		t.Fatal("expected missing Milvus address error")
+	}
 	cases := map[int]string{
 		768: "sentence-transformers/all-mpnet-base-v2", 384: "sentence-transformers/all-MiniLM-L6-v2",
 		1536: "text-embedding-3-small", 3072: "text-embedding-3-large", 1024: "nomic-embed-text", 999: "text-embedding-3-small",
