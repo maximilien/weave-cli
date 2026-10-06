@@ -4,6 +4,8 @@ package chroma
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
@@ -28,5 +30,20 @@ func TestNoopEmbeddingQuery(t *testing.T) {
 	}
 	if err := fn.EmbedRecords(context.Background(), nil, false); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestChromaHealthAuthenticationError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("Unauthorized"))
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.Health(context.Background()); err == nil {
+		t.Fatal("expected authentication health error")
 	}
 }
