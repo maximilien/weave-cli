@@ -83,3 +83,26 @@ func TestChromaHealthGenericErrorAndSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestChromaCollectionErrorPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "backend error", http.StatusBadGateway)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteCollection(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected delete collection error")
+	}
+	if _, err := client.ListCollections(context.Background()); err == nil {
+		t.Fatal("expected list collections error")
+	}
+	if _, err := client.CollectionExists(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected collection exists error")
+	}
+	if _, err := client.GetCollectionCount(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected collection count error")
+	}
+}
