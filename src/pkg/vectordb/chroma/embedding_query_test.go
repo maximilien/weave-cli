@@ -96,6 +96,9 @@ func TestChromaCollectionErrorPaths(t *testing.T) {
 	if err := client.DeleteCollection(context.Background(), "Docs"); err == nil {
 		t.Fatal("expected delete collection error")
 	}
+	if err := client.CreateCollection(context.Background(), "Docs", &vectordb.CollectionSchema{}); err == nil {
+		t.Fatal("expected create collection error")
+	}
 	if _, err := client.ListCollections(context.Background()); err == nil {
 		t.Fatal("expected list collections error")
 	}
