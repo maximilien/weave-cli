@@ -12,6 +12,12 @@ import (
 )
 
 func TestNoopEmbeddingQuery(t *testing.T) {
+	if _, err := NewClient(&Config{}); err == nil {
+		t.Fatal("expected local URL validation error")
+	}
+	if _, err := NewClient(&Config{APIKey: "test-key", Tenant: "tenant", Database: "database"}); err != nil {
+		t.Fatal(err)
+	}
 	factory := NewFactory()
 	if _, err := factory.CreateClient(&vectordb.Config{URL: "http://127.0.0.1:8000"}); err != nil {
 		t.Fatal(err)
