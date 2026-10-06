@@ -1,8 +1,18 @@
 package milvus
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestEmbeddingDimensionMappings(t *testing.T) {
+	adapter := &Adapter{}
+	if _, err := adapter.createEmbeddingProvider(context.Background(), ""); err == nil {
+		t.Fatal("expected empty model error")
+	}
+	if _, err := adapter.createEmbeddingProvider(context.Background(), "unknown-model"); err == nil {
+		t.Fatal("expected unknown model error")
+	}
 	if _, err := NewClient(&Config{}); err == nil {
 		t.Fatal("expected missing Milvus address error")
 	}
