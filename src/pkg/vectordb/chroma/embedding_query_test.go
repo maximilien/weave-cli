@@ -32,6 +32,9 @@ func TestNoopEmbeddingQuery(t *testing.T) {
 	if err := client.Health(context.Background()); err == nil {
 		t.Fatal("expected Chroma health error")
 	}
+	if err := client.Close(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	fn := &noopEmbeddingFunction{dimensions: 4}
 	embedding, err := fn.EmbedQuery(context.Background(), "query")
 	if err != nil || embedding.Len() != 4 {
