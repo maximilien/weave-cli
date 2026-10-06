@@ -86,3 +86,44 @@ func TestAdapterCollectionOperationErrorPaths(t *testing.T) {
 		t.Fatal("expected schema error")
 	}
 }
+
+func TestAdapterDocumentOperationSuccessPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/objects":
+			w.WriteHeader(http.StatusCreated)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/schema/Docs":
+			_, _ = w.Write([]byte(`{"properties":[{"name":"text","dataType":["text"]}]}`))
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/objects/Docs/doc-1":
+			_, _ = w.Write([]byte(`{"id":"doc-1","properties":{"text":"hello"}}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/v1/objects/Docs/doc-1":
+			w.WriteHeader(http.StatusNoContent)
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/graphql":
+			_, _ = w.Write([]byte(`{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1"}},{"_additional":{"id":"doc-2"}}]}}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	weaveClient, err := NewWeaveClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	adapter := &Adapter{client: client, weaveClient: weaveClient}
+	ctx := context.Background()
+	doc := &vectordb.Document{ID: "doc-1", Text: "text", Metadata: map[string]interface{}{}}
+	if err := adapter.CreateDocuments(ctx, "Docs", []*vectordb.Document{doc}); err != nil {
+		t.Fatal(err)
+	}
+	if docs, err := adapter.ListDocuments(ctx, "Docs", 1, 1); err != nil || len(docs) != 1 {
+		t.Fatalf("list success = (%#v, %v)", docs, err)
+	}
+	if err := adapter.DeleteDocuments(ctx, "Docs", []string{"doc-1"}); err != nil {
+		t.Fatal(err)
+	}
+}
