@@ -100,3 +100,32 @@ func TestGetCollectionCountSuccessShape(t *testing.T) {
 		t.Fatalf("count = %d, want 7", count)
 	}
 }
+
+func TestClientDeleteCollectionSchemaPaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodDelete && r.URL.Path == "/v1/schema/Docs" {
+			if r.Header.Get("Authorization") == "Bearer key" {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(server.Close)
+	client, err := NewClient(&Config{URL: server.URL, APIKey: "key", Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.DeleteCollectionSchema(context.Background(), "Docs"); err != nil {
+		t.Fatal(err)
+	}
+	unauthorized, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := unauthorized.DeleteCollectionSchema(context.Background(), "Docs"); err == nil {
+		t.Fatal("expected schema deletion error")
+	}
+}
