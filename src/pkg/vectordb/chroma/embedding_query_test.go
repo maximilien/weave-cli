@@ -12,6 +12,9 @@ import (
 )
 
 func TestNoopEmbeddingQuery(t *testing.T) {
+	if err := (&Client{}).Close(context.Background()); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := NewClient(&Config{}); err == nil {
 		t.Fatal("expected local URL validation error")
 	}
