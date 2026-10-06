@@ -3,9 +3,14 @@ package milvus
 import (
 	"context"
 	"testing"
+
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
 
 func TestEmbeddingDimensionMappings(t *testing.T) {
+	if _, err := NewAdapter(&vectordb.Config{}); err == nil {
+		t.Fatal("expected missing Milvus address error")
+	}
 	adapter := &Adapter{}
 	if _, err := adapter.createEmbeddingProvider(context.Background(), ""); err == nil {
 		t.Fatal("expected empty model error")
