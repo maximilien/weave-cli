@@ -360,3 +360,39 @@ func TestOllamaProvider_IsAvailable_ServerNotRunning(t *testing.T) {
 		t.Errorf("Expected error about server not running, got: %s", err.Error())
 	}
 }
+
+func TestOllamaProvider_IsAvailable_MalformedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("{"))
+	}))
+	defer server.Close()
+	provider, _ := NewOllamaProvider("nomic-embed-text")
+	provider.baseURL = server.URL
+	if err := provider.IsAvailable(context.Background()); err == nil {
+		t.Fatal("expected malformed Ollama response to fail")
+	}
+}
+
+func TestOllamaProvider_GenerateEmbedding_MalformedResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte("{"))
+	}))
+	defer server.Close()
+	provider, _ := NewOllamaProvider("nomic-embed-text")
+	provider.baseURL = server.URL
+	if _, err := provider.GenerateEmbedding(context.Background(), "hello"); err == nil {
+		t.Fatal("expected malformed embedding response to fail")
+	}
+}
+
+func TestOllamaProvider_GenerateEmbedding_EmptyResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"embedding":[]}`))
+	}))
+	defer server.Close()
+	provider, _ := NewOllamaProvider("nomic-embed-text")
+	provider.baseURL = server.URL
+	if _, err := provider.GenerateEmbedding(context.Background(), "hello"); err == nil {
+		t.Fatal("expected empty embedding response to fail")
+	}
+}

@@ -13,10 +13,10 @@ import (
 
 func TestIsImageCollectionBySchemaPaths(t *testing.T) {
 	ctx := context.Background()
-	if !isImageCollectionBySchema(ctx, nil, "PhotoArchive", false) {
+	if !isImageCollectionBySchema(ctx, nil, "PhotoArchive", true) {
 		t.Fatal("image keyword was not detected")
 	}
-	if isImageCollectionBySchema(ctx, nil, "Documents", false) {
+	if isImageCollectionBySchema(ctx, nil, "Documents", true) {
 		t.Fatal("plain collection was incorrectly detected as image")
 	}
 
@@ -30,7 +30,7 @@ func TestIsImageCollectionBySchemaPaths(t *testing.T) {
 	if err := client.CreateDocument(ctx, "Docs", &vectordb.Document{ID: "image-1", ImageData: "base64"}); err != nil {
 		t.Fatal(err)
 	}
-	if !isImageCollectionBySchema(ctx, client, "Docs", false) {
+	if !isImageCollectionBySchema(ctx, client, "Docs", true) {
 		t.Fatal("image document was not detected")
 	}
 }
