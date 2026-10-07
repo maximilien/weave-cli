@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -24,6 +25,9 @@ func TestClientValidationAndConnectionFailurePaths(t *testing.T) {
 	}
 	if _, err := NewClient(&Config{URI: "mongodb://[::1", Database: "docs", Timeout: 1}); err == nil {
 		t.Fatal("NewClient accepted a malformed URI")
+	}
+	if _, err := NewAdapter(&vectordb.Config{Type: vectordb.VectorDBTypeMongoDB, Database: "docs"}); err == nil {
+		t.Fatal("NewAdapter accepted a missing MongoDB URI")
 	}
 }
 

@@ -239,6 +239,19 @@ func TestOllamaProvider_GenerateEmbeddings_WithEmptyText(t *testing.T) {
 	}
 }
 
+func TestOllamaProvider_GenerateEmbeddings_ErrorPropagation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+		_, _ = w.Write([]byte("temporary failure"))
+	}))
+	defer server.Close()
+	provider, _ := NewOllamaProvider("nomic-embed-text")
+	provider.baseURL = server.URL
+	if _, err := provider.GenerateEmbeddings(context.Background(), []string{"hello"}); err == nil {
+		t.Fatal("expected batch embedding error")
+	}
+}
+
 func TestOllamaProvider_IsAvailable(t *testing.T) {
 	tests := []struct {
 		name      string
