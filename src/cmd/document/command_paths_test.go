@@ -5,6 +5,7 @@ package document
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"sync"
@@ -103,6 +104,46 @@ func TestBatchProcessingFailurePath(t *testing.T) {
 	if len(results) != 1 || !results[0].Success {
 		t.Fatalf("unexpected parallel batch results: %#v", results)
 	}
+}
+
+func TestBatchCreateNoSupportedFiles(t *testing.T) {
+	root := setupMockDocumentConfig(t)
+	directory := filepath.Join(root, "batch")
+	if err := os.Mkdir(directory, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(directory, "ignored.go"), []byte("package ignored"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	setDocumentFlags(t, BatchCmd, map[string]string{
+		"directory": directory, "collection": "Docs", "parallel": "2",
+		"retry": "1", "chunk-size": "128", "since": "",
+		"skip-existing": "true", "json": "false",
+	})
+	runBatchCreate(BatchCmd, nil)
+	oldFile := filepath.Join(directory, "old.txt")
+	if err := os.WriteFile(oldFile, []byte("old"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	old := time.Now().Add(-2 * time.Hour)
+	if err := os.Chtimes(oldFile, old, old); err != nil {
+		t.Fatal(err)
+	}
+	setDocumentFlags(t, BatchCmd, map[string]string{"since": "1h"})
+	runBatchCreate(BatchCmd, nil)
+	status, err := json.Marshal(ProcessedFileStatus{FilePath: oldFile, Success: true, ProcessedAt: time.Now()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(oldFile+".processed", status, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	setDocumentFlags(t, BatchCmd, map[string]string{"since": "", "skip-existing": "false"})
+	runBatchCreate(BatchCmd, nil)
+	resetDocumentFlags(BatchCmd, map[string]string{
+		"directory": "./documents", "collection": "Documents", "parallel": "1",
+		"retry": "2", "chunk-size": "5000", "since": "", "skip-existing": "false", "json": "false",
+	})
 }
 
 func TestDocumentCreateCommandPathsWithMockDatabase(t *testing.T) {
