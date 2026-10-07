@@ -84,4 +84,21 @@ func TestOpenAIProviderEmbeddingPaths(t *testing.T) {
 	if err != nil || len(many) != 2 {
 		t.Fatalf("GenerateEmbeddings() = %#v, %v", many, err)
 	}
+	empty, err := provider.GenerateEmbeddings(context.Background(), nil)
+	if err != nil || len(empty) != 0 {
+		t.Fatalf("empty GenerateEmbeddings() = %#v, %v", empty, err)
+	}
+	failingClient, err := llm.NewOpenAIClientWithHTTP("fixture", &http.Client{Transport: providerRoundTripFunc(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusBadRequest, Status: "400 Bad Request", Header: http.Header{"Content-Type": []string{"application/json"}}, Body: io.NopCloser(strings.NewReader(`{"error":{"message":"fixture failure"}}`))}, nil
+	})})
+	if err != nil {
+		t.Fatal(err)
+	}
+	failing := &OpenAIProvider{modelName: "fixture", client: failingClient}
+	if _, err := failing.GenerateEmbedding(context.Background(), "hello"); err == nil {
+		t.Fatal("expected embedding failure")
+	}
+	if _, err := failing.GenerateEmbeddings(context.Background(), []string{"hello"}); err == nil {
+		t.Fatal("expected batch embedding failure")
+	}
 }
