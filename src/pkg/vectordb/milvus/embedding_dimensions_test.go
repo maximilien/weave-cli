@@ -2,10 +2,38 @@ package milvus
 
 import (
 	"context"
+	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 )
+
+func TestImageDataAndFlushTimeoutHelpers(t *testing.T) {
+	adapter := &Adapter{}
+	for input, want := range map[string][]byte{
+		"aGVsbG8=":                       []byte("hello"),
+		"data:image/png;base64,aGVsbG8=": []byte("hello"),
+	} {
+		got, err := adapter.decodeImageData(input)
+		if err != nil || !reflect.DeepEqual(got, want) {
+			t.Fatalf("decodeImageData(%q) = %q, %v", input, got, err)
+		}
+	}
+	if _, err := adapter.decodeImageData("not base64"); err == nil {
+		t.Fatal("decodeImageData accepted invalid base64")
+	}
+	for _, test := range []struct {
+		err  error
+		want bool
+	}{
+		{nil, false}, {context.DeadlineExceeded, true}, {errors.New("DeadlineExceeded"), true}, {errors.New("deadline exceeded"), true}, {errors.New("other"), false},
+	} {
+		if got := isFlushTimeout(test.err); got != test.want {
+			t.Fatalf("isFlushTimeout(%v) = %t, want %t", test.err, got, test.want)
+		}
+	}
+}
 
 func TestEmbeddingDimensionMappings(t *testing.T) {
 	if _, err := NewAdapter(&vectordb.Config{}); err == nil {

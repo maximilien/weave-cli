@@ -231,6 +231,34 @@ func TestFormatConfigError(t *testing.T) {
 	}
 }
 
+func TestFormatConfigErrorSpecialCases(t *testing.T) {
+	t.Chdir(t.TempDir())
+	for _, key := range []string{"WEAVIATE_URL", "WEAVIATE_API_KEY", "OPENAI_API_KEY", "WEAVE_MCP_STDIO_PATH"} {
+		t.Setenv(key, "")
+	}
+	for _, message := range []string{
+		"failed to create MCP client: unavailable",
+		"WEAVE_MCP_STDIO_PATH must be configured",
+		"failed to initialize MCP connection",
+		"failed to read initialize response",
+		"no vector databases configured",
+		"OPENAI_API_KEY environment variable is required",
+		"WEAVIATE_API_KEY is required",
+		"collection not found; check database configuration",
+	} {
+		formatted := FormatConfigError(errors.New(message))
+		if formatted == message {
+			t.Errorf("expected helpful formatting for %q", message)
+		}
+	}
+	t.Setenv("WEAVIATE_URL", "fixture")
+	t.Setenv("WEAVIATE_API_KEY", "fixture")
+	t.Setenv("OPENAI_API_KEY", "fixture")
+	if got := FormatConfigError(errors.New("failed to create MCP client: unavailable")); !strings.Contains(got, "REPL Configuration Error") {
+		t.Fatalf("MCP formatting with configured environment = %q", got)
+	}
+}
+
 func TestMaskSecret(t *testing.T) {
 	tests := []struct {
 		name     string

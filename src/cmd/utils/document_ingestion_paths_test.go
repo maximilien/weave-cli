@@ -157,3 +157,41 @@ func TestGenericMockDocumentRead(t *testing.T) {
 		t.Fatalf("document text output = %q", textOutput)
 	}
 }
+
+func TestDocumentUtilityMockMutationPaths(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.VectorDBConfig{
+		Type: config.VectorDBTypeMock, Enabled: true,
+		Collections: []config.Collection{{Name: "WeaveDocs", Type: "text"}},
+	}
+	path := filepath.Join(t.TempDir(), "utility.txt")
+	if err := os.WriteFile(path, []byte("utility document content"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CreateDocument(ctx, cfg, "WeaveDocs", path, 100, "", false, 0, 10, 2000, "", "", "", 1, false); err != nil {
+		t.Fatalf("CreateDocument() = %v", err)
+	}
+	if err := CreateDocument(ctx, cfg, "WeaveDocs", path, 100, "", false, 0, 10, 2000, "", "", "", 1, true); err != nil {
+		t.Fatalf("CreateDocument(skip existing) = %v", err)
+	}
+	CreateMockDocument(ctx, cfg, "WeaveDocs", path, 100, "", false, 0, 10, 2000, "", "")
+	imagePath := filepath.Join(t.TempDir(), "utility.png")
+	if err := os.WriteFile(imagePath, []byte("image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	CreateMockDocument(ctx, cfg, "WeaveImages", imagePath, 100, "", false, 0, 10, 2000, "", "")
+	CreateMockDocument(ctx, cfg, "WeaveDocs", filepath.Join(t.TempDir(), "missing.txt"), 100, "", false, 0, 10, 2000, "", "")
+	vdbClient, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if exists, err := DocumentExistsByFilename(ctx, vdbClient, "WeaveDocs", "utility.txt"); err != nil {
+		t.Fatalf("DocumentExistsByFilename() = %t, %v", exists, err)
+	}
+	DeleteMockDocuments(ctx, cfg, "WeaveDocs", []string{"doc1"}, nil, false, "", "")
+	DeleteMockDocuments(ctx, cfg, "WeaveDocs", nil, []string{"filename=doc1.txt"}, false, "", "")
+	DeleteMockDocuments(ctx, cfg, "WeaveDocs", nil, nil, false, "doc*", "")
+	DeleteAllMockDocuments(ctx, cfg, "WeaveDocs")
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc1-single", "", nil, "updated", "", []string{"source=test"})
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", nil, "", "", []string{"invalid"})
+}
