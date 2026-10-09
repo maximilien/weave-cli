@@ -259,6 +259,31 @@ func TestFormatConfigErrorSpecialCases(t *testing.T) {
 	}
 }
 
+func TestFormatMCPConnectionErrorPaths(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Setenv("WEAVE_MCP_STDIO_PATH", "")
+	created := formatMCPConnectionError("config.yaml: no such file or directory")
+	if !strings.Contains(created, "Created minimal config.yaml") {
+		t.Fatalf("expected automatic config creation, got: %s", created)
+	}
+
+	binaryPath := t.TempDir() + "/weave-mcp"
+	if err := os.WriteFile(binaryPath, []byte("fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("WEAVE_MCP_STDIO_PATH", binaryPath)
+	existing := formatMCPConnectionError("connection refused")
+	if !strings.Contains(existing, "Binary exists") {
+		t.Fatalf("expected existing binary guidance, got: %s", existing)
+	}
+
+	t.Setenv("WEAVE_MCP_STDIO_PATH", t.TempDir()+"/missing")
+	missing := formatMCPConnectionError("connection refused")
+	if !strings.Contains(missing, "Binary not found") {
+		t.Fatalf("expected missing binary guidance, got: %s", missing)
+	}
+}
+
 func TestMaskSecret(t *testing.T) {
 	tests := []struct {
 		name     string

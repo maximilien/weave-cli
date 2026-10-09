@@ -14,6 +14,7 @@ import (
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
 	"github.com/maximilien/weave-cli/src/pkg/mock"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 func TestGenericTextIngestionSequentialAndParallel(t *testing.T) {
@@ -181,6 +182,10 @@ func TestDocumentUtilityMockMutationPaths(t *testing.T) {
 	}
 	CreateMockDocument(ctx, cfg, "WeaveImages", imagePath, 100, "", false, 0, 10, 2000, "", "")
 	CreateMockDocument(ctx, cfg, "WeaveDocs", filepath.Join(t.TempDir(), "missing.txt"), 100, "", false, 0, 10, 2000, "", "")
+	if err := CreateDocument(ctx, cfg, "WeaveDocs", imagePath, 100, "", false, 0, 10, 2000, "", "", "", 1, false); err == nil {
+		t.Fatal("CreateDocument accepted unsupported generic image processing")
+	}
+	CreateMockDocument(ctx, cfg, "WeaveDocs", filepath.Join(t.TempDir(), "invalid.pdf"), 100, "", false, 0, 10, 2000, "", "")
 	vdbClient, err := CreateVectorDBClient(cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -194,4 +199,18 @@ func TestDocumentUtilityMockMutationPaths(t *testing.T) {
 	DeleteAllMockDocuments(ctx, cfg, "WeaveDocs")
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc1-single", "", nil, "updated", "", []string{"source=test"})
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", nil, "", "", []string{"invalid"})
+}
+
+func TestGenericCollectionQueryWrapperPaths(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.VectorDBConfig{Type: config.VectorDBTypeMock, Enabled: true, Collections: []config.Collection{{Name: "WeaveDocs", Type: "text"}}}
+	options := weaviate.QueryOptions{TopK: 2, IncludeImages: true, NoTruncate: true, JSONOutput: true}
+	captureUtilsOutput(t, func() { QueryCollection(ctx, cfg, "WeaveDocs", "hello", options) })
+	options.UseBM25 = true
+	captureUtilsOutput(t, func() { QueryCollection(ctx, cfg, "WeaveDocs", "hello", options) })
+	options.UseBM25 = false
+	captureUtilsOutput(t, func() { QueryMultipleCollections(ctx, cfg, []string{"WeaveDocs"}, "hello", options) })
+	captureUtilsOutput(t, func() {
+		QueryMultipleCollectionsCrossVDB(ctx, []CollectionSpec{{Name: "WeaveDocs", VDBKey: "fixture"}}, map[string]*config.VectorDBConfig{"WeaveDocs": cfg}, "hello", options)
+	})
 }
