@@ -8,6 +8,16 @@ import (
 	"testing"
 )
 
+func TestExtractEXIFInvalidInputs(t *testing.T) {
+	if data, err := ExtractEXIF(t.TempDir() + "/missing.jpg"); err == nil || data != nil {
+		t.Fatalf("expected open error for missing image, data=%#v err=%v", data, err)
+	}
+	data, err := ExtractEXIFFromBytes([]byte("not an image"))
+	if err != nil || data == nil || !data.IsEmpty() {
+		t.Fatalf("expected empty EXIF result for invalid bytes, data=%#v err=%v", data, err)
+	}
+}
+
 func TestEXIFData_ToJSON(t *testing.T) {
 	tests := []struct {
 		name     string
