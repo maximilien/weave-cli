@@ -3,6 +3,11 @@ package utils
 import (
 	"context"
 	"testing"
+
+	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/pdf"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
+	"github.com/spf13/viper"
 )
 
 func TestMockCollectionListingAndMaintenancePaths(t *testing.T) {
@@ -45,5 +50,47 @@ func TestImageCollectionDetectionPriorities(t *testing.T) {
 	}
 	if isImageCollectionBySchema(ctx, struct{}{}, "PlainDocs", true) {
 		t.Fatal("unsupported client should remain text")
+	}
+}
+
+func TestAgentQueryEmptyAndMissingConfigPaths(t *testing.T) {
+	ctx := context.Background()
+	cfg := mockOperationConfig()
+	options := weaviate.QueryOptions{TopK: 2, Verbose: true}
+	QueryMultipleCollectionsWithAgent(ctx, cfg, []string{"MissingCollection"}, "query", options, []string{"unused"}, "text", false)
+	QueryMultipleCollectionsWithAgentCrossVDB(ctx,
+		[]CollectionSpec{{Name: "MissingCollection", VDBKey: "missing"}},
+		map[string]*config.VectorDBConfig{}, "query", options, []string{"unused"}, "text", false)
+	QueryWeaviateCollectionWithAgent(ctx, &config.VectorDBConfig{Type: config.VectorDBTypeCloud}, "Docs", "query", options, []string{"unused"}, "text", false)
+	QueryMockCollectionWithAgent(ctx, cfg, "MissingCollection", "query", options, []string{"unused"}, "text", false)
+}
+
+func TestConfigUtilityOverrideAndTipsPaths(t *testing.T) {
+	t.Chdir(t.TempDir())
+	t.Cleanup(viper.Reset)
+	viper.Reset()
+	viper.Set("config", "missing-config.yaml")
+	if _, err := LoadConfigWithOverrides(); err == nil {
+		t.Fatal("expected missing config error")
+	}
+	viper.Set("no-tips", false)
+	PrintConfigTips()
+	if !HandleConfigError(context.Canceled, false) {
+		t.Fatal("expected HandleConfigError to report an error")
+	}
+	viper.Set("no-tips", true)
+	PrintConfigTips()
+}
+
+func TestPDFImageContentComposition(t *testing.T) {
+	if got := buildCombinedImageContent(pdf.PDFImageData{}); got != "" {
+		t.Fatalf("empty image data produced %q", got)
+	}
+	got := buildCombinedImageContent(pdf.PDFImageData{SectionHeading: "Heading", SurroundingText: "Context", OCRText: "OCR"})
+	if got != "Heading\n\nContext\n\nOCR" {
+		t.Fatalf("unexpected combined image content: %q", got)
+	}
+	if got := buildCombinedImageContent(pdf.PDFImageData{OCRText: "OCR only"}); got != "OCR only" {
+		t.Fatalf("unexpected OCR-only content: %q", got)
 	}
 }
