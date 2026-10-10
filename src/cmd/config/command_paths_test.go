@@ -4,6 +4,7 @@
 package config
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,29 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
+
+func TestWeaveMCPUpdateAlreadyInstalledCancel(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "weave-mcp")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("WEAVE_MCP_STDIO_PATH", path)
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.WriteString(w, "n\n"); err != nil {
+		t.Fatal(err)
+	}
+	_ = w.Close()
+	os.Stdin = r
+	weaveMCPForce = false
+	if err := runWeaveMCPUpdate(); err != nil {
+		t.Fatalf("cancelled update returned error: %v", err)
+	}
+}
 
 const commandPathConfig = `databases:
   default: local

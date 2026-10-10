@@ -24,4 +24,26 @@ func TestMockCollectionListingAndMaintenancePaths(t *testing.T) {
 	}
 	ShowMockCollection(ctx, cfg, "AlphaDocs", 0, false, false, false, false, false, false, false, "", "", false)
 	DeleteAllMockCollections(ctx, cfg)
+	// Exercise the generic display paths against the deterministic mock backend.
+	ShowGenericCollection(ctx, cfg, "AlphaDocs", 1, false, false, true, true, false, false, false, "", "", false)
+	ShowGenericCollection(ctx, cfg, "AlphaDocs", 0, true, false, false, false, false, false, false, "", "", true)
+	ShowGenericCollection(ctx, cfg, "MissingCollection", 1, false, false, false, false, false, false, false, "", "", false)
+}
+
+func TestImageCollectionDetectionPriorities(t *testing.T) {
+	ctx := context.Background()
+	cfg := mockOperationConfig()
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isImageCollectionBySchema(ctx, client, "PhotoArchive", true) {
+		t.Fatal("name keyword should identify image collection")
+	}
+	if isImageCollectionBySchema(ctx, client, "PlainDocs", true) {
+		t.Fatal("plain mock collection should remain text")
+	}
+	if isImageCollectionBySchema(ctx, struct{}{}, "PlainDocs", true) {
+		t.Fatal("unsupported client should remain text")
+	}
 }
