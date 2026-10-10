@@ -63,6 +63,14 @@ func TestAgentQueryEmptyAndMissingConfigPaths(t *testing.T) {
 		map[string]*config.VectorDBConfig{}, "query", options, []string{"unused"}, "text", false)
 	QueryWeaviateCollectionWithAgent(ctx, &config.VectorDBConfig{Type: config.VectorDBTypeCloud}, "Docs", "query", options, []string{"unused"}, "text", false)
 	QueryMockCollectionWithAgent(ctx, cfg, "MissingCollection", "query", options, []string{"unused"}, "text", false)
+	options.UseBM25 = true
+	QueryMultipleCollectionsWithAgent(ctx, cfg, []string{"MissingCollection"}, "query", options, []string{"unused"}, "text", true)
+	QueryMultipleCollectionsWithAgentCrossVDB(ctx,
+		[]CollectionSpec{{Name: "MissingCollection", VDBKey: "fixture"}},
+		map[string]*config.VectorDBConfig{"MissingCollection": cfg}, "query", options, []string{"unused"}, "json", true)
+	QueryMultipleCollectionsWithAgentCrossVDB(ctx,
+		[]CollectionSpec{{Name: "InvalidCollection", VDBKey: "invalid"}},
+		map[string]*config.VectorDBConfig{"InvalidCollection": &config.VectorDBConfig{Type: config.VectorDBType("invalid")}}, "query", options, []string{"unused"}, "text", false)
 }
 
 func TestConfigUtilityOverrideAndTipsPaths(t *testing.T) {
