@@ -2,6 +2,8 @@ package utils
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
@@ -51,6 +53,29 @@ func TestImageCollectionDetectionPriorities(t *testing.T) {
 	if isImageCollectionBySchema(ctx, struct{}{}, "PlainDocs", true) {
 		t.Fatal("unsupported client should remain text")
 	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"classes":[{"class":"PlainDocs","properties":[{"name":"imageData"}]}]}`))
+	}))
+	defer server.Close()
+	weaviateClient, err := weaviate.NewClient(&weaviate.Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isImageCollectionBySchema(ctx, weaviateClient, "PlainDocs", true) {
+		t.Fatal("schema imageData field should identify image collection")
+	}
+	failingServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "schema unavailable", http.StatusInternalServerError)
+	}))
+	defer failingServer.Close()
+	failingClient, err := weaviate.NewClient(&weaviate.Config{URL: failingServer.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isImageCollectionBySchema(ctx, failingClient, "PlainDocs", true) {
+		t.Fatal("schema request failure should remain text")
+	}
 }
 
 func TestAgentQueryEmptyAndMissingConfigPaths(t *testing.T) {
@@ -64,13 +89,15 @@ func TestAgentQueryEmptyAndMissingConfigPaths(t *testing.T) {
 	QueryWeaviateCollectionWithAgent(ctx, &config.VectorDBConfig{Type: config.VectorDBTypeCloud}, "Docs", "query", options, []string{"unused"}, "text", false)
 	QueryMockCollectionWithAgent(ctx, cfg, "MissingCollection", "query", options, []string{"unused"}, "text", false)
 	options.UseBM25 = true
+	options.TopKImages = 4
 	QueryMultipleCollectionsWithAgent(ctx, cfg, []string{"MissingCollection"}, "query", options, []string{"unused"}, "text", true)
+	QueryMultipleCollectionsWithAgent(ctx, cfg, []string{"PhotoArchive"}, "query", options, []string{"unused"}, "text", false)
 	QueryMultipleCollectionsWithAgentCrossVDB(ctx,
 		[]CollectionSpec{{Name: "MissingCollection", VDBKey: "fixture"}},
 		map[string]*config.VectorDBConfig{"MissingCollection": cfg}, "query", options, []string{"unused"}, "json", true)
 	QueryMultipleCollectionsWithAgentCrossVDB(ctx,
 		[]CollectionSpec{{Name: "InvalidCollection", VDBKey: "invalid"}},
-		map[string]*config.VectorDBConfig{"InvalidCollection": &config.VectorDBConfig{Type: config.VectorDBType("invalid")}}, "query", options, []string{"unused"}, "text", false)
+		map[string]*config.VectorDBConfig{"InvalidCollection": {Type: config.VectorDBType("invalid")}}, "query", options, []string{"unused"}, "text", false)
 }
 
 func TestConfigUtilityOverrideAndTipsPaths(t *testing.T) {
