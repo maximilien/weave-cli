@@ -129,3 +129,23 @@ func TestPDFImageContentComposition(t *testing.T) {
 		t.Fatalf("unexpected OCR-only content: %q", got)
 	}
 }
+
+func TestPDFGenericProcessingFailurePaths(t *testing.T) {
+	ctx := context.Background()
+	cfg := mockOperationConfig()
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := processPDFFileGeneric(ctx, cfg, client, "Docs", "/missing/fixture.pdf", 100, "", false, 0, 1000); err == nil {
+		t.Fatal("expected missing PDF extraction error")
+	}
+	if _, err := createPDFStorage(&config.VectorDBConfig{ImageStorageType: "unsupported"}); err == nil {
+		t.Fatal("expected unsupported PDF storage error")
+	}
+	cfg.PDFStorageEnabled = true
+	cfg.ImageStorageType = "unsupported"
+	if err := processPDFFileGeneric(ctx, cfg, client, "Docs", "/missing/fixture.pdf", 100, "", false, 0, 1000); err == nil {
+		t.Fatal("expected PDF storage initialization error")
+	}
+}
