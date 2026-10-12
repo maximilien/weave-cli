@@ -339,6 +339,13 @@ func TestAdapterConstructionAndEmbeddingFallback(t *testing.T) {
 	if err := adapter.ensureEmbedding(ctx, &vectordb.Document{}); err != nil {
 		t.Fatal(err)
 	}
+	providerAdapter := &Adapter{Client: &Client{config: &Config{VectorDimensions: 384}}}
+	if err := providerAdapter.ensureEmbedding(ctx, &vectordb.Document{Text: "provider path"}); err == nil {
+		t.Fatal("expected unavailable provider error")
+	}
+	if _, err := providerAdapter.generateQueryEmbedding(ctx, "provider query"); err == nil {
+		t.Fatal("expected unavailable query provider error")
+	}
 }
 
 func TestClientProtocolErrors(t *testing.T) {
