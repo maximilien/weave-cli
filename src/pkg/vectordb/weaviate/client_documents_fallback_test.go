@@ -79,3 +79,26 @@ func TestListDocumentsFallbackAggregationAndSimpleQueries(t *testing.T) {
 		})
 	}
 }
+
+func TestListDocumentsRichPropertiesAndEmbedding(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Path == "/v1/schema/Images" {
+			_, _ = io.WriteString(w, `{"properties":[{"name":"text","dataType":["text"]},{"name":"metadata","dataType":["text"]},{"name":"image","dataType":["blob"]}]}`)
+			return
+		}
+		_, _ = io.WriteString(w, `{"data":{"Get":{"Images":[{"_additional":{"id":"img-1","vector":[1,2,3]},"text":"caption","metadata":"{\"camera\":\"A\"}"}]}}}`)
+	}))
+	defer server.Close()
+	client, err := NewClient(&Config{URL: server.URL, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	docs, err := client.ListDocuments(context.Background(), "Images", 2)
+	if err != nil || len(docs) != 1 {
+		t.Fatalf("ListDocuments() = %#v, %v", docs, err)
+	}
+	if docs[0].ID != "img-1" || docs[0].Content != "caption" || len(docs[0].Embedding) != 3 || docs[0].Metadata["camera"] != "A" {
+		t.Fatalf("unexpected rich document: %#v", docs[0])
+	}
+}
