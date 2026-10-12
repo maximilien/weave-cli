@@ -322,6 +322,25 @@ func TestAdapterProtocolDelegation(t *testing.T) {
 	}
 }
 
+func TestAdapterConstructionAndEmbeddingFallback(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "")
+	ctx := context.Background()
+	adapter, err := NewAdapter(&vectordb.Config{
+		Type: vectordb.VectorDBTypeRedisLocal, Address: "redis://user:pass@fixture:6379/2",
+		VectorDimensions: 1536, SimilarityMetric: "COSINE", Timeout: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer adapter.Client.rdb.Close()
+	if err := adapter.ensureEmbedding(ctx, &vectordb.Document{Text: "no client"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := adapter.ensureEmbedding(ctx, &vectordb.Document{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestClientProtocolErrors(t *testing.T) {
 	tests := []struct {
 		name string
