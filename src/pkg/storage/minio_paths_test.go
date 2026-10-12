@@ -28,4 +28,9 @@ func TestMinioOperationsRejectMalformedURLs(t *testing.T) {
 	if _, err := backend.GetInfo(ctx, badURL); err == nil {
 		t.Fatal("GetInfo accepted malformed URL")
 	}
+	cancelled, cancel := context.WithCancel(ctx)
+	cancel()
+	if _, err := backend.Upload(cancelled, []byte("data"), ImageMetadata{CollectionName: "docs", Filename: "x.png", ContentType: "image/png"}); err == nil {
+		t.Fatal("Upload unexpectedly succeeded with cancelled context")
+	}
 }
