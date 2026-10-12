@@ -254,6 +254,15 @@ func TestAdapterProtocolDelegation(t *testing.T) {
 	if err := adapter.CreateCollection(ctx, "docs", nil); err != nil {
 		t.Fatalf("CreateCollection() error = %v", err)
 	}
+	if err := adapter.DeleteCollection(ctx, "docs"); err != nil {
+		t.Fatalf("DeleteCollection() error = %v", err)
+	}
+	if exists, err := adapter.CollectionExists(ctx, "docs"); err != nil || !exists {
+		t.Fatalf("CollectionExists() = %v, %v", exists, err)
+	}
+	if count, err := adapter.GetCollectionCount(ctx, "docs"); err != nil || count != 2 {
+		t.Fatalf("GetCollectionCount() = %d, %v", count, err)
+	}
 	collections, err := adapter.ListCollections(ctx)
 	if err != nil || len(collections) != 2 || collections[0].Count != 2 {
 		t.Fatalf("ListCollections() = %#v, %v", collections, err)
@@ -263,6 +272,31 @@ func TestAdapterProtocolDelegation(t *testing.T) {
 	}
 	if _, err := adapter.SearchByMetadata(ctx, "docs", map[string]interface{}{"kind": "guide"}, nil); err != nil {
 		t.Fatalf("SearchByMetadata() error = %v", err)
+	}
+	doc := &vectordb.Document{ID: "doc-1", Text: "updated", Embedding: []float64{1, 2, 3}}
+	if err := adapter.CreateDocument(ctx, "docs", doc); err != nil {
+		t.Fatalf("CreateDocument() error = %v", err)
+	}
+	if err := adapter.CreateDocuments(ctx, "docs", []*vectordb.Document{doc}); err != nil {
+		t.Fatalf("CreateDocuments() error = %v", err)
+	}
+	if got, err := adapter.GetDocument(ctx, "docs", "doc-1"); err != nil || got.ID != "doc-1" {
+		t.Fatalf("GetDocument() = %#v, %v", got, err)
+	}
+	if err := adapter.UpdateDocument(ctx, "docs", doc); err != nil {
+		t.Fatalf("UpdateDocument() error = %v", err)
+	}
+	if err := adapter.DeleteDocument(ctx, "docs", "doc-1"); err != nil {
+		t.Fatalf("DeleteDocument() error = %v", err)
+	}
+	if err := adapter.DeleteDocuments(ctx, "docs", []string{"doc-1"}); err != nil {
+		t.Fatalf("DeleteDocuments() error = %v", err)
+	}
+	if docs, err := adapter.ListDocuments(ctx, "docs", 5, 0); err != nil || len(docs) != 1 {
+		t.Fatalf("ListDocuments() = %#v, %v", docs, err)
+	}
+	if _, err := adapter.SearchSemantic(ctx, "docs", "hello", nil); err == nil {
+		t.Fatal("SearchSemantic() expected missing embedding client error")
 	}
 	if err := adapter.DeleteDocumentsByMetadata(ctx, "docs", map[string]interface{}{"kind": "guide"}); err != nil {
 		t.Fatalf("DeleteDocumentsByMetadata() error = %v", err)
