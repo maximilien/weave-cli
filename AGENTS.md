@@ -15,6 +15,11 @@ change.
 - Prefer canonical documentation under `docs/` over duplicating long guidance
   here.
 - Record reusable diagnostics and workflow changes, not one-off incident notes.
+- Shared team handoffs and recaps live at `~/Desktop/Maximilien AI LLC/docs/`:
+  use `handoffs/` for handoffs and `recaps/` for weekly recaps.
+- Create the team's weekly recap every Monday when possible, covering the
+  requested reporting period and clearly separating observed outcomes from
+  future checks.
 
 ## Default Validation
 
