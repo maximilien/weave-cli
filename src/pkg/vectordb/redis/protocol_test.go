@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/maximilien/weave-cli/src/pkg/llm"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -346,6 +348,45 @@ func TestAdapterConstructionAndEmbeddingFallback(t *testing.T) {
 	if _, err := providerAdapter.generateQueryEmbedding(ctx, "provider query"); err == nil {
 		t.Fatal("expected unavailable query provider error")
 	}
+}
+
+func TestAdapterSemanticSearchWithEmbeddingFixture(t *testing.T) {
+	fixture := &respFixture{}
+	adapter := &Adapter{Client: newProtocolClient(t, fixture)}
+	embeddingClient, err := llm.NewOpenAIClientWithHTTP("fixture", &http.Client{Transport: redisEmbeddingRoundTripper{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	adapter.llmClient = embeddingClient
+	results, err := adapter.SearchSemantic(context.Background(), "docs", "hello", &vectordb.QueryOptions{TopK: 2})
+	if err != nil || len(results) != 1 || results[0].Document.ID != "doc-1" {
+		t.Fatalf("SearchSemantic() = %#v, %v", results, err)
+	}
+	if _, err := adapter.SearchSemantic(context.Background(), "docs", "hello", nil); err != nil {
+		t.Fatalf("SearchSemantic(default options) error = %v", err)
+	}
+	if _, err := adapter.SearchBM25(context.Background(), "docs", "hello", nil); err != nil {
+		t.Fatalf("SearchBM25(default options) error = %v", err)
+	}
+}
+
+func TestParseRedisURLFallbackPath(t *testing.T) {
+	addr, user, pass, tls := parseRedisURL(&vectordb.Config{URL: "not a valid redis url"})
+	if addr != "not a valid redis url" || user != "" || pass != "" || tls {
+		t.Fatalf("parseRedisURL() = %q, %q, %q, %v", addr, user, pass, tls)
+	}
+	addr, user, pass, tls = parseRedisURL(&vectordb.Config{})
+	if addr != "localhost:6379" || user != "" || pass != "" || tls {
+		t.Fatalf("parseRedisURL(default) = %q, %q, %q, %v", addr, user, pass, tls)
+	}
+}
+
+type redisEmbeddingRoundTripper struct{}
+
+func (redisEmbeddingRoundTripper) RoundTrip(*http.Request) (*http.Response, error) {
+	header := make(http.Header)
+	header.Set("Content-Type", "application/json")
+	return &http.Response{StatusCode: http.StatusOK, Header: header, Body: io.NopCloser(strings.NewReader(`{"data":[{"embedding":[0.1,0.2,0.3]}]}`))}, nil
 }
 
 func TestClientProtocolErrors(t *testing.T) {

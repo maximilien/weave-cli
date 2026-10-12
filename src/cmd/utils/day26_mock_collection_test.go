@@ -31,6 +31,11 @@ func TestMockCollectionListingAndMaintenancePaths(t *testing.T) {
 	}
 	ShowMockCollection(ctx, cfg, "AlphaDocs", 0, false, false, false, false, false, false, false, "", "", false)
 	DeleteAllMockCollections(ctx, cfg)
+	ListMockDocuments(ctx, cfg, "AlphaDocs", 1, false, 1, false, false)
+	ShowMockDocument(ctx, cfg, "AlphaDocs", nil, false, 1, nil, "", false, false, false)
+	if _, err := CountMockDocuments(ctx, cfg, "AlphaDocs"); err == nil {
+		t.Fatal("expected unimplemented mock document count error")
+	}
 	// Exercise the generic display paths against the deterministic mock backend.
 	ShowGenericCollection(ctx, cfg, "AlphaDocs", 1, false, false, true, true, false, false, false, "", "", false)
 	ShowGenericCollection(ctx, cfg, "AlphaDocs", 0, true, false, false, false, false, false, false, "", "", true)
