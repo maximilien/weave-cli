@@ -33,4 +33,20 @@ func TestMinioOperationsRejectMalformedURLs(t *testing.T) {
 	if _, err := backend.Upload(cancelled, []byte("data"), ImageMetadata{CollectionName: "docs", Filename: "x.png", ContentType: "image/png"}); err == nil {
 		t.Fatal("Upload unexpectedly succeeded with cancelled context")
 	}
+	validURL := "http://127.0.0.1:1/docs/key.png"
+	if _, err := backend.Download(cancelled, validURL); err == nil {
+		t.Fatal("Download unexpectedly succeeded with cancelled context")
+	}
+	if err := backend.Delete(cancelled, validURL); err == nil {
+		t.Fatal("Delete unexpectedly succeeded with cancelled context")
+	}
+	if _, err := backend.Exists(cancelled, validURL); err == nil {
+		t.Fatal("Exists unexpectedly succeeded with cancelled context")
+	}
+	if _, err := backend.GetPresignedURL(cancelled, validURL, time.Minute); err == nil {
+		t.Fatal("GetPresignedURL unexpectedly succeeded with cancelled context")
+	}
+	if _, err := backend.GetInfo(cancelled, validURL); err == nil {
+		t.Fatal("GetInfo unexpectedly succeeded with cancelled context")
+	}
 }
