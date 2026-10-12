@@ -5,8 +5,20 @@ package image
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 )
+
+func TestExtractEXIFFileWithoutMetadata(t *testing.T) {
+	path := t.TempDir() + "/plain.jpg"
+	if err := os.WriteFile(path, []byte("not a real image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	data, err := ExtractEXIF(path)
+	if err != nil || data == nil || !data.IsEmpty() {
+		t.Fatalf("expected empty EXIF result, data=%#v err=%v", data, err)
+	}
+}
 
 func TestExtractEXIFInvalidInputs(t *testing.T) {
 	if data, err := ExtractEXIF(t.TempDir() + "/missing.jpg"); err == nil || data != nil {

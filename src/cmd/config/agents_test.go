@@ -89,6 +89,15 @@ func TestCreateDefaultAgentsFile(t *testing.T) {
 	}
 }
 
+func TestShowAgentsTemplateFromRepository(t *testing.T) {
+	root, err := filepath.Abs("../../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(root)
+	showAgentsTemplate()
+}
+
 func TestCreateDefaultAgentsFile_ValidYAML(t *testing.T) {
 	tmpDir := t.TempDir()
 	agentsFile := filepath.Join(tmpDir, "weave-agents.yaml")
