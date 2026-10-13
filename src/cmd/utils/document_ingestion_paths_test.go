@@ -7,6 +7,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -67,6 +70,86 @@ func TestGenericTextIngestionSequentialAndParallel(t *testing.T) {
 	if err := processTextFileGeneric(ctx, client, "WeaveDocs", filepath.Join(t.TempDir(), "missing.txt"), 15, 1, ""); err == nil {
 		t.Fatal("missing input file accepted")
 	}
+}
+
+func TestWeaviateTextIngestionAndMetadataModes(t *testing.T) {
+	var objects int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/v1/schema":
+			_, _ = io.WriteString(w, `{"classes":[{"class":"WeaveDocs","properties":[{"name":"is_chunked","dataType":["boolean"]},{"name":"total_chunks","dataType":["int"]},{"name":"chunk_index","dataType":["int"]}]},{"class":"RagMeDocs","properties":[{"name":"metadata","dataType":["text"]}]}]}`)
+		case "/v1/schema/WeaveDocs":
+			_, _ = io.WriteString(w, `{"class":"WeaveDocs","properties":[{"name":"is_chunked","dataType":["boolean"]},{"name":"total_chunks","dataType":["int"]},{"name":"chunk_index","dataType":["int"]}]}`)
+		case "/v1/schema/RagMeDocs":
+			_, _ = io.WriteString(w, `{"class":"RagMeDocs","properties":[{"name":"metadata","dataType":["text"]}]}`)
+		case "/v1/objects":
+			objects++
+			_, _ = io.WriteString(w, `{"id":"created"}`)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	path := filepath.Join(t.TempDir(), "weave.txt")
+	if err := os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	report := filepath.Join(t.TempDir(), "report.json")
+	cfg := &config.VectorDBConfig{Type: config.VectorDBTypeLocal, URL: server.URL}
+	if err := CreateWeaviateDocument(context.Background(), cfg, "WeaveDocs", path, 7, "", false, 0, 1, 1000, report, "json", "", 1, false); err != nil {
+		t.Fatalf("CreateWeaviateDocument() = %v", err)
+	}
+	if objects != 3 {
+		t.Fatalf("created objects = %d, want 3", objects)
+	}
+	if err := CreateWeaviateDocument(context.Background(), cfg, "RagMeDocs", path, 100, "", false, 0, 1, 1000, "", "", "", 1, false); err != nil {
+		t.Fatalf("legacy CreateWeaviateDocument() = %v", err)
+	}
+	if err := CreateWeaviateDocument(context.Background(), cfg, "WeaveDocs", filepath.Join(t.TempDir(), "missing.txt"), 10, "", false, 0, 1, 1000, "", "", "", 1, false); err == nil {
+		t.Fatal("missing Weaviate input file accepted")
+	}
+	if err := CreateWeaviateDocument(context.Background(), cfg, "WeaveDocs", path, 100, "", false, 0, 1, 1000, "", "", "", 1, true); err != nil {
+		t.Fatalf("skip-existing ingestion = %v", err)
+	}
+	imagePath := filepath.Join(t.TempDir(), "fixture.png")
+	if err := os.WriteFile(imagePath, []byte("not-a-real-image"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	imageClient := mustWeaviateClient(t, server.URL)
+	if err := processImageFile(context.Background(), imageClient, "WeaveImages", imagePath); err != nil {
+		t.Fatalf("flat image processing = %v", err)
+	}
+	if err := processImageFile(context.Background(), imageClient, "RagMeImages", imagePath); err != nil {
+		t.Fatalf("legacy image processing = %v", err)
+	}
+	if err := processImageFile(context.Background(), imageClient, "WeaveImages", filepath.Join(t.TempDir(), "missing.png")); err == nil {
+		t.Fatal("missing image accepted")
+	}
+	if err := processTextFile(context.Background(), imageClient, "WeaveDocs", filepath.Join(t.TempDir(), "missing.txt"), 10); err == nil {
+		t.Fatal("missing text accepted")
+	}
+	if chunks := chunkText("", 10); len(chunks) != 1 || chunks[0] != "" {
+		t.Fatalf("empty text chunks = %#v", chunks)
+	}
+	if data, err := os.ReadFile(report); err != nil || len(data) == 0 {
+		t.Fatalf("processing report = %q, %v", data, err)
+	}
+	if got := getCollectionMetadataMode(context.Background(), mustWeaviateClient(t, server.URL), "Missing"); got != "flat" {
+		t.Fatalf("missing schema metadata mode = %q", got)
+	}
+	if got := getCollectionMetadataMode(context.Background(), mustWeaviateClient(t, server.URL), "RagMeDocs"); got != "json" {
+		t.Fatalf("JSON metadata mode = %q", got)
+	}
+}
+
+func mustWeaviateClient(t *testing.T, endpoint string) *weaviate.Client {
+	t.Helper()
+	client, err := weaviate.NewClient(&weaviate.Config{URL: endpoint, Timeout: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return client
 }
 
 func TestLegacyMockTextAndImageIngestion(t *testing.T) {
@@ -199,6 +282,24 @@ func TestDocumentUtilityMockMutationPaths(t *testing.T) {
 	DeleteAllMockDocuments(ctx, cfg, "WeaveDocs")
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc1-single", "", nil, "updated", "", []string{"source=test"})
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", nil, "", "", []string{"invalid"})
+}
+
+func TestGenericDocumentDeletionModes(t *testing.T) {
+	ctx := context.Background()
+	cfg := mockOperationConfig()
+	// Exercise direct ID deletion, including the fallback path for a missing ID.
+	DeleteDocuments(ctx, cfg, "AlphaDocs", []string{"doc1-chunk1"}, nil, false, "", "")
+	DeleteDocuments(ctx, cfg, "AlphaDocs", []string{"missing-id"}, nil, false, "", "")
+	// Exercise filename and metadata-filter deletion modes.
+	DeleteDocuments(ctx, cfg, "AlphaDocs", nil, nil, false, "", "doc2.txt")
+	DeleteDocuments(ctx, cfg, "AlphaDocs", nil, []string{"author=Test Author", "ignored"}, false, "", "")
+	// No criteria should be a safe warning rather than a mutation.
+	DeleteDocuments(ctx, cfg, "AlphaDocs", nil, nil, true, "unused*", "")
+	DeleteMockDocuments(ctx, cfg, "BetaImages", []string{"missing-id"}, nil, false, "", "")
+	DeleteMockDocuments(ctx, cfg, "BetaImages", nil, []string{"filename=missing.txt"}, false, "", "")
+	DeleteMockDocuments(ctx, cfg, "BetaImages", nil, nil, false, "", "missing.txt")
+	DeleteMockDocuments(ctx, cfg, "BetaImages", nil, nil, false, "*.png", "")
+	DeleteMockDocuments(ctx, cfg, "BetaImages", nil, nil, false, "", "")
 }
 
 func TestGenericCollectionQueryWrapperPaths(t *testing.T) {

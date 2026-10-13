@@ -159,6 +159,27 @@ func TestDatabaseListRendering(t *testing.T) {
 	}
 }
 
+func TestValidateDatabaseRequiredCloudFields(t *testing.T) {
+	cases := []struct {
+		dbType pkgconfig.VectorDBType
+		valid  pkgconfig.VectorDBConfig
+	}{
+		{pkgconfig.VectorDBTypeMongoDB, pkgconfig.VectorDBConfig{Name: "mongo", DatabaseURL: ""}},
+		{pkgconfig.VectorDBTypeMilvusCloud, pkgconfig.VectorDBConfig{Name: "milvus", APIKey: ""}},
+		{pkgconfig.VectorDBTypeChromaCloud, pkgconfig.VectorDBConfig{Name: "chroma", Tenant: ""}},
+		{pkgconfig.VectorDBTypeQdrantCloud, pkgconfig.VectorDBConfig{Name: "qdrant", APIKey: ""}},
+	}
+	for _, tc := range cases {
+		issues := validateDatabase(2, pkgconfig.VectorDBConfig{Type: tc.dbType, Name: tc.valid.Name})
+		if len(issues) != 1 {
+			t.Errorf("validateDatabase(%q) returned %d issues, want 1", tc.dbType, len(issues))
+		}
+	}
+	if issues := validateDatabase(0, pkgconfig.VectorDBConfig{Type: pkgconfig.VectorDBTypeMock, Name: "mock"}); len(issues) != 0 {
+		t.Fatalf("valid mock configuration returned issues: %v", issues)
+	}
+}
+
 func TestShellSetupPaths(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)

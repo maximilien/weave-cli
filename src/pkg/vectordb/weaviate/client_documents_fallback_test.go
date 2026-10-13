@@ -11,10 +11,10 @@ import (
 
 func TestListDocumentsFallbackAggregationAndSimpleQueries(t *testing.T) {
 	cases := []struct {
-		name       string
-		handler    func(http.ResponseWriter, *http.Request)
-		wantEmpty  bool
-		wantError  bool
+		name      string
+		handler   func(http.ResponseWriter, *http.Request)
+		wantEmpty bool
+		wantError bool
 	}{
 		{
 			name: "aggregation confirms empty",
