@@ -71,4 +71,16 @@ func TestRunIngestValidationAndEmptyScan(t *testing.T) {
 	if err := runIngest(ingestCmd, []string{root}); err != nil {
 		t.Fatalf("runIngest(empty scan) error = %v", err)
 	}
+	unsupportedPath := filepath.Join(root, "unsupported.bin")
+	if err := os.WriteFile(unsupportedPath, []byte("unsupported fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	glob = "*.bin"
+	reportFile = filepath.Join(root, "ingest-report.json")
+	if err := runIngest(ingestCmd, []string{root}); err != nil {
+		t.Fatalf("runIngest(unsupported file report) error = %v", err)
+	}
+	if report, err := os.ReadFile(reportFile); err != nil || len(report) == 0 {
+		t.Fatalf("ingestion report = %q, %v", report, err)
+	}
 }

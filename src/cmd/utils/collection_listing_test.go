@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -143,6 +144,164 @@ func TestListWeaviateCollectionsOutputs(t *testing.T) {
 	})
 	if !strings.Contains(fullSummary, "first") {
 		t.Fatalf("untruncated collection summary = %q", fullSummary)
+	}
+
+	export, err := ExportCollectionSchemaAndMetadata(context.Background(), client, "Docs", true, true, true)
+	if err != nil {
+		t.Fatalf("ExportCollectionSchemaAndMetadata() error = %v", err)
+	}
+	if export.Name != "Docs" || export.Schema == nil || len(export.Metadata) == 0 {
+		t.Fatalf("schema and metadata export = %#v", export)
+	}
+	for key, info := range export.Metadata {
+		if info.Occurrences != 0 || info.Sample != nil {
+			t.Errorf("compact metadata %q retained runtime details: %#v", key, info)
+		}
+	}
+	fullExport, err := ExportCollectionSchemaAndMetadata(context.Background(), client, "Docs", true, false, false)
+	if err != nil {
+		t.Fatalf("ExportCollectionSchemaAndMetadata(noncompact) error = %v", err)
+	}
+	for key, info := range fullExport.Metadata {
+		if info.Occurrences == 0 {
+			t.Errorf("noncompact metadata %q has no occurrence count: %#v", key, info)
+		}
+	}
+}
+
+func TestWeaviateCollectionMaintenanceWithFakeServer(t *testing.T) {
+	var deleted []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/meta":
+			_, _ = io.WriteString(w, `{"hostname":"fake","version":"1.27.0","modules":{}}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/schema":
+			_, _ = io.WriteString(w, `{"classes":[{"class":"Docs"},{"class":"DocsArchive"},{"class":"Images"}]}`)
+		case r.Method == http.MethodDelete && strings.HasPrefix(r.URL.Path, "/v1/schema/"):
+			deleted = append(deleted, strings.TrimPrefix(r.URL.Path, "/v1/schema/"))
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	cfg := &config.VectorDBConfig{Type: config.VectorDBTypeLocal, URL: server.URL}
+	ctx := context.Background()
+
+	if count, err := CountWeaviateCollections(ctx, cfg); err != nil || count != 3 {
+		t.Fatalf("CountWeaviateCollections() = (%d, %v), want (3, nil)", count, err)
+	}
+	if err := DeleteWeaviateCollectionsByPattern(ctx, cfg, "Docs*"); err != nil {
+		t.Fatalf("DeleteWeaviateCollectionsByPattern() error = %v", err)
+	}
+	if len(deleted) != 2 || deleted[0] != "Docs" || deleted[1] != "DocsArchive" {
+		t.Fatalf("pattern deletions = %#v", deleted)
+	}
+	if err := DeleteWeaviateCollections(ctx, cfg, []string{"Images"}); err != nil {
+		t.Fatalf("DeleteWeaviateCollections() error = %v", err)
+	}
+	if err := DeleteWeaviateCollectionSchemasByPattern(ctx, cfg, "^Images$"); err != nil {
+		t.Fatalf("DeleteWeaviateCollectionSchemasByPattern() error = %v", err)
+	}
+	if err := DeleteWeaviateCollectionSchema(ctx, cfg, "Docs"); err != nil {
+		t.Fatalf("DeleteWeaviateCollectionSchema() error = %v", err)
+	}
+	if len(deleted) != 5 || deleted[2] != "Images" || deleted[3] != "Images" || deleted[4] != "Docs" {
+		t.Fatalf("all schema deletions = %#v", deleted)
+	}
+}
+
+func TestDeleteAllWeaviateCollectionsClearsDocuments(t *testing.T) {
+	var deletedIDs []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/meta":
+			_, _ = io.WriteString(w, `{"hostname":"fake","version":"1.27.0","modules":{}}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/schema":
+			_, _ = io.WriteString(w, `{"classes":[{"class":"Docs","properties":[{"name":"content","dataType":["text"]}]}]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/graphql":
+			_, _ = io.WriteString(w, `{"data":{"Get":{"Docs":[{"_additional":{"id":"doc-1","vector":[0.1,0.2]},"content":"fixture"}]}}}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/objects/Docs/doc-1":
+			_, _ = io.WriteString(w, `{"id":"doc-1","class":"Docs","properties":{"content":"fixture"}}`)
+		case r.Method == http.MethodDelete && r.URL.Path == "/v1/objects/Docs/doc-1":
+			deletedIDs = append(deletedIDs, "doc-1")
+			w.WriteHeader(http.StatusNoContent)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	cfg := &config.VectorDBConfig{Type: config.VectorDBTypeLocal, URL: server.URL}
+
+	DeleteAllWeaviateCollections(context.Background(), cfg)
+	if len(deletedIDs) != 1 || deletedIDs[0] != "doc-1" {
+		t.Fatalf("deleted document IDs = %#v", deletedIDs)
+	}
+}
+
+func TestWeaviateCollectionCreationPathsWithFakeServer(t *testing.T) {
+	var created []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/meta":
+			_, _ = io.WriteString(w, `{"hostname":"fake","version":"1.27.0","modules":{}}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/v1/schema":
+			_, _ = io.WriteString(w, `{"classes":[]}`)
+		case r.Method == http.MethodPost && r.URL.Path == "/v1/schema":
+			var schema struct {
+				Class string `json:"class"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&schema); err != nil {
+				t.Errorf("decode schema request: %v", err)
+			}
+			created = append(created, schema.Class)
+			w.WriteHeader(http.StatusCreated)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+	cfg := &config.VectorDBConfig{Type: config.VectorDBTypeLocal, URL: server.URL}
+	ctx := context.Background()
+
+	if err := CreateWeaviateCollection(ctx, cfg, "BasicDocs", "text-embedding-3-small", nil); err != nil {
+		t.Fatalf("CreateWeaviateCollection() error = %v", err)
+	}
+	if err := CreateWeaviateCollection(ctx, cfg, "CustomDocs", "", nil); err != nil {
+		t.Fatalf("CreateWeaviateCollection(custom) error = %v", err)
+	}
+
+	yamlPath := filepath.Join(t.TempDir(), "schema.yaml")
+	if err := os.WriteFile(yamlPath, []byte("name: FileDocs\nschema:\n  class: FileDocs\n  properties:\n    - name: content\n      datatype: [text]\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := CreateWeaviateCollectionFromSchemaFile(ctx, cfg, "RenamedDocs", yamlPath); err != nil {
+		t.Fatalf("CreateWeaviateCollectionFromSchemaFile() error = %v", err)
+	}
+	appConfig := &config.Config{Databases: config.DatabasesConfig{Schemas: []config.SchemaDefinition{{
+		Name: "NamedSchema",
+		Schema: map[string]interface{}{
+			"class":      "NamedSchema",
+			"properties": []interface{}{map[string]interface{}{"name": "content", "datatype": []interface{}{"text"}}},
+		},
+	}}}}
+	if err := CreateWeaviateCollectionFromConfigSchema(ctx, appConfig, cfg, "ConfiguredDocs", "NamedSchema", "nested"); err != nil {
+		t.Fatalf("CreateWeaviateCollectionFromConfigSchema() error = %v", err)
+	}
+	if len(created) != 4 || created[0] != "BasicDocs" || created[1] != "CustomDocs" || created[2] != "RenamedDocs" || created[3] != "ConfiguredDocs" {
+		t.Fatalf("created collection names = %#v", created)
+	}
+}
+
+func TestVectorDBTypeUtilityFunctions(t *testing.T) {
+	if types := GetSupportedVectorDBTypes(); len(types) == 0 {
+		t.Fatal("GetSupportedVectorDBTypes() returned no registered types")
+	}
+	if !IsVectorDBTypeSupported("mock") || IsVectorDBTypeSupported("unsupported") {
+		t.Fatal("IsVectorDBTypeSupported() returned unexpected results")
 	}
 }
 
