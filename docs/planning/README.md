@@ -1,8 +1,8 @@
 # Weave CLI Planning Documents
 
-**Current status**: 66.08% coverage; adapter floor complete; v0.15.0 released
+**Current status**: 73.01% coverage; adapter floor complete; v0.15.0 released
 
-**Last updated**: September 25, 2026
+**Last updated**: October 14, 2026
 
 ---
 
@@ -11,10 +11,10 @@
 ### 1. Continue toward 80% coverage
 
 - The campaign raised statement coverage from the v0.14.0 baseline of 30.18%
-  to 40.06% for v0.15.0 and 66.08% on Day 23.
-- Preserve the 66% project ratchet and 80% patch target.
-- Advance one percentage-point checkpoint per day; 67% is next on Day 24,
-  and overshoot does not skip the following day's rung.
+  to 40.06% for v0.15.0 and 73.01% on 2026-10-14.
+- Preserve the 67% project ratchet and 80% patch target.
+- Advance the project ratchet by one percentage point per daily checkpoint;
+  68% is next, and overshoot does not skip the following rung.
 - Continue toward 80%, prioritizing command and core-package gaps.
 - See [`../tests/COVERAGE_PLAN.md`](../tests/COVERAGE_PLAN.md).
 

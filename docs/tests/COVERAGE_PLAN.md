@@ -608,14 +608,24 @@ unless the user explicitly requests a faster cadence.
 - The Codecov project target advances one point to 66%; patch coverage remains
   80%.
 
-### Path from 66.08% to 80%
+### Coverage update — 73.01% (2026-10-14)
 
-1. Reach and stabilize the **67%** Day 24 checkpoint on 2026-09-26.
-2. Raise low-coverage command packages, beginning with collection,
+- Statements/lines: **73.01%** (`20,116 / 27,551`); function coverage:
+  **95.38%** (`2,021 / 2,119`).
+- Added deterministic fake-Weaviate coverage for collection creation,
+  counting, deletion, schema export, and document clearing, plus a pipeline
+  ingest report path for unsupported file types.
+- The measured result clears 73%; the Codecov project ratchet advances one
+  point from 66% to 67% under the daily-rung policy. Patch coverage remains
+  80%; the next project ratchet step is 68%.
+
+### Path from 73.01% to 80%
+
+1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
-3. Deepen adapter error and pagination coverage while preserving the new 50%
+2. Deepen adapter error and pagination coverage while preserving the new 50%
    package floor.
-4. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
+3. Deepen `pkg/config`, `pkg/evaluation`, `pkg/llm`, `pkg/pdf`, and `pkg/stack`
    around validation, cancellation, retries, and partial failures.
 
 Recalculate the remaining statement count after every slice. Prefer behavior

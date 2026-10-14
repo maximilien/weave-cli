@@ -10,7 +10,7 @@ coverage:
   status:
     project:
       default:
-        target: 66%        # Day 23 development baseline
+        target: 67%        # Next one-point project ratchet after the 73% result
         threshold: 1%      # Prevent meaningful regressions while coverage grows
         if_ci_failed: error
 
