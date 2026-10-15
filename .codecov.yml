@@ -10,7 +10,7 @@ coverage:
   status:
     project:
       default:
-        target: 67%        # Next one-point project ratchet after the 73% result
+        target: 68%        # One-point ratchet after 73.5% checkpoint
         threshold: 1%      # Prevent meaningful regressions while coverage grows
         if_ci_failed: error
 

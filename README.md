@@ -1552,8 +1552,8 @@ See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 ### Test Coverage
 
 The v0.15.0 release baseline is **40.06% statement coverage**. Current
-development coverage is **73.01%** (`20,116 / 27,551`) with **95.38% function
-coverage** (`2,021 / 2,119`). The Codecov project ratchet is 67% and patch
+development coverage is **73.56%** (`20,268 / 27,550`) with **95.47% function
+coverage** (`2,024 / 2,120`). The Codecov project ratchet is 68% and patch
 coverage remains 80%.
 
 Integration lanes separately exercise CRUD, collection, semantic, BM25,

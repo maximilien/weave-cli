@@ -619,7 +619,19 @@ unless the user explicitly requests a faster cadence.
   point from 66% to 67% under the daily-rung policy. Patch coverage remains
   80%; the next project ratchet step is 68%.
 
-### Path from 73.01% to 80%
+### Coverage update — 73.56% (2026-10-15)
+
+- Statements/lines: **73.56%** (`20,268 / 27,550`); function coverage:
+  **95.47%** (`2,024 / 2,120`).
+- Added isolated stack command fixtures for Kind/Minikube and PM2, setup/error
+  paths for stack ingestion, and interactive config repair save/cancel coverage.
+- Reused a single buffered stdin reader during interactive config repair so
+  piped input is not lost between prompts.
+- The explicit 73.5% checkpoint is met. The Codecov project ratchet advances
+  one point from 67% to 68%; patch coverage remains 80%, and the next project
+  ratchet step is 69%.
+
+### Path from 73.56% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
