@@ -80,6 +80,61 @@ func TestSimpleEnvironmentFileHelpers(t *testing.T) {
 	}
 }
 
+func TestInteractiveConfigFixConsumesPipedInputAndSavesValues(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	for _, key := range []string{"WEAVIATE_URL", "WEAVIATE_API_KEY", "OPENAI_API_KEY"} {
+		t.Setenv(key, "")
+	}
+
+	var fixErr error
+	withConfigInput(t, "https://fixture.test\nweaviate-secret\nopenai-secret\ny\n", func() {
+		fixErr = InteractiveConfigFix(false)
+	})
+	if fixErr != nil {
+		t.Fatalf("InteractiveConfigFix() error = %v", fixErr)
+	}
+	contents, err := os.ReadFile(".env")
+	if err != nil {
+		t.Fatalf("read generated .env: %v", err)
+	}
+	for _, want := range []string{
+		`WEAVIATE_URL="https://fixture.test"`,
+		`WEAVIATE_API_KEY="weaviate-secret"`,
+		`OPENAI_API_KEY="openai-secret"`,
+	} {
+		if !strings.Contains(string(contents), want) {
+			t.Errorf("generated .env missing %q:\n%s", want, contents)
+		}
+	}
+}
+
+func TestInteractiveConfigFixCanCancelWithoutSaving(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	if err := os.WriteFile(".env", []byte("WEAVIATE_URL=https://existing.test\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range []string{"WEAVIATE_URL", "WEAVIATE_API_KEY", "OPENAI_API_KEY"} {
+		t.Setenv(key, "")
+	}
+
+	var fixErr error
+	withConfigInput(t, "\n\n\nno\n", func() {
+		fixErr = InteractiveConfigFix(true)
+	})
+	if fixErr != nil {
+		t.Fatalf("InteractiveConfigFix() cancel error = %v", fixErr)
+	}
+	contents, err := os.ReadFile(".env")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(contents), "https://existing.test") {
+		t.Fatalf("cancel changed existing .env: %s", contents)
+	}
+}
+
 func TestMinimalConfigAndEnvPathHelpers(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)

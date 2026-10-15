@@ -90,6 +90,47 @@ func TestIngestValidationAndDefaults(t *testing.T) {
 	}
 }
 
+func TestIngestAllConfigurationAndClusterBoundaries(t *testing.T) {
+	inTempWorkingDir(t)
+	config := generateQuickstartTemplate("kind")
+	if err := stackpkg.SaveStackConfig(config, ""); err != nil {
+		t.Fatalf("save stack config: %v", err)
+	}
+	if err := runIngestAll(nil, nil); err == nil || !strings.Contains(err.Error(), "no collections defined") {
+		t.Fatalf("runIngestAll() without collections error = %v", err)
+	}
+
+	config.Ingestion = &stackpkg.IngestionConfig{Collections: map[string]stackpkg.CollectionIngestConfig{
+		"Documents": {Source: "./documents"},
+	}}
+	if err := stackpkg.SaveStackConfig(config, ""); err != nil {
+		t.Fatalf("save stack ingestion config: %v", err)
+	}
+	if err := runIngestAll(nil, nil); err == nil || !strings.Contains(err.Error(), "no active stack") {
+		t.Fatalf("runIngestAll() without active cluster error = %v", err)
+	}
+}
+
+func TestStackCommandsReportUnavailableKubectlAndUnknownProvider(t *testing.T) {
+	inTempWorkingDir(t)
+	if err := stackpkg.SaveClusterInfo(&stackpkg.ClusterInfo{
+		Name: "fixture", Provider: "unsupported", Context: "fixture-context",
+	}); err != nil {
+		t.Fatalf("save cluster info: %v", err)
+	}
+	t.Setenv("PATH", t.TempDir())
+
+	if err := runLogs(nil, []string{"milvus"}); err == nil || !strings.Contains(err.Error(), "failed to get logs") {
+		t.Fatalf("runLogs() error = %v, want kubectl error", err)
+	}
+	if err := runKubectl(nil, []string{"--", "get", "pods"}); err == nil {
+		t.Fatal("runKubectl() succeeded without kubectl")
+	}
+	if err := runDown(nil, nil); err == nil || !strings.Contains(err.Error(), "failed to delete cluster") {
+		t.Fatalf("runDown() error = %v, want unsupported-provider error", err)
+	}
+}
+
 func TestCommandsReportMissingConfiguration(t *testing.T) {
 	inTempWorkingDir(t)
 

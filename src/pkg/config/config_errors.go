@@ -446,6 +446,7 @@ func InteractiveConfigFix(envFileExists bool) error {
 	fmt.Println()
 	color.New(color.FgGreen, color.Bold).Println("🔧 Interactive Configuration Setup")
 	fmt.Println()
+	reader := bufio.NewReader(os.Stdin)
 
 	// Collect values
 	values := make(map[string]string)
@@ -468,7 +469,7 @@ func InteractiveConfigFix(envFileExists bool) error {
 			}
 			fmt.Printf("  Enter value (or press Enter to keep current): ")
 
-			value, err := readSecretSimple()
+			value, err := readSecretSimpleFrom(reader)
 			if err != nil {
 				return fmt.Errorf("failed to read secret: %w", err)
 			}
@@ -485,7 +486,6 @@ func InteractiveConfigFix(envFileExists bool) error {
 			fmt.Printf("  Example: %s\n", envVar.Example)
 			fmt.Printf("  Enter value (or press Enter to keep current): ")
 
-			reader := bufio.NewReader(os.Stdin)
 			value, err := reader.ReadString('\n')
 			if err != nil {
 				return fmt.Errorf("failed to read input: %w", err)
@@ -518,7 +518,6 @@ func InteractiveConfigFix(envFileExists bool) error {
 	// Confirm save
 	fmt.Println()
 	color.New(color.FgYellow, color.Bold).Printf("💾 Save changes to .env? (Y/n): ")
-	reader := bufio.NewReader(os.Stdin)
 	response, err := reader.ReadString('\n')
 	if err != nil {
 		return fmt.Errorf("failed to read confirmation: %w", err)
@@ -581,9 +580,12 @@ func maskSecret(s string) string {
 }
 
 func readSecretSimple() (string, error) {
+	return readSecretSimpleFrom(bufio.NewReader(os.Stdin))
+}
+
+func readSecretSimpleFrom(reader *bufio.Reader) (string, error) {
 	fd := int(os.Stdin.Fd())
 	if !term.IsTerminal(fd) {
-		reader := bufio.NewReader(os.Stdin)
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			return "", err

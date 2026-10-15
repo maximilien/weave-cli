@@ -6,6 +6,7 @@ package stack
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -144,6 +145,43 @@ func TestGeneratePM2Config_WithDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Contains(t, string(content), "YYYY-MM-DD HH:mm:ss Z", "should have default log date format")
+}
+
+func TestGeneratePM2ConfigWithTemplateFixture(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	templateDir := filepath.Join(root, "templates", "pm2")
+	if err := os.MkdirAll(templateDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	fixture := `app: "{{ .AppName }}"
+script: "{{ .Script }}"
+cwd: "{{ .Cwd }}"
+logs: "{{ .LogDateFormat }}"
+`
+	if err := os.WriteFile(filepath.Join(templateDir, "ecosystem.config.js"), []byte(fixture), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	output := filepath.Join(root, "generated", "ecosystem.config.js")
+	config := &StackConfig{Dashboard: &DashboardConfig{PM2: &PM2Config{
+		AppName: "fixture-app", Script: "server.js",
+	}}}
+	if err := GeneratePM2Config(config, output); err != nil {
+		t.Fatalf("GeneratePM2Config() error = %v", err)
+	}
+	if config.Dashboard.PM2.Cwd != filepath.Dir(output) || config.Dashboard.PM2.LogDateFormat == "" {
+		t.Fatalf("PM2 defaults were not applied: %#v", config.Dashboard.PM2)
+	}
+	data, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatalf("read generated config: %v", err)
+	}
+	for _, want := range []string{"fixture-app", "server.js", filepath.Dir(output)} {
+		if !strings.Contains(string(data), want) {
+			t.Errorf("generated config %q missing %q", data, want)
+		}
+	}
 }
 
 func TestCommandExists(t *testing.T) {

@@ -6,6 +6,7 @@ package stack
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -89,6 +90,149 @@ func TestClusterExists(t *testing.T) {
 			// Just verify the function doesn't panic
 			t.Logf("Cluster %s exists: %v", tt.clusterName, exists)
 		})
+	}
+}
+
+func TestCreateKindClusterWithLocalCommandFixtures(t *testing.T) {
+	t.Run("creates and records a cluster", func(t *testing.T) {
+		workDir := t.TempDir()
+		t.Chdir(workDir)
+		binDir := filepath.Join(workDir, "bin")
+		if err := os.Mkdir(binDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Mkdir(DefaultStateDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		writeExecutable(t, binDir, "podman")
+		if err := os.WriteFile(filepath.Join(binDir, "kind"), []byte("#!/bin/sh\nif [ \"$1\" = get ]; then printf 'unrelated\\n'; fi\nexit 0\n"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", binDir)
+
+		info, err := CreateKindCluster(&StackConfig{Runtime: RuntimeConfig{
+			ContainerRuntime: "podman",
+			Kubernetes:       KubernetesConfig{Provider: "kind", Kind: &KindConfig{Name: "fixture", Nodes: 1}},
+		}})
+		if err != nil {
+			t.Fatalf("CreateKindCluster() error = %v", err)
+		}
+		if info.Name != "fixture" || info.Context != "kind-fixture" || info.ContainerRuntime != "podman" || info.Status != "active" {
+			t.Fatalf("unexpected cluster info: %#v", info)
+		}
+		stored, err := LoadClusterInfo()
+		if err != nil || stored == nil || stored.Name != info.Name {
+			t.Fatalf("LoadClusterInfo() = (%#v, %v)", stored, err)
+		}
+	})
+
+	t.Run("reports cluster creation failure output", func(t *testing.T) {
+		workDir := t.TempDir()
+		t.Chdir(workDir)
+		binDir := filepath.Join(workDir, "bin")
+		if err := os.Mkdir(binDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		writeExecutable(t, binDir, "podman")
+		if err := os.WriteFile(filepath.Join(binDir, "kind"), []byte("#!/bin/sh\nif [ \"$1\" = get ]; then exit 0; fi\necho fixture-failure >&2\nexit 1\n"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", binDir)
+
+		info, err := CreateKindCluster(&StackConfig{Runtime: RuntimeConfig{
+			ContainerRuntime: "podman",
+			Kubernetes:       KubernetesConfig{Provider: "kind", Kind: &KindConfig{Name: "fixture", Nodes: 1}},
+		}})
+		if info != nil || err == nil || !strings.Contains(err.Error(), "fixture-failure") {
+			t.Fatalf("CreateKindCluster() = (%#v, %v), want command failure", info, err)
+		}
+	})
+
+	t.Run("uses a custom kind config", func(t *testing.T) {
+		workDir := t.TempDir()
+		t.Chdir(workDir)
+		binDir := filepath.Join(workDir, "bin")
+		if err := os.Mkdir(binDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Mkdir(DefaultStateDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		writeExecutable(t, binDir, "podman")
+		if err := os.WriteFile(filepath.Join(binDir, "kind"), []byte("#!/bin/sh\nif [ \"$1\" = get ]; then exit 0; fi\nexit 0\n"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", binDir)
+		customYAML := "kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\n"
+		info, err := CreateKindCluster(&StackConfig{Runtime: RuntimeConfig{
+			ContainerRuntime: "podman",
+			Kubernetes: KubernetesConfig{Provider: "kind", Kind: &KindConfig{
+				Name: "custom", Nodes: 1, Config: customYAML,
+			}},
+		}})
+		if err != nil || info == nil {
+			t.Fatalf("CreateKindCluster(custom config) = (%#v, %v)", info, err)
+		}
+		data, err := os.ReadFile(filepath.Join(DefaultStateDir, "kind-config.yaml"))
+		if err != nil || string(data) != customYAML {
+			t.Fatalf("custom kind config = %q, %v", data, err)
+		}
+	})
+
+	t.Run("detects an existing cluster before writing config", func(t *testing.T) {
+		workDir := t.TempDir()
+		t.Chdir(workDir)
+		binDir := filepath.Join(workDir, "bin")
+		if err := os.Mkdir(binDir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		writeExecutable(t, binDir, "podman")
+		if err := os.WriteFile(filepath.Join(binDir, "kind"), []byte("#!/bin/sh\nprintf 'fixture\\n'\n"), 0o700); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", binDir)
+		config := &StackConfig{Runtime: RuntimeConfig{
+			ContainerRuntime: "podman",
+			Kubernetes: KubernetesConfig{Provider: "kind", Kind: &KindConfig{
+				Name: "fixture", Nodes: 1, Config: "kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\n",
+			}},
+		}}
+		info, err := CreateKindCluster(config)
+		if info != nil || err == nil || !strings.Contains(err.Error(), "already exists") {
+			t.Fatalf("CreateKindCluster() = (%#v, %v), want existing-cluster error", info, err)
+		}
+		if _, err := os.Stat(filepath.Join(DefaultStateDir, "kind-config.yaml")); !os.IsNotExist(err) {
+			t.Fatalf("custom config should not be written after existing-cluster check, stat error = %v", err)
+		}
+	})
+}
+
+func TestCreateMinikubeClusterWithLocalCommandFixture(t *testing.T) {
+	workDir := t.TempDir()
+	t.Chdir(workDir)
+	binDir := filepath.Join(workDir, "bin")
+	if err := os.Mkdir(binDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	writeExecutable(t, binDir, "docker")
+	writeExecutable(t, binDir, "minikube")
+	t.Setenv("PATH", binDir)
+
+	info, err := CreateMinikubeCluster(&StackConfig{Runtime: RuntimeConfig{
+		ContainerRuntime: "docker",
+		Kubernetes: KubernetesConfig{Provider: "minikube", Minikube: &MinikubeConfig{
+			Driver: "docker", CPUs: 2, Memory: "4g", Addons: []string{"ingress", "metrics-server"},
+		}},
+	}})
+	if err != nil {
+		t.Fatalf("CreateMinikubeCluster() error = %v", err)
+	}
+	if info.Name != "minikube" || info.Context != "minikube" || info.ContainerRuntime != "docker" {
+		t.Fatalf("unexpected cluster info: %#v", info)
+	}
+	stored, err := LoadClusterInfo()
+	if err != nil || stored == nil || stored.Provider != "minikube" {
+		t.Fatalf("LoadClusterInfo() = (%#v, %v)", stored, err)
 	}
 }
 
