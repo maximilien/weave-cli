@@ -236,3 +236,21 @@ func TestCollectionCommandContracts(t *testing.T) {
 		})
 	}
 }
+
+func TestCollectionCountChromaPath(t *testing.T) {
+	setupMockCollectionConfig(t)
+	t.Setenv("VECTOR_DB_TYPE", "")
+	configPath := viper.GetString("config")
+	contents := `databases:
+  default: chroma-local
+  vector_databases:
+    - name: fixture
+      type: chroma-local
+      enabled: true
+      url: http://127.0.0.1:8000
+`
+	if err := os.WriteFile(configPath, []byte(contents), 0o600); err != nil {
+		t.Fatalf("write Chroma config: %v", err)
+	}
+	runCollectionCount(CountCmd, nil)
+}

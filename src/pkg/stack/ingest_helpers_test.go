@@ -4,10 +4,13 @@
 package stack
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/maximilien/weave-cli/src/pkg/pipeline"
 )
 
 func TestGetEmbeddingDimensions(t *testing.T) {
@@ -59,4 +62,38 @@ func TestStartMilvusPortForwardReportsConfigurationAndExecutableErrors(t *testin
 			t.Fatalf("StartMilvusPortForward() error = %v, want missing-kubectl error", err)
 		}
 	})
+}
+
+func TestRestartIngestionHelpersHandleEmptyAndExistingFiles(t *testing.T) {
+	cfg := IngestConfig{RestartEvery: 2, MaxRetries: 1}
+	options := &pipeline.IngestOptions{Workers: 1, BatchSize: 1}
+	progress := pipeline.NewProgressTracker(false, true)
+
+	batched, err := processFilesWithRestarts(context.Background(), nil, nil, cfg, nil, nil, options, progress)
+	if err != nil || batched.FilesScanned != 0 || batched.FilesProcessed != 0 || batched.Status != "success" {
+		t.Fatalf("processFilesWithRestarts(empty) = (%+v, %v)", batched, err)
+	}
+
+	auto, err := processFilesWithAutoRestart(context.Background(), nil, nil, cfg, nil, nil, options, progress, nil)
+	if err != nil || auto.FilesScanned != 0 || auto.FilesProcessed != 0 || auto.Status != "success" {
+		t.Fatalf("processFilesWithAutoRestart(empty) = (%+v, %v)", auto, err)
+	}
+
+	stateFile := filepath.Join(t.TempDir(), "resume.json")
+	if err := os.WriteFile(stateFile, []byte(`{"processed_files":{"already-done":true}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	options.Resume = true
+	options.StateFile = stateFile
+	processor := pipeline.NewProcessor(nil, nil, options, progress)
+	files := []pipeline.FileInfo{{Path: "already-done.txt", Hash: "already-done"}}
+	batched, err = processFilesWithRestarts(context.Background(), processor, files, cfg, nil, nil, options, progress)
+	if err != nil || batched.FilesScanned != 1 || batched.FilesProcessed != 0 {
+		t.Fatalf("processFilesWithRestarts(resumed file) = (%+v, %v)", batched, err)
+	}
+
+	auto, err = processFilesWithAutoRestart(context.Background(), processor, files, cfg, nil, nil, options, progress, nil)
+	if err != nil || auto.FilesScanned != 1 || auto.FilesFailed != 0 || auto.Status != "success" {
+		t.Fatalf("processFilesWithAutoRestart(resumed file) = (%+v, %v)", auto, err)
+	}
 }

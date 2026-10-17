@@ -46,3 +46,15 @@ func TestPerformSetupFileBranches(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestRunSetupCompletionDryRun(t *testing.T) {
+	t.Setenv("SHELL", "/bin/zsh")
+	oldDryRun, oldUpdate := dryRun, updateCompletion
+	t.Cleanup(func() {
+		dryRun, updateCompletion = oldDryRun, oldUpdate
+	})
+	for _, update := range []bool{false, true} {
+		dryRun, updateCompletion = true, update
+		runSetupCompletion(nil, nil)
+	}
+}

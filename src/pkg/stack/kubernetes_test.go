@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -63,6 +64,7 @@ esac
 	ready, err := checkPodsReady("app=test", "kind-test")
 	assert.NoError(t, err)
 	assert.True(t, ready)
+	assert.NoError(t, WaitForPods("app=test", "kind-test", time.Second))
 	t.Setenv("KUBE_READY", "True False")
 	ready, err = checkPodsReady("app=test", "")
 	assert.NoError(t, err)

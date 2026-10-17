@@ -329,6 +329,16 @@ func TestConfigSyncCopiesLocalFiles(t *testing.T) {
 	syncConfigYAML = false
 }
 
+func TestConfigSyncSkipsMissingLocalFiles(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", filepath.Join(root, "home"))
+	t.Chdir(root)
+	oldEnv, oldYAML := syncEnv, syncConfigYAML
+	syncEnv, syncConfigYAML = false, false
+	t.Cleanup(func() { syncEnv, syncConfigYAML = oldEnv, oldYAML })
+	runConfigSync(syncCmd, nil)
+}
+
 func TestConfigReadCommands(t *testing.T) {
 	setupCommandPathConfig(t)
 

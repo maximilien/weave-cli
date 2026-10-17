@@ -30,7 +30,10 @@ func TestAdapter_DeleteCollection(t *testing.T) {
 	// Accept either validation error (when server is available) or connection error (when not)
 	if err != nil {
 		errMsg := err.Error()
-		if !strings.Contains(errMsg, "Validation error") && !strings.Contains(errMsg, "connection refused") {
+		if !strings.Contains(errMsg, "Validation error") &&
+			!strings.Contains(errMsg, "connection refused") &&
+			!strings.Contains(errMsg, "DeadlineExceeded") &&
+			!strings.Contains(errMsg, "Unavailable") {
 			t.Errorf("Expected either validation error or connection error, got: %s", errMsg)
 		}
 	}

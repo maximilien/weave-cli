@@ -5,6 +5,7 @@ package stack
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -152,6 +153,27 @@ func TestCommandsReportMissingConfiguration(t *testing.T) {
 				t.Fatalf("command error = %v, want missing-config error", err)
 			}
 		})
+	}
+}
+
+func TestRunStatusWithConfiguredStack(t *testing.T) {
+	inTempWorkingDir(t)
+	if err := stackpkg.SaveStackConfig(generateQuickstartTemplate("kind"), ""); err != nil {
+		t.Fatalf("save stack config: %v", err)
+	}
+	if err := stackpkg.SaveClusterInfo(&stackpkg.ClusterInfo{
+		Name: "fixture", Provider: "unsupported", Context: "fixture-context",
+	}); err != nil {
+		t.Fatalf("save cluster info: %v", err)
+	}
+	binDir := t.TempDir()
+	kubectl := filepath.Join(binDir, "kubectl")
+	if err := os.WriteFile(kubectl, []byte("#!/bin/sh\nif [ \"$1\" = \"get\" ]; then printf '{\"items\":[]}'; fi\n"), 0o755); err != nil {
+		t.Fatalf("write kubectl fixture: %v", err)
+	}
+	t.Setenv("PATH", binDir)
+	if err := runStatus(nil, nil); err != nil {
+		t.Fatalf("runStatus() with configured stack = %v", err)
 	}
 }
 

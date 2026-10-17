@@ -284,6 +284,31 @@ func TestDocumentUtilityMockMutationPaths(t *testing.T) {
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", nil, "", "", []string{"invalid"})
 }
 
+func TestProcessPDFFileMockCreatesTextDocuments(t *testing.T) {
+	ctx := context.Background()
+	client := mock.NewClient(&config.MockConfig{Collections: []config.MockCollection{
+		{Name: "WeaveDocs", Type: "text"},
+		{Name: "WeaveImages", Type: "image"},
+	}})
+	fixture := filepath.Join("..", "..", "..", "tests", "fixtures", "ragme-io.pdf")
+	processPDFFileMock(ctx, client, "WeaveDocs", fixture, 300, "WeaveImages", true, 100, 2000)
+
+	documents, err := client.ListDocuments(ctx, "WeaveDocs", 100)
+	if err != nil {
+		t.Fatalf("ListDocuments() after PDF ingestion = %v", err)
+	}
+	if len(documents) == 0 {
+		t.Fatal("PDF ingestion did not create text documents")
+	}
+	images, err := client.ListDocuments(ctx, "WeaveImages", 100)
+	if err != nil {
+		t.Fatalf("ListDocuments() for extracted images = %v", err)
+	}
+	if len(images) == 0 {
+		t.Fatal("PDF ingestion did not create image documents")
+	}
+}
+
 func TestGenericDocumentDeletionModes(t *testing.T) {
 	ctx := context.Background()
 	cfg := mockOperationConfig()
