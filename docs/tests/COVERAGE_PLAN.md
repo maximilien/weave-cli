@@ -631,7 +631,20 @@ unless the user explicitly requests a faster cadence.
   one point from 67% to 68%; patch coverage remains 80%, and the next project
   ratchet step is 69%.
 
-### Path from 73.56% to 80%
+### Coverage update — 74.03% (2026-10-17)
+
+- Statements/lines: **74.03%** (`20,395 / 27,550`); function coverage:
+  **95.66%** (`2,028 / 2,120`).
+- Added stack ingestion batch/retry paths using resumed-file fixtures, a
+  configured stack-status path, Chroma collection-count behavior, safe config
+  sync/completion paths, and PDF text/image ingestion through the mock client.
+- Hardened the Qdrant no-server test to accept gRPC deadline/unavailable
+  errors as connection failures.
+- The 74% checkpoint is met. The Codecov project ratchet advances one point
+  from 68% to 69%; patch coverage remains 80%, and the next project ratchet
+  step is 70%.
+
+### Path from 74.03% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.

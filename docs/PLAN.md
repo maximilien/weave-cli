@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-10-15
+**Last updated**: 2026-10-17
 
-**Current milestone**: continue from 73.56% toward 80% in one-point daily steps
+**Current milestone**: continue from 74.03% toward 80% in one-point daily steps
 
 ## Completed — v0.13.0
 
@@ -71,6 +71,9 @@ Completed targets:
   project ratchet by one point to 67%, with 68% as the next ratchet step.
 - [x] Reach 73.5% statement coverage on 2026-10-15 with stack command and
   interactive configuration tests; advance the Codecov project ratchet to 68%.
+- [x] Reach 74% statement coverage on 2026-10-17 with stack ingestion,
+  collection count, configuration sync/completion, and PDF ingestion tests;
+  advance the Codecov project ratchet to 69%.
 
 ## Continuous Workstreams
 
