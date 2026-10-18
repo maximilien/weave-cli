@@ -58,3 +58,25 @@ func TestRunSetupCompletionDryRun(t *testing.T) {
 		runSetupCompletion(nil, nil)
 	}
 }
+
+func TestRunSetupCompletionUpdateWritesConfig(t *testing.T) {
+	t.Setenv("SHELL", "/bin/zsh")
+	t.Setenv("HOME", t.TempDir())
+	oldDryRun, oldUpdate := dryRun, updateCompletion
+	t.Cleanup(func() {
+		dryRun, updateCompletion = oldDryRun, oldUpdate
+	})
+	dryRun = false
+	updateCompletion = true // Updating skips the interactive permission prompt.
+
+	runSetupCompletion(setupCompletionCmd, nil)
+
+	configPath := filepath.Join(os.Getenv("HOME"), ".zshrc")
+	content, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read generated shell config: %v", err)
+	}
+	if !strings.Contains(string(content), "weave completion zsh") {
+		t.Fatalf("generated shell config = %q", content)
+	}
+}

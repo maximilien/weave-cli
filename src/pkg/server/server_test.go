@@ -60,3 +60,17 @@ func TestStopBeforeStart(t *testing.T) {
 		t.Fatalf("Stop() before Start() returned %v", err)
 	}
 }
+
+func TestStartAndStop(t *testing.T) {
+	server := New(&Config{Port: 0})
+	if err := server.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	// Give ListenAndServe a chance to enter its accept loop before shutdown.
+	time.Sleep(20 * time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := server.Stop(ctx); err != nil {
+		t.Fatalf("Stop() error = %v", err)
+	}
+}

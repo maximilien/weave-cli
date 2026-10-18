@@ -9,12 +9,76 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestMain(m *testing.M) {
+	if os.Getenv("WEAVE_MCP_TEST_HELPER") == "1" {
+		mcpTestHelperProcess()
+		os.Exit(0)
+	}
+	os.Exit(m.Run())
+}
+
+func mcpTestHelperProcess() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		var request MCPRequest
+		if json.Unmarshal(scanner.Bytes(), &request) != nil || request.ID == nil {
+			continue
+		}
+		var result interface{}
+		switch request.Method {
+		case "initialize":
+			if os.Getenv("WEAVE_MCP_TEST_MODE") == "initialize-no-response" {
+				return
+			}
+			if os.Getenv("WEAVE_MCP_TEST_MODE") == "initialize-error" {
+				_ = json.NewEncoder(os.Stdout).Encode(map[string]interface{}{
+					"jsonrpc": "2.0", "id": *request.ID,
+					"error": map[string]interface{}{"code": -1, "message": "fixture rejected"},
+				})
+				fmt.Fprintln(os.Stderr, "fixture initialization failed")
+				continue
+			}
+			result = map[string]interface{}{"protocolVersion": "2024-11-05"}
+		case "tools/list":
+			result = map[string]interface{}{"tools": []interface{}{map[string]interface{}{
+				"name": "echo", "description": "Echo fixture", "inputSchema": map[string]interface{}{"type": "object"},
+			}}}
+		case "tools/call":
+			result = map[string]interface{}{"content": []interface{}{"called"}}
+		default:
+			result = map[string]interface{}{}
+		}
+		_ = json.NewEncoder(os.Stdout).Encode(map[string]interface{}{"jsonrpc": "2.0", "id": *request.ID, "result": result})
+		if request.Method == "initialize" {
+			fmt.Fprintln(os.Stderr, "stdio helper ready")
+		}
+	}
+}
+
+func TestNewClientReportsInitializationProtocolError(t *testing.T) {
+	t.Setenv("WEAVE_MCP_TEST_HELPER", "1")
+	t.Setenv("WEAVE_MCP_TEST_MODE", "initialize-error")
+	if _, err := NewClient(os.Args[0]); err == nil || !strings.Contains(err.Error(), "initialize error: fixture rejected") {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+}
+
+func TestNewClientReportsInitializationReadError(t *testing.T) {
+	t.Setenv("WEAVE_MCP_TEST_HELPER", "1")
+	t.Setenv("WEAVE_MCP_TEST_MODE", "initialize-no-response")
+	if _, err := NewClient(os.Args[0]); err == nil || !strings.Contains(err.Error(), "failed to read initialize response") {
+		t.Fatalf("NewClient() error = %v", err)
+	}
+}
 
 type bufferWriteCloser struct{ bytes.Buffer }
 
@@ -212,4 +276,102 @@ func TestLegacyClientHelpers(t *testing.T) {
 			t.Fatalf("findProjectRoot() = %q, want %q", got, root)
 		}
 	})
+}
+
+func TestLegacyClientStderrAndClose(t *testing.T) {
+	reader, writer := io.Pipe()
+	client := &Client{
+		stderr:     reader,
+		stderrDone: make(chan struct{}),
+	}
+	go client.captureStderr()
+
+	if _, err := writer.Write([]byte("server diagnostic")); err != nil {
+		t.Fatalf("write stderr fixture: %v", err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatalf("close stderr writer: %v", err)
+	}
+	<-client.stderrDone
+	if got := string(client.stderrBuf); got != "server diagnostic" {
+		t.Fatalf("captured stderr = %q", got)
+	}
+	if err := client.Close(); err != nil {
+		t.Fatalf("Close() error = %v", err)
+	}
+
+	withoutStderr := &Client{stderrDone: make(chan struct{})}
+	withoutStderr.captureStderr()
+	select {
+	case <-withoutStderr.stderrDone:
+	default:
+		t.Fatal("captureStderr() did not close stderrDone when stderr is nil")
+	}
+}
+
+func TestStdioClientConfigurationAndTransportValidation(t *testing.T) {
+	t.Setenv("WEAVE_MCP_TEST_HELPER", "1")
+	config := &Config{ServerURL: os.Args[0], Transport: TransportStdio}
+	clientValue, err := NewStdioClient(config)
+	if err != nil {
+		t.Fatalf("NewStdioClient() error = %v", err)
+	}
+	client := clientValue.(*StdioClient)
+	t.Cleanup(func() { _ = client.Close() })
+
+	if _, err := NewStdioClient(&Config{Transport: TransportHTTP}); err == nil || !strings.Contains(err.Error(), "requires stdio transport") {
+		t.Fatalf("NewStdioClient(http) error = %v", err)
+	}
+	if client.Config() != config {
+		t.Fatal("Config() did not return original configuration")
+	}
+	if err := client.Connect(context.Background()); err != nil {
+		t.Fatalf("Connect() error = %v", err)
+	}
+	if err := client.Ping(context.Background()); err != nil {
+		t.Fatalf("Ping() error = %v", err)
+	}
+	tools, err := client.ListTools(context.Background())
+	if err != nil || len(tools) != 1 || tools[0].Name != "echo" {
+		t.Fatalf("ListTools() = %#v, %v", tools, err)
+	}
+	result, err := client.CallTool(context.Background(), "echo", map[string]interface{}{"message": "hello"})
+	if err != nil || result.([]interface{})[0] != "called" {
+		t.Fatalf("CallTool() = %#v, %v", result, err)
+	}
+}
+
+func TestMCPClientConfigurationValidationAndDefaults(t *testing.T) {
+	if _, err := NewHTTPClient(&Config{Transport: TransportStdio}); err == nil || !strings.Contains(err.Error(), "requires http transport") {
+		t.Fatalf("NewHTTPClient(stdio) error = %v", err)
+	}
+	invalid := []struct {
+		name   string
+		config *Config
+	}{
+		{name: "nil config"},
+		{name: "missing URL", config: &Config{Transport: TransportHTTP}},
+		{name: "unknown transport", config: &Config{ServerURL: "http://example.invalid", Transport: "other"}},
+		{name: "negative timeout", config: &Config{ServerURL: "http://example.invalid", Transport: TransportHTTP, Timeout: -1}},
+		{name: "negative retries", config: &Config{ServerURL: "http://example.invalid", Transport: TransportHTTP, MaxRetries: -1}},
+	}
+	for _, test := range invalid {
+		t.Run(test.name, func(t *testing.T) {
+			if err := ValidateConfig(test.config); err == nil {
+				t.Fatal("ValidateConfig() accepted invalid configuration")
+			}
+		})
+	}
+
+	config := &Config{ServerURL: "http://127.0.0.1:1", Transport: TransportHTTP}
+	client, err := NewMCPClient(config)
+	if err != nil {
+		t.Fatalf("NewMCPClient() error = %v", err)
+	}
+	if config.Timeout != 30*time.Second || config.MaxRetries != 3 {
+		t.Fatalf("defaulted config = timeout %s, retries %d", config.Timeout, config.MaxRetries)
+	}
+	if _, ok := client.(*HTTPClient); !ok {
+		t.Fatalf("NewMCPClient() type = %T, want *HTTPClient", client)
+	}
 }

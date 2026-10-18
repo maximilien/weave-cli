@@ -6,6 +6,8 @@ package mcpinstaller
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +16,51 @@ import (
 	"strings"
 	"testing"
 )
+
+type releaseRoundTripper func(*http.Request) (*http.Response, error)
+
+func (f releaseRoundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	return f(request)
+}
+
+func TestGetLatestReleaseResponses(t *testing.T) {
+	originalTransport := http.DefaultTransport
+	t.Cleanup(func() { http.DefaultTransport = originalTransport })
+	response := func(status int, body string) *http.Response {
+		return &http.Response{StatusCode: status, Body: io.NopCloser(strings.NewReader(body)), Header: make(http.Header)}
+	}
+
+	t.Run("success", func(t *testing.T) {
+		http.DefaultTransport = releaseRoundTripper(func(request *http.Request) (*http.Response, error) {
+			if request.URL.Host != "api.github.com" {
+				t.Errorf("request host = %q", request.URL.Host)
+			}
+			return response(http.StatusOK, `{"tag_name":"v1.2.3","name":"release","assets":[]}`), nil
+		})
+		release, err := GetLatestRelease()
+		if err != nil || release.TagName != "v1.2.3" || release.Name != "release" {
+			t.Fatalf("GetLatestRelease() = (%+v, %v)", release, err)
+		}
+	})
+
+	tests := []struct {
+		name      string
+		transport releaseRoundTripper
+		want      string
+	}{
+		{name: "transport error", transport: func(*http.Request) (*http.Response, error) { return nil, errors.New("offline") }, want: "failed to fetch release information"},
+		{name: "http status", transport: func(*http.Request) (*http.Response, error) { return response(http.StatusBadGateway, ""), nil }, want: "GitHub API returned status 502"},
+		{name: "invalid JSON", transport: func(*http.Request) (*http.Response, error) { return response(http.StatusOK, "not-json"), nil }, want: "failed to parse release information"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			http.DefaultTransport = test.transport
+			if _, err := GetLatestRelease(); err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("GetLatestRelease() error = %v, want %q", err, test.want)
+			}
+		})
+	}
+}
 
 func TestGetCurrentPlatform(t *testing.T) {
 	platform := GetCurrentPlatform()
