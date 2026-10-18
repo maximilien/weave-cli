@@ -644,7 +644,19 @@ unless the user explicitly requests a faster cadence.
   from 68% to 69%; patch coverage remains 80%, and the next project ratchet
   step is 70%.
 
-### Path from 74.03% to 80%
+### Coverage update — 74.49% (2026-10-18)
+
+- Statements/lines: **74.49%** (`20,523 / 27,550`); function coverage:
+  **96.42%** (`2,045 / 2,121`). The one-decimal coverage summary rounds to
+  **74.5%**.
+- Added real stdio MCP subprocess lifecycle and protocol-error tests,
+  installer release parsing tests with a fake HTTP transport, stack
+  auto-restart/checkpoint failure cases, and configuration recovery paths.
+- The 74.5% checkpoint is met. The Codecov project ratchet advances one point
+  from 69% to 70%; patch coverage remains 80%, and the next project ratchet
+  step is 71%.
+
+### Path from 74.49% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
