@@ -2,7 +2,7 @@
 
 **Last updated**: 2026-10-18
 
-**Current milestone**: continue from 74.49% toward 80% in one-point daily steps
+**Current milestone**: continue from 74.50% toward 80% in one-point daily steps
 
 ## Completed — v0.13.0
 

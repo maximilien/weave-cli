@@ -4,7 +4,7 @@
 
 **Current release**: v0.15.0
 
-**Current quality result**: 74.49%, toward the long-term 80% target
+**Current quality result**: 74.50%, toward the long-term 80% target
 
 This roadmap tracks active release milestones. Historical plans and completed
 project notes live under [`archive/`](archive/); the detailed test campaign is
@@ -59,7 +59,7 @@ details.
 
 ## Post-v0.15 Coverage Campaign
 
-**Current result**: 74.49% (`20,523 / 27,550`) on 2026-10-18
+**Current result**: 74.50% (`20,524 / 27,550`) on 2026-10-18
 
 - Preserve the 70% project ratchet and 80% patch target.
 - Advance the project ratchet one percentage point per daily checkpoint;

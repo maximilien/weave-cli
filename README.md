@@ -1552,7 +1552,7 @@ See [User Guide](docs/USER_GUIDE.md) for detailed development instructions.
 ### Test Coverage
 
 The v0.15.0 release baseline is **40.06% statement coverage**. Current
-development coverage is **74.49%** (`20,523 / 27,550`) with **96.42% function
+development coverage is **74.50%** (`20,524 / 27,550`) with **96.42% function
 coverage** (`2,045 / 2,121`). The Codecov project ratchet is 70% and patch
 coverage remains 80%.
 
