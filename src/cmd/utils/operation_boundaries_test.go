@@ -57,6 +57,20 @@ func TestGenericCollectionOperationBoundaries(t *testing.T) {
 	if err := CreateGenericCollectionWithSchemaType(ctx, &config.VectorDBConfig{Type: "invalid"}, "bad", "", vectordb.SchemaTypeText); err == nil {
 		t.Fatal("generic collection creation accepted invalid database")
 	}
+	if err := client.CreateDocument(ctx, "AlphaDocs", &vectordb.Document{
+		ID: "sample", Content: "line one\nline two\nline three", Metadata: map[string]interface{}{"id": "sample", "author": "Ada", "topic": "search"},
+	}); err != nil {
+		t.Fatalf("create sample document: %v", err)
+	}
+	captureUtilsOutput(t, func() {
+		ShowGenericCollection(ctx, cfg, "AlphaDocs", 1, false, true, true, true, true, false, false, "", "", false)
+	})
+	captureUtilsOutput(t, func() {
+		ShowGenericCollection(ctx, &config.VectorDBConfig{Type: config.VectorDBTypeMock, Address: "fixture:1234", DatabaseKey: "configured", Collections: []config.Collection{{Name: "AlphaDocs"}}}, "AlphaDocs", 10, true, false, false, false, false, false, false, "", "", true)
+	})
+	captureUtilsOutput(t, func() {
+		ShowGenericCollection(ctx, cfg, "BetaImages", 3, true, false, false, false, false, false, false, "", "", false)
+	})
 
 	count, err := CountGenericCollections(ctx, cfg)
 	if err != nil || count != 2 {

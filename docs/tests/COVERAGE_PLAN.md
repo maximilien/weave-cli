@@ -656,7 +656,18 @@ unless the user explicitly requests a faster cadence.
   from 69% to 70%; patch coverage remains 80%, and the next project ratchet
   step is 71%.
 
-### Path from 74.50% to 80%
+### Coverage update — 75.02% (2026-10-19)
+
+- Statements/lines: **75.02%** (`20,669 / 27,550`); function coverage:
+  **96.65%** (`2,049 / 2,120`). The full unit coverage lane passes.
+- Added generic PDF ingestion coverage for text/image storage and failure paths,
+  mock document update selection/content modes, and Milvus query fallback,
+  schema inference, and collection lifecycle failures.
+- The 75% checkpoint is met. Advance the Codecov project ratchet one point
+  from 70% to 71%; patch coverage remains 80%, and the next project ratchet
+  step is 72%.
+
+### Path from 75.02% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.

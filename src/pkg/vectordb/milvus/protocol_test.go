@@ -22,6 +22,7 @@ type milvusFixture struct {
 	described       *entity.Collection
 	queryResults    []client.ResultSet
 	searchResults   []client.SearchResult
+	indexMetric     entity.MetricType
 	fail            map[string]error
 	createdSchema   *entity.Schema
 	insertedColumns []entity.Column
@@ -103,7 +104,11 @@ func (f *milvusFixture) DescribeIndex(context.Context, string, string, ...client
 	if err := f.failure("DescribeIndex"); err != nil {
 		return nil, err
 	}
-	index, err := entity.NewIndexIvfFlat(entity.COSINE, 128)
+	metric := f.indexMetric
+	if metric == "" {
+		metric = entity.COSINE
+	}
+	index, err := entity.NewIndexIvfFlat(metric, 128)
 	if err != nil {
 		return nil, err
 	}
@@ -341,5 +346,191 @@ func TestMilvusProtocolErrors(t *testing.T) {
 				t.Fatalf("error = %v, want substring %q", err, tt.want)
 			}
 		})
+	}
+}
+
+func TestMilvusUpdateDocumentDeletesThenReinserts(t *testing.T) {
+	document := &vectordb.Document{ID: "old-id", Content: "updated content", Metadata: map[string]interface{}{"kind": "guide"}}
+
+	t.Run("success", func(t *testing.T) {
+		fixture := &milvusFixture{}
+		adapter := newMilvusAdapter(fixture)
+		if err := adapter.UpdateDocument(context.Background(), "docs", document); err != nil {
+			t.Fatalf("UpdateDocument() error = %v", err)
+		}
+		if len(fixture.deletedIDs) != 1 || fixture.deletedIDs[0] != document.ID {
+			t.Fatalf("deleted IDs = %v, want [%s]", fixture.deletedIDs, document.ID)
+		}
+		if len(fixture.insertedColumns) == 0 {
+			t.Fatal("UpdateDocument() did not reinsert document columns")
+		}
+	})
+
+	t.Run("delete failure prevents insert", func(t *testing.T) {
+		fixture := &milvusFixture{fail: map[string]error{"DeleteByPks": errors.New("delete failed")}}
+		adapter := newMilvusAdapter(fixture)
+		err := adapter.UpdateDocument(context.Background(), "docs", document)
+		if err == nil || !strings.Contains(err.Error(), "delete failed") {
+			t.Fatalf("UpdateDocument() error = %v, want delete failure", err)
+		}
+		if len(fixture.insertedColumns) != 0 {
+			t.Fatal("UpdateDocument() inserted after delete failed")
+		}
+	})
+
+	t.Run("insert failure is returned", func(t *testing.T) {
+		fixture := &milvusFixture{fail: map[string]error{"Insert": errors.New("insert failed")}}
+		adapter := newMilvusAdapter(fixture)
+		err := adapter.UpdateDocument(context.Background(), "docs", document)
+		if err == nil || !strings.Contains(err.Error(), "insert failed") {
+			t.Fatalf("UpdateDocument() error = %v, want insert failure", err)
+		}
+	})
+}
+
+func TestMilvusHealthDiagnosticsAndSchemaFallbacks(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		cause string
+		hint  string
+	}{
+		{name: "connection refused", cause: "connection refused", hint: "Connection refused"},
+		{name: "timeout", cause: "deadline exceeded", hint: "Connection timeout"},
+		{name: "authentication", cause: "authentication failed", hint: "Authentication error"},
+		{name: "other", cause: "server unavailable", hint: "server unavailable"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			adapter := newMilvusAdapter(&milvusFixture{fail: map[string]error{"ListDatabases": errors.New(test.cause)}})
+			err := adapter.Health(context.Background())
+			if err == nil || !strings.Contains(err.Error(), test.hint) {
+				t.Fatalf("Health() error = %v, want %q", err, test.hint)
+			}
+		})
+	}
+
+	fixture := &milvusFixture{fail: map[string]error{"DescribeIndex": errors.New("index unavailable")}}
+	client := newMilvusAdapter(fixture).Client
+	for _, metric := range []struct {
+		name string
+		want entity.MetricType
+	}{
+		{name: "COSINE", want: entity.COSINE},
+		{name: "IP", want: entity.IP},
+		{name: "unknown", want: entity.L2},
+	} {
+		client.config.SimilarityMetric = metric.name
+		if got, err := client.getCollectionMetricType(context.Background(), "docs"); err != nil || got != metric.want {
+			t.Errorf("getCollectionMetricType(%q) = %v, %v; want %v", metric.name, got, err, metric.want)
+		}
+	}
+
+	fixture.fail = map[string]error{"DescribeIndex": errors.New("index unavailable"), "DescribeCollection": errors.New("schema unavailable")}
+	client.config.SimilarityMetric = "IP"
+	if got, err := client.getCollectionMetricType(context.Background(), "docs"); err != nil || got != entity.IP {
+		t.Errorf("metric fallback = %v, %v; want IP", got, err)
+	}
+	if got, err := client.getCollectionDimensions(context.Background(), "docs"); err != nil || got != 3 {
+		t.Errorf("dimension fallback = %d, %v; want 3", got, err)
+	}
+	for _, metric := range []entity.MetricType{entity.L2, entity.IP, entity.COSINE} {
+		fixture.fail = nil
+		fixture.indexMetric = metric
+		if got, err := client.getCollectionMetricType(context.Background(), "docs"); err != nil || got != metric {
+			t.Errorf("getCollectionMetricType(index=%s) = %s, %v", metric, got, err)
+		}
+	}
+}
+
+func TestMilvusSemanticSearchRequiresKeyAndHybridFallsBackToBM25(t *testing.T) {
+	ctx := context.Background()
+	adapter := newMilvusAdapter(&milvusFixture{queryResults: []client.ResultSet{fixtureResultSet("doc-1")}})
+	opts := &vectordb.QueryOptions{TopK: 3}
+
+	if _, err := adapter.SearchSemantic(ctx, "docs", "hello", opts); err == nil || !strings.Contains(err.Error(), "OPENAI_API_KEY") {
+		t.Fatalf("SearchSemantic() error = %v, want missing-key diagnostic", err)
+	}
+	results, err := adapter.SearchHybrid(ctx, "docs", "hello", opts)
+	if err != nil || len(results) != 1 || results[0].Document.ID != "doc-1" || results[0].Score != 1 {
+		t.Fatalf("SearchHybrid() fallback = %#v, %v", results, err)
+	}
+
+	fixture := &milvusFixture{fail: map[string]error{"Query": errors.New("query failed")}}
+	adapter = newMilvusAdapter(fixture)
+	if _, err := adapter.SearchHybrid(ctx, "docs", "hello", opts); err == nil || !strings.Contains(err.Error(), "BM25 search failed") {
+		t.Fatalf("SearchHybrid() error = %v, want BM25 fallback failure", err)
+	}
+
+	fixture = &milvusFixture{described: fixtureCollection("docs", "unsupported-embedding-provider", 3)}
+	adapter = newMilvusAdapter(fixture)
+	if _, err := adapter.SearchSemantic(ctx, "docs", "hello", opts); err == nil || !strings.Contains(err.Error(), "failed to create embedding provider") {
+		t.Fatalf("SearchSemantic() provider error = %v", err)
+	}
+}
+
+func TestMilvusCollectionLifecycleFailurePaths(t *testing.T) {
+	ctx := context.Background()
+	schema := &vectordb.CollectionSchema{Vectorizer: "text-embedding-3-small"}
+	for _, test := range []struct {
+		name string
+		fail string
+		want string
+	}{
+		{name: "exists check", fail: "HasCollection", want: "failed to check collection existence"},
+		{name: "create", fail: "CreateCollection", want: "failed to create collection"},
+		{name: "index", fail: "CreateIndex", want: "failed to create vector index"},
+		{name: "load", fail: "LoadCollection", want: "failed to load collection"},
+	} {
+		t.Run("create "+test.name, func(t *testing.T) {
+			adapter := newMilvusAdapter(&milvusFixture{fail: map[string]error{test.fail: errors.New("fixture failure")}})
+			err := adapter.CreateCollection(ctx, "docs", schema)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("CreateCollection() error = %v, want %q", err, test.want)
+			}
+		})
+	}
+
+	if err := newMilvusAdapter(&milvusFixture{exists: true}).CreateCollection(ctx, "docs", schema); err == nil || !strings.Contains(err.Error(), "already exists") {
+		t.Fatalf("CreateCollection(existing) error = %v", err)
+	}
+	if err := newMilvusAdapter(&milvusFixture{fail: map[string]error{"HasCollection": errors.New("fixture failure")}}).DeleteCollection(ctx, "docs"); err == nil || !strings.Contains(err.Error(), "failed to check collection existence") {
+		t.Fatalf("DeleteCollection(check error) = %v", err)
+	}
+	if err := newMilvusAdapter(&milvusFixture{}).DeleteCollection(ctx, "docs"); err == nil || !strings.Contains(err.Error(), "does not exist") {
+		t.Fatalf("DeleteCollection(missing) = %v", err)
+	}
+	if err := newMilvusAdapter(&milvusFixture{exists: true, fail: map[string]error{"DropCollection": errors.New("fixture failure")}}).DeleteCollection(ctx, "docs"); err == nil || !strings.Contains(err.Error(), "failed to delete collection") {
+		t.Fatalf("DeleteCollection(drop error) = %v", err)
+	}
+}
+
+func TestMilvusSchemaInferenceAndDeleteFlushErrors(t *testing.T) {
+	ctx := context.Background()
+	for _, test := range []struct {
+		name       string
+		collection *entity.Collection
+		want       string
+	}{
+		{name: "description vectorizer", collection: fixtureCollection("docs", "sentence-transformers/model | extra", 384), want: "sentence-transformers/model"},
+		{name: "dimension inference", collection: fixtureCollection("docs", "", 1536), want: "text-embedding-3-small"},
+		{name: "unknown dimensions", collection: fixtureCollection("docs", "", 99), want: "text-embedding-3-small"},
+		{name: "missing vector field", collection: &entity.Collection{Schema: &entity.Schema{}}, want: "text-embedding-3-small"},
+		{name: "vector field without dimension", collection: &entity.Collection{Schema: &entity.Schema{Fields: []*entity.Field{entity.NewField().WithName(FieldEmbedding).WithDataType(entity.FieldTypeFloatVector)}}}, want: "text-embedding-3-small"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			adapter := newMilvusAdapter(&milvusFixture{described: test.collection})
+			schema, err := adapter.GetSchema(ctx, "docs")
+			if err != nil || schema.Vectorizer != test.want {
+				t.Fatalf("GetSchema() = %#v, %v; want vectorizer %q", schema, err, test.want)
+			}
+		})
+	}
+
+	adapter := newMilvusAdapter(&milvusFixture{fail: map[string]error{"DescribeCollection": errors.New("describe failed")}})
+	if _, err := adapter.GetSchema(ctx, "docs"); err == nil || !strings.Contains(err.Error(), "failed to get collection schema") {
+		t.Fatalf("GetSchema() error = %v", err)
+	}
+	adapter = newMilvusAdapter(&milvusFixture{fail: map[string]error{"Flush": errors.New("flush failed")}})
+	if err := adapter.DeleteDocument(ctx, "docs", "doc-1"); err == nil || !strings.Contains(err.Error(), "failed to flush after deletion") {
+		t.Fatalf("DeleteDocument() flush error = %v", err)
 	}
 }

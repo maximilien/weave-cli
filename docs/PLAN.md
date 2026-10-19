@@ -1,8 +1,8 @@
 # Weave CLI Development Plan
 
-**Last updated**: 2026-10-18
+**Last updated**: 2026-10-19
 
-**Current milestone**: continue from 74.50% toward 80% in one-point daily steps
+**Current milestone**: continue from 75.02% toward 80% in one-point daily steps
 
 ## Completed — v0.13.0
 
@@ -77,6 +77,9 @@ Completed targets:
 - [x] Reach 74.5% statement coverage on 2026-10-18 with MCP stdio lifecycle,
   installer release parsing, stack retry/checkpoint, and configuration error
   tests; advance the Codecov project ratchet to 70%.
+- [x] Reach 75.0% statement coverage on 2026-10-19 with generic PDF ingestion,
+  mock document update, and Milvus query/schema/lifecycle failure tests; advance
+  the Codecov project ratchet to 71%.
 
 ## Continuous Workstreams
 

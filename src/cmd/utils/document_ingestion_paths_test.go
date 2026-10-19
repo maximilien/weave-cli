@@ -281,6 +281,18 @@ func TestDocumentUtilityMockMutationPaths(t *testing.T) {
 	DeleteMockDocuments(ctx, cfg, "WeaveDocs", nil, nil, false, "doc*", "")
 	DeleteAllMockDocuments(ctx, cfg, "WeaveDocs")
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc1-single", "", nil, "updated", "", []string{"source=test"})
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc2-single", "", nil, "updated body", "", []string{"source=test", "reviewed=true"})
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "doc2.txt", nil, "named update", "", nil)
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", []string{"filename=doc2.txt"}, "filtered update", "", nil)
+	updateFile := filepath.Join(t.TempDir(), "updated.txt")
+	if err := os.WriteFile(updateFile, []byte("content from file"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc2-single", "", nil, "", updateFile, nil)
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "missing.txt", nil, "", "", nil)
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", []string{"broken-filter"}, "", "", nil)
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "missing-id", "", nil, "", "", nil)
+	UpdateMockDocument(ctx, cfg, "WeaveDocs", "doc2-single", "", nil, "", filepath.Join(t.TempDir(), "missing.txt"), nil)
 	UpdateMockDocument(ctx, cfg, "WeaveDocs", "", "", nil, "", "", []string{"invalid"})
 }
 
@@ -306,6 +318,43 @@ func TestProcessPDFFileMockCreatesTextDocuments(t *testing.T) {
 	}
 	if len(images) == 0 {
 		t.Fatal("PDF ingestion did not create image documents")
+	}
+}
+
+func TestProcessPDFFileGenericCreatesTextAndImageDocuments(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.VectorDBConfig{
+		Type:        config.VectorDBTypeMock,
+		Enabled:     true,
+		Collections: []config.Collection{{Name: "WeaveDocs", Type: "text"}, {Name: "WeaveImages", Type: "image"}},
+	}
+	client, err := CreateVectorDBClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture := filepath.Join("..", "..", "..", "tests", "fixtures", "ragme-io.pdf")
+	if err := processPDFFileGeneric(ctx, cfg, client, "WeaveDocs", fixture, 300, "WeaveImages", true, 100, 2000); err != nil {
+		t.Fatalf("processPDFFileGeneric() = %v", err)
+	}
+	textDocs, err := client.ListDocuments(ctx, "WeaveDocs", 100, 0)
+	if err != nil || len(textDocs) == 0 {
+		t.Fatalf("generic PDF text documents = %d, %v", len(textDocs), err)
+	}
+	imageDocs, err := client.ListDocuments(ctx, "WeaveImages", 100, 0)
+	if err != nil || len(imageDocs) == 0 {
+		t.Fatalf("generic PDF image documents = %d, %v", len(imageDocs), err)
+	}
+	for _, doc := range imageDocs {
+		if doc.Content == "" {
+			t.Fatal("image document has no searchable content")
+		}
+	}
+
+	if err := processPDFFileGeneric(ctx, cfg, client, "WeaveDocs", filepath.Join(t.TempDir(), "missing.pdf"), 300, "", true, 100, 2000); err == nil {
+		t.Fatal("processPDFFileGeneric() accepted missing PDF")
+	}
+	if err := processPDFFileGeneric(ctx, cfg, client, "Missing", fixture, 300, "", true, 100, 2000); err == nil {
+		t.Fatal("processPDFFileGeneric() accepted missing target collection")
 	}
 }
 
