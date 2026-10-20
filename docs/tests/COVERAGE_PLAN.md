@@ -667,7 +667,17 @@ unless the user explicitly requests a faster cadence.
   from 70% to 71%; patch coverage remains 80%, and the next project ratchet
   step is 72%.
 
-### Path from 75.02% to 80%
+### Coverage update — 75.5% (2026-10-20)
+
+- Statements/lines: **75.5%** (`20,794 / 27,550`); function coverage:
+  **96.70%** (`2,050 / 2,120`). The full unit coverage lane passes.
+- Added Weaviate collection query coverage and MCP installer success, release
+  asset, download/checksum, path, permission, and existing-install behavior.
+- The 75.5% checkpoint is met. Advance the Codecov project ratchet one point
+  from 71% to 72%; patch coverage remains 80%, and the next project ratchet
+  step is 73%.
+
+### Path from 75.5% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.

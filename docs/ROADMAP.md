@@ -1,10 +1,10 @@
 # Weave CLI Roadmap
 
-**Last updated**: 2026-10-19
+**Last updated**: 2026-10-20
 
 **Current release**: v0.15.0
 
-**Current quality result**: 75.02%, toward the long-term 80% target
+**Current quality result**: 75.5%, toward the long-term 80% target
 
 This roadmap tracks active release milestones. Historical plans and completed
 project notes live under [`archive/`](archive/); the detailed test campaign is
@@ -59,11 +59,11 @@ details.
 
 ## Post-v0.15 Coverage Campaign
 
-**Current result**: 75.02% (`20,669 / 27,550`) on 2026-10-19
+**Current result**: 75.5% (`20,794 / 27,550`) on 2026-10-20
 
-- Preserve the 71% project ratchet and 80% patch target.
+- Preserve the 72% project ratchet and 80% patch target.
 - Advance the project ratchet one percentage point per daily checkpoint;
-  72% is the next ratchet step.
+  73% is the next ratchet step.
 - Continue deepening command and core-package boundaries toward 80%.
 - Preserve the completed 50% package floor across every supported vector
   database adapter.

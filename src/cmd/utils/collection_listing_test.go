@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
 
 func TestListMockCollectionsOutputs(t *testing.T) {
@@ -115,6 +116,13 @@ func TestListWeaviateCollectionsOutputs(t *testing.T) {
 	}
 	if result.Total != 1 || len(result.Collections) != 1 || result.Collections[0].Name != "Docs" || result.Collections[0].DocumentCount != 4 {
 		t.Fatalf("unexpected limited JSON output: %+v", result)
+	}
+
+	queryOutput := captureUtilsOutput(t, func() {
+		QueryWeaviateCollection(context.Background(), cfg, "Docs", "fixture question", weaviate.QueryOptions{TopK: 2})
+	})
+	if !strings.Contains(queryOutput, "Found 2 results") {
+		t.Fatalf("Weaviate query output did not report fixture result count: %s", queryOutput)
 	}
 
 	client, err := CreateWeaviateClient(cfg)
