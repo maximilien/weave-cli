@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        go-version: ['1.26.6']
+        go-version: ['1.26.10']
 
     steps:
       - name: Checkout code
@@ -29,6 +29,7 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version: ${{ matrix.go-version }}
+          cache: false
 
       - name: Cache Go modules
         uses: actions/cache@v6
@@ -127,7 +128,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v7
         with:
-          go-version: '1.26.6'
+          go-version: '1.26.10'
+          cache: false
 
       - name: Cache Go modules
         uses: actions/cache@v6

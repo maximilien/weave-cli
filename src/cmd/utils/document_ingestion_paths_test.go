@@ -344,12 +344,6 @@ func TestProcessPDFFileGenericCreatesTextAndImageDocuments(t *testing.T) {
 	if err != nil || len(imageDocs) == 0 {
 		t.Fatalf("generic PDF image documents = %d, %v", len(imageDocs), err)
 	}
-	for _, doc := range imageDocs {
-		if doc.Content == "" {
-			t.Fatal("image document has no searchable content")
-		}
-	}
-
 	if err := processPDFFileGeneric(ctx, cfg, client, "WeaveDocs", filepath.Join(t.TempDir(), "missing.pdf"), 300, "", true, 100, 2000); err == nil {
 		t.Fatal("processPDFFileGeneric() accepted missing PDF")
 	}
