@@ -77,6 +77,19 @@ func TestDocumentReadCommandPathsWithMockDatabase(t *testing.T) {
 	runDocumentCount(CountCmd, []string{"Docs", "Images"})
 }
 
+func TestDocumentUpdateCommandWithMockDatabase(t *testing.T) {
+	setupMockDocumentConfig(t)
+	setDocumentFlags(t, UpdateCmd, map[string]string{
+		"content": "updated content", "metadata": "author=Ada", "name": "fixture.txt",
+	})
+	t.Cleanup(func() {
+		resetDocumentFlags(UpdateCmd, map[string]string{
+			"content": "", "metadata": "", "name": "",
+		})
+	})
+	runDocumentUpdate(UpdateCmd, []string{"Docs", "document-id"})
+}
+
 func TestBatchProcessingFailurePath(t *testing.T) {
 	root := setupMockDocumentConfig(t)
 	cfg, err := config.LoadConfig(filepath.Join(root, "config.yaml"), "")
