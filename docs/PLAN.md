@@ -83,6 +83,9 @@ Completed targets:
 - [x] Reach 75.5% statement coverage on 2026-10-20 with Weaviate collection
   query and MCP installer success/failure/reinstall coverage; advance the
   Codecov project ratchet to 72%.
+- [x] Reach 76% statement coverage on 2026-10-22 with EXIF metadata, dataset
+  creation, document update, and Weaviate document display tests. Advance the
+  Codecov project ratchet to 73% after a green `main` validation run.
 
 ## Continuous Workstreams
 

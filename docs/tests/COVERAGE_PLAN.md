@@ -677,7 +677,18 @@ unless the user explicitly requests a faster cadence.
   from 71% to 72%; patch coverage remains 80%, and the next project ratchet
   step is 73%.
 
-### Path from 75.5% to 80%
+### Coverage update — 76.06% (2026-10-22)
+
+- Statements/lines: **76.06%** (`20,955 / 27,550`); function coverage:
+  **96.84%** (`2,053 / 2,120`). The one-decimal coverage summary rounds to
+  **76.1%**.
+- Added valid EXIF metadata extraction for byte and file inputs, evaluation
+  dataset creation from templates and examples, mock document update coverage,
+  and Weaviate document list/show coverage with a local fake server.
+- The 76% checkpoint is met. The next Codecov project ratchet step is 73%,
+  pending a green `main` validation run; patch coverage remains 80%.
+
+### Path from 76% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
