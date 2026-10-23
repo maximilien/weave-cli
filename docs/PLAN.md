@@ -87,6 +87,10 @@ Completed targets:
   creation, document update, and Weaviate document display tests. Advance the
   Codecov project ratchet to 73% after a green `main` validation run.
 
+- [x] Reach 77% statement coverage on 2026-10-23 with generic collection
+  listing presentation and failure tests (77.15% measured). Advance the
+  Codecov project ratchet to 73% after confirming the previous checkpoint's CI.
+
 ## Continuous Workstreams
 
 ### Security and dependencies

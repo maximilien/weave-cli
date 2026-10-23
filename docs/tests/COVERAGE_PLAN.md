@@ -688,7 +688,24 @@ unless the user explicitly requests a faster cadence.
 - The 76% checkpoint is met. The next Codecov project ratchet step is 73%,
   pending a green `main` validation run; patch coverage remains 80%.
 
-### Path from 76% to 80%
+### Coverage update — 77.15% (2026-10-23)
+
+- Statements/lines: **77.15%** (`21,256 / 27,550`); function coverage:
+  **97.12%** (`2,059 / 2,120`). The 77% checkpoint is met.
+- Added collection listing presentation tests for Supabase, MongoDB, Chroma,
+  Qdrant, Neo4j, and Milvus helpers at their shared VectorDBClient boundary.
+  Local fixtures verify sorting, limits, counts, empty results, valid JSON,
+  separate diagnostics, and client/list failures without external services.
+- Raised `cmd/utils` to **68.79%** (`3,167 / 4,604`). Production code and
+  coverage exclusions are unchanged.
+- Passed the focused utility tests and `./lint.sh`, `./build.sh`, and
+  `./test.sh --coverage`, including race checks and the vulnerability scan.
+- Confirmed Build, Test, Lint, and Security green on the previous `main`
+  checkpoint (`392c9fa`), then advanced the Codecov project target one point
+  from 72% to 73%. Patch coverage remains 80%; the next project step is 74%.
+  CI for this checkpoint must be checked after the consolidated push.
+
+### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
    configuration, document, stack, stats, and shared utility behavior.
