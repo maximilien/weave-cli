@@ -30,11 +30,11 @@ func TestBashAgentExecuteOutcomes(t *testing.T) {
 		t.Fatalf("Execute(pwd) = %#v, %v", result, err)
 	}
 
-	agent.allowedCommands = append(agent.allowedCommands, "env")
-	result, err = agent.Execute(context.Background(), &BashCommand{Command: "env", Environment: map[string]string{"WEAVE_DAY": "10"}})
+	agent.allowedCommands = append(agent.allowedCommands, "printenv")
+	result, err = agent.Execute(context.Background(), &BashCommand{Command: "printenv", Args: []string{"WEAVE_DAY"}, Environment: map[string]string{"WEAVE_DAY": "10"}})
 	bashResult = result.(*BashResult)
-	if err != nil || !strings.Contains(bashResult.Stdout, "WEAVE_DAY=10") {
-		t.Fatalf("Execute(env) = %#v, %v", result, err)
+	if err != nil || strings.TrimSpace(bashResult.Stdout) != "10" {
+		t.Fatalf("Execute(printenv) = %#v, %v", result, err)
 	}
 
 	result, err = agent.Execute(context.Background(), &BashCommand{Command: "which", Args: []string{"weave-command-that-does-not-exist"}})
