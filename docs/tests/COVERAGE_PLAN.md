@@ -757,3 +757,10 @@ remains well tested throughout the campaign.
 - **60%**: bring every supported vector database adapter above 50%.
 - **80%**: close command and integration-boundary gaps without test-only
   production hooks or broad coverage exclusions.
+
+Dependency validation always runs `go mod verify`, regardless of whether
+`go-mod-outdated` is installed. For an explicit dependency update review, run
+`go list -u -m -json all | go-mod-outdated -update -direct`. This optional
+network-backed review is outside the local gate. Never invoke
+`go-mod-outdated` without piped JSON: it waits for terminal input, while an
+empty noninteractive input can misleadingly appear successful.

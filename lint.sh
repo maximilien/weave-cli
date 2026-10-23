@@ -275,21 +275,14 @@ fi
 # Dependency checks
 echo "📦 Checking dependencies..."
 if command_exists go; then
-    print_status "Checking for outdated dependencies..."
-    if command_exists go-mod-outdated; then
-        if go-mod-outdated -update -direct; then
-            print_success "Dependencies are up to date!"
-        else
-            print_warning "Some dependencies may be outdated"
-        fi
+    # Version discovery is an explicit maintenance task, not a local gate.
+    # go-mod-outdated reads JSON from stdin and blocks on an interactive terminal.
+    print_status "Verifying dependencies..."
+    if go mod verify; then
+        print_success "Dependencies verified!"
     else
-        print_status "Checking go.mod..."
-        if go mod verify; then
-            print_success "Dependencies verified!"
-        else
-            print_error "Dependency verification failed!"
-            exit 1
-        fi
+        print_error "Dependency verification failed!"
+        exit 1
     fi
 fi
 
