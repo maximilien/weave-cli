@@ -43,6 +43,8 @@ Run the standard local gate before handing off changes:
 - Unit tests must isolate filesystem and environment state with `t.TempDir`,
   `t.Setenv`, or equivalent helpers. Do not depend on credentials from `.env`
   or write into the developer's home directory.
+- `./lint.sh` runs verbose race tests with a five-minute per-package timeout;
+  failures stop the gate. See `docs/tests/COVERAGE_PLAN.md` for diagnostics.
 - Native OCR builds require Tesseract and Leptonica. Repository scripts derive
   compiler flags with `pkg-config`; cross-compiles use the OCR-free fallback.
 

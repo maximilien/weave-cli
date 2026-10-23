@@ -718,6 +718,21 @@ Recalculate the remaining statement count after every slice. Prefer behavior
 and failure modes that protect users over tests written only to move the
 aggregate percentage.
 
+## Local Gate Diagnostics
+
+`./lint.sh` locates installed Go tools in `GOBIN` (or the first `GOPATH/bin`)
+so a missing shell PATH entry does not trigger repeated installs or silently
+fall back to `go vet`. Race tests run with verbose output and a five-minute
+per-package test timeout; failures stop the gate and preserve diagnostics.
+A cold race-instrumented compilation can still take time before test output
+appears; the test timeout does not bound compilation.
+
+If a race test times out, inspect the printed goroutine stacks and reproduce
+with `go test -race -v -count=1 -timeout=60s ./src/pkg/<package>`. In shutdown
+code, never wait for a reader goroutine while holding a mutex that reader
+needs to finish. MCP stderr capture has a deterministic regression test for
+this lock ordering.
+
 ## Milestone Policy
 
 For each daily slice:

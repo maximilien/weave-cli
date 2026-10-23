@@ -74,16 +74,19 @@ echo "📁 Checking Go files..."
 if command_exists go; then
     print_header "Running Go linter..."
     
+    # go install writes to GOBIN (or GOPATH/bin), which need not be on PATH.
+    go_tool_bin=$(go env GOBIN)
+    if [ -z "$go_tool_bin" ]; then
+        go_tool_path=$(go env GOPATH)
+        go_tool_bin="${go_tool_path%%:*}/bin"
+    fi
+    export PATH="$PATH:$go_tool_bin"
+
     # Install golangci-lint if not present
     if ! command_exists golangci-lint; then
         print_status "Installing golangci-lint..."
-        if command_exists curl; then
-            # Use go install to build with current Go version for compatibility
-            go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-        else
-            print_warning "curl not found, please install golangci-lint manually"
-            print_status "Visit: https://golangci-lint.run/usage/install/"
-        fi
+        # Use go install to build with current Go version for compatibility.
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
     fi
     
     # Run golangci-lint if available
@@ -130,11 +133,13 @@ if command_exists go; then
     fi
     
     # Check for race conditions
-    print_status "Checking for race conditions..."
-    if go test -race ./src/... >/dev/null 2>&1; then
+    print_status "Checking for race conditions (5-minute timeout per test package)..."
+    print_status "A cold race-instrumented build may take several minutes before tests start."
+    if go test -race -v -timeout=5m ./src/...; then
         print_success "Race condition check passed!"
     else
-        print_warning "Race condition check failed or tests not available"
+        print_error "Race condition check failed; see test output above."
+        exit 1
     fi
     
     print_success "Go linting checks passed!"
