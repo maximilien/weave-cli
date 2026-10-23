@@ -375,3 +375,40 @@ func TestMCPClientConfigurationValidationAndDefaults(t *testing.T) {
 		t.Fatalf("NewMCPClient() type = %T, want *HTTPClient", client)
 	}
 }
+
+// Return a final stderr chunk only once Close has started. This forces the
+// capture goroutine to acquire the buffer mutex during client shutdown.
+type shutdownStderr struct {
+	closed chan struct{}
+}
+
+func (s *shutdownStderr) Read(p []byte) (int, error) {
+	<-s.closed
+	return copy(p, "final diagnostic"), io.EOF
+}
+
+func (s *shutdownStderr) Close() error {
+	close(s.closed)
+	return nil
+}
+
+func TestClientCloseDrainsPendingStderr(t *testing.T) {
+	client := &Client{
+		stderr:     &shutdownStderr{closed: make(chan struct{})},
+		stderrDone: make(chan struct{}),
+	}
+	go client.captureStderr()
+	done := make(chan error, 1)
+	go func() { done <- client.Close() }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Close() error = %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Close blocked while stderr capture waited for the buffer mutex")
+	}
+	if got := string(client.stderrBuf); got != "final diagnostic" {
+		t.Fatalf("stderr after Close = %q", got)
+	}
+}

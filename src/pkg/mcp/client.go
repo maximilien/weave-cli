@@ -314,7 +314,6 @@ func (c *Client) captureStderr() {
 // Close closes the MCP client connection
 func (c *Client) Close() error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	if c.stdin != nil {
 		_ = c.stdin.Close()
@@ -330,6 +329,10 @@ func (c *Client) Close() error {
 		_ = c.cmd.Process.Kill()
 		_ = c.cmd.Wait()
 	}
+
+	// captureStderr needs mu to append a final chunk before it can finish.
+	// Release it before waiting, otherwise shutdown can deadlock.
+	c.mu.Unlock()
 
 	// Wait for stderr capture to finish
 	if c.stderrDone != nil {
