@@ -705,6 +705,26 @@ unless the user explicitly requests a faster cadence.
   from 72% to 73%. Patch coverage remains 80%; the next project step is 74%.
   CI for this checkpoint must be checked after the consolidated push.
 
+### Coverage update — 77.51% (2026-10-24)
+
+- Statements/lines: **77.51%** (`21,353 / 27,550`), up 97 covered statements
+  from 77.15%. The requested 77.5% checkpoint is met.
+- Functions exercised: **97.22%** (`2,061 / 2,120`). Shared command utilities
+  now cover **70.87%** (`3,263 / 4,604`) of statements.
+- Added local HTTP fixture tests for document updates by ID, filename,
+  original filename, and metadata; file content precedence; metadata
+  preservation; invalid inputs; and list/update failures.
+- Added deletion checks for exact IDs, filename patterns, unmatched filenames,
+  missing criteria, and backend failures. Assertions check mutation targets
+  and ensure invalid selections do not write.
+- Focused race tests and the complete `./lint.sh`, `./build.sh`, and
+  `./test.sh --coverage` gate passed. No production code or coverage exclusions
+  changed.
+- Confirmed Build, Test, Lint, and Security green on previous `main` commit
+  `a101fe6`; raised Codecov project coverage exactly one point to **74%**.
+  Patch coverage remains 80%; the next project step is 75%.
+  CI for this checkpoint must be checked after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,

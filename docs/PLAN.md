@@ -91,6 +91,10 @@ Completed targets:
   listing presentation and failure tests (77.15% measured). Advance the
   Codecov project ratchet to 73% after confirming the previous checkpoint's CI.
 
+- [x] Reach 77.5% statement coverage on 2026-10-24 with document update
+  selection and deletion safeguards (77.51% measured). Advance the Codecov
+  project ratchet to 74% after confirming the previous checkpoint's CI.
+
 ## Continuous Workstreams
 
 ### Security and dependencies
