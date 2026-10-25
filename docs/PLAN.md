@@ -95,6 +95,10 @@ Completed targets:
   selection and deletion safeguards (77.51% measured). Advance the Codecov
   project ratchet to 74% after confirming the previous checkpoint's CI.
 
+- [x] Reach 78% statement coverage on 2026-10-25 with document operations,
+  embedding diagnostics, collection selection, query aggregation, and deletion
+  failure tests (78.00% measured). Advance the Codecov project ratchet to 75%.
+
 ## Continuous Workstreams
 
 ### Security and dependencies

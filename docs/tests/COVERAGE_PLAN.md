@@ -725,6 +725,25 @@ unless the user explicitly requests a faster cadence.
   Patch coverage remains 80%; the next project step is 75%.
   CI for this checkpoint must be checked after the consolidated push.
 
+### Coverage update — 78.00% (2026-10-25)
+
+- Statements/lines: **78.00%** (`21,490 / 27,550`, unrounded 78.0036%),
+  up 137 covered statements from 77.51%. The requested 78% checkpoint is met.
+- Functions exercised: **97.59%** (`2,069 / 2,120`). Shared command utilities
+  now cover **73.85%** (`3,400 / 4,604`) of statements.
+- Added local HTTP fixture tests for document pagination, virtual listing,
+  unavailable counts, empty collections, partial deletion, embedding
+  compatibility diagnostics, and collection/database selection.
+- Added multi-collection and cross-database aggregation tests that verify
+  source labels and successful results survive other collection failures.
+  Collection deletion tests verify pattern matching, mutation targets, and
+  stopping after backend failure.
+- Focused race tests and the full lint/build/coverage gate passed. Production
+  code, coverage exclusions, and the 80% patch target are unchanged.
+- Advanced the Codecov project target one point from 74% to **75%** after the
+  green `a2ae354` checkpoint. The next project target is 76%.
+  CI for this checkpoint must be checked after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
