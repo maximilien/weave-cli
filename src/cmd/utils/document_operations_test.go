@@ -27,7 +27,7 @@ func documentOperationsFixture(t *testing.T, vectorizer string, empty, failList,
 			_, _ = io.WriteString(w, `{"version":"1.27.0","modules":{}}`)
 		case r.Method == http.MethodDelete:
 			mutations <- r.URL.Path
-			if failDelete && strings.HasSuffix(r.URL.Path, "/second") {
+			if failDelete && (strings.HasSuffix(r.URL.Path, "/second") || r.URL.Path == "/v1/schema/Docs") {
 				http.Error(w, "delete rejected", 500)
 				return
 			}
@@ -219,5 +219,14 @@ func TestFindCollectionAcrossWeaviateDatabases(t *testing.T) {
 		} else if got == nil || got.Name != "fixture" {
 			t.Fatalf("selected = %#v", got)
 		}
+	}
+}
+
+func TestSingleDatabaseSelectionUsesSoleConfiguredDatabase(t *testing.T) {
+	configured := config.VectorDBConfig{Name: "chosen", Type: config.VectorDBTypeMock, Enabled: true}
+	selection := &VectorDBSelection{Configs: []config.VectorDBConfig{configured}}
+	got := HandleSingleDatabaseSelection(context.Background(), selection, &config.Config{}, "Docs", "weave cols show Docs")
+	if got == nil || got.Name != configured.Name || got.Type != configured.Type {
+		t.Fatalf("selected database = %#v", got)
 	}
 }
