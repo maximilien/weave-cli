@@ -744,6 +744,32 @@ unless the user explicitly requests a faster cadence.
   green `a2ae354` checkpoint. The next project target is 76%.
   CI for this checkpoint must be checked after the consolidated push.
 
+### Coverage update — 78.31% local (2026-10-26)
+
+- Local macOS statements/lines: **78.31%** (`21,574 / 27,550`), up 84
+  covered statements from 78.00%. The requested 78.25% checkpoint is met.
+- Functions exercised: **97.64%** (`2,070 / 2,120`). Shared command utilities
+  cover **74.96%** (`3,451 / 4,604`); configuration covers **89.37%**
+  (`1,186 / 1,327`).
+- Added extracted PDF-image tests for sequential filenames, EXIF fields,
+  source/page metadata, optional context, legacy payload preservation,
+  unavailable OCR warnings, and malformed base64 rejection.
+- Added YAML editing tests for nested-array mutation and save/reload behavior,
+  preservation of comments and unrelated fields, and invalid-path rejection
+  without changing the in-memory document or file.
+- Focused race tests and the full lint/build/coverage gate passed. Production
+  code and coverage exclusions are unchanged.
+- Confirmed the previous `7aac8bd` checkpoint green on CI; advanced Codecov's
+  project target exactly one point to **76%**. Patch coverage remains 80%.
+  The next project step is 77%; new checkpoint CI is checked after pushing.
+
+Local and Linux CI totals must be reported separately: Chroma's macOS adapter
+and Linux unsupported-platform stub compile different production code, along
+with platform-specific command utilities. At the prior checkpoint, macOS
+reported 78.00% (`21,490 / 27,550`) and Linux CI reported 77.56%
+(`21,049 / 27,138`). Do not equate these denominators or change exclusions to
+make them match.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,

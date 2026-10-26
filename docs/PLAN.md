@@ -99,6 +99,10 @@ Completed targets:
   embedding diagnostics, collection selection, query aggregation, and deletion
   failure tests (78.00% measured). Advance the Codecov project ratchet to 75%.
 
+- [x] Reach 78.25% local statement coverage on 2026-10-26 with extracted
+  PDF-image metadata and YAML editing tests (78.31% measured). Advance the
+  Codecov project ratchet to 76%; report Linux CI coverage separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies
