@@ -103,6 +103,11 @@ Completed targets:
   PDF-image metadata and YAML editing tests (78.31% measured). Advance the
   Codecov project ratchet to 76%; report Linux CI coverage separately.
 
+- [x] Reach 78.5% local statement coverage on 2026-10-27 with dataset
+  evaluator thresholds, listing, and collection-clearing tests (78.51%
+  measured). Advance the Codecov project ratchet to 77% and report Linux CI
+  coverage separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies
