@@ -108,6 +108,10 @@ Completed targets:
   measured). Advance the Codecov project ratchet to 77% and report Linux CI
   coverage separately.
 
+- [x] Reach 78.75% local statement coverage on 2026-10-28 with collection
+  inspection and schema export tests (78.81% measured). Advance the Codecov
+  project ratchet to 78% and report Linux CI coverage separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies
