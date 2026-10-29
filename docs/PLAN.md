@@ -112,6 +112,10 @@ Completed targets:
   inspection and schema export tests (78.81% measured). Advance the Codecov
   project ratchet to 78% and report Linux CI coverage separately.
 
+- [x] Reach 79% local statement coverage on 2026-10-29 with PDF chunk reporting
+  and empty agent-query tests (79.09% measured). Advance the Codecov project
+  ratchet to 79% and report Linux CI coverage separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies

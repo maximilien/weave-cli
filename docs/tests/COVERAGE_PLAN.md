@@ -807,6 +807,24 @@ make them match.
 - Linux CI on the prior checkpoint measured **78.07%** (`21,187 / 27,138`);
   platform-specific builds mean this is not directly comparable to macOS.
 
+### Coverage update — 79.09% local (2026-10-29)
+
+- Local macOS statements/lines: **79.09%** (`21,788 / 27,550`), up 75
+  covered statements from 78.81%. The requested 79% checkpoint is met.
+- Functions exercised: **97.69%** (`2,071 / 2,120`). Shared command utilities
+  cover **78.95%** (`3,635 / 4,604`) of statements.
+- Added generated PDF and local HTTP fixture tests for chunk ingestion, partial
+  backend failure, reporting, and missing input without external credentials.
+- Added agent-query tests for image-specific limits, missing database
+  configuration, and empty results that stop before invoking an agent.
+- Focused race tests and the full lint/build/coverage gate passed. Production
+  code and coverage exclusions are unchanged.
+- Confirmed the prior `9b161a4` checkpoint green on CI and advanced Codecov's
+  project target exactly one point to **79%**. Patch coverage remains 80%; the
+  next project step is 80%. New checkpoint CI is checked after pushing.
+- Linux CI on the prior checkpoint measured **78.39%** (`21,274 / 27,138`);
+  platform-specific builds mean this is not directly comparable to macOS.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
