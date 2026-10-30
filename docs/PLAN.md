@@ -116,6 +116,10 @@ Completed targets:
   and empty agent-query tests (79.09% measured). Advance the Codecov project
   ratchet to 79% and report Linux CI coverage separately.
 
+- [x] Reach 79.25% local statement coverage on 2026-10-30 with PDF image
+  ingestion, generic query, and JSON schema merge tests (79.27% measured).
+  Advance the Codecov project ratchet to 80% and report Linux CI separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies
