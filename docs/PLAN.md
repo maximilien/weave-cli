@@ -120,6 +120,10 @@ Completed targets:
   ingestion, generic query, and JSON schema merge tests (79.27% measured).
   Advance the Codecov project ratchet to 80% and report Linux CI separately.
 
+- [x] Reach 79.5% local statement coverage on 2026-10-31 with pipeline PDF,
+  extractor fallback, and scanner boundary tests (79.52% measured). Advance
+  the Codecov project ratchet to 81% and report Linux CI separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies

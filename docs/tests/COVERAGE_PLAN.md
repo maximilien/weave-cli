@@ -843,6 +843,26 @@ make them match.
 - Linux CI on the prior checkpoint measured **78.66%** (`21,348 / 27,138`);
   platform-specific builds mean this is not directly comparable to macOS.
 
+### Coverage update — 79.52% local (2026-10-31)
+
+- Local macOS statements/lines: **79.52%** (`21,908 / 27,550`), up 70
+  covered statements from 79.27%. The requested 79.5% checkpoint is met.
+- Functions exercised: **97.74%** (`2,072 / 2,120`). Pipeline coverage is
+  **95.32%** (`265 / 278`); PDF coverage is **82.63%** (`314 / 380`).
+- Added generated PDF and fake embedding tests for pipeline PDF ingestion,
+  extraction and embedding errors, image extraction and filtering, and the
+  fallback extractor. Added file-type alias and unreadable-hash checks.
+- Focused race tests and the full lint/build/coverage gate passed. Production
+  code and coverage exclusions are unchanged.
+- The prior `cab9d4e` GitHub Actions workflows passed. Codecov rejected its
+  upload because a token was required, so no Codecov status was published.
+  Per the daily one-point ratchet, the project target advanced from 80% to
+  **81%**; patch coverage remains 80%. This exceeds the current coverage and
+  the long-term 80% statement milestone; the existing 1% threshold applies.
+- Linux CI on the prior checkpoint measured **78.84%** (`21,395 / 27,138`);
+  platform-specific builds mean this is not directly comparable to macOS.
+  New checkpoint CI and upload status are checked after pushing.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
