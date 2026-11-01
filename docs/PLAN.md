@@ -124,6 +124,10 @@ Completed targets:
   extractor fallback, and scanner boundary tests (79.52% measured). Advance
   the Codecov project ratchet to 81% and report Linux CI separately.
 
+- [x] Reach 79.75% local statement coverage on 2026-11-01 with PDF fallback,
+  generic ingestion, EXIF, and listing diagnostics tests (79.80% measured).
+  Advance the Codecov project ratchet to 82% and report Linux CI separately.
+
 ## Continuous Workstreams
 
 ### Security and dependencies

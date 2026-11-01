@@ -863,6 +863,28 @@ make them match.
   platform-specific builds mean this is not directly comparable to macOS.
   New checkpoint CI and upload status are checked after pushing.
 
+### Coverage update — 79.80% local (2026-11-01)
+
+- Local macOS statements/lines: **79.80%** (`21,984 / 27,550`), up 76
+  covered statements from 79.52%. The requested 79.75% checkpoint is met.
+- Functions exercised: **97.74%** (`2,072 / 2,120`). Shared command utilities
+  cover **81.21%** (`3,739 / 4,604`); PDF covers **88.42%** (`336 / 380`).
+- Added generated PDF and local fixture tests for pdfcpu text fallback, generic
+  PDF text/image ingestion and failure handling, EXIF preservation, and
+  collection-listing diagnostics for unavailable and empty databases.
+- Focused race tests and the full lint/build/coverage gate passed. The initial
+  coverage profile was incomplete and discarded; the final profile includes all
+  expected 27,550 statements. Fixed the Codecov YAML line-length warning and
+  confirmed YAML linting passes on the final gate. Production code and coverage
+  exclusions are unchanged.
+- The prior `f2deb04` GitHub Actions workflows passed; Codecov rejected its
+  upload because a token was required. Per the daily one-point ratchet, the
+  project target advanced from 81% to **82%**; patch coverage remains 80%.
+  The target exceeds current measured coverage and the 80% long-term milestone.
+- Linux CI on the prior checkpoint measured **79.11%** (`21,469 / 27,138`);
+  platform-specific builds mean this is not directly comparable to macOS.
+  New checkpoint CI and upload status are checked after pushing.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
