@@ -162,3 +162,32 @@ func TestFallbackPDFImagesExtractionAndFiltering(t *testing.T) {
 		t.Fatalf("failed extractor images=%#v err=%v", out, err)
 	}
 }
+
+func TestPDFTextExtractionFallbackWithoutExternalTools(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_CONFIG_HOME", root)
+	t.Setenv("PATH", filepath.Join(root, "no-tools"))
+	path := filepath.Join(root, "catalogue.pdf")
+	if err := os.WriteFile(path, pdfImageFixture(t), 0600); err != nil {
+		t.Fatal(err)
+	}
+	text, pages, err := extractTextWithPdfcpu(path)
+	if err != nil || pages < 0 {
+		t.Fatalf("pdfcpu text = %q pages=%d err=%v", text, pages, err)
+	}
+	got, err := extractTextByPage(path)
+	if err != nil {
+		t.Fatalf("page extraction: %v", err)
+	}
+	if got == nil {
+		t.Fatal("expected a non-nil page map")
+	}
+	texts, images, err := ExtractPDFContent(path, 1000, false, 0, 2000, true)
+	if err != nil || len(texts) == 0 || len(images) != 1 {
+		t.Fatalf("fallback texts=%#v images=%d err=%v", texts, len(images), err)
+	}
+	if texts[0].Metadata["filename"] != "catalogue.pdf" || images[0].Metadata["source_pdf"] != path {
+		t.Fatalf("fallback metadata text=%#v image=%#v", texts[0].Metadata, images[0].Metadata)
+	}
+}
