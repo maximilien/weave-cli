@@ -10,7 +10,7 @@ coverage:
   status:
     project:
       default:
-        target: 82%        # Daily one-point ratchet
+        target: 83%        # Daily one-point ratchet
         threshold: 1%      # Prevent meaningful regressions while coverage grows
         if_ci_failed: error
 
