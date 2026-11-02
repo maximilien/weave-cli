@@ -885,6 +885,28 @@ make them match.
   platform-specific builds mean this is not directly comparable to macOS.
   New checkpoint CI and upload status are checked after pushing.
 
+### Coverage update — 80.03% local (2026-11-02)
+
+- Local macOS statements/lines: **80.03%** (`22,049 / 27,550`), up 65
+  covered statements from 79.80%. The requested 80% checkpoint is met locally.
+- Functions exercised: **97.83%** (`2,074 / 2,120`). Shared command utilities
+  cover **82.58%** (`3,802 / 4,604`) of statements.
+- Added local completion and database fixture tests for single-agent execution,
+  text and JSON formatting, progress, and generic/Weaviate query wrappers.
+  No external API or developer credentials are used.
+- Focused race tests and the full lint/build/coverage gate passed. Production
+  code and coverage exclusions are unchanged.
+- A separate fixture exposed a multi-agent RAG chain issue: after the first
+  agent, the chain passes `RAGOutput` to an agent expecting `RAGInput`, so the
+  second completion does not run. This remains a follow-up, not a passing test.
+- The prior `99d24e0` GitHub Actions workflows passed; Codecov rejected its
+  upload because a token was required. Per the daily one-point ratchet, the
+  project target advanced from 82% to **83%**; patch coverage remains 80%.
+  The project target exceeds current measured coverage and the 80% milestone.
+- Linux CI on the prior checkpoint measured **79.34%** (`21,532 / 27,138`);
+  platform-specific builds mean this is not directly comparable to macOS.
+  New checkpoint CI and upload status are checked after pushing.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,

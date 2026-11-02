@@ -128,6 +128,12 @@ Completed targets:
   generic ingestion, EXIF, and listing diagnostics tests (79.80% measured).
   Advance the Codecov project ratchet to 82% and report Linux CI separately.
 
+- [x] Reach 80% local statement coverage on 2026-11-02 with single-agent
+  execution and query fixture tests (80.03% measured). Advance the Codecov
+  project ratchet to 83%; report Linux CI separately.
+- [ ] Fix multi-agent RAG chains so later agents receive compatible input and
+  their completions execute; reproduce with a local completion fixture.
+
 ## Continuous Workstreams
 
 ### Security and dependencies
