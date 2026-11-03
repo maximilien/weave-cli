@@ -907,6 +907,20 @@ make them match.
   platform-specific builds mean this is not directly comparable to macOS.
   New checkpoint CI and upload status are checked after pushing.
 
+### 80.25% checkpoint (2026-11-03)
+
+- The full macOS local gate passed at **80.30%** statement coverage
+  (`22,122 / 27,550`), up 73 covered statements from 80.03%. Function
+  coverage was **97.88%** (`2,075 / 2,120`).
+- Added isolated tests for doctor diagnostics, interactive configuration
+  recovery, and batch re-embedding success and failure paths.
+- The previous Linux CI run measured **79.57%** (`21,595 / 27,138`);
+  platform-specific builds produce a different denominator. Verify this
+  checkpoint's Linux coverage after pushing.
+- Advanced the Codecov project target from 83% to **84%** under the daily
+  ratchet. The previous CI upload was rejected because a token was required;
+  a successful test job does not establish that Codecov received the report.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,

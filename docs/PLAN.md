@@ -131,6 +131,9 @@ Completed targets:
 - [x] Reach 80% local statement coverage on 2026-11-02 with single-agent
   execution and query fixture tests (80.03% measured). Advance the Codecov
   project ratchet to 83%; report Linux CI separately.
+- [x] Reach 80.25% local statement coverage on 2026-11-03 with doctor,
+  configuration recovery, and re-embedding tests (80.30% measured). Advance
+  the Codecov project ratchet to 84%; report Linux CI separately.
 - [ ] Fix multi-agent RAG chains so later agents receive compatible input and
   their completions execute; reproduce with a local completion fixture.
 
