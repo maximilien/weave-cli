@@ -921,6 +921,18 @@ make them match.
   ratchet. The previous CI upload was rejected because a token was required;
   a successful test job does not establish that Codecov received the report.
 
+### 80.50% checkpoint (2026-11-04)
+
+- The full macOS local gate passed at **80.50%** statement coverage
+  (`22,178 / 27,550`), up 56 covered statements from 80.30%. Function
+  coverage was **97.88%** (`2,075 / 2,120`).
+- Added local completion fixtures for schema and chunking agents, deployed
+  agent installation tests, and database environment diagnostics tests.
+- The previous Linux CI run measured **79.85%** (`21,670 / 27,138`). Check
+  the new run separately because platform-specific builds differ.
+- Advanced the Codecov project target from 84% to **85%**. The previous
+  upload was rejected because a token was required.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
