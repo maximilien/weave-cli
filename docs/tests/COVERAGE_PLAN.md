@@ -933,6 +933,26 @@ make them match.
 - Advanced the Codecov project target from 84% to **85%**. The previous
   upload was rejected because a token was required.
 
+### 80.75% checkpoint (2026-11-06)
+
+- The full macOS local gate passed at **80.77%** statement coverage
+  (`22,251 / 27,550`), up 73 covered statements from 80.50%. Function
+  coverage was **97.92%** (`2,076 / 2,120`).
+- Added local Weaviate protocol tests for collection creation with default,
+  text, image, named, and file schemas; assertions verify the requested class,
+  property sets, embedding model selection, and deprecated alias precedence.
+  Executor tests cover PATH preparation and non-JSON result formatting.
+- Today's scheduled Security workflow on the previous checkpoint failed on
+  GO-2026-6865 in `github.com/klauspost/compress v1.19.2`. Updated to the
+  released fix, **v1.20.2**; module tidy/verification, MongoDB and storage race
+  tests, and `govulncheck ./...` passed with no reachable vulnerabilities.
+- Advanced the Codecov project target from 85% to **86%**, preserving the
+  one-point ratchet. The project target exceeds current measured coverage;
+  patch coverage remains 80%.
+- The previous Linux CI run measured **80.05%** (`21,724 / 27,138`). Its
+  Codecov upload was rejected because a token was required. Check this
+  checkpoint's CI and upload separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
