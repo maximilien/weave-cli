@@ -150,6 +150,16 @@ func TestExecuteStep(t *testing.T) {
 	}
 }
 
+func TestExecuteBashStepPreservesOutputWhenPreparingWeavePath(t *testing.T) {
+	executor := newTestExecutor()
+	output, err := executor.executeBashStep(context.Background(), &agents.ExecutionStep{
+		Command: "echo weave collections",
+	})
+	if err != nil || output != "weave collections\n" {
+		t.Fatalf("executeBashStep() = (%#v, %v)", output, err)
+	}
+}
+
 func TestExecuteConfirmationStep(t *testing.T) {
 	executor := newTestExecutor()
 	readEnd, writeEnd, err := os.Pipe()
@@ -431,6 +441,7 @@ func TestExecuteStepFormatsResultTypes(t *testing.T) {
 		wantError  string
 	}{
 		{name: "map", output: map[string]interface{}{"count": float64(2)}, wantOutput: `"count": 2`},
+		{name: "unmarshalable map", output: map[string]interface{}{"value": make(chan int)}, wantOutput: "map[value:"},
 		{name: "scalar", output: 42, wantOutput: "42"},
 		{name: "unmarshalable", output: make(chan int), wantOutput: "0x"},
 		{name: "failure text", output: "failed to execute", wantOutput: "failed to execute", wantError: "failed to execute"},
