@@ -976,6 +976,27 @@ make them match.
   rejected because a token was required. Verify this checkpoint separately
   after the consolidated push because platform-specific builds differ.
 
+### 81.25% checkpoint (2026-11-08)
+
+- The full macOS local gate passed at **81.30%** statement coverage
+  (`22,399 / 27,550`), up 74 covered statements from the recorded 81.03%
+  checkpoint. Function coverage remained **97.97%** (`2,077 / 2,120`).
+- Added local embedding-server and recording-database tests for normal,
+  scheduled, and automatic stack ingestion. Assertions verify stored content,
+  vectors and metadata, collection reuse/creation, persistence checks, and
+  checkpoints containing both completed and skipped failed files.
+- Added PDF inspection tests using a generated PDF and a fake text extractor.
+  Assertions verify summary statistics, suppression of detailed output in
+  summary mode, preview truncation, and the three-chunk preview limit.
+- `pkg/stack` reached **85.80%** (`731 / 852`); `cmd/document` reached
+  **71.14%** (`853 / 1,199`). Focused race tests and the full local gate passed;
+  the vulnerability scan found no reachable vulnerabilities.
+- Advanced the Codecov project target from 87% to **88%**, preserving the
+  one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's Build, Test, Lint, and Security workflows passed.
+  Linux CI measured **80.60%** (`21,872 / 27,138`); its Codecov upload still
+  required a token. Verify this checkpoint after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
