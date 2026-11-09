@@ -997,6 +997,26 @@ make them match.
   Linux CI measured **80.60%** (`21,872 / 27,138`); its Codecov upload still
   required a token. Verify this checkpoint after the consolidated push.
 
+### 81.5% checkpoint (2026-11-09)
+
+- The full macOS local gate passed at **81.58%** statement coverage
+  (`22,476 / 27,550`), up 77 covered statements from the recorded 81.30%
+  checkpoint. Function coverage remained **97.97%** (`2,077 / 2,120`).
+- Added recording-client coverage for collection creation across Milvus,
+  Chroma, Qdrant, Neo4j, and Supabase; bulk document deletion routing;
+  filename fallback, failed deletion diagnostics, and count errors.
+- Added isolated PDF conversion tests for Ghostscript preference,
+  ImageMagick fallback and explicit selection in file and directory modes,
+  including assertions that source files remain intact.
+- Focused race tests and the full lint/build/coverage gate passed. The fresh
+  aggregate report is authoritative; focused package estimates can differ
+  from the full unit lane.
+- Advanced the Codecov project target from 88% to **89%**, preserving the
+  one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's CI workflows passed, with **80.86%** Linux
+  coverage (`21,945 / 27,138`). Codecov still required an upload token.
+  Check this checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
