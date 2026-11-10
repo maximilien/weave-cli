@@ -1017,6 +1017,24 @@ make them match.
   coverage (`21,945 / 27,138`). Codecov still required an upload token.
   Check this checkpoint's CI separately after the consolidated push.
 
+### 81.75% checkpoint (2026-11-10)
+
+- The full macOS local gate passed at **81.76%** statement coverage
+  (`22,525 / 27,550`), up 49 covered statements from the recorded 81.58%
+  checkpoint. Function coverage reached **98.02%** (`2,078 / 2,120`).
+- Added executor startup tests using an isolated MCP helper process, covering
+  explicit/environment paths, tool discovery, successful tool execution,
+  rejected tool lists, missing executables, and shutdown.
+- Added retry recovery and exhaustion tests, including dependent-step behavior.
+  Collection creation tests verify propagation of client, schema-validation,
+  and creation errors, and that invalid inputs prevent creation calls.
+- Focused race tests and the full lint/build/coverage gate passed.
+- Advanced the Codecov project target from 89% to **90%**, preserving the
+  one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's CI workflows passed, with **81.15%** Linux
+  coverage (`22,022 / 27,138`). Codecov still required an upload token.
+  Check this checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
