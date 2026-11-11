@@ -1035,6 +1035,25 @@ make them match.
   coverage (`22,022 / 27,138`). Codecov still required an upload token.
   Check this checkpoint's CI separately after the consolidated push.
 
+### 82% checkpoint (2026-11-11)
+
+- The full macOS local gate passed at **82.04%** statement coverage
+  (`22,602 / 27,550`), up 77 covered statements from the recorded 81.76%
+  checkpoint. Function coverage reached **98.07%** (`2,079 / 2,120`).
+- Added scheduled and automatic ingestion restart tests using fake kubectl
+  processes and a recording database factory. Assertions verify cancellation
+  and replacement of port-forwards, replacement client configuration, batch
+  totals, and persisted retry attempts.
+- Added evaluation command tests using a local completion server, verifying
+  recorded completion failures, saved result summaries, and fallback to local
+  evaluation when Opik configuration is unavailable.
+- Focused race tests and the full lint/build/coverage gate passed.
+- Advanced the Codecov project target from 90% to **91%**, preserving the
+  one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's CI workflows passed, with **81.32%** Linux
+  coverage (`22,068 / 27,138`). Codecov still required an upload token.
+  Check this checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
