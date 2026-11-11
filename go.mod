@@ -2,7 +2,7 @@ module github.com/maximilien/weave-cli
 
 go 1.26.0
 
-toolchain go1.26.10
+toolchain go1.26.11
 
 require (
 	github.com/amikos-tech/chroma-go v0.2.5
