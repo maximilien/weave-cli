@@ -1037,8 +1037,8 @@ make them match.
 
 ### 82% checkpoint (2026-11-11)
 
-- The full macOS local gate passed at **82.04%** statement coverage
-  (`22,602 / 27,550`), up 77 covered statements from the recorded 81.76%
+- The full macOS local gate passed at **82.05%** statement coverage
+  (`22,604 / 27,550`), up 79 covered statements from the recorded 81.76%
   checkpoint. Function coverage reached **98.07%** (`2,079 / 2,120`).
 - Added scheduled and automatic ingestion restart tests using fake kubectl
   processes and a recording database factory. Assertions verify cancellation
@@ -1048,6 +1048,9 @@ make them match.
   recorded completion failures, saved result summaries, and fallback to local
   evaluation when Opik configuration is unavailable.
 - Focused race tests and the full lint/build/coverage gate passed.
+- Initial CI exposed GO-2026-6859 in Go 1.26.10. Updated the toolchain and
+  all workflow pins to **1.26.11**. Module tidy/verification, the complete
+  local gate, and the vulnerability scan passed with the patched toolchain.
 - Advanced the Codecov project target from 90% to **91%**, preserving the
   one-point ratchet; patch coverage remains 80%.
 - The previous checkpoint's CI workflows passed, with **81.32%** Linux
