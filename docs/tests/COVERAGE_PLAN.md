@@ -1076,6 +1076,24 @@ make them match.
   runs failed during the runner package-download outage. Check this
   checkpoint's complete CI results after the consolidated push.
 
+### 82.5% checkpoint (2026-11-14)
+
+- The full macOS local gate passed at **82.50%** statement coverage
+  (`22,730 / 27,550`), up 69 covered statements from the recorded 82.25%
+  checkpoint. Function coverage remained **98.11%** (`2,080 / 2,120`).
+- Added recording-client and local embedding-server tests for re-embedding:
+  dimension changes, paginated reads, preserved document metadata/vectors,
+  transient read errors, empty batches, embedding failures, and write failures.
+- Added nested/empty schema display assertions, default collection-creation
+  adapter routing, and PDF directory conversion partial-failure reporting.
+- Focused race tests and the complete lint/build/coverage gate passed. The
+  full-lane report is authoritative when focused coverage estimates differ.
+- Advanced the Codecov project target from 92% to **93%**, preserving the
+  one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's workflows passed, with **81.82%** Linux coverage
+  (`22,203 / 27,138`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
