@@ -102,9 +102,8 @@ func runCollectionsReset(cmd *cobra.Command, args []string) error {
 		Timeout: 30,
 	}
 
-	// Use the global registry to create client
-	registry := vectordb.NewRegistry()
-	client, err := registry.CreateClient(vdbConfig)
+	// Use registered adapters rather than a new, empty registry.
+	client, err := vectordb.CreateClient(vdbConfig)
 	if err != nil {
 		return fmt.Errorf("failed to create Milvus client: %w", err)
 	}
