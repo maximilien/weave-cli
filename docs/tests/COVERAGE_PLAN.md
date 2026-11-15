@@ -1094,6 +1094,27 @@ make them match.
   (`22,203 / 27,138`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 82.75% checkpoint (2026-11-15)
+
+- The full macOS local gate passed at **82.76%** statement coverage
+  (`22,800 / 27,549`), up 70 covered statements from the recorded 82.50%
+  checkpoint. Function coverage remained **98.11%** (`2,080 / 2,120`).
+- A regression test reproduced `stack collections reset` failing to create a
+  Milvus client because it used a new empty registry. The command now uses
+  the registered adapter through `vectordb.CreateClient`.
+- Added isolated reset lifecycle tests for forced/confirmed deletion,
+  cancellation, retained collections, empty collections, list/client errors,
+  and partial deletion failures that continue through remaining collections.
+  Tests verify the selected database configuration and exact deletion targets.
+- Tests use temporary state, a fake kubectl process, and a recording database
+  factory; no real cluster or database is accessed. Focused race tests and
+  the full lint/build/coverage gate passed.
+- Advanced the Codecov project target from 93% to **94%**, preserving the
+  one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's workflows passed, with **82.07%** Linux coverage
+  (`22,273 / 27,138`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
