@@ -1136,6 +1136,25 @@ make them match.
   (`22,340 / 27,137`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 83.25% checkpoint (2026-11-16)
+
+- The full macOS local gate passed at **83.28%** statement coverage
+  (`22,944 / 27,549`), up 53 covered statements from the recorded 83.09%
+  checkpoint. Function coverage remained **98.16%** (`2,081 / 2,120`).
+- Added isolated Milvus single/batch write tests using a generated large image,
+  recording image storage, a fake Milvus client, and a local embedding server.
+  Assertions verify uploaded image bytes and metadata, valid thumbnails,
+  external URLs, generated/fallback vectors, content preservation, image
+  reference limits, and exclusion of oversized inline image payloads.
+- Covered successful writes, upload failures, embedding failures, and invalid
+  image content. Milvus reached **80.37%** (`610 / 759`). Focused race tests
+  and the full lint/build/coverage gate passed without external services.
+- Advanced the Codecov project target from 94% to **95%**, preserving the
+  daily one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's workflows passed, with **82.67%** Linux coverage
+  (`22,434 / 27,137`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
