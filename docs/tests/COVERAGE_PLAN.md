@@ -1115,6 +1115,27 @@ make them match.
   (`22,273 / 27,138`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 83% checkpoint (2026-11-15)
+
+- The full macOS local gate passed at **83.09%** statement coverage
+  (`22,891 / 27,549`), up 91 covered statements from the recorded 82.76%
+  checkpoint. Function coverage reached **98.16%** (`2,081 / 2,120`).
+- Added isolated Pinecone semantic-query tests for embedding generation,
+  default/custom result limits, hybrid fallback, result metadata/content,
+  dimension mismatches, connection/query failures, and connection cleanup.
+- Added single/batch write tests verifying vectors, content/text precedence,
+  metadata preservation, image URL storage without binary image payloads,
+  embedding/upsert errors, and rejection of invalid metadata before upsert.
+- Pinecone reached **90.70%** (`429 / 473`). Focused race tests and the full
+  lint/build/coverage gate passed. Fake transports and index connections
+  isolate the tests from external services and credentials.
+- Codecov's project target remains **94%**: the daily one-point increase was
+  already applied for the earlier checkpoint on this same date. Patch coverage
+  remains 80%.
+- The previous checkpoint's workflows passed, with **82.32%** Linux coverage
+  (`22,340 / 27,137`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
