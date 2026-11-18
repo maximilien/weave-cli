@@ -40,8 +40,13 @@ func TestHealthCommandSelectionAndOutputModes(t *testing.T) {
 		t.Run(mode, func(t *testing.T) {
 			setupHealthConfig(t)
 			t.Setenv("VECTOR_DB_TYPE", "")
-			t.Setenv("SUPABASE_URL", "")
-			t.Setenv("SUPABASE_KEY", "")
+			for _, variable := range []string{
+				"SUPABASE_DATABASE_URL", "SUPABASE_DATABASE_KEY", "DATABASE_URL",
+				"SUPABASE_PROJECT_URL", "SUPABASE_DATABASE_PASSWORD", "SUPABASE_PROJECT_API_KEY",
+				"SUPABASE_ANON_KEY", "SUPABASE_KEY", "SUPABASE_URL",
+			} {
+				t.Setenv(variable, "")
+			}
 			local := "    - name: local-fixture\n      type: weaviate-local\n      enabled: true\n      url: https://local.fixture\n"
 			cloud := "    - name: cloud-fixture\n      type: weaviate-cloud\n      enabled: true\n      url: https://cloud.fixture\n"
 			if mode == "no cloud" {
