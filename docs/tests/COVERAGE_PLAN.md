@@ -1155,6 +1155,28 @@ make them match.
   (`22,434 / 27,137`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 83.5% checkpoint progress (2026-11-18)
+
+- The full macOS coverage run reached **83.47%** statement coverage
+  (`22,995 / 27,549`), up 51 covered statements from the recorded 83.28%
+  checkpoint. Function coverage remains **98.16%** (`2,081 / 2,120`).
+  Stopped here at the user's request; passing 83.5% is the next checkpoint.
+- Added isolated health-command tests for default, explicit, cloud/local,
+  empty, and multi-database selections, including JSON, details, and summary
+  modes. Recording clients verify which databases are checked, and JSON
+  assertions verify health and sorted collection names.
+- Added document-display tests for multiple results, full and truncated text,
+  JSON content, continued lookup after a missing ID, empty collections, list
+  failures, and JSON serialization errors. Fixtures use no external services.
+- Clear Supabase environment aliases inside the health fixtures so build and
+  coverage scripts loading `.env` cannot add real databases to these tests.
+- Focused race tests and the full lint/build/coverage gate passed.
+- Advanced the Codecov project target from 95% to **96%**, preserving the
+  daily one-point ratchet; patch coverage remains 80%.
+- The previous checkpoint's workflows passed, with **82.85%** Linux coverage
+  (`22,484 / 27,137`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
