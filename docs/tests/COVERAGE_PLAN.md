@@ -1177,6 +1177,29 @@ make them match.
   (`22,484 / 27,137`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 83.75% checkpoint (2026-11-19)
+
+- The full macOS coverage run reached **83.78%** statement coverage
+  (`23,080 / 27,549`), up 85 covered statements from the recorded 83.47%
+  checkpoint. Function coverage reached **98.21%** (`2,082 / 2,120`).
+- Added schema and chunking suggestion tests with an isolated HTTP transport
+  that returns recorded OpenAI completions. Assertions verify fixture-key
+  authentication, prompt inputs, saved YAML values, Viper key fallback,
+  display-only mode, invalid completions, empty samples, invalid globs, and
+  output-write failures. Fixtures use temporary home and working directories
+  and never call external APIs. Schema reached **96.88%** (`124 / 128`);
+  chunking reached **96.91%** (`94 / 97`).
+- Added doctor-command tests for a selected section without credentials,
+  text/JSON output, fix mode, and missing configuration. Added generic and
+  Weaviate document-listing tests with already-expired contexts, checking
+  timeout guidance and pagination without waiting for a real timeout.
+- Advanced the Codecov project target from 96% to **97%**, preserving the
+  daily one-point ratchet; patch coverage remains 80%.
+- Focused race tests and the full lint/build/coverage gate passed.
+- The previous checkpoint's workflows passed, with **83.05%** Linux coverage
+  (`22,538 / 27,137`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
