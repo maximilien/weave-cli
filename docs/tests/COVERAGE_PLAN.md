@@ -1200,6 +1200,32 @@ make them match.
   (`22,538 / 27,137`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 84% checkpoint (2026-11-21)
+
+- The full macOS coverage run reached **84.02%** statement coverage
+  (`23,148 / 27,549`), up 68 covered statements from the recorded 83.78%
+  checkpoint. Function coverage reached **98.25%** (`2,083 / 2,120`).
+- Added collection-list tests for default and explicit selections, cloud/local
+  filters, empty selections, multi-database details/JSON, legacy JSON flags,
+  and failed summaries. Recording factories verify adapter routing across
+  Milvus, Supabase, MongoDB, Chroma, Qdrant, and Neo4j, including Qdrant
+  collection counting. Collection command coverage reached **68.98%**
+  (`627 / 909`). Supabase environment aliases are cleared in selection tests.
+- Added document-count tests for six adapter types, verifying continued
+  processing after a failed collection and clean JSON containing only
+  successful counts. A multi-database document-list test verifies explicit
+  default-type selection and pagination. Document command coverage reached
+  **76.81%** (`921 / 1,199`).
+- Exercised single-agent chain construction and execution against the existing
+  local completion fixture, checking query/source prompts, final text output,
+  and a JSON format override without external API access.
+- Advanced the Codecov project target from 97% to **98%**, preserving the
+  daily one-point ratchet; patch coverage remains 80%.
+- Focused race tests and the full lint/build/coverage gate passed.
+- The previous checkpoint's workflows passed, with **83.35%** Linux coverage
+  (`22,620 / 27,137`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
