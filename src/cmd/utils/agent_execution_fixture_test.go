@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/maximilien/weave-cli/src/pkg/config"
+	"github.com/maximilien/weave-cli/src/pkg/progress"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb"
 	"github.com/maximilien/weave-cli/src/pkg/vectordb/weaviate"
 )
@@ -55,6 +56,29 @@ func TestAgentExecutionWithLocalCompletionFixture(t *testing.T) {
 	defer server.Close()
 	t.Setenv("OPENAI_BASE_URL", server.URL+"/v1/")
 	results := []*vectordb.QueryResult{{Document: vectordb.Document{ID: "source-1", Content: "Fixture source text", Metadata: map[string]interface{}{"filename": "source.txt"}}, Score: 0.9}}
+	for _, format := range []string{"", "json"} {
+		t.Run("chain setup "+format, func(t *testing.T) {
+			out, diagnostics := captureCollectionListing(t, func() {
+				executeAgentChain(context.Background(), []string{"coverage-fixture-alpha"}, "What is the answer?", results, format, progress.NewReporter(false))
+			})
+			if !strings.Contains(out, "Fixture answer") || len(requests) != 1 {
+				t.Fatalf("chain output=%s diagnostics=%s calls=%d", out, diagnostics, len(requests))
+			}
+			req := <-requests
+			encoded, err := json.Marshal(req["messages"])
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range []string{"What is the answer?", "Fixture source text"} {
+				if !strings.Contains(string(encoded), want) {
+					t.Fatalf("chain prompt missing %q: %s", want, encoded)
+				}
+			}
+			if format == "json" && !json.Valid([]byte(out)) {
+				t.Fatalf("invalid chain JSON: %s", out)
+			}
+		})
+	}
 	for _, tc := range []struct {
 		name      string
 		agents    []string
