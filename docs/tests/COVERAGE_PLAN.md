@@ -1226,6 +1226,30 @@ make them match.
   (`22,620 / 27,137`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 84.25% checkpoint (2026-11-22)
+
+- The full macOS coverage run reached **84.27%** statement coverage
+  (`23,216 / 27,549`), up 68 covered statements from the recorded 84.02%
+  checkpoint. Function coverage reached **98.35%** (`2,085 / 2,120`).
+- Added MongoDB semantic-search protocol tests using the driver's mock and a
+  local embedding server. Assertions verify authentication, model/query inputs,
+  generated vector-search stages, candidate/limit values, vectors, result
+  metadata and scores, empty results, aggregation/decode failures, missing
+  credentials, embedding failures, and dimension mismatches.
+- Added MongoDB collection-listing tests for populated and empty collections,
+  listing/count failures, and schema fallback. MongoDB reached **82.23%**
+  (`324 / 394`) without a live database or credentials.
+- Added MinIO/S3-compatible HTTP fixtures covering existing/new buckets,
+  denied bucket checks, bucket creation and uploads, generated storage paths,
+  exact image bytes, content type, standard/custom metadata, typed upload
+  failures, and download round trips. Storage reached **93.88%** (`230 / 245`).
+- Advanced the Codecov project target from 98% to **99%**, preserving the
+  daily one-point ratchet; patch coverage remains 80%.
+- Focused race tests and the full lint/build/coverage gate passed.
+- The previous checkpoint's workflows passed, with **83.61%** Linux coverage
+  (`22,689 / 27,137`). Codecov still required an upload token. Verify this
+  checkpoint's CI separately after the consolidated push.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
