@@ -65,6 +65,11 @@ func TestMinioUploadAndReadProtocol(t *testing.T) {
 						return
 					}
 					w.WriteHeader(http.StatusOK)
+				case http.MethodHead:
+					w.Header().Set("Content-Length", "21")
+					w.WriteHeader(http.StatusOK)
+				case http.MethodDelete:
+					w.WriteHeader(http.StatusNoContent)
 				case http.MethodGet:
 					w.Header().Set("Content-Length", "21")
 					_, _ = w.Write(image)
@@ -130,6 +135,17 @@ func TestMinioUploadAndReadProtocol(t *testing.T) {
 			got, err := backend.Download(context.Background(), imageURL)
 			if err != nil || !bytes.Equal(got, image) {
 				t.Fatalf("download=%q error=%v", got, err)
+			}
+			info, infoErr := backend.GetInfo(context.Background(), imageURL)
+			if infoErr != nil || info.Size != int64(len(image)) || info.ContentType != "image/png" {
+				t.Fatalf("info=%+v error=%v", info, infoErr)
+			}
+			exists, existsErr := backend.Exists(context.Background(), imageURL)
+			if existsErr != nil || !exists {
+				t.Fatalf("exists=%v error=%v", exists, existsErr)
+			}
+			if err := backend.Delete(context.Background(), imageURL); err != nil {
+				t.Fatal(err)
 			}
 			last := <-requests
 			if last.method != http.MethodGet || last.path != parsed.Path {
