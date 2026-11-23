@@ -1250,6 +1250,22 @@ make them match.
   (`22,689 / 27,137`). Codecov still required an upload token. Verify this
   checkpoint's CI separately after the consolidated push.
 
+### 84.5% checkpoint (2026-11-23)
+
+- The full macOS local gate passed at **84.51%** statement coverage
+  (`23,282 / 27,549`), up 66 covered statements from 84.27%.
+  Function coverage remains **98.35%** (`2,085 / 2,120`).
+- Added OpenSearch and Elasticsearch semantic/hybrid search protocol tests
+  verifying embedding authentication, query inputs, default/explicit limits,
+  generated vectors, results, dimension mismatches, and embedding failures.
+- Added agent deletion confirmation/cancellation tests, MinIO image metadata,
+  existence/deletion checks, and MongoDB/Qdrant embedding-model dimension maps.
+  Fixtures isolate filesystem and environment state and use local HTTP servers.
+- Focused race tests and the full lint/build/coverage gate passed.
+- Advanced the daily Codecov project target from 99% to **100%**; patch
+  coverage remains 80%. This completes the percentage-point target ratchet.
+- Previous checkpoint CI passed. Verify this checkpoint's CI after pushing.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
