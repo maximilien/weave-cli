@@ -1266,6 +1266,23 @@ make them match.
   coverage remains 80%. This completes the percentage-point target ratchet.
 - Previous checkpoint CI passed. Verify this checkpoint's CI after pushing.
 
+### 84.75% checkpoint (2026-11-24)
+
+- The full macOS local gate passed at **84.76%** statement coverage
+  (`23,350 / 27,549`), up 68 covered statements from 84.51%.
+  Function coverage remains **98.35%** (`2,085 / 2,120`).
+- Added Neo4j semantic-search tests with a local embedding fixture, checking
+  results, vector query parameters, default/explicit limits, missing keys,
+  dimension mismatches, and embedding failures.
+- Added Qdrant single/batch/update embedding tests using the existing client
+  fixture, checking write payloads and preventing writes after embedding errors.
+- Added configuration sync overwrite acceptance/cancellation tests for both
+  `.env` and `config.yaml`, verifying destination contents and source preservation.
+  Tests isolate home directories, working directories, environment, and input.
+- Focused race tests and the full lint/build/coverage gate passed.
+- Codecov project target remains capped at **100%** after the completed daily
+  ratchet; patch coverage remains 80%. Verify this checkpoint's CI after pushing.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
