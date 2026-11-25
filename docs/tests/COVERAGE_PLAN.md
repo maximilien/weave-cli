@@ -1283,6 +1283,20 @@ make them match.
 - Codecov project target remains capped at **100%** after the completed daily
   ratchet; patch coverage remains 80%. Verify this checkpoint's CI after pushing.
 
+### 85% checkpoint (2026-11-25)
+
+- The full macOS local gate passed at **85.04%** statement coverage
+  (`23,427 / 27,549`), up 77 covered statements from 84.76%.
+  Function coverage reached **98.44%** (`2,087 / 2,120`).
+- Added Milvus semantic/hybrid search tests including keyword/vector fallback,
+  and Neo4j single/batch/update embedding writes with failure handling.
+- Added isolated Ollama discovery response tests, signed image URLs, custom
+  storage metadata, Supabase local/REST-only initialization, and Qdrant
+  environment/config address precedence. Fixtures use no external services.
+- Focused race tests and the full lint/build/coverage gate passed.
+- Codecov project target remains capped at 100%; patch coverage remains 80%.
+  Verify this checkpoint's CI separately after pushing.
+
 ### Path from 77% to 80%
 
 1. Raise low-coverage command packages, beginning with collection,
