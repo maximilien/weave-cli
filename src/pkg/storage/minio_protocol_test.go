@@ -67,11 +67,13 @@ func TestMinioUploadAndReadProtocol(t *testing.T) {
 					w.WriteHeader(http.StatusOK)
 				case http.MethodHead:
 					w.Header().Set("Content-Length", "21")
+					w.Header().Set("X-Amz-Meta-Author", "Ada")
 					w.WriteHeader(http.StatusOK)
 				case http.MethodDelete:
 					w.WriteHeader(http.StatusNoContent)
 				case http.MethodGet:
 					w.Header().Set("Content-Length", "21")
+					w.Header().Set("X-Amz-Meta-Author", "Ada")
 					_, _ = w.Write(image)
 				default:
 					t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
@@ -135,6 +137,14 @@ func TestMinioUploadAndReadProtocol(t *testing.T) {
 			got, err := backend.Download(context.Background(), imageURL)
 			if err != nil || !bytes.Equal(got, image) {
 				t.Fatalf("download=%q error=%v", got, err)
+			}
+			signed, signErr := NewMinioStorage(Config{Endpoint: strings.TrimPrefix(server.URL, "http://"), Bucket: "images", Region: "us-east-1", AccessKey: "fixture-key", SecretKey: "fixture-secret"})
+			if signErr != nil {
+				t.Fatal(signErr)
+			}
+			presigned, signErr := signed.GetPresignedURL(context.Background(), imageURL, 0)
+			if signErr != nil || !strings.Contains(presigned, "X-Amz-Signature=") {
+				t.Fatalf("presigned=%s error=%v", presigned, signErr)
 			}
 			info, infoErr := backend.GetInfo(context.Background(), imageURL)
 			if infoErr != nil || info.Size != int64(len(image)) || info.ContentType != "image/png" {
